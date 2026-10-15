@@ -13,13 +13,14 @@
     define: 1, say: 1, display: 1, show: 1, print: 1, ask: 1, save: 1,
     answer: 1, wait: 1, library: 1, add: 1, load: 1, 'import': 1,
     'if': 1, then: 1, otherwise: 1, end: 1, repeat: 1, times: 1,
-    'while': 1, 'do': 1, stop: 1, set: 1, change: 1, to: 1, note: 1
+    'while': 1, 'do': 1, stop: 1, set: 1, change: 1, to: 1, note: 1,
+    increase: 1, decrease: 1, python: 1, code: 1
   };
   var OPERATORS = {
     plus: 1, minus: 1, times: 1, divided: 1, by: 1, power: 1, percent: 1,
     square: 1, root: 1, of: 1, as: 1, is: 1, equal: 1, greater: 1, less: 1,
-    than: 1, and: 1, not: 1, different: 1, from: 1, between: 1, or: 1,
-    fraction: 1, decimal: 1, uppercase: 1, lowercase: 1, length: 1, random: 1, number: 1
+    lesser: 1, than: 1, and: 1, not: 1, different: 1, from: 1, between: 1, or: 1,
+    fraction: 1, decimal: 1, uppercase: 1, lowercase: 1, length: 1, random: 1, number: 1, a: 1
   };
 
   function escapeHtml(text) {

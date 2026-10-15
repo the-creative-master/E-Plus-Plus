@@ -9,7 +9,8 @@
  *     output:    function (text) {},          // say / display
  *     input:     async function (prompt) {},  // ask -> returns typed text
  *     delay:     async function (seconds) {}, // wait (defaults to setTimeout)
- *     onLibrary: function (name) {},          // a library was loaded
+ *   onLibrary: function (name) {},          // a library was loaded
+ *     pythonExecutor: async function (code) {} // runs `python code` [Python]
  *   })
  *
  * Values: strings ("..."), numbers, booleans, and Fraction objects for
@@ -132,6 +133,12 @@
       return new Promise(function (resolve) { setTimeout(resolve, seconds * 1000); });
     };
     this.onLibrary = typeof options.onLibrary === 'function' ? options.onLibrary : function () {};
+    // Runs Python code for `python code "..."` statements (Python library).
+    // Injected because actually executing Python is the host's job — the
+    // IDE supplies a real Python runner; without one, Python statements
+    // fail with a clear English error instead of silently doing nothing.
+    this.pythonExecutor = typeof options.pythonExecutor === 'function' ? options.pythonExecutor
+      : (typeof options.executePython === 'function' ? options.executePython : null);
     this.onStatement = typeof options.onStatement === 'function' ? options.onStatement : null;
     this.maxSteps = options.maxSteps || 100000;
     this.maxLoopIterations = options.maxLoopIterations || 10000;
@@ -218,8 +225,82 @@
         return;
       }
       case AST.IF: {
+        // Chained form: try each branch in order; a branch with no
+        // condition is the final `otherwise`.
+        if (node.branches && node.branches.length) {
+          for (var bi = 0; bi < node.branches.length; bi++) {
+            var br = node.branches[bi];
+            if (!br.condition || (await this.evaluateCondition(br.condition))) {
+              await this.executeBlock(br.body);
+              return;
+            }
+          }
+          return;
+        }
         var branch = (await this.evaluateCondition(node.condition)) ? node.thenBranch : node.elseBranch;
         await this.executeBlock(branch);
+        return;
+      }
+      case AST.INCREASE:
+      case AST.DECREASE: {
+        var isInc = node.type === AST.INCREASE;
+        var word = isInc ? 'increase' : 'decrease';
+        var key = node.name.toLowerCase();
+        if (!this.variables.has(key)) {
+          throw new RuntimeError('Cannot ' + word + ' \'' + node.name + '\', because it has not been defined yet.',
+            node.line, node.column,
+            'Define it first, for example: Define ' + node.name + ' as 0. Then ' + (isInc ? 'Increase' : 'Decrease') + ' ' + node.name + ' by 1 will work.');
+        }
+        var current = this.variables.get(key);
+        if (!isNumericLike(current)) {
+          throw new RuntimeError('Cannot ' + word + ' \'' + node.name + '\', because it holds "' + stringify(current) + '", which is not a number.',
+            node.line, node.column,
+            'Only numbers can go up or down. Give \'' + node.name + '\' a number first, for example: Define ' + node.name + ' as 0.');
+        }
+        var amount = await this.evaluate(node.amount);
+        if (!isNumericLike(amount)) {
+          throw new RuntimeError('Cannot ' + word + ' \'' + node.name + '\' by "' + stringify(amount) + '", because that amount is not a number.',
+            node.line, node.column,
+            'Write a number after "by", for example: ' + (isInc ? 'Increase' : 'Decrease') + ' ' + node.name + ' by 1.');
+        }
+        var result;
+        if (current instanceof Fraction || amount instanceof Fraction) {
+          var cf = Fraction.from(this.toNumber(current, node, '"' + word + '"'));
+          var af = Fraction.from(this.toNumber(amount, node, '"' + word + '"'));
+          result = isInc ? cf.add(af) : cf.subtract(af);
+        } else {
+          result = isInc
+            ? this.toNumber(current, node, '"' + word + '"') + this.toNumber(amount, node, '"' + word + '"')
+            : this.toNumber(current, node, '"' + word + '"') - this.toNumber(amount, node, '"' + word + '"');
+        }
+        this.variables.set(key, result);
+        return;
+      }
+      case AST.PYTHON_CODE: {
+        // Python code may only run when the Python library has been added.
+        if (!this.loadedLibraries.has('Python')) {
+          throw new LibraryError('You cannot run Python code yet, because the Python library has not been added.',
+            node.line, node.column,
+            'Add this line above your Python code: library "Python" add — then python code "..." will work.');
+        }
+        if (typeof this.pythonExecutor !== 'function') {
+          throw new RuntimeError('Python code cannot run here, because no Python runner is connected to this E++ IDE.',
+            node.line, node.column,
+            'Open this file in the E++ IDE in a web browser (with an internet connection for the first Python run), then press Run again.');
+        }
+        try {
+          await this.pythonExecutor(node.code, node);
+        } catch (e) {
+          if (e && e.format && e.category) throw e; // already an E++ error
+          var detail = e && e.message ? String(e.message).trim() : 'unknown problem';
+          // Keep the most useful line of a Python traceback.
+          var lines = detail.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+          var lastLine = lines.length ? lines[lines.length - 1] : detail;
+          throw new RuntimeError('Python stopped with an error: ' + lastLine,
+            node.line, node.column,
+            'Python is a different language from E++ — check the Python code inside the quotes on this line. Python words, spelling and punctuation must all be exactly right.');
+        }
+        if (this.cancelled) throw new RuntimeError('Execution was stopped.', node.line, node.column, null);
         return;
       }
       case AST.REPEAT: {
@@ -267,6 +348,10 @@
     if (!node) return false;
     var left = await this.evaluate(node.left);
     if (node.operator === 'truthy') return truthy(left);
+    // Number tests: typed answers count as numbers when they look like
+    // one ("11" is a number, "eleven" and "" are not).
+    if (node.operator === 'notNumber') return !isNumericLike(left);
+    if (node.operator === 'number') return isNumericLike(left);
     var right = await this.evaluate(node.right);
     var cmp;
     if (isNumericLike(left) && isNumericLike(right)) {

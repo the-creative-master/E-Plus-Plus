@@ -32,6 +32,7 @@ async function run(source, options = {}) {
     output: (t) => output.push(t),
     input: async () => answers.shift() ?? '',
     delay: async () => {},
+    pythonExecutor: options.pythonExecutor,
   });
   return { output, interpreter };
 }
@@ -113,6 +114,134 @@ console.log('Interpreter: maths precedence & strings');
   const { output } = await run('say 2 plus 3 times 4\nsay (2 plus 3) times 4\nsay 10 minus 4 minus 3');
   assert.deepEqual([...output], ['14', '20', '3']);
   ok('precedence: times before plus, parentheses, left associativity');
+}
+
+console.log('Increase / Decrease');
+{
+  const { output } = await run(
+    'Define score as 10.\nIncrease score by 5\nsay \'score\'\nDecrease score by 3\nsay \'score\'\nIncrease \'score\' by 1 plus 1\nsay \'score\''
+  );
+  assert.deepEqual([...output], ['15', '12', '14']);
+  ok('Increase <variable> by <amount> and Decrease <variable> by <amount> (bare, quoted and expression amounts)');
+}
+{
+  const { output } = await run('ask "Score?" and save answer as score\nIncrease score by 2\nsay \'score\'', { answers: ['40'] });
+  assert.deepEqual([...output], ['42']);
+  ok('increasing a typed (numeric text) answer works');
+}
+await expectError('increasing an undefined variable explains how to define it', 'Increase missing by 1', /has not been defined yet/);
+await expectError('decreasing text explains it is not a number', 'Define name as Bob.\nDecrease name by 1', /not a number/);
+await expectError('increasing by text explains the amount must be a number', 'Define score as 1.\nIncrease score by Bob', /amount is not a number/);
+await expectError('Increase without "by" is an English ParseError', 'Define score as 1.\nIncrease score 1', /needs the word "by"/);
+
+console.log('Asking again, branches, comparisons, not-a-number');
+{
+  // Feature 2 exactly: the otherwise branch asks the same question again.
+  const { output } = await run(
+    'ask "What is 5 plus 6?" and save answer as output\n' +
+    'if output is equal to 11 then say "Correct!" otherwise ask "What is 5 plus 6?" and save answer as output\n' +
+    'say \'output\'',
+    { answers: ['9', '11'] }
+  );
+  assert.deepEqual([...output], ['11']);
+  ok('otherwise ask "..." asks again and saves the new answer');
+}
+{
+  const program =
+    'Define score as SCORE.\n' +
+    'if \'score\' is greater than 90 then say "A" otherwise if \'score\' is greater than 80 then say "B" otherwise if \'score\' is greater than 70 then say "C" otherwise say "Keep going"';
+  for (const [score, grade] of [[95, 'A'], [85, 'B'], [75, 'C'], [10, 'Keep going']]) {
+    const { output } = await run(program.replace('SCORE', String(score)));
+    assert.deepEqual([...output], [grade]);
+  }
+  ok('unlimited otherwise-if chains pick the first matching branch');
+}
+{
+  const { output } = await run(
+    'Define n as 7.\n' +
+    'if \'n\' is greater than 10 then\n  say "big"\notherwise if \'n\' is lesser than 10 then\n  say "small"\notherwise\n  say "ten"\nend if'
+  );
+  assert.deepEqual([...output], ['small']);
+  ok('block otherwise-if chains with end if');
+}
+{
+  const program =
+    'ask "Pick a number" and save answer as answer\n' +
+    'if answer is equal to 1 then say "One" and\n' +
+    'otherwise if not a number then say "Not a number" and\n' +
+    'otherwise if answer is greater than 10 then say "Big" and\n' +
+    'otherwise say "Small"';
+  for (const [answer, expected] of [['1', 'One'], ['abc', 'Not a number'], ['42', 'Big'], ['5', 'Small'], ['', 'Not a number']]) {
+    const { output } = await run(program, { answers: [answer] });
+    assert.deepEqual([...output], [expected], 'answer: ' + JSON.stringify(answer));
+  }
+  ok('"and"-chained multi-line conditionals with implicit not-a-number detection');
+}
+{
+  const { output } = await run('if 5 is lesser than 6 then say "yes" otherwise say "no"\nif 5 is greater than 6 then say "yes" otherwise say "no"');
+  assert.deepEqual([...output], ['yes', 'no']);
+  ok('is lesser than / is greater than comparisons');
+}
+{
+  const { output } = await run('ask "Age?" and save answer as age\nif \'age\' is not a number then say "Numbers only" otherwise say "Thanks"', { answers: ['twelve'] });
+  assert.deepEqual([...output], ['Numbers only']);
+  ok('explicit if <variable> is not a number then ...');
+}
+
+console.log('Python library');
+await expectError('python code without the Python library is a clear English LibraryError',
+  'python code "print(1)"', /You cannot run Python code yet, because the Python library has not been added/);
+await expectError('python code before the library line is still refused (order matters)',
+  'python code "print(1)"\nlibrary "Python" add', /Python library has not been added/);
+{
+  const seen = [];
+  const { output } = await run('library "Python" add\npython code "print(\'Hello from Python\')"', {
+    pythonExecutor: async (code) => { seen.push(code); }
+  });
+  assert.deepEqual(seen, ["print('Hello from Python')"]);
+  assert.deepEqual([...output], []);
+  ok('library "Python" add unlocks single-line python code "..."');
+}
+{
+  const seen = [];
+  await run(
+    'library "Python" add\n' +
+    'python code "-total = 1 + 2  # E++ words like say and Define mean nothing here\n' +
+    'for i in range(3):\n' +
+    '    print(i)\n' +
+    '"\n' +
+    'say "done"',
+    { pythonExecutor: async (code) => { seen.push(code); } }
+  );
+  assert.equal(seen.length, 1);
+  assert.ok(seen[0].startsWith('total = 1 + 2'));
+  assert.ok(seen[0].includes('for i in range(3):\n    print(i)\n'));
+  ok('dash mode passes the whole multi-line block through raw, with no E++ parsing');
+}
+await expectError('an unterminated Python block is an English LexError',
+  'library "Python" add\npython code "-print(1)\nprint(2)', /Python code block never ends/);
+await expectError('python code without quotes is an English ParseError',
+  'library "Python" add\npython code print(1)', /must be written inside double quotes/);
+await expectError('python without a connected runner is an English RuntimeError',
+  'library "Python" add\npython code "print(1)"', /no Python runner is connected/);
+{
+  let caught = null;
+  try {
+    await run('library "Python" add\npython code "print(missing)"', {
+      pythonExecutor: async () => { throw new Error("Traceback...\nNameError: name 'missing' is not defined"); }
+    });
+  } catch (e) { caught = e; }
+  assert.ok(caught, 'expected a Python error');
+  assert.match(caught.format(), /Python stopped with an error: NameError/);
+  assert.match(caught.format(), /Hint:/);
+  ok('Python failures become English RuntimeErrors with hints');
+}
+{
+  // Runtime gating even when the AST was built by hand (no parser).
+  const interpreter = new EPP.Interpreter({ output: () => {}, pythonExecutor: async () => {} });
+  const program = EPP.AST.Program([EPP.AST.PythonCode('print(1)', { line: 3, column: 1 })]);
+  await assert.rejects(() => interpreter.run(program), /Python library has not been added/);
+  ok('the runtime also refuses python code without the Python library');
 }
 
 console.log('Libraries');

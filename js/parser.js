@@ -8,19 +8,37 @@
  *   program        := statement*
  *   statement      := define | set | say | ask | wait | library
  *                   | if | repeat | while | stop | note
+ *                   | increase | decrease | python
  *   define         := "Define" <name> "as" <expression>
  *   set            := ("Set"|"Change") <name> "to" <expression>
  *   say            := ("say"|"display"|"show"|"print") <expression>
  *   ask            := "ask" <expression> "and save answer as" <name>
  *   wait           := "wait" <expression>
  *   library        := "library" <STRING> ("add"|"load"|"import")
+ *   increase       := "Increase" <name> "by" <expression>
+ *   decrease       := "Decrease" <name> "by" <expression>
+ *   python         := "python" "code" <STRING>                        [Python]
+ *                     (a STRING starting with "-" is a raw multi-line
+ *                      Python block, read by the lexer with no E++ parsing)
  *   if             := "if" <condition> "then" <statement>
  *                     ["otherwise" <statement>]                        (inline)
  *                   | "if" <condition> "then" NEWLINE statement*
  *                     ["otherwise" statement*] "end if"                 (block)
+ *                     — branches may chain without limit:
+ *                       "otherwise if" <condition> "then" ... , and a
+ *                       branch action may end with the word "and" to
+ *                       continue the chain on the next line:
+ *                         if <c> then <action> and
+ *                         otherwise if <c> then <action> and
+ *                         otherwise <action>
  *   repeat         := "repeat" <expression> "times" (statement | block "end repeat")
  *   while          := "while" <condition> "do" (statement | block "end while")
  *   condition      := <expression> [ ("is" ["not"] <comparison>) <expression> ]
+ *                     comparisons include "equal to", "greater than",
+ *                     "less than" / "lesser than", and the number tests
+ *                     "is a number" / "is not a number". Inside an
+ *                     otherwise-if chain, "not a number" on its own tests
+ *                     the value the first condition in the chain tested.
  *   expression     := additive [ "as" ("fraction"|"decimal") ]
  *   additive       := multiplicative (("plus"|"minus") multiplicative)*
  *   multiplicative := power (("times"|"divided by"|"percent of") power)*
@@ -155,10 +173,13 @@
       case 'while': return this.parseWhile();
       case 'stop': case 'break': this.advance(); return EPP.AST.Stop(t);
       case 'note': return this.parseNote();
+      case 'increase': return this.parseIncreaseDecrease(true);
+      case 'decrease': return this.parseIncreaseDecrease(false);
+      case 'python': return this.parsePython();
       default:
         throw new ParseError('I do not understand the statement starting with "' + t.value + '".',
           t.line, t.column,
-          'Statements start with Define, say, display, ask, if, repeat, while, wait or library "..." add.');
+          'Statements start with Define, say, display, ask, if, Increase, Decrease, repeat, while, wait, python code or library "..." add.');
     }
   };
 
@@ -218,6 +239,72 @@
     return EPP.AST.Wait(duration, kw);
   };
 
+  // Increase <variable> by <amount>  /  Decrease <variable> by <amount>
+  // The variable may be written as a plain name (Increase score by 1) or
+  // as a quoted reference (Increase 'score' by 1).
+  Parser.prototype.parseIncreaseDecrease = function (isIncrease) {
+    var kw = this.advance(); // Increase / Decrease
+    var word = isIncrease ? 'Increase' : 'Decrease';
+    var name;
+    if (this.current().type === 'VARIABLE') {
+      name = this.advance().value;
+    } else {
+      name = this.parseName('after "' + word + '", for example: ' + word + ' score by 1.');
+    }
+    if (!this.matchWord('by')) {
+      var t = this.current();
+      throw new ParseError(word + ' needs the word "by" before the amount, but found ' + this.describe(t) + '.',
+        t.line, t.column, 'Write it like this: ' + word + ' ' + name + ' by 1.');
+    }
+    if (this.isSeparator(this.current()) || this.atEnd()) {
+      var t2 = this.current();
+      throw new ParseError(word + ' ' + name + ' by needs an amount after "by".',
+        t2.line, t2.column, 'For example: ' + word + ' ' + name + ' by 1.');
+    }
+    var amount = this.parseExpression();
+    return isIncrease ? EPP.AST.Increase(name, amount, kw) : EPP.AST.Decrease(name, amount, kw);
+  }
+
+  // python code "<python>"  /  python code "-<raw python block>"   [Python]
+  Parser.prototype.parsePython = function () {
+    var kw = this.advance(); // python
+    // Python code may only run when the Python library has been added.
+    if (!this.loadedLibraries.Python) {
+      throw new LibraryError(
+        'You cannot run Python code yet, because the Python library has not been added.',
+        kw.line, kw.column,
+        'Add this line above your Python code: library "Python" add — then python code "..." will work.');
+    }
+    if (!this.matchWord('code')) {
+      var t0 = this.current();
+      throw new ParseError('Python statements start with the words "python code", but found ' + this.describe(t0) + ' after "python".',
+        t0.line, t0.column, 'Write it like this: python code "print(\'Hello\')"');
+    }
+    var token = this.current();
+    if (token.type !== 'STRING') {
+      throw new ParseError('The Python code must be written inside double quotes, but found ' + this.describe(token) + '.',
+        token.line, token.column,
+        'For one line: python code "print(1 plus 2)" — for several lines, start with a dash: python code "-print(1)" and close the quote at the end.');
+    }
+    this.advance();
+    var code = token.value;
+    var block = !!token.pythonBlock;
+    if (!block && code.charAt(0) === '-') {
+      // Single-line dash form (the lexer already used raw mode when it
+      // could see the python code context; handle any other dash string).
+      block = true;
+      code = code.slice(1);
+    }
+    if (!code.trim()) {
+      throw new ParseError(block && token.pythonBlock
+        ? 'This Python code block is empty — there is no Python code after the opening dash.'
+        : 'The Python code is empty — there is nothing between the quotes.',
+        token.line, token.column,
+        'Write some Python between the quotes, for example: python code "print(\'Hello\')"');
+    }
+    return EPP.AST.PythonCode(code, kw, block);
+  };
+
   Parser.prototype.parseLibrary = function () {
     var kw = this.advance(); // library
     var nameToken = this.current();
@@ -267,11 +354,31 @@
   Parser.prototype.parseBlock = function () {
     var body = [];
     this.skipSeparators();
-    while (!this.atEnd() && !this.isWord('end') && !this.isWord('otherwise')) {
+    while (!this.atEnd() && !this.isWord('end') && !this.isWord('otherwise') && !this.isChainConnectorAhead()) {
       body.push(this.parseStatement());
       this.skipSeparators();
     }
     return body;
+  };
+
+  /** True when the tokens ahead are an `and` chain connector: `and` then `otherwise`. */
+  Parser.prototype.isChainConnectorAhead = function () {
+    if (!this.isWord('and')) return false;
+    var i = this.pos + 1;
+    while (this.tokens[i] && this.isSeparator(this.tokens[i])) i += 1;
+    return this.isWord('otherwise', this.tokens[i]);
+  };
+
+  /**
+   * Consumes an `and` chain connector (`... <action> and` NEWLINE
+   * `otherwise ...`), leaving the parser on the `otherwise`. Returns false
+   * when there is no connector.
+   */
+  Parser.prototype.consumeChainConnector = function () {
+    if (!this.isChainConnectorAhead()) return false;
+    this.advance(); // and
+    this.skipSeparators();
+    return this.isWord('otherwise');
   };
 
   Parser.prototype.expectEnd = function (kind, openToken) {
@@ -286,32 +393,92 @@
     if (kind === 'if') this.matchWord('statement');
   };
 
+  /**
+   * Parses a condition for one branch of an if-chain. Inside a chain,
+   * `not a number` with nothing in front of it tests the same value the
+   * first condition in the chain tested (the natural way to check a typed
+   * answer), e.g.:
+   *   if 'age' is greater than 10 then ... otherwise if not a number then ...
+   */
+  Parser.prototype.parseBranchCondition = function (firstCondition) {
+    var t = this.current();
+    if (this.isWord('not') &&
+        this.isWord('a', this.peek(1)) &&
+        this.isWord('number', this.peek(2))) {
+      this.advance(); this.advance(); this.advance();
+      return EPP.AST.Condition('notNumber', firstCondition.left, null, t);
+    }
+    return this.parseCondition();
+  };
+
   Parser.prototype.parseIf = function () {
     var kw = this.advance(); // if
-    var condition = this.parseCondition();
+    var firstCondition = this.parseCondition();
+    var condition = firstCondition;
     var thenToken = this.expectWord('then', 'after the if condition.');
-    var thenPart = this.parseBranch(thenToken);
 
-    var elseBranch = [];
-    var elseWasBlock = false;
-    // `otherwise` may follow on the same line or on a later line.
+    // Parse the whole chain: if / (otherwise if)* / (otherwise)? — the
+    // branches may be mixed inline and block forms, in any number.
+    var branches = [];
+    var firstPart = this.parseBranch(thenToken);
+    var outerBlock = firstPart.block;
+    branches.push({ condition: condition, body: firstPart.body });
+
+    for (;;) {
+      // A branch action may end with `and` to continue the chain below.
+      var chained = this.consumeChainConnector();
+      if (!chained) {
+        var savedPos = this.pos;
+        this.skipSeparators();
+        if (!this.isWord('otherwise')) { this.pos = savedPos; break; }
+      }
+      var otherwiseToken = this.advance(); // otherwise
+
+      if (this.isWord('if')) {
+        this.advance(); // if
+        condition = this.parseBranchCondition(firstCondition);
+        thenToken = this.expectWord('then', 'after the otherwise-if condition.');
+        var nextPart = this.parseBranch(thenToken);
+        branches.push({ condition: condition, body: nextPart.body });
+        continue;
+      }
+
+      // Final `otherwise` branch (no condition).
+      var elsePart = this.parseBranch(otherwiseToken);
+      branches.push({ condition: null, body: elsePart.body });
+      break;
+    }
+
+    var thenBranch = branches[0].body;
+    var last = branches[branches.length - 1];
+    var elseBranch = last.condition === null && branches.length > 1 ? last.body : [];
+
+    if (outerBlock) {
+      // A block if must be closed with `end if` (also when one of its
+      // branches was written inline, e.g. `otherwise say "x"`).
+      this.expectEnd('if', kw);
+    } else {
+      this.consumeOptionalEndIf();
+    }
+    return EPP.AST.If(firstCondition, thenBranch, elseBranch, kw, branches);
+  };
+
+  /** Consumes a trailing `end if` when one is present; otherwise restores position. */
+  Parser.prototype.consumeOptionalEndIf = function () {
     var savedPos = this.pos;
     this.skipSeparators();
-    if (this.isWord('otherwise')) {
-      var otherwiseToken = this.advance();
-      var elsePart = this.parseBranch(otherwiseToken);
-      elseBranch = elsePart.body;
-      elseWasBlock = elsePart.block;
-    } else {
-      this.pos = savedPos;
+    if (this.isWord('end')) {
+      var after = this.peek(1);
+      if (after && after.type === 'WORD' && after.value.toLowerCase() !== 'if' &&
+          (after.value.toLowerCase() === 'repeat' || after.value.toLowerCase() === 'while')) {
+        this.pos = savedPos; // belongs to an enclosing repeat/while
+        return;
+      }
+      this.advance(); // end
+      this.matchWord('if');
+      return;
     }
-
-    if (thenPart.block) {
-      // A block if must be closed with `end if` (also when its otherwise
-      // part was written inline, e.g. `otherwise say "x"` before `end if`).
-      this.expectEnd('if', kw);
-    }
-    return EPP.AST.If(condition, thenPart.body, elseBranch, kw);
+    this.pos = savedPos;
   };
 
   Parser.prototype.parseRepeat = function () {
@@ -341,6 +508,17 @@
 
   // ---------- conditions ----------
   Parser.prototype.parseCondition = function () {
+    var t0 = this.current();
+    // `not a number` on its own has nothing to check here — it only makes
+    // sense inside an otherwise-if chain (handled by parseBranchCondition)
+    // or written in full as: if 'age' is not a number then ...
+    if (this.isWord('not') &&
+        this.isWord('a', this.peek(1)) &&
+        this.isWord('number', this.peek(2))) {
+      throw new ParseError('"not a number" needs a value to check, but nothing was written in front of it.',
+        t0.line, t0.column,
+        'Write it in full, for example: if \'age\' is not a number then say "Numbers only, please." — or use it in a chain after an if about the same value: otherwise if not a number then ...');
+    }
     var left = this.parseExpression();
     var t = this.current();
 
@@ -354,6 +532,17 @@
     }
     this.advance(); // is
     var negated = this.matchWord('not');
+
+    // is a number / is not a number / is number / is not number
+    if (this.isWord('a') || this.isWord('number')) {
+      this.matchWord('a');
+      if (!this.matchWord('number')) {
+        var tnum = this.current();
+        throw new ParseError('After "' + (negated ? 'is not a' : 'is a') + '" I expected the word "number", but found ' + this.describe(tnum) + '.',
+          tnum.line, tnum.column, 'Write it like this: if \'age\' is not a number then say "Numbers only, please."');
+      }
+      return EPP.AST.Condition(negated ? 'notNumber' : 'number', left, null, t);
+    }
 
     if (this.matchWord('equal')) {
       this.expectWord('to', 'in "is equal to".');
@@ -376,8 +565,8 @@
       var rg = this.parseExpression();
       return EPP.AST.Condition('greater', left, rg, t);
     }
-    if (this.matchWord('less')) {
-      this.expectWord('than', 'in "is less than".');
+    if (this.matchWord('less') || this.matchWord('lesser')) {
+      this.expectWord('than', 'in "is less than" (also written "is lesser than").');
       if (this.matchWord('or')) {
         this.expectWord('equal', 'in "or equal to".');
         this.expectWord('to', 'in "or equal to".');
@@ -388,7 +577,7 @@
       return EPP.AST.Condition('less', left, rl, t);
     }
     var bad = this.current();
-    throw new ParseError('After "is" I expected a comparison such as "equal to", "greater than" or "less than", but found ' +
+    throw new ParseError('After "is" I expected a comparison such as "equal to", "greater than", "lesser than" or "not a number", but found ' +
       this.describe(bad) + '.', bad.line, bad.column,
       'For example: if \'score\' is equal to 10 then say "Perfect".');
   };

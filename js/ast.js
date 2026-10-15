@@ -18,6 +18,9 @@
     WAIT: 'Wait',
     LIBRARY: 'Library',
     IF: 'If',
+    INCREASE: 'Increase',
+    DECREASE: 'Decrease',
+    PYTHON_CODE: 'PythonCode',
     REPEAT: 'Repeat',
     WHILE: 'While',
     STOP: 'Stop',
@@ -50,8 +53,27 @@
     Ask: function (prompt, name, token) { return at({ type: Type.ASK, prompt: prompt, name: name }, token); },
     Wait: function (duration, token) { return at({ type: Type.WAIT, duration: duration }, token); },
     Library: function (name, token) { return at({ type: Type.LIBRARY, name: name }, token); },
-    If: function (condition, thenBranch, elseBranch, token) {
-      return at({ type: Type.IF, condition: condition, thenBranch: thenBranch || [], elseBranch: elseBranch || [] }, token);
+    If: function (condition, thenBranch, elseBranch, token, branches) {
+      var node = {
+        type: Type.IF, condition: condition,
+        thenBranch: thenBranch || [], elseBranch: elseBranch || []
+      };
+      // `branches` is the full if / otherwise-if / otherwise chain:
+      // [{ condition, body }, ..., { condition: null, body }] where a null
+      // condition is the final `otherwise`. When it is not supplied it is
+      // derived from the classic condition/thenBranch/elseBranch fields,
+      // which are always kept in sync for older code.
+      node.branches = branches && branches.length ? branches : (
+        [{ condition: condition, body: node.thenBranch }].concat(
+          node.elseBranch.length ? [{ condition: null, body: node.elseBranch }] : []
+        )
+      );
+      return at(node, token);
+    },
+    Increase: function (name, amount, token) { return at({ type: Type.INCREASE, name: name, amount: amount }, token); },
+    Decrease: function (name, amount, token) { return at({ type: Type.DECREASE, name: name, amount: amount }, token); },
+    PythonCode: function (code, token, block) {
+      return at({ type: Type.PYTHON_CODE, code: code, block: !!block }, token);
     },
     Repeat: function (count, body, token) { return at({ type: Type.REPEAT, count: count, body: body || [] }, token); },
     While: function (condition, body, token) { return at({ type: Type.WHILE, condition: condition, body: body || [] }, token); },

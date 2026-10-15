@@ -99,6 +99,37 @@
         'say uppercase of "hello e++"\n' +
         'say lowercase of "LOUD NOISES"\n' +
         'say length of "How long am I?"\n'
+    },
+    {
+      name: 'score-tracker.eppl',
+      content:
+        'note: Increase and Decrease change a number variable.\n' +
+        'Define score as 10.\n' +
+        'Increase score by 5\n' +
+        'say \'score\'\n' +
+        'Decrease score by 3\n' +
+        'say \'score\'\n' +
+        '\n' +
+        'ask "Guess a number" and save answer as guess\n' +
+        'if guess is equal to 7 then say "That is the one!" and\n' +
+        'otherwise if not a number then say "That was not a number at all." and\n' +
+        'otherwise if guess is lesser than 7 then ask "Too low — try again" and save answer as guess and\n' +
+        'otherwise ask "Too high — try again" and save answer as guess\n'
+    },
+    {
+      name: 'python.eppl',
+      content:
+        'note: The Python library lets E++ run real Python code.\n' +
+        'note: Python only works after the library line below.\n' +
+        'library "Python" add\n' +
+        '\n' +
+        'python code "print(\'Hello from Python!\')"\n' +
+        '\n' +
+        'python code "-for number in range(3):\n' +
+        '    print(\'Counting in Python:\', number)\n' +
+        '"\n' +
+        '\n' +
+        'say "And now E++ is talking again."\n'
     }
   ];
 
@@ -533,6 +564,68 @@
     });
   }
 
+  // ------------------------------------------------------------------
+  // Python runner (for the Python library's `python code` statements).
+  // Real Python (Pyodide/WebAssembly) is downloaded lazily the first time
+  // a program actually runs Python — E++ itself never waits for it. Each
+  // Run gets a fresh Python namespace; Python's print() goes to the E++
+  // console, and Python errors are turned into plain English messages.
+  // ------------------------------------------------------------------
+  var PYTHON_CDN = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';
+  var pythonRuntimePromise = null;
+  var pythonNamespace = null;
+
+  function resetPythonRuntime() {
+    if (pythonNamespace && typeof pythonNamespace.destroy === 'function') {
+      try { pythonNamespace.destroy(); } catch (e) { /* already gone */ }
+    }
+    pythonNamespace = null;
+  }
+
+  function loadPythonScript() {
+    return new Promise(function (resolve, reject) {
+      if (window.loadPyodide) { resolve(); return; }
+      var script = document.createElement('script');
+      script.src = PYTHON_CDN + 'pyodide.js';
+      script.onload = function () { resolve(); };
+      script.onerror = function () {
+        reject(new Error('The Python runner could not be downloaded. Python needs an internet connection the first time it runs — check your connection and press Run again.'));
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  function getPythonRuntime() {
+    if (!pythonRuntimePromise) {
+      appendConsole('Loading the Python runner for the first time — this can take a few seconds…', 'system');
+      pythonRuntimePromise = loadPythonScript()
+        .then(function () { return window.loadPyodide({ indexURL: PYTHON_CDN }); })
+        .then(function (pyodide) {
+          appendConsole('Python is ready.', 'system');
+          return pyodide;
+        })
+        .catch(function (e) {
+          pythonRuntimePromise = null; // allow a retry on the next Run
+          throw e;
+        });
+    }
+    return pythonRuntimePromise;
+  }
+
+  async function executePython(code) {
+    var pyodide = await getPythonRuntime();
+    if (!pythonNamespace) pythonNamespace = pyodide.toPy({});
+    pyodide.setStdout({
+      batched: function (line) { appendConsole(line, 'output'); }
+    });
+    pyodide.setStderr({
+      batched: function (line) { appendConsole(line, 'error'); }
+    });
+    // Python errors are rethrown as-is here; the interpreter turns them
+    // into a friendly English RuntimeError with a hint.
+    await pyodide.runPythonAsync(code, { globals: pythonNamespace });
+  }
+
   function formatError(e) {
     if (e && typeof e.format === 'function') return e.format();
     return 'Error: ' + (e && e.message ? e.message : String(e));
@@ -548,6 +641,7 @@
     saveCurrent(false);
     loadedLibraries = [];
     updateLibrariesStatus();
+    resetPythonRuntime(); // every Run starts Python with a clean slate
     // On small screens, running a program takes you to its output.
     if (isSmallScreen()) setMobileView('console');
 
@@ -572,6 +666,7 @@
           }, step);
         });
       },
+      pythonExecutor: executePython,
       onLibrary: function (name) {
         loadedLibraries.push(name);
         updateLibrariesStatus();

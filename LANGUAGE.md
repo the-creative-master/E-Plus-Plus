@@ -47,6 +47,24 @@ Change an existing variable (extension, same idea):
 Set count to 'count' plus 1.
 ```
 
+### Increasing and decreasing
+
+```eppl
+Increase <variable> by <amount>
+Decrease <variable> by <amount>
+```
+
+```eppl
+Define score as 10.
+Increase score by 5
+Decrease score by 3
+```
+
+The variable may be written as a plain name or as `'name'`; the amount is
+any expression. The variable must already hold a number (a typed answer
+such as `"40"` counts) and the amount must be a number — otherwise you get
+an English `RuntimeError` explaining exactly which part is wrong.
+
 Using a variable that was never defined is a `RuntimeError` naming the
 variable, its line, and how to define it.
 
@@ -119,10 +137,53 @@ end if
 ```
 
 Comparisons: `is equal to`, `is not equal to`, `is different from`,
-`is greater than`, `is less than`, `is greater than or equal to`,
-`is less than or equal to`, and `equals`. Numbers compare numerically
-(typed answers included); otherwise values compare as text. A condition
-without a comparison tests truthiness (`if 'ready' then ...`).
+`is greater than`, `is lesser than` (also spelled `is less than`),
+`is greater than or equal to`, `is less than or equal to`, and `equals`.
+Numbers compare numerically (typed answers included); otherwise values
+compare as text. A condition without a comparison tests truthiness
+(`if 'ready' then ...`).
+
+### Multiple branches
+
+`otherwise if` chains may be as long as you like, in inline or block form;
+the first branch whose condition is true runs:
+
+```eppl
+if 'score' is greater than 90 then say "A" otherwise if 'score' is greater than 80 then say "B" otherwise say "Keep going"
+```
+
+### "and" chaining across lines
+
+A branch action may end with the word `and` to continue the chain on the
+next line:
+
+```eppl
+ask "Pick a number" and save answer as answer
+if answer is equal to 1 then say "One" and
+otherwise if not a number then say "Not a number" and
+otherwise say "Something else"
+```
+
+### Checking for a number
+
+`is not a number` (and `is a number`) test whether a value is numeric.
+Written in full it names its value; inside an otherwise-if chain, a bare
+`otherwise if not a number then ...` tests the same value the first
+condition in the chain tested — usually the last typed answer:
+
+```eppl
+if 'age' is not a number then say "Numbers only, please."
+```
+
+### Asking again
+
+Because an `otherwise` branch can be any statement, it can ask the same
+question again and overwrite the answer:
+
+```eppl
+ask "What is 5 plus 6?" and save answer as output
+if output is equal to 11 then say "Correct!" otherwise ask "What is 5 plus 6?" and save answer as output
+```
 
 ## 9. Loops (extensions)
 
@@ -174,6 +235,39 @@ Unlocks: `uppercase of <value>`, `lowercase of <value>`,
 Unlocks: `random number between <low> and <high>` — a whole number when
 both bounds are whole numbers, a decimal otherwise.
 
+### Python
+Unlocks: `python code`. Python code **cannot run without this library**:
+writing `python code "..."` before `library "Python" add` is an English
+`LibraryError` (checked while parsing and again while running) that tells
+you exactly which line to add.
+
+Single line:
+
+```eppl
+library "Python" add
+python code "print('Hello from Python')"
+```
+
+Multi-line "dash mode": when the quoted code begins with `-`, everything
+after the dash until the closing quote is raw Python — it may span lines
+and is never parsed as E++:
+
+```eppl
+python code "-for number in range(3):
+    print(number)
+"
+```
+
+In the IDE, Python really executes (via Pyodide/WebAssembly, downloaded
+the first time Python runs; an internet connection is needed for that
+first download). Each Run starts with a fresh Python namespace, Python's
+`print` writes to the E++ console, and Python errors are reported back as
+plain-English E++ errors with the Python problem and a hint. Programs run
+through the language core can supply their own runner with the
+`pythonExecutor` interpreter option; with no runner connected, Python
+statements fail with a clear English `RuntimeError` instead of doing
+nothing.
+
 ## 11. `.eppl` files
 
 `.eppl` is the E++ source file format: plain text containing E++ code, in
@@ -214,17 +308,28 @@ Hint: Add this near the top of your program: library "Math" add
 program        := statement*
 statement      := define | set | say | ask | wait | library
                 | if | repeat | while | stop | note
+                | increase | decrease | python
 define         := "Define" name "as" expression
 set            := ("Set"|"Change") name "to" expression
 say            := ("say"|"display"|"show"|"print") expression
 ask            := "ask" expression "and save answer as" name
 wait           := "wait" expression ["seconds"]
 library        := "library" STRING ("add"|"load"|"import")
-if             := "if" condition "then" (statement ["otherwise" statement]
-                | block ["otherwise" block] "end if")
+increase       := "Increase" name "by" expression
+decrease       := "Decrease" name "by" expression
+python         := "python" "code" STRING                        [Python]
+                  (STRING starting with "-" = raw multi-line Python)
+if             := "if" condition "then" branch
+                  ("otherwise if" condition "then" branch)*
+                  ["otherwise" branch] ["end if" when block form]
+                  (a branch action may end with "and" to continue
+                   the chain on the next line)
 repeat         := "repeat" expression "times" (statement | block "end repeat")
 while          := "while" condition ["do"] (statement | block "end while")
 condition      := expression [("is" ["not"] comparison | "equals") expression]
+                | expression "is" ["not"] ["a"] "number"
+                | "not a number"   (otherwise-if chains only: tests the
+                                    first condition's value)
 expression     := additive ["as" ("fraction"|"decimal")]
 additive       := multiplicative (("plus"|"minus") multiplicative)*
 multiplicative := power (("times"|"divided by"|"percent of") power)*

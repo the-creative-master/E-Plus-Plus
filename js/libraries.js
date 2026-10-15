@@ -49,6 +49,15 @@
         { feature: 'random number between ... and ...', kind: 'function' }
       ],
       example: 'library "Random" add\nsay random number between 1 and 6.'
+    },
+    Python: {
+      name: 'Python',
+      aliases: ['python', 'python3', 'py'],
+      description: 'Run real Python code from E++: python code "..." for one line, or python code "-..." for a multi-line block.',
+      unlocks: [
+        { feature: 'python code', kind: 'statement' }
+      ],
+      example: 'library "Python" add\npython code "print(\'Hello from Python\')"'
     }
   };
 

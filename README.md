@@ -56,6 +56,24 @@ npm test
   (`?v=`) so an updated IDE can never mix new markup with a stale
   stylesheet.
 
+## New language features
+
+- **Increase / Decrease** — `Increase score by 5` / `Decrease score by 3`
+  (plain or `'quoted'` variable, any expression as the amount, plain-English
+  errors for undefined or non-number values).
+- **Richer conditionals** — unlimited `otherwise if` chains, branch actions
+  continued across lines with a trailing `and`, `otherwise ask "..."`
+  asking again, `is greater than` / `is lesser than`, and number checks:
+  `if 'age' is not a number then ...`, or bare `otherwise if not a number
+  then ...` testing the value the chain is about.
+- **Python library** — `library "Python" add` unlocks `python code "..."`
+  (one line) and dash mode `python code "-..."` (a raw multi-line Python
+  block with no E++ parsing). Python refuses to run without the library —
+  at parse time and at run time — with a plain-English `LibraryError`
+  telling you the exact line to add. In the IDE, Python really executes
+  (Pyodide, loaded on first use); see `examples/python.eppl` and
+  `examples/score-tracker.eppl`.
+
 ## The E++ language in 60 seconds
 
 ```eppl

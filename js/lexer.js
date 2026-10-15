@@ -61,6 +61,14 @@
         continue;
       }
 
+      // Python dash mode: in `python code "-..."` everything after the
+      // dash up to the closing quote is raw Python (it may span lines and
+      // contain characters E++ itself would reject), so it is read as one
+      // raw string token with no E++ processing at all.
+      if (ch === '"' && src[this.index + 1] === '-' && this.isPythonCodeStringStart()) {
+        this.readPythonBlockString(); continue;
+      }
+
       if (ch === '"') { this.readString(); continue; }
       if (ch === "'") { this.readVariable(); continue; }
 
@@ -162,6 +170,58 @@
     this.tokens.push({
       type: TokenType.STRING, value: value, raw: src.slice(startIndex, this.index),
       line: startLine, column: startColumn, start: startIndex, end: this.index
+    });
+  };
+
+  /**
+   * True when the quote at the current position opens the code string of a
+   * `python code "..."` statement (the words `python code` immediately
+   * precede it, at a place where a statement can start).
+   */
+  Lexer.prototype.isPythonCodeStringStart = function () {
+    var n = this.tokens.length;
+    if (n < 2) return false;
+    var code = this.tokens[n - 1];
+    var python = this.tokens[n - 2];
+    if (code.type !== TokenType.WORD || code.value.toLowerCase() !== 'code') return false;
+    if (python.type !== TokenType.WORD || python.value.toLowerCase() !== 'python') return false;
+    if (n < 3) return true;
+    var before = this.tokens[n - 3];
+    if (before.type === TokenType.NEWLINE || before.type === TokenType.PERIOD || before.type === TokenType.SEMICOLON) return true;
+    if (before.type === TokenType.WORD) {
+      var w = before.value.toLowerCase();
+      return w === 'then' || w === 'otherwise' || w === 'do' || w === 'times' || w === 'and';
+    }
+    return false;
+  };
+
+  /**
+   * Reads `"-<raw python>"`: the dash is consumed, then every character
+   * (including newlines) is preserved exactly until the closing quote.
+   * The token value is the raw Python code without the leading dash.
+   */
+  Lexer.prototype.readPythonBlockString = function () {
+    var src = this.source;
+    var startLine = this.line, startColumn = this.column, startIndex = this.index;
+    this.advance('"');
+    this.advance('-');
+    var value = '';
+    var closed = false;
+    while (this.index < src.length) {
+      var ch = src[this.index];
+      if (ch === '"') { closed = true; this.advance(ch); break; }
+      value += ch;
+      this.advance(ch);
+    }
+    if (!closed) {
+      throw new LexError('The Python code block never ends. Its closing " is missing.',
+        startLine, startColumn,
+        'Close the Python code with a double quote, for example: python code "-print(1)" or a block ending with a " on its own line.');
+    }
+    this.tokens.push({
+      type: TokenType.STRING, value: value, raw: src.slice(startIndex, this.index),
+      line: startLine, column: startColumn, start: startIndex, end: this.index,
+      pythonBlock: true
     });
   };
 
