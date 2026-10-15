@@ -1,10 +1,13 @@
 /*
- * E++ .eppl file system.
+ * E++ .eppl and .eppla file system (Dev Build 4).
  *
- * Only the E++ IDE creates, loads, saves and interprets .eppl files.
+ * .eppl  is for files WITHOUT any libraries.
+ * .eppla is for files WITH libraries (ANY library).
+ *
+ * Only the E++ IDE creates, loads, saves and interprets .eppl and .eppla files.
  * Files live in the browser's localStorage so they survive reloads, and
- * any attempt to import, open or run a file that does not end in .eppl
- * is rejected with a FileError.
+ * any attempt to import, open or run a file that does not end in .eppl or .eppla
+ * is rejected with a handcrafted FileError.
  */
 (function (global) {
   'use strict';
@@ -31,23 +34,38 @@
   }
 
   function isEpplFile(name) {
-    return typeof name === 'string' && /\.eppl$/i.test(name.trim());
+    return typeof name === 'string' && /\.(eppl|eppla)$/i.test(name.trim());
+  }
+
+  function isEpplaFile(name) {
+    return typeof name === 'string' && /\.eppla$/i.test(name.trim());
+  }
+
+  function hasLibraryUsage(source) {
+    if (!source || typeof source !== 'string') return false;
+    if (/\b(?:add\s+library|library\s+["'][^"']+["']\s*(?:add|load|import))\b/i.test(source)) return true;
+    if (/\b(?:drawing\s+sprite|python\s+code)\b/i.test(source)) return true;
+    if (/\b(?:square\s+root\s+of|as\s+fraction|as\s+decimal|divided\s+by|power\s+of|percent\s+of)\b/i.test(source)) return true;
+    if (/\b(?:uppercase\s+of|lowercase\s+of|length\s+of|random\s+number\s+between)\b/i.test(source)) return true;
+    return false;
   }
 
   /**
-   * Normalises/validates a file name. A missing extension gets `.eppl`
-   * appended; any other extension is rejected — the IDE only handles .eppl.
+   * Normalises/validates a file name.
+   * .eppl  = without any libraries
+   * .eppla = with libraries
    */
-  function validateFileName(name) {
+  function validateFileName(name, content) {
     var clean = String(name === undefined || name === null ? '' : name).trim().replace(/\\/g, '/');
-    if (!clean) throw new FileError('A file needs a name.', null, null, 'For example: hello.eppl');
+    if (!clean) throw new FileError('A file needs a name.', null, null, 'For example: hello.eppl or math.eppla');
     if (clean.indexOf('/') !== -1) throw new FileError('File names cannot contain folders ("/").', null, null, 'Give the file a simple name such as quiz.eppl.');
-    if (/\.eppl$/i.test(clean)) return clean;
+    if (/\.(eppl|eppla)$/i.test(clean)) return clean;
     if (/\.[A-Za-z0-9]+$/.test(clean)) {
-      throw new FileError('The E++ IDE only works with .eppl files — "' + clean + '" has a different extension.',
-        null, null, 'Rename it so it ends in .eppl, for example: ' + clean.replace(/\.[^.]+$/, '') + '.eppl');
+      throw new FileError('The E++ IDE only works with .eppl and .eppla files — "' + clean + '" has an invalid extension.',
+        null, null, 'Use .eppl for files without libraries, or .eppla for files with libraries.');
     }
-    return clean + '.eppl';
+    var withLibs = content && hasLibraryUsage(content);
+    return clean + (withLibs ? '.eppla' : '.eppl');
   }
 
   function EpplFileStore(storage) {
@@ -86,13 +104,13 @@
   };
 
   EpplFileStore.prototype.createFile = function (name, content) {
-    var valid = validateFileName(name);
+    var valid = validateFileName(name, content);
     if (this.exists(valid)) throw new FileError('A file called "' + valid + '" already exists.', null, null, 'Pick a different name, or open the existing file.');
     return this.saveFile(valid, content === undefined ? '' : content, true);
   };
 
   EpplFileStore.prototype.saveFile = function (name, content, isNew) {
-    var valid = validateFileName(name);
+    var valid = validateFileName(name, content);
     var files = this.readAll();
     var now = new Date().toISOString();
     files[valid] = {
@@ -112,10 +130,10 @@
   };
 
   EpplFileStore.prototype.renameFile = function (oldName, newName) {
-    var valid = validateFileName(newName);
-    if (valid === oldName) return this.getFile(oldName);
-    if (this.exists(valid)) throw new FileError('A file called "' + valid + '" already exists.', null, null, 'Pick a different name.');
     var file = this.getFile(oldName);
+    var valid = validateFileName(newName, file.content);
+    if (valid === oldName) return file;
+    if (this.exists(valid)) throw new FileError('A file called "' + valid + '" already exists.', null, null, 'Pick a different name.');
     var files = this.readAll();
     delete files[oldName];
     files[valid] = { content: file.content, createdAt: file.createdAt, updatedAt: new Date().toISOString() };
@@ -138,18 +156,31 @@
     return true;
   };
 
-  /** Downloads the file as a real .eppl file (browser only). */
+  /**
+   * Downloads the file as a real .eppl or .eppla file (browser only).
+   * Uses application/octet-stream so browsers never append .txt.
+   */
   EpplFileStore.prototype.exportFile = function (name) {
-    var file = this.getFile(name); // validates existence; name came from the store
-    if (!isEpplFile(file.name)) throw new FileError('Only .eppl files can be exported.');
+    var file = this.getFile(name);
+    if (!isEpplFile(file.name)) throw new FileError('Only .eppl or .eppla files can be exported.');
     if (typeof document === 'undefined' || typeof URL === 'undefined' || !URL.createObjectURL) {
       throw new FileError('Exporting is only available inside the E++ IDE in a browser.');
     }
-    var blob = new Blob([file.content], { type: 'text/plain;charset=utf-8' });
+
+    var exportName = file.name;
+    var hasLibs = hasLibraryUsage(file.content);
+    if (hasLibs && /\.eppl$/i.test(exportName)) {
+      exportName = exportName.replace(/\.eppl$/i, '.eppla');
+    } else if (!hasLibs && /\.eppla$/i.test(exportName)) {
+      exportName = exportName.replace(/\.eppla$/i, '.eppl');
+    }
+
+    // application/octet-stream ensures the browser honors the exact file extension without appending .txt
+    var blob = new Blob([file.content], { type: 'application/octet-stream' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = file.name;
+    a.download = exportName;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -158,25 +189,25 @@
   };
 
   /**
-   * Imports a File object chosen/dropped by the user. Only .eppl files are
-   * accepted — anything else is rejected before its contents are even read.
+   * Imports a File object chosen/dropped by the user. Only .eppl and .eppla
+   * files are accepted — anything else is rejected.
    */
   EpplFileStore.prototype.importFile = function (file, options) {
     options = options || {};
     if (!file || !isEpplFile(file.name || '')) {
       return Promise.reject(new FileError(
-        'The E++ IDE only opens .eppl files' + (file && file.name ? ' — "' + file.name + '" is not one.' : '.'),
-        null, null, 'Choose a file whose name ends in .eppl.'));
+        'The E++ IDE only opens .eppl and .eppla files' + (file && file.name ? ' — "' + file.name + '" is not one.' : '.'),
+        null, null, 'Choose a file whose name ends in .eppl or .eppla.'));
     }
     var store = this;
     return Promise.resolve(file.text()).then(function (text) {
       var name = file.name.split('/').pop();
+      var ext = /\.eppla$/i.test(name) ? '.eppla' : '.eppl';
       if (store.exists(name) && !options.overwrite) {
-        // Keep both: import as "name (imported).eppl" style unique name.
-        var base = name.replace(/\.eppl$/i, '');
-        var candidate = base + ' (imported).eppl';
+        var base = name.replace(/\.(eppl|eppla)$/i, '');
+        var candidate = base + ' (imported)' + ext;
         var n = 2;
-        while (store.exists(candidate)) { candidate = base + ' (imported ' + n + ').eppl'; n += 1; }
+        while (store.exists(candidate)) { candidate = base + ' (imported ' + n + ')' + ext; n += 1; }
         name = candidate;
       }
       return store.saveFile(name, text, true);
@@ -186,17 +217,26 @@
   /** Import from raw text (used by tests and drag data). Validates the name. */
   EpplFileStore.prototype.importText = function (name, text) {
     if (!isEpplFile(name || '')) {
-      throw new FileError('The E++ IDE only opens .eppl files — "' + name + '" is not one.', null, null, 'Rename it so it ends in .eppl.');
+      throw new FileError('The E++ IDE only opens .eppl and .eppla files — "' + name + '" is not one.', null, null, 'Rename it so it ends in .eppl or .eppla.');
     }
     return this.saveFile(name, text, true);
   };
 
   EPP.EpplFileStore = EpplFileStore;
   EPP.isEpplFile = isEpplFile;
+  EPP.isEpplaFile = isEpplaFile;
+  EPP.hasLibraryUsage = hasLibraryUsage;
   EPP.validateEpplFileName = validateFileName;
   EPP.MemoryStorage = MemoryStorage;
 
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { EpplFileStore: EpplFileStore, isEpplFile: isEpplFile, validateFileName: validateFileName, MemoryStorage: MemoryStorage };
+    module.exports = {
+      EpplFileStore: EpplFileStore,
+      isEpplFile: isEpplFile,
+      isEpplaFile: isEpplaFile,
+      hasLibraryUsage: hasLibraryUsage,
+      validateFileName: validateFileName,
+      MemoryStorage: MemoryStorage
+    };
   }
 })(typeof window !== 'undefined' ? window : globalThis);

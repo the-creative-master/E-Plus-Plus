@@ -52,7 +52,7 @@
  *
  * Bare words that are not operators are read as a value: at runtime a bare
  * word resolves to the variable of that name if one exists, otherwise it is
- * literal text (so `Define name as Adonis.` stores the text Adonis).
+ * literal text (so `Define name as WeeklyHow.` stores the text WeeklyHow).
  *
  * Library gating: operators owned by a library (see libraries.js) raise a
  * LibraryError at parse time when the library has not been added earlier in
@@ -108,9 +108,9 @@
       i += 1;
       return ch;
     }
-    // If a `python code "-` sequence starts at position p, returns the
+    // If a `python code ",` or `python code "-` sequence starts at position p, returns the
     // index of its opening quote; otherwise returns -1.
-    function dashQuoteAt(p) {
+    function rawPythonQuoteAt(p) {
       if (source.slice(p, p + 6).toLowerCase() !== 'python') return -1;
       if (isWordChar(source[p - 1]) || isWordChar(source[p + 6])) return -1;
       var j = p + 6;
@@ -119,7 +119,7 @@
       if (isWordChar(source[j + 4])) return -1;
       j += 4;
       while (source[j] === ' ' || source[j] === '\t') j += 1;
-      return source[j] === '"' && source[j + 1] === '-' ? j : -1;
+      return (source[j] === '"' && (source[j + 1] === ',' || source[j + 1] === '-')) ? j : -1;
     }
 
     while (i < source.length) {
@@ -152,28 +152,26 @@
         state = 'comment'; copyChar(); continue;
       }
 
-      var quoteIndex = dashQuoteAt(i);
+      var quoteIndex = rawPythonQuoteAt(i);
       if (quoteIndex !== -1) {
         // Copy `python code ` up to the quote, remembering its position.
         while (i < quoteIndex) copyChar();
         var quoteLine = line, quoteColumn = column;
-        // Multi-line dash mode ends at the closing dash: the terminator
-        // is the two characters -" . The Python in between may contain
-        // anything at all — double quotes, E++ keywords, symbols — none
-        // of it is ever seen by E++. (A block with no closing dash falls
-        // back to ending at the next double quote, as before.)
-        var dashEnd = source.indexOf('-"', quoteIndex + 2);
-        var closeIndex = dashEnd === -1 ? source.indexOf('"', quoteIndex + 2) : dashEnd;
+        var modeChar = source[quoteIndex + 1]; // ',' (Humanizer) or '-' (legacy)
+        var terminatorStr = modeChar + '"';    // ',"' or '-"'
+        var delimEnd = source.indexOf(terminatorStr, quoteIndex + 2);
+        var closeIndex = delimEnd === -1 ? source.indexOf('"', quoteIndex + 2) : delimEnd;
         var unterminated = closeIndex === -1;
         var codeEnd = unterminated ? source.length : closeIndex;
-        var blockEnd = unterminated ? source.length : closeIndex + (dashEnd === -1 ? 1 : 2);
+        var blockEnd = unterminated ? source.length : closeIndex + (delimEnd === -1 ? 1 : 2);
         var code = source.slice(quoteIndex + 2, codeEnd);
         var segment = source.slice(quoteIndex, blockEnd);
         var newlines = 0;
         for (var k = 0; k < segment.length; k++) if (segment[k] === '\n') newlines += 1;
         blocks.push({
           start: quoteIndex, end: blockEnd, code: code,
-          line: quoteLine, column: quoteColumn, unterminated: unterminated
+          line: quoteLine, column: quoteColumn, unterminated: unterminated,
+          modeChar: modeChar
         });
         out += '"\u0001' + (blocks.length - 1) + '\u0001"';
         for (var n = 0; n < newlines; n++) out += '\n';
@@ -192,20 +190,22 @@
     return { source: out, blocks: blocks };
   }
 
-  function Parser(source) {
+  function Parser(source, options) {
     var Lexer = EPP.Lexer;
     var prepared = extractPythonBlocks(source);
     this.pythonBlocks = prepared.blocks;
     for (var b = 0; b < prepared.blocks.length; b++) {
       if (prepared.blocks[b].unterminated) {
-        throw new LexError('The Python code block never ends. Its closing " is missing.',
+        var term = prepared.blocks[b].modeChar === ',' ? ',"' : '"';
+        throw new LexError('The Python code block never ends. Its closing ' + term + ' is missing.',
           prepared.blocks[b].line, prepared.blocks[b].column,
-          'Close the Python code with a double quote — put a " on its own line at the end of the block, or close the quote at the end of the line.');
+          'Close the Python code with ' + term + ' at the end of the block.');
       }
     }
     this.tokens = new Lexer(prepared.source).tokenize().filter(function (t) { return t.type !== 'COMMENT'; });
     this.pos = 0;
     this.loadedLibraries = {}; // canonical name -> true, in source order
+    this.options = options || {};
   }
 
   // ---------- token helpers ----------
@@ -258,7 +258,7 @@
       throw new LibraryError(
         '"' + feature + '" belongs to the ' + owner + ' library, which has not been added yet.',
         token.line, token.column,
-        'Add this near the top of your program: library "' + owner + '" add'
+        'Add this near the top of your program: add library "' + owner + '"'
       );
     }
   };
@@ -288,10 +288,11 @@
       // A statement may also start with a value-less token error:
       throw new ParseError('Expected a statement but found ' + this.describe(t) + '.',
         t.line, t.column,
-        'Statements start with a word such as Define, say, ask, if, wait or library.');
+        'Statements start with a word such as Define, say, ask, if, wait, add library or python code.');
     }
     var word = t.value.toLowerCase();
     switch (word) {
+      case 'add': return this.parseAdd();
       case 'define': return this.parseDefine();
       case 'set': case 'change': return this.parseSet();
       case 'say': case 'display': case 'show': return this.parseSay();
@@ -301,7 +302,7 @@
         // only after the Python library has been added.
         throw new ParseError('\"' + t.value + '\" is Python, not E++, so E++ will not run it on its own.',
           t.line, t.column,
-          'To run Python, first add the Python library with: library \"Python\" add — then put the Python inside python code, like this: python code \"print(1)\". If you just want E++ to show something, use the word say.');
+          'To run Python, first add the Python library with: add library \"Python\" — then put the Python inside python code, like this: python code \"print(1)\". If you just want E++ to show something, use the word say.');
       case 'ask': return this.parseAsk();
       case 'wait': return this.parseWait();
       case 'library': return this.parseLibrary();
@@ -317,8 +318,41 @@
       default:
         throw new ParseError('I do not understand the statement starting with "' + t.value + '".',
           t.line, t.column,
-          'Statements start with Define, say, display, ask, if, Increase, Decrease, repeat, while, wait, python code or library "..." add.');
+          'Statements start with Define, say, display, ask, if, Increase, Decrease, repeat, while, wait, python code or add library "..."');
     }
+  };
+
+  Parser.prototype.parseAdd = function () {
+    var kw = this.advance(); // add
+    if (this.isWord('library')) {
+      this.advance(); // library
+      var nameToken = this.current();
+      if (nameToken.type !== 'STRING') {
+        throw new ParseError('A library name must be written in double quotes, for example: add library "Math".',
+          nameToken.line, nameToken.column, null);
+      }
+      this.advance();
+      if (this.options && this.options.fileName) {
+        var fname = this.options.fileName;
+        if (/\.eppl$/i.test(fname) && !/\.eppla$/i.test(fname)) {
+          throw new LibraryError(
+            'Files ending in .eppl cannot use libraries. In E++, .eppl is strictly for files WITHOUT libraries, and .eppla is for files WITH libraries.',
+            nameToken.line, nameToken.column,
+            'Rename this file to "' + fname.replace(/\.eppl$/i, '.eppla') + '" to use libraries.');
+        }
+      }
+      if (!EPP.Libraries || !EPP.Libraries.isKnown(nameToken.value)) {
+        var available = EPP.Libraries ? EPP.Libraries.names().join(', ') : 'Math';
+        throw new LibraryError('There is no library called "' + nameToken.value + '".',
+          nameToken.line, nameToken.column, 'Available libraries: ' + available + '.');
+      }
+      var canonical = EPP.Libraries.canonical(nameToken.value);
+      this.loadedLibraries[canonical] = true;
+      return EPP.AST.Library(canonical, kw);
+    }
+    var t = this.current();
+    throw new ParseError('Expected "library" after "add" but found ' + this.describe(t) + '.',
+      kw.line, kw.column, 'To add a library, write: add library "Math".');
   };
 
   Parser.prototype.parseName = function (context) {
@@ -357,7 +391,7 @@
     return EPP.AST.Define(name, value, kw);
   };
 
-  /** loopback to if — re-evaluates the nearest previous if (Dev Build 3). */
+  /** loopback to if — re-evaluates the nearest previous if (Dev Build 4). */
   Parser.prototype.parseLoopback = function () {
     var kw = this.advance(); // loopback
     if (!this.matchWord('to')) {
@@ -465,7 +499,7 @@
     return isIncrease ? EPP.AST.Increase(name, amount, kw) : EPP.AST.Decrease(name, amount, kw);
   }
 
-  // python code "<python>"  /  python code "-<raw python block>"   [Python]
+  // python code "<python>"  /  python code ",<raw python block>,"  [Python]
   Parser.prototype.parsePython = function () {
     var kw = this.advance(); // python
     // Python code may only run when the Python library has been added.
@@ -473,7 +507,7 @@
       throw new LibraryError(
         'You cannot run Python code yet, because the Python library has not been added.',
         kw.line, kw.column,
-        'Add this line above your Python code: library "Python" add — then python code "..." will work.');
+        'Add this line above your Python code: add library "Python" — then python code "..." will work.');
     }
     if (!this.matchWord('code')) {
       var t0 = this.current();
@@ -484,25 +518,25 @@
     if (token.type !== 'STRING') {
       throw new ParseError('The Python code must be written inside double quotes, but found ' + this.describe(token) + '.',
         token.line, token.column,
-        'For one line: python code "print(1 plus 2)" — for several lines, start with a dash: python code "-print(1)" and close the quote at the end.');
+        'For one line: python code "print(1 plus 2)" — for several lines, use commas: python code ",print(1)," and close the quote at the end.');
     }
     this.advance();
     var code = token.value;
     var block = false;
-    // Dash-mode blocks were extracted before lexing and arrive as a
+    // Comma-mode / Dash-mode blocks were extracted before lexing and arrive as a
     // placeholder string holding the block's index.
     var placeholder = /^\u0001(\d+)\u0001$/.exec(code);
     if (placeholder) {
       var stored = this.pythonBlocks[Number(placeholder[1])];
       code = stored ? stored.code : '';
       block = true;
-    } else if (code.charAt(0) === '-') {
+    } else if (code.charAt(0) === ',' || code.charAt(0) === '-') {
       block = true;
       code = code.slice(1);
     }
     if (!code.trim()) {
       throw new ParseError(block
-        ? 'This Python code block is empty — there is no Python code after the opening dash.'
+        ? 'This Python code block is empty — there is no Python code after the opening comma.'
         : 'The Python code is empty — there is nothing between the quotes.',
         token.line, token.column,
         'Write some Python between the quotes, for example: python code "print(\'Hello\')"');
@@ -514,14 +548,23 @@
     var kw = this.advance(); // library
     var nameToken = this.current();
     if (nameToken.type !== 'STRING') {
-      throw new ParseError('A library name must be written in double quotes, for example: library "Math" add.',
+      throw new ParseError('A library name must be written in double quotes, for example: add library "Math".',
         nameToken.line, nameToken.column, null);
     }
     this.advance();
+    if (this.options && this.options.fileName) {
+      var fname = this.options.fileName;
+      if (/\.eppl$/i.test(fname) && !/\.eppla$/i.test(fname)) {
+        throw new LibraryError(
+          'Files ending in .eppl cannot use libraries. In E++, .eppl is strictly for files WITHOUT libraries, and .eppla is for files WITH libraries.',
+          nameToken.line, nameToken.column,
+          'Rename this file to "' + fname.replace(/\.eppl$/i, '.eppla') + '" to use libraries.');
+      }
+    }
     if (!(this.matchWord('add') || this.matchWord('load') || this.matchWord('import'))) {
       var t = this.current();
-      throw new ParseError('Expected the word "add" after the library name but found ' + this.describe(t) + '.',
-        t.line, t.column, 'Write it like this: library "' + nameToken.value + '" add.');
+      throw new ParseError('Expected the word "add" after the library name, or use: add library "' + nameToken.value + '".',
+        t.line, t.column, 'Write it like this: add library "' + nameToken.value + '".');
     }
     if (!EPP.Libraries || !EPP.Libraries.isKnown(nameToken.value)) {
       var available = EPP.Libraries ? EPP.Libraries.names().join(', ') : 'Math';
@@ -926,7 +969,7 @@
       'Values can be "text in quotes", \'a variable\', a number, or maths such as 1 plus 1.');
   };
 
-  Parser.parse = function (source) { return new Parser(source).parse(); };
+  Parser.parse = function (source, options) { return new Parser(source, options).parse(); };
 
   EPP.Parser = Parser;
   EPP.extractPythonBlocks = extractPythonBlocks;

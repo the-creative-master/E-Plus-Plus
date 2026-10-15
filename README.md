@@ -1,175 +1,91 @@
-# E++ and the E++ IDE
+# E++ and the E++ IDE (Dev Build 4)
 
 **E++ looks like English, reads like English, and behaves like code.**
 
+> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 4 humanizes the language into something genuinely fun, accessible, and English-like.
+
 E++ is a complete programming language implemented from scratch in this
-repository — lexer, parser, AST, interpreter, runtime, library system and
+repository — lexer, parser, AST, interpreter, runtime, library system, Python runner, and
 error system — together with a complete online IDE in which the language
-runs. The IDE is the only program that interprets `.eppl` files: it creates,
-loads, saves, imports, exports and runs them, all locally in your browser.
+runs.
 
-## Run the IDE instantly
+## What's New in Dev Build 4 (Project Humanizer)
 
-Just open the website
+1. **Pure `.eppl` vs Extended `.eppla` Files**:
+   - **`.eppl`** is strictly for files **WITHOUT** any libraries.
+   - **`.eppla`** is for files **WITH** libraries (ANY library: Math, Random, Text, Draw, Python).
+   - Exporting now uses raw binary octet streams so files never save as `.eppl.txt`.
+2. **Project Humanizer Syntax**:
+   - Use `add library "Name"` (e.g. `add library "Math"`).
+   - Non-English punctuation removed: multi-line Python uses commas `", ... ,"` instead of dashes `"- ... -"`.
+3. **Lexer-Based Python Runner & Native Error Codes**:
+   - Python code runs directly in pure JavaScript via our lexer-based Python runner — Pyodide and WebAssembly are no longer used!
+   - Real Python error codes: errors in Python code report Python's OWN error codes directly (`NameError`, `ZeroDivisionError`, `SyntaxError`, `IndentationError`, `TypeError`), rather than generic translations.
+4. **Direct File Deletion in File Explorer**:
+   - You can now delete any file directly from the sidebar files menu with the inline delete button (`✕`), without having to open the file first.
+5. **Standalone Portable Runtime (`E++.zip`)**:
+   - A dedicated **E++.zip** button downloads the standalone E++ runtime as a single-file portable IDE inside a zip archive.
+   - Run pure `.eppl` code offline anywhere (libraries are not supported in `E++.zip`).
+   - Manual save feature: type `save project as <name>.eppl` into the command bar to save your file.
+6. **Interactive Guided Tutorial**:
+   - Click the **Tutorial** button to access a 6-step interactive guide with live code you can inject directly into the editor and run.
+7. **Dashboard Overhaul**:
+   - Modernized status banner showing active file, project mode (`.eppl` pure vs `.eppla` extended), loaded libraries, lines of code, and quick library insert buttons.
 
 ## What's in the IDE
 
 - **Code editor** — textarea-based editor with live, lexer-driven syntax
   highlighting, line numbers, tab support and cursor position tracking.
-- **Run / Stop** — `Ctrl+Enter` runs the open `.eppl` file; long programs
+- **Run / Stop** — `Ctrl+Enter` runs the open file; long programs
   and `wait` statements can be stopped at any time. `Ctrl+S` saves.
 - **Console** — program output, loaded-library notices, interactive input
-  for `ask`, and friendly errors with line/column and a “how to fix it” hint.
-- **File explorer** — create, open, rename, delete and search `.eppl` files.
-  Files are stored locally in the browser (`localStorage`) and auto-save as
-  you type.
-- **Import / Export** — download the current file as a real `.eppl` file, or
-  import `.eppl` files by choosing or drag-and-dropping them. Anything that
-  does not end in `.eppl` is rejected — only this IDE interprets `.eppl`.
-- **Bundled examples** — `hello.eppl`, `math.eppl`, `quiz.eppl`,
-  `countdown.eppl`, `calculator.eppl`, `guessing-game.eppl` and
-  `text-tools.eppl` are seeded on first launch (and kept in `/examples`).
-- **Small screens** — at 900px and below the IDE switches to an app-style
-  layout: **Files / Code / Console** tabs show one full-height panel at a
-  time (panel visibility is enforced in JS as well as CSS, so panels can
-  never overlap; the IDE fits `100dvh` and each panel scrolls internally).
-  The header compacts to brand + Run on one row with Save/Export/Import in
-  a slim row beneath (a single row in short landscape), opening a file
-  jumps to Code, running jumps to Console (with a badge for new output),
-  and controls/inputs use touch-sized 16px text so mobile browsers don't
-  auto-zoom. Narrower breakpoints (560px/380px) further compact the status
-  bar, file list and editor chrome. Stylesheets/scripts are cache-busted
-  (`?v=`) so an updated IDE can never mix new markup with a stale
-  stylesheet.
+  for `ask`, and friendly handcrafted errors with line/column and hints.
+- **File explorer** — create, open, rename, delete (directly from list) and search `.eppl` / `.eppla` files.
+  Files are stored locally in the browser (`localStorage`) and auto-save as you type.
+- **Import / Export** — download the current file as `.eppl` or `.eppla` without `.txt` being appended.
+- **E++.zip** — download the standalone E++ engine.
+- **Tutorial** — interactive lessons teaching variables, math, conditions, libraries, and Python.
+- **Bundled examples** — `hello.eppl`, `calculator.eppl`, `countdown.eppl`, `quiz.eppl`, `score-tracker.eppl`, `math.eppla`, `guessing-game.eppla`, `text-tools.eppla`, `python.eppla`, `drawing.eppla`.
 
-## New language features
-
-- **Increase / Decrease** — `Increase score by 5` / `Decrease score by 3`
-  (plain or `'quoted'` variable, any expression as the amount, plain-English
-  errors for undefined or non-number values).
-- **Richer conditionals** — unlimited `otherwise if` chains, branch actions
-  continued across lines with a trailing `and`, `otherwise ask "..."`
-  asking again, `is greater than` / `is lesser than`, and number checks:
-  `if 'age' is not a number then ...`, or bare `otherwise if not a number
-  then ...` testing the value the chain is about.
-- **Python library** — `library "Python" add` unlocks `python code "..."`
-  (one line) and dash mode `python code "-..."` (a raw multi-line Python
-  block with no E++ parsing, lifted out by the parser before lexing).
-  Python refuses to run without the library — at parse time, at run time,
-  and in the IDE host itself — with a plain-English `LibraryError` telling
-  you the exact line to add. In the IDE, Python really executes (Pyodide,
-  **bundled with the IDE** in `vendor/pyodide` — no CDN, no internet
-  needed), and Python's own error text is never shown: you get the IDE's
-  plain-English explanation instead. Bare Python such as `print("Hello")`
-  typed as an E++ statement is refused in English — it is not an E++
-  printing command. See `examples/python.eppl` and
-  `examples/score-tracker.eppl`.
-
-## Dev Build 3
-
-- **Quoted variables** — every variable reference must be written inside
-  single quotes (`'x'`); a bare variable name is a plain-English error.
-- **If blocks** use `then`; multi-line if actions continue with `and`.
-- **Loopback** — `loopback to if` re-evaluates the nearest previous if;
-  it only triggers when that if's condition is true at that moment, and
-  is ignored when it is false.
-- **Python isolation** — Python only runs inside `python code "..."`
-  (one line) or `python code "- ... -"` (multiple lines; the closing
-  dash means the Python may contain double quotes and anything else,
-  all exempt from E++ rules). Python anywhere else is invalid.
-- **Draw library** — `define 'hero' as drawing sprite`, then
-  `'hero' move up "10"` / `down` / `left` / `right` (pixels always a
-  quoted string). Sprites move on a canvas in the IDE;
-  see `examples/drawing.eppl`.
-
-## The E++ language in 60 seconds
+## The E++ Language in 60 Seconds
 
 ```eppl
 note: Statements end with a period or a newline.
-Define name as Adonis.
+Define name as WeeklyHow.
 say "Hello " plus 'name' plus "!"
 
 ask "What is 5 plus 6?" and save answer as output
-if output is equal to 11 then say "Correct!" otherwise say "Wrong!"
+if 'output' is equal to 11 then say "Correct!" otherwise say "Wrong!"
 
-library "Math" add
+note: Files with libraries must be saved as .eppla
+add library "Math"
 display 1 divided by 2 as fraction
 ```
 
 - `"text in double quotes"` is printed literally.
-- `'name'` in single quotes means “the variable called name”.
+- `'name'` in single quotes means “the variable called name”. Bare variable names are errors.
 - Bare words and numbers are maths or keywords: `say 1 plus 1` → `2`, while
   `say "1 plus 1"` prints the text.
-- A bare word must mean something: it is the variable of that name (like
-  `output` above). Anywhere a value is used, a bare word that is **not** a
-  defined variable is an English error — `say hello` explains the problem
-  and suggests `say "hello"`. The one exception is the value in
-  `Define`/`Set`, where bare words are the literal value, so
-  `Define name as Adonis.` stores `Adonis`.
+- Change variables with `Set count to 'count' plus 1.` or `Increase score by 5`.
+- Loop with `repeat 3 times ... end repeat` or `loopback to if`.
 
-The full language reference — grammar, operators, conditionals, loops,
-libraries, the `.eppl` file format and the exact semantics of every feature,
-including how the overlapping points in the original spec were resolved —
-is in **[LANGUAGE.md](LANGUAGE.md)**.
-
-## Project structure
+## Project Structure
 
 ```
-index.html            The IDE (markup)
-css/ide.css           The IDE (styles)
+index.html                  The IDE (markup & dashboard)
+css/ide.css                 The IDE (styles)
 js/
-  errors.js           EppError + LexError / ParseError / RuntimeError /
-                      LibraryError / FileError (message, line, column, hint)
-  lexer.js            Generic tokenizer (pure JavaScript, no knowledge of
-                      any library): strings, 'variables', numbers, bare
-                      words, statement-ending periods & newlines, comments
-  ast.js              AST node definitions + tree walker
-  libraries.js        Library registry (Math, Text, Random): what each
-                      library unlocks, aliases, grammar ownership
-  parser.js           Recursive-descent parser; builds the AST; enforces
-                      library gating while parsing; extracts dash-mode
-                      Python blocks before lexing (the lexer never sees
-                      them and never knows Python exists)
-  interpreter.js      Async runtime: variables, Fraction arithmetic, say,
-                      ask, wait, conditionals, repeat/while loops, and
-                      runtime library checks. I/O is injected.
-  files.js            .eppl file store: localStorage persistence, create /
-                      save / load / rename / delete / import / export,
-                      .eppl-only validation
-  highlight.js        Syntax highlighting built on the real lexer
-  ide.js              IDE app: editor, explorer, console I/O, execution
-                      engine wiring, shortcuts, drag & drop
-examples/*.eppl       The bundled example programs as standalone files
-tests/run-tests.mjs   Headless test-suite for the whole language core
+  errors.js                 EppError + LexError / ParseError / RuntimeError / LibraryError / FileError
+  lexer.js                  Generic tokenizer (pure JavaScript)
+  ast.js                    AST node definitions + tree walker
+  libraries.js              Library registry (Math, Text, Random, Python, Draw)
+  parser.js                 Parser with Humanizer syntax (add library, comma Python blocks, .eppl vs .eppla)
+  python-runner.js          Pure JS Python lexer & interpreter (native Python error codes, no Pyodide)
+  interpreter.js            Interpreter & execution engine
+  files.js                  .eppl (pure) and .eppla (libraries) file store with octet-stream export
+  highlight.js              Syntax highlighting built on the real lexer
+  standalone-generator.js   Generates self-contained standalone index.html & E++.zip archive
+  ide.js                    IDE app controller, file explorer, tutorial, dashboard
+examples/                   Bundled example programs (.eppl and .eppla)
+tests/run-tests.mjs         Test suite for language core, files, Python, and E++.zip
 ```
-
-## How execution works
-
-```
-.eppl source ─▶ Lexer ─▶ tokens ─▶ Parser ─▶ AST ─▶ Interpreter ─▶ console
-```
-
-1. The **lexer** produces tokens with exact source positions.
-2. The **parser** builds an AST and, because libraries extend the grammar,
-   rejects library features used before their `library "..." add` line.
-3. The **interpreter** walks the AST asynchronously so `ask` can wait for
-   typed input and `wait` can really wait; the **runtime** double-checks
-   library access, guards against runaway loops, and reports errors with
-   the statement's line and column.
-
-The language core (`errors`, `lexer`, `ast`, `libraries`, `parser`,
-`interpreter`) is environment-agnostic: the same files that run in the
-browser are loaded headlessly by the Node test-suite.
-
-## Design decisions (where the spec overlaps)
-
-The specification lists `divided by` and `power of` both under general
-maths and under the Math library's unlocks. E++ follows the Math-library
-section: those operators (with `as fraction`, `as decimal`, `percent of`
-and `square root of`) are unlocked by `library "Math" add`, and using them
-earlier produces a `LibraryError` that tells you exactly what to add.
-Basic `plus`, `minus` and `times` always work. A few natural English
-extensions round out the language (`Set … to …`, block `if … end if`,
-`repeat … times`, `while … do`, `note:` comments, and the Text and Random
-libraries); each is documented in LANGUAGE.md and none changes any
-specified behaviour.

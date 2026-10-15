@@ -1,7 +1,7 @@
 /*
  * E++ library system.
  *
- * `library "<Name>" add` loads a library and extends the grammar: features
+ * `add library "<Name>"` loads a library and extends the grammar: features
  * owned by a library cannot be used until that library has been added.
  * The parser consults this registry while parsing, and the interpreter
  * consults it again while running, so programs must add a library before
@@ -28,7 +28,7 @@
         { feature: 'percent of', kind: 'operator' },
         { feature: 'square root of', kind: 'operator' }
       ],
-      example: 'library "Math" add\ndisplay 1 divided by 2 as fraction.'
+      example: 'add library "Math"\ndisplay 1 divided by 2 as fraction.'
     },
     Text: {
       name: 'Text',
@@ -39,7 +39,7 @@
         { feature: 'lowercase of', kind: 'function' },
         { feature: 'length of', kind: 'function' }
       ],
-      example: 'library "Text" add\nsay uppercase of "hello".'
+      example: 'add library "Text"\nsay uppercase of "hello".'
     },
     Random: {
       name: 'Random',
@@ -48,18 +48,18 @@
       unlocks: [
         { feature: 'random number between ... and ...', kind: 'function' }
       ],
-      example: 'library "Random" add\nsay random number between 1 and 6.'
+      example: 'add library "Random"\nsay random number between 1 and 6.'
     },
     Python: {
       name: 'Python',
-      // No short aliases on purpose: only library "Python" add unlocks
+      // No short aliases on purpose: only add library "Python" unlocks
       // Python code. (Letter case does not matter, as with all libraries.)
       aliases: [],
-      description: 'Run real Python code from E++: python code "..." for one line, or python code "-..." for a multi-line block.',
+      description: 'Run real Python code from E++: python code "..." for one line, or python code ",...," for a multi-line block.',
       unlocks: [
         { feature: 'python code', kind: 'statement' }
       ],
-      example: 'library "Python" add\npython code "print(\'Hello from Python\')"'
+      example: 'add library "Python"\npython code "print(\'Hello from Python\')"'
     },
     Draw: {
       name: 'Draw',

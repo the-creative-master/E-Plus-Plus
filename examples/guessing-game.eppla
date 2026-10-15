@@ -1,5 +1,5 @@
 note: The Random library adds random numbers.
-library "Random" add
+add library "Random"
 
 Define secret as random number between 1 and 10.
 ask "I am thinking of a number between 1 and 10. Your guess?" and save answer as guess
