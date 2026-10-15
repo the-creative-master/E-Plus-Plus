@@ -230,6 +230,21 @@
             '    print(\'Python count:\', i)\n' +
             ',"\n\n' +
             'say "Back to plain English in E++!"'
+    },
+    {
+      title: '7. Image Library',
+      badge: 'Images',
+      summary: 'The Image library lets you work with Base64-encoded images. Define images, check if they exist, and display them in the console!',
+      explanation: 'Images use Base64 encoding (a way to store images as text). The library auto-detects PNG, JPEG, GIF, and WebP formats. Use "define", "check if", and "display image" commands.',
+      code: 'note: Image Library Example (Dev Build 5)\n' +
+            'note: This tiny PNG is a 1x1 red pixel\n\n' +
+            'add library "Image"\n\n' +
+            'define \'red_pixel\' as image "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="\n\n' +
+            'check if \'red_pixel\' exists\n\n' +
+            'display image \'red_pixel\'\n\n' +
+            'note: Check for an image that doesn\'t exist\n' +
+            'check if \'nonexistent\' exists\n\n' +
+            'say "Image library works!"'
     }
   ];
 
