@@ -1,5 +1,5 @@
 /*
- * E++ IDE application (Dev Build 4).
+ * E++ IDE application (Dev Build 5).
  *
  * Project Humanizer:
  * - Pure .eppl files (no libraries) vs .eppla files (with libraries).
@@ -23,7 +23,7 @@
     {
       name: 'hello.eppl',
       content:
-        'note: Your first E++ program (Dev Build 4).\n' +
+        'note: Your first E++ program (Dev Build 5).\n' +
         'note: Based on WeeklyHow\'s AI programming language video.\n' +
         'Define name as WeeklyHow.\n' +
         'say "Hello " plus \'name\' plus "!"\n' +
@@ -162,11 +162,11 @@
   // ------------------------------------------------------------------
   var TUTORIAL_LESSONS = [
     {
-      title: '1. Welcome to E++ (Dev Build 4)',
+      title: '1. Welcome to E++ (Dev Build 5)',
       badge: 'Basics',
       summary: 'E++ is an English-like language based on WeeklyHow’s AI video, where AI was asked to create a coding language that reads like human language.',
       explanation: 'Statements in E++ end with a period (.) or a newline. Comments start with "note:". Words like "say" print text to the console.',
-      code: 'note: Welcome to E++ Dev Build 4!\n' +
+      code: 'note: Welcome to E++ Dev Build 5!\n' +
             'note: Inspired by WeeklyHow\'s AI video.\n' +
             'say "Hello, world!"\n' +
             'say "E++ looks like English, reads like English, and behaves like code."'
@@ -966,6 +966,41 @@
       },
       pythonExecutor: executePython,
       onSprite: handleSprite,
+      onImageDisplay: function (info) {
+        // Dev Build 5: render Base64 image as an actual <img> in the console.
+        // The source may be a raw base64 string or a full data-URI.
+        var src = info.source;
+        if (src && !/^data:/i.test(src)) {
+          // Try to detect the image type from the base64 prefix.
+          // PNG starts with iVBOR, JPEG with /9j=, GIF with R0lGOD, WebP with UklGR
+          var prefix = src.slice(0, 8);
+          var mime = 'image/png'; // default
+          if (/^\/9j=/i.test(src)) mime = 'image/jpeg';
+          else if (/^R0lGOD/i.test(src)) mime = 'image/gif';
+          else if (/^UklGR/i.test(src)) mime = 'image/webp';
+          else if (/^iVBOR/i.test(src)) mime = 'image/png';
+          src = 'data:' + mime + ';base64,' + src;
+        }
+        var line = document.createElement('div');
+        line.className = 'console-line output';
+        var label = document.createElement('span');
+        label.textContent = '[Image: ' + info.name + '] ';
+        line.appendChild(label);
+        var img = document.createElement('img');
+        img.src = src;
+        img.alt = info.name;
+        img.style.maxWidth = '300px';
+        img.style.maxHeight = '300px';
+        img.style.borderRadius = '4px';
+        img.style.display = 'block';
+        img.style.marginTop = '4px';
+        img.onerror = function () {
+          line.appendChild(document.createTextNode(' (could not decode image — invalid Base64 data)'));
+        };
+        line.appendChild(img);
+        consoleOutput.appendChild(line);
+        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+      },
       onLibrary: function (name) {
         loadedLibraries.push(name);
         updateLibrariesStatus();
@@ -1034,6 +1069,6 @@
   var initial = files.some(function (f) { return f.name === 'hello.eppl'; }) ? 'hello.eppl' : (files[0] && files[0].name);
   if (initial) openFile(initial);
   else refreshEditor();
-  appendConsole('You are running E++ Dev Build 4. Open a .eppl or .eppla file on the left and press Run.', 'system');
+  appendConsole('You are running E++ Dev Build 5. Open a .eppl or .eppla file on the left and press Run.', 'system');
   updateDashboard();
 })();

@@ -376,4 +376,350 @@ console.log('Syntax highlighting');
   ok('lexer-driven highlighting emits token classes');
 }
 
+// ============================================================
+// Dev Build 5 Tests
+// ============================================================
+
+console.log('Dev Build 5: Core Logic — contains (no library needed)');
+{
+  const { output } = await run(
+    'Define greeting as "Hello World"\n' +
+    'if \'greeting\' contains "Hello" then say "yes1" otherwise say "no1"\n' +
+    'if \'greeting\' contains "World" then say "yes2" otherwise say "no2"\n' +
+    'if \'greeting\' contains "xyz" then say "yes3" otherwise say "no3"'
+  );
+  assert.deepEqual([...output], ['yes1', 'yes2', 'no3']);
+  ok('contains works for string substring matching');
+}
+{
+  const { output } = await run(
+    'Define x as 42\n' +
+    'if \'x\' contains "4" then say "found" otherwise say "not found"'
+  );
+  assert.deepEqual([...output], ['found']);
+  ok('contains works on numeric values (converts to string)');
+}
+{
+  const { output } = await run(
+    'ask "Enter text:" and save answer as msg\n' +
+    'if \'msg\' contains "hello" then say "greeted" otherwise say "silent"',
+    { answers: ['say hello please'] }
+  );
+  assert.deepEqual([...output], ['greeted']);
+  ok('contains works with ask answers');
+}
+{
+  const { output } = await run(
+    'repeat 3 times\n' +
+    '  Define word as "abcdef"\n' +
+    '  if \'word\' contains "cd" then say "inner-yes" otherwise say "inner-no"\n' +
+    'end repeat'
+  );
+  assert.deepEqual([...output], ['inner-yes', 'inner-yes', 'inner-yes']);
+  ok('contains works inside loops');
+}
+{
+  const { output } = await run(
+    'Define text as "Hello"\n' +
+    'Set \'text\' to "Goodbye"\n' +
+    'if \'text\' contains "bye" then say "changed" otherwise say "same"'
+  );
+  assert.deepEqual([...output], ['changed']);
+  ok('contains works with Set using quoted variable names');
+}
+
+console.log('Dev Build 5: Math Logic — positive/negative (requires Math library)');
+{
+  const { output } = await run(
+    'add library "Math"\n' +
+    'Define x as 5\n' +
+    'if \'x\' is a positive number then say "pos" otherwise say "not-pos"\n' +
+    'Define y as 0 minus 3\n' +
+    'if \'y\' is a negative number then say "neg" otherwise say "not-neg"\n' +
+    'Define z as 0\n' +
+    'if \'z\' is a positive number then say "zero-pos" otherwise say "zero-not-pos"\n' +
+    'if \'z\' is a negative number then say "zero-neg" otherwise say "zero-not-neg"'
+  );
+  assert.deepEqual([...output], ['pos', 'neg', 'zero-not-pos', 'zero-not-neg']);
+  ok('is a positive/negative number (zero is neither)');
+}
+{
+  const { output } = await run(
+    'add library "Math"\n' +
+    'Define x as 0 minus 5\n' +
+    'if \'x\' is not a positive number then say "correct" otherwise say "wrong"\n' +
+    'Define y as 3\n' +
+    'if \'y\' is not a negative number then say "correct" otherwise say "wrong"'
+  );
+  assert.deepEqual([...output], ['correct', 'correct']);
+  ok('is not a positive/negative number (negation works)');
+}
+await expectError('positive number check requires Math library',
+  'Define x as 5\nif \'x\' is a positive number then say "yes"',
+  /belongs to the Math library/);
+await expectError('negative number check requires Math library',
+  'Define x as 0 minus 1\nif \'x\' is a negative number then say "yes"',
+  /belongs to the Math library/);
+{
+  const { output } = await run(
+    'add library "Math"\n' +
+    'Define x as "hello"\n' +
+    'if \'x\' is a positive number then say "pos" otherwise say "not-pos"\n' +
+    'if \'x\' is not a positive number then say "correct" otherwise say "wrong"'
+  );
+  assert.deepEqual([...output], ['not-pos', 'correct']);
+  ok('non-numeric values are "not a positive number" and "not a negative number"');
+}
+
+console.log('Dev Build 5: Math Logic — range (requires Math library)');
+{
+  const { output } = await run(
+    'add library "Math"\n' +
+    'Define x as 5\n' +
+    'if \'x\' is in the range of 1 to 10 then say "in" otherwise say "out"\n' +
+    'Define y as 15\n' +
+    'if \'y\' is in the range of 1 to 10 then say "in" otherwise say "out"\n' +
+    'Define z as 1\n' +
+    'if \'z\' is in the range of 1 to 10 then say "boundary-low" otherwise say "out"\n' +
+    'Define w as 10\n' +
+    'if \'w\' is in the range of 1 to 10 then say "boundary-high" otherwise say "out"'
+  );
+  assert.deepEqual([...output], ['in', 'out', 'boundary-low', 'boundary-high']);
+  ok('is in the range of A to B (inclusive boundaries)');
+}
+{
+  const { output } = await run(
+    'add library "Math"\n' +
+    'Define x as 5\n' +
+    'if \'x\' is not in the range of 10 to 20 then say "correct" otherwise say "wrong"\n' +
+    'Define y as 15\n' +
+    'if \'y\' is not in the range of 10 to 20 then say "wrong" otherwise say "correct"'
+  );
+  assert.deepEqual([...output], ['correct', 'correct']);
+  ok('is not in the range of A to B (negation works)');
+}
+{
+  const { output } = await run(
+    'add library "Math"\n' +
+    'Define x as 5\n' +
+    'if \'x\' is in the range of 10 to 1 then say "reversed-yes" otherwise say "reversed-no"'
+  );
+  assert.deepEqual([...output], ['reversed-yes']);
+  ok('range handles reversed bounds (10 to 1 means 1 to 10)');
+}
+await expectError('range check requires Math library',
+  'Define x as 5\nif \'x\' is in the range of 1 to 10 then say "yes"',
+  /belongs to the Math library/);
+{
+  const { output } = await run(
+    'add library "Math"\n' +
+    'repeat 5 times\n' +
+    '  Define n as 3\n' +
+    '  if \'n\' is in the range of 1 to 10 then say "loop-ok" otherwise say "loop-fail"\n' +
+    'end repeat'
+  );
+  assert.deepEqual([...output], ['loop-ok', 'loop-ok', 'loop-ok', 'loop-ok', 'loop-ok']);
+  ok('range check works inside loops');
+}
+
+console.log('Dev Build 5: Variable System — any word in quotes is valid');
+{
+  const { output } = await run(
+    'Define \'my var\' as "hello"\n' +
+    'say \'my var\''
+  );
+  assert.deepEqual([...output], ['hello']);
+  ok('multi-word variable names work inside quotes');
+}
+{
+  const { output } = await run(
+    'Define \'123\' as "numbers"\n' +
+    'say \'123\''
+  );
+  assert.deepEqual([...output], ['numbers']);
+  ok('numeric variable names work inside quotes');
+}
+{
+  const { output } = await run(
+    'Define \'special name!!\' as 42\n' +
+    'say \'special name!!\''
+  );
+  assert.deepEqual([...output], ['42']);
+  ok('special character variable names work inside quotes');
+}
+
+console.log('Dev Build 5: Set with quoted variable names');
+{
+  const { output } = await run(
+    'Define count as 0\n' +
+    'Set \'count\' to 10\n' +
+    'say \'count\''
+  );
+  assert.deepEqual([...output], ['10']);
+  ok('Set \'variable\' to value works with quoted variable name');
+}
+{
+  const { output } = await run(
+    'Define count as 0\n' +
+    'repeat 3 times\n' +
+    '  Set \'count\' to \'count\' plus 1\n' +
+    'end repeat\n' +
+    'say \'count\''
+  );
+  assert.deepEqual([...output], ['3']);
+  ok('Set with quoted variable works inside loops');
+}
+
+console.log('Dev Build 5: Ask with quoted variable names');
+{
+  const { output } = await run(
+    'ask "Name?" and save answer as \'my name\'\n' +
+    'say "Hi " plus \'my name\'',
+    { answers: ['Alice'] }
+  );
+  assert.deepEqual([...output], ['Hi Alice']);
+  ok('ask saves to quoted variable name');
+}
+{
+  const { output } = await run(
+    'ask "Score?" and save answer as \'player score\'\n' +
+    'if \'player score\' is equal to 100 then say "perfect" otherwise say "keep going"',
+    { answers: ['100'] }
+  );
+  assert.deepEqual([...output], ['perfect']);
+  ok('ask with quoted variable works with conditions');
+}
+
+console.log('Dev Build 5: Image Library (Base64)');
+await expectError('display image without Image library is an error',
+  'display image \'cat\'',
+  /belongs to the Image library|Image library has not been added/);
+await expectError('define image without Image library is an error',
+  "define 'cat' as image \"iVBOR\"",
+  /belongs to the Image library|Image library has not been added/);
+await expectError('check if without Image library is an error',
+  "check if 'cat' exists",
+  /belongs to the Image library|Image library has not been added/);
+{
+  const displays = [];
+  const result = await (async () => {
+    const interp = new EPP.Interpreter({
+      output: () => {},
+      input: async () => '',
+      delay: async () => {},
+      onImageDisplay: (info) => displays.push(info)
+    });
+    return interp.run(EPP.Parser.parse(
+      'add library "Image"\n' +
+      "define 'cat' as image \"iVBORw0KGgo=\"\n" +
+      'display image \'cat\'', { fileName: 'test.eppla' }));
+  })();
+  assert.equal(displays.length, 1);
+  assert.equal(displays[0].name, 'cat');
+  assert.equal(displays[0].source, 'iVBORw0KGgo=');
+  assert.ok(result.images.has('cat'));
+  ok('Image library: define with Base64, display image works');
+}
+{
+  const { output } = await run(
+    'add library "Image"\n' +
+    "define 'cat' as image \"iVBORw0KGgo=\"\n" +
+    "check if 'cat' exists"
+  );
+  assert.deepEqual([...output], ['cat exists']);
+  ok('check if image variable exists (defined)');
+}
+{
+  const { output } = await run(
+    'add library "Image"\n' +
+    "check if 'ghost' exists"
+  );
+  assert.deepEqual([...output], ['ghost does not exist']);
+  ok('check if image variable exists (not defined)');
+}
+await expectError('displaying an undefined image explains how to create it',
+  "add library \"Image\"\ndisplay image 'ghost'",
+  /no image called 'ghost'/);
+{
+  const displays = [];
+  await (async () => {
+    const interp = new EPP.Interpreter({
+      output: () => {},
+      input: async () => '',
+      delay: async () => {},
+      onImageDisplay: (info) => displays.push(info)
+    });
+    return interp.run(EPP.Parser.parse(
+      'add library "Image"\n' +
+      "define 'photo' as image \"data:image/png;base64,iVBORw0KGgo=\"\n" +
+      "display image 'photo'", { fileName: 'test.eppla' }));
+  })();
+  assert.equal(displays.length, 1);
+  assert.equal(displays[0].source, 'data:image/png;base64,iVBORw0KGgo=');
+  ok('Image library: full data-URI strings are accepted');
+}
+{
+  const displays = [];
+  await (async () => {
+    const interp = new EPP.Interpreter({
+      output: () => {},
+      input: async () => '',
+      delay: async () => {},
+      onImageDisplay: (info) => displays.push(info)
+    });
+    return interp.run(EPP.Parser.parse(
+      'add library "Image"\n' +
+      "define 'a' as image \"abc123\"\n" +
+      "define 'b' as image \"def456\"\n" +
+      "display image 'a'\n" +
+      "display image 'b'", { fileName: 'test.eppla' }));
+  })();
+  assert.equal(displays.length, 2);
+  assert.equal(displays[0].name, 'a');
+  assert.equal(displays[1].name, 'b');
+  ok('Image library: multiple images can be defined and displayed');
+}
+
+console.log('Dev Build 5: Combined features');
+{
+  const { output } = await run(
+    'add library "Math"\n' +
+    'ask "Enter a number:" and save answer as \'user input\'\n' +
+    'if \'user input\' is a positive number then\n' +
+    '  if \'user input\' is in the range of 1 to 100 then\n' +
+    '    say "Valid positive in range"\n' +
+    '  otherwise\n' +
+    '    say "Positive but out of range"\n' +
+    '  end if\n' +
+    'otherwise\n' +
+    '  say "Not a positive number"\n' +
+    'end if',
+    { answers: ['50'] }
+  );
+  assert.deepEqual([...output], ['Valid positive in range']);
+  ok('combined: positive number + range check with ask + quoted variables');
+}
+{
+  const { output } = await run(
+    'add library "Math"\n' +
+    'Define score as 0\n' +
+    'repeat 5 times\n' +
+    '  Set \'score\' to \'score\' plus 3\n' +
+    '  if \'score\' is a positive number then say "pos:" plus \'score\' otherwise say "not pos"\n' +
+    'end repeat'
+  );
+  assert.deepEqual([...output], ['pos:3', 'pos:6', 'pos:9', 'pos:12', 'pos:15']);
+  ok('combined: Set with quotes + positive check inside repeat loop');
+}
+{
+  const { output } = await run(
+    'Define sentence as "The quick brown fox"\n' +
+    'repeat 3 times\n' +
+    '  if \'sentence\' contains "fox" then say "found fox" otherwise say "no fox"\n' +
+    'end repeat'
+  );
+  assert.deepEqual([...output], ['found fox', 'found fox', 'found fox']);
+  ok('combined: contains inside repeat loop');
+}
+
 console.log('\nAll ' + passed + ' E++ test groups passed.');
