@@ -1,0 +1,11 @@
+note: The Draw library: make a sprite, then move it around.
+note: Sprites start in the centre of the drawing at (0, 0).
+note: Pixel amounts are always written as text, like "40".
+
+define 'hero' as drawing sprite
+'hero' move right "60"
+'hero' move down "30"
+'hero' move left "20"
+'hero' move up "10"
+
+say "The hero sprite has moved - watch the drawing below!"

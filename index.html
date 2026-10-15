@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<title>E++ IDE — Programs that read like English</title>
+<meta name="description" content="The official online IDE for E++, the programming language that looks like English, reads like English, and behaves like code. Create, save, import, export and run .eppl files.">
+<link rel="stylesheet" href="css/ide.css?v=9">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>E</text></svg>">
+</head>
+<body data-mobile-view="editor">
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo" aria-hidden="true">E<span>++</span></div>
+    <div>
+      <h1>E++ IDE <span class="build-badge" title="E++ Dev Build 3">Dev Build 3</span></h1>
+      <p>Looks like English. Reads like English. Behaves like code.</p>
+    </div>
+  </div>
+  <div class="top-actions">
+    <span id="saveStatus" class="save-status" role="status">Saved</span>
+    <div class="action-group file-actions">
+      <button id="btnSave" class="btn" type="button" title="Save (Ctrl+S)">Save</button>
+      <button id="btnExport" class="btn" type="button" title="Download this file as a .eppl file" aria-label="Export .eppl file">Export</button>
+      <button id="btnImport" class="btn" type="button" title="Open a .eppl file from your computer" aria-label="Import .eppl file">Import</button>
+      <input id="importInput" type="file" accept=".eppl" multiple hidden>
+    </div>
+    <div class="action-group run-actions">
+      <button id="btnStop" class="btn btn-danger" type="button" disabled>Stop</button>
+      <button id="btnRun" class="btn btn-run" type="button" title="Run (Ctrl+Enter)">▶ Run</button>
+    </div>
+  </div>
+</header>
+
+<nav class="mobile-view-nav" aria-label="IDE panels">
+  <button class="mobile-view-btn" type="button" data-mobile-view="files" aria-pressed="false" aria-controls="sidebar">
+    <span class="mobile-view-icon" aria-hidden="true">▤</span><span>Files</span>
+    <span id="fileCountBadge" class="mobile-badge" hidden>0</span>
+  </button>
+  <button class="mobile-view-btn active" type="button" data-mobile-view="editor" aria-pressed="true" aria-controls="editorCard">
+    <span class="mobile-view-icon" aria-hidden="true">&lt;/&gt;</span><span>Code</span>
+  </button>
+  <button class="mobile-view-btn" type="button" data-mobile-view="console" aria-pressed="false" aria-controls="consoleCard">
+    <span class="mobile-view-icon" aria-hidden="true">›_</span><span>Console</span>
+    <span id="consoleBadge" class="mobile-badge mobile-badge-alert" hidden aria-label="New console output">•</span>
+  </button>
+</nav>
+
+<main class="layout">
+  <!-- ============ File explorer ============ -->
+  <aside class="sidebar" id="sidebar" aria-label="File explorer">
+    <div class="sidebar-head">
+      <h2>.eppl Files</h2>
+      <button id="btnNew" class="btn btn-small btn-accent" type="button">+ New</button>
+    </div>
+    <input id="fileSearch" class="file-search" type="search" placeholder="Search files…" aria-label="Search files">
+    <ul id="fileList" class="file-list"></ul>
+    <p id="noFiles" class="no-files" hidden>No .eppl files yet.<br>Create one with “New”.</p>
+
+    <div class="sidebar-actions">
+      <button id="btnRestoreExamples" class="btn btn-small" type="button">Restore example files</button>
+    </div>
+
+    <section class="libraries-panel" aria-label="Available libraries">
+      <h2>Libraries</h2>
+      <p class="panel-note">Add one at the top of a program:<br><code>library "Math" add</code></p>
+      <div id="libraryList"></div>
+    </section>
+
+    <section class="help-panel">
+      <h2>E++ quick reference</h2>
+      <pre>Define name as Adonis.
+say "Hello " plus 'name'.
+ask "Age?" and save answer as age
+if age is equal to 11 then say "Hi"
+wait 1.
+library "Math" add
+display 1 divided by 2 as fraction</pre>
+    </section>
+  </aside>
+
+  <!-- ============ Editor + console ============ -->
+  <section class="workspace" id="workspace">
+    <div class="editor-card" id="editorCard">
+      <div class="editor-head">
+        <div class="tab" id="currentTab">
+          <span class="tab-dot" aria-hidden="true"></span>
+          <span id="currentFileName">untitled.eppl</span>
+        </div>
+        <div class="editor-head-actions">
+          <button id="btnRename" class="btn btn-small" type="button">Rename</button>
+          <button id="btnDelete" class="btn btn-small btn-danger-outline" type="button">Delete</button>
+        </div>
+      </div>
+
+      <div class="editor-wrap" id="editorWrap">
+        <div class="line-numbers" aria-hidden="true"><div id="lineNumberInner">1</div></div>
+        <div class="code-area">
+          <pre class="highlight-layer" aria-hidden="true"><code id="highlightCode"></code></pre>
+          <textarea id="editor" aria-label="E++ code editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="Write E++ here…"></textarea>
+        </div>
+      </div>
+
+      <div class="statusbar">
+        <span id="statusFile" class="status-optional">No file open</span>
+        <span class="status-sep status-optional">·</span>
+        <span id="statusCursor">Line 1, Column 1</span>
+        <span class="status-sep status-lines-item">·</span>
+        <span id="statusLines" class="status-lines-item">0 lines</span>
+        <span class="status-spacer"></span>
+        <span id="statusLibraries" class="status-optional">Libraries: none loaded</span>
+        <span class="status-sep status-optional">·</span>
+        <span id="statusRun" class="status-run">Ready</span>
+      </div>
+    </div>
+
+    <div class="console-card" id="consoleCard">
+      <div class="console-head">
+        <h2>Console</h2>
+        <span id="consoleHint" class="console-hint">Output and errors appear here.</span>
+        <button id="btnClearConsole" class="btn btn-small" type="button">Clear</button>
+      </div>
+      <div id="consoleOutput" class="console-output" aria-live="polite"></div>
+      <form id="consoleInputForm" class="console-input" hidden>
+        <span class="console-input-prompt" id="consoleInputPrompt"></span>
+        <input id="consoleInput" type="text" autocomplete="off" aria-label="Your answer">
+        <button class="btn btn-small btn-accent" type="submit">Answer</button>
+      </form>
+    </div>
+
+    <div class="draw-card" id="drawCard" hidden>
+      <div class="console-head">
+        <h2>Drawing</h2>
+        <span class="console-hint">Sprites appear here when a program uses the Draw library. (0, 0) is the centre; up is negative.</span>
+      </div>
+      <canvas id="drawCanvas" width="720" height="360">Your browser does not support drawing.</canvas>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <span><strong>E++</strong> runs entirely in your browser. Only this IDE interprets <code>.eppl</code> files — your files are stored locally on this device.</span>
+  <span>Shortcuts: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run · <kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span>
+</footer>
+
+<dialog id="fileDialog" class="file-dialog">
+  <form method="dialog" id="fileDialogForm">
+    <h2 id="fileDialogTitle">New .eppl file</h2>
+    <label for="fileDialogInput">File name</label>
+    <input id="fileDialogInput" type="text" placeholder="my-program.eppl" autocomplete="off">
+    <p id="fileDialogError" class="dialog-error" role="alert"></p>
+    <div class="dialog-actions">
+      <button id="fileDialogCancel" class="btn" type="button">Cancel</button>
+      <button id="fileDialogConfirm" class="btn btn-accent" type="submit">Create</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="js/errors.js?v=9"></script>
+<script src="js/lexer.js?v=9"></script>
+<script src="js/ast.js?v=9"></script>
+<script src="js/libraries.js?v=9"></script>
+<script src="js/parser.js?v=9"></script>
+<script src="js/interpreter.js?v=9"></script>
+<script src="js/files.js?v=9"></script>
+<script src="js/highlight.js?v=9"></script>
+<script src="js/ide.js?v=9"></script>
+</body>
+</html>
