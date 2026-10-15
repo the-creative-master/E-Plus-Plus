@@ -68,11 +68,13 @@ npm test
   then ...` testing the value the chain is about.
 - **Python library** — `library "Python" add` unlocks `python code "..."`
   (one line) and dash mode `python code "-..."` (a raw multi-line Python
-  block with no E++ parsing). Python refuses to run without the library —
-  at parse time and at run time — with a plain-English `LibraryError`
-  telling you the exact line to add. In the IDE, Python really executes
-  (Pyodide, loaded on first use); see `examples/python.eppl` and
-  `examples/score-tracker.eppl`.
+  block with no E++ parsing, lifted out by the parser before lexing).
+  Python refuses to run without the library — at parse time, at run time,
+  and in the IDE host itself — with a plain-English `LibraryError` telling
+  you the exact line to add. In the IDE, Python really executes (Pyodide,
+  loaded on first use), and Python's own error text is never shown: you
+  get the IDE's plain-English explanation instead. See
+  `examples/python.eppl` and `examples/score-tracker.eppl`.
 
 ## The E++ language in 60 seconds
 
@@ -92,9 +94,12 @@ display 1 divided by 2 as fraction
 - `'name'` in single quotes means “the variable called name”.
 - Bare words and numbers are maths or keywords: `say 1 plus 1` → `2`, while
   `say "1 plus 1"` prints the text.
-- A bare word that is not a variable is literal text, so
-  `Define name as Adonis.` stores `Adonis`; a bare word that **is** a
-  variable (like `output` above) uses its value.
+- A bare word must mean something: it is the variable of that name (like
+  `output` above). Anywhere a value is used, a bare word that is **not** a
+  defined variable is an English error — `say hello` explains the problem
+  and suggests `say "hello"`. The one exception is the value in
+  `Define`/`Set`, where bare words are the literal value, so
+  `Define name as Adonis.` stores `Adonis`.
 
 The full language reference — grammar, operators, conditionals, loops,
 libraries, the `.eppl` file format and the exact semantics of every feature,
@@ -109,13 +114,16 @@ css/ide.css           The IDE (styles)
 js/
   errors.js           EppError + LexError / ParseError / RuntimeError /
                       LibraryError / FileError (message, line, column, hint)
-  lexer.js            Tokenizer: strings, 'variables', numbers, bare words,
-                      statement-ending periods & newlines, comments/notes
+  lexer.js            Generic tokenizer (pure JavaScript, no knowledge of
+                      any library): strings, 'variables', numbers, bare
+                      words, statement-ending periods & newlines, comments
   ast.js              AST node definitions + tree walker
   libraries.js        Library registry (Math, Text, Random): what each
                       library unlocks, aliases, grammar ownership
   parser.js           Recursive-descent parser; builds the AST; enforces
-                      library gating while parsing
+                      library gating while parsing; extracts dash-mode
+                      Python blocks before lexing (the lexer never sees
+                      them and never knows Python exists)
   interpreter.js      Async runtime: variables, Fraction arithmetic, say,
                       ask, wait, conditionals, repeat/while loops, and
                       runtime library checks. I/O is injected.

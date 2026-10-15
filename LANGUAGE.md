@@ -25,7 +25,7 @@ repository (`js/lexer.js`, `js/parser.js`, `js/ast.js`, `js/interpreter.js`,
 | `"Hello"` | literal text |
 | `'name'` | the value of the variable `name` |
 | `42`, `3.5` | a number |
-| `Adonis` (bare word) | the variable `Adonis` if one exists, otherwise the literal text `Adonis` |
+| `Adonis` (bare word) | the variable `Adonis` if one exists; otherwise an English error — bare words must be a variable, a number or a keyword. Exception: on the right-hand side of `Define`/`Set`, bare words are the literal value (`Define name as Adonis.`) |
 | `true` / `yes`, `false` / `no` | booleans |
 
 ## 3. Variables
@@ -250,7 +250,11 @@ python code "print('Hello from Python')"
 
 Multi-line "dash mode": when the quoted code begins with `-`, everything
 after the dash until the closing quote is raw Python — it may span lines
-and is never parsed as E++:
+and is never parsed as E++. The parser lifts the whole block out of the
+program *before* the E++ lexer runs; the lexer itself is generic,
+language-agnostic JavaScript and contains no Python knowledge at all
+(and, like everything else in the language core, it never executes
+anything):
 
 ```eppl
 python code "-for number in range(3):
@@ -261,8 +265,11 @@ python code "-for number in range(3):
 In the IDE, Python really executes (via Pyodide/WebAssembly, downloaded
 the first time Python runs; an internet connection is needed for that
 first download). Each Run starts with a fresh Python namespace, Python's
-`print` writes to the E++ console, and Python errors are reported back as
-plain-English E++ errors with the Python problem and a hint. Programs run
+`print` writes to the E++ console, Python's own error output is captured
+and never displayed, and Python errors are reported back as the IDE's own
+plain-English errors explaining what kind of mistake Python found (for
+example: "Python tried to use a name that has not been created yet").
+Programs run
 through the language core can supply their own runner with the
 `pythonExecutor` interpreter option; with no runner connected, Python
 statements fail with a clear English `RuntimeError` instead of doing

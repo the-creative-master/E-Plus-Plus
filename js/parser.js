@@ -19,7 +19,8 @@
  *   decrease       := "Decrease" <name> "by" <expression>
  *   python         := "python" "code" <STRING>                        [Python]
  *                     (a STRING starting with "-" is a raw multi-line
- *                      Python block, read by the lexer with no E++ parsing)
+ *                      Python block, extracted by the parser before
+ *                      lexing — the lexer is generic and never sees it)
  *   if             := "if" <condition> "then" <statement>
  *                     ["otherwise" <statement>]                        (inline)
  *                   | "if" <condition> "then" NEWLINE statement*
@@ -65,6 +66,7 @@
   var EPP = global.EPP || (global.EPP = {});
   var ParseError = EPP.ParseError;
   var LibraryError = EPP.LibraryError;
+  var LexError = EPP.LexError;
 
   // Words that can never be part of a bare-word value or expression.
   var RESERVED = {
@@ -74,9 +76,127 @@
     'do': 1, and: 1, not: 1, different: 1, from: 1, between: 1, or: 1
   };
 
+  /*
+   * Dash-mode Python blocks (python code "-...") are taken out of the
+   * source here, by the parser, before lexing. Everything between the
+   * opening dash and the closing quote is raw Python: it may span lines
+   * and contain characters E++ would reject, so it must never reach the
+   * (fully generic, Python-agnostic) lexer. Each block is replaced in the
+   * prepared source by a one-line placeholder string holding its index,
+   * followed by the same number of newlines the block contained, so the
+   * line numbers of all following E++ code stay correct. Strings, quoted
+   * variables and comments are respected — the words `python code "-`
+   * inside a string or a note do not start a block.
+   *
+   * Returns { source, blocks: [{ start, end, code, line, column, unterminated }] }
+   * where start/end are offsets in the ORIGINAL source.
+   */
+  function extractPythonBlocks(source) {
+    source = source === undefined || source === null ? '' : String(source);
+    var blocks = [];
+    var out = '';
+    var i = 0;
+    var line = 1, column = 1;
+    var state = 'normal'; // normal | string | variable | comment
+    var atStatementStart = true;
+
+    function isWordChar(ch) { return !!ch && /[A-Za-z0-9_]/.test(ch); }
+    function copyChar() {
+      var ch = source[i];
+      out += ch;
+      if (ch === '\n') { line += 1; column = 1; } else { column += 1; }
+      i += 1;
+      return ch;
+    }
+    // If a `python code "-` sequence starts at position p, returns the
+    // index of its opening quote; otherwise returns -1.
+    function dashQuoteAt(p) {
+      if (source.slice(p, p + 6).toLowerCase() !== 'python') return -1;
+      if (isWordChar(source[p - 1]) || isWordChar(source[p + 6])) return -1;
+      var j = p + 6;
+      while (source[j] === ' ' || source[j] === '\t') j += 1;
+      if (source.slice(j, j + 4).toLowerCase() !== 'code') return -1;
+      if (isWordChar(source[j + 4])) return -1;
+      j += 4;
+      while (source[j] === ' ' || source[j] === '\t') j += 1;
+      return source[j] === '"' && source[j + 1] === '-' ? j : -1;
+    }
+
+    while (i < source.length) {
+      var ch = source[i];
+
+      if (state === 'comment') {
+        if (ch === '\n') { state = 'normal'; atStatementStart = true; copyChar(); }
+        else copyChar();
+        continue;
+      }
+      if (state === 'string') {
+        if (ch === '\\' && i + 1 < source.length) { copyChar(); copyChar(); continue; }
+        if (ch === '"' || ch === '\n') state = 'normal';
+        copyChar();
+        continue;
+      }
+      if (state === 'variable') {
+        if (ch === "'" || ch === '\n') state = 'normal';
+        copyChar();
+        continue;
+      }
+
+      // normal state
+      if (ch === '\n' || ch === '.' || ch === ';') { atStatementStart = true; copyChar(); continue; }
+      if (ch === '#') { state = 'comment'; copyChar(); continue; }
+      if (ch === '/' && source[i + 1] === '/') { state = 'comment'; copyChar(); continue; }
+      if (ch === '"') { state = 'string'; atStatementStart = false; copyChar(); continue; }
+      if (ch === "'") { state = 'variable'; atStatementStart = false; copyChar(); continue; }
+      if (atStatementStart && source.slice(i, i + 4).toLowerCase() === 'note' && !isWordChar(source[i + 4])) {
+        state = 'comment'; copyChar(); continue;
+      }
+
+      var quoteIndex = dashQuoteAt(i);
+      if (quoteIndex !== -1) {
+        // Copy `python code ` up to the quote, remembering its position.
+        while (i < quoteIndex) copyChar();
+        var quoteLine = line, quoteColumn = column;
+        var closeIndex = source.indexOf('"', quoteIndex + 2);
+        var unterminated = closeIndex === -1;
+        var blockEnd = unterminated ? source.length : closeIndex + 1;
+        var code = source.slice(quoteIndex + 2, unterminated ? source.length : closeIndex);
+        var segment = source.slice(quoteIndex, blockEnd);
+        var newlines = 0;
+        for (var k = 0; k < segment.length; k++) if (segment[k] === '\n') newlines += 1;
+        blocks.push({
+          start: quoteIndex, end: blockEnd, code: code,
+          line: quoteLine, column: quoteColumn, unterminated: unterminated
+        });
+        out += '"\u0001' + (blocks.length - 1) + '\u0001"';
+        for (var n = 0; n < newlines; n++) out += '\n';
+        // Advance position/line/column past the original block.
+        for (var m = 0; m < segment.length; m++) {
+          if (segment[m] === '\n') { line += 1; column = 1; } else { column += 1; }
+        }
+        i = blockEnd;
+        atStatementStart = false;
+        continue;
+      }
+
+      if (ch !== ' ' && ch !== '\t' && ch !== '\r') atStatementStart = false;
+      copyChar();
+    }
+    return { source: out, blocks: blocks };
+  }
+
   function Parser(source) {
     var Lexer = EPP.Lexer;
-    this.tokens = new Lexer(source).tokenize().filter(function (t) { return t.type !== 'COMMENT'; });
+    var prepared = extractPythonBlocks(source);
+    this.pythonBlocks = prepared.blocks;
+    for (var b = 0; b < prepared.blocks.length; b++) {
+      if (prepared.blocks[b].unterminated) {
+        throw new LexError('The Python code block never ends. Its closing " is missing.',
+          prepared.blocks[b].line, prepared.blocks[b].column,
+          'Close the Python code with a double quote — put a " on its own line at the end of the block, or close the quote at the end of the line.');
+      }
+    }
+    this.tokens = new Lexer(prepared.source).tokenize().filter(function (t) { return t.type !== 'COMMENT'; });
     this.pos = 0;
     this.loadedLibraries = {}; // canonical name -> true, in source order
   }
@@ -288,15 +408,20 @@
     }
     this.advance();
     var code = token.value;
-    var block = !!token.pythonBlock;
-    if (!block && code.charAt(0) === '-') {
-      // Single-line dash form (the lexer already used raw mode when it
-      // could see the python code context; handle any other dash string).
+    var block = false;
+    // Dash-mode blocks were extracted before lexing and arrive as a
+    // placeholder string holding the block's index.
+    var placeholder = /^\u0001(\d+)\u0001$/.exec(code);
+    if (placeholder) {
+      var stored = this.pythonBlocks[Number(placeholder[1])];
+      code = stored ? stored.code : '';
+      block = true;
+    } else if (code.charAt(0) === '-') {
       block = true;
       code = code.slice(1);
     }
     if (!code.trim()) {
-      throw new ParseError(block && token.pythonBlock
+      throw new ParseError(block
         ? 'This Python code block is empty — there is no Python code after the opening dash.'
         : 'The Python code is empty — there is nothing between the quotes.',
         token.line, token.column,
@@ -724,6 +849,7 @@
   Parser.parse = function (source) { return new Parser(source).parse(); };
 
   EPP.Parser = Parser;
+  EPP.extractPythonBlocks = extractPythonBlocks;
 
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = { Parser: Parser };

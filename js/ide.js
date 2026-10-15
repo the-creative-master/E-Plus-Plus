@@ -612,7 +612,9 @@
         })
         .catch(function (e) {
           pythonRuntimePromise = null; // allow a retry on the next Run
-          throw e;
+          // Always our own words, never a raw browser/engine error.
+          if (e && /could not be downloaded/.test(e.message || '')) throw e;
+          throw new Error('The Python runner could not start. Your browser may have blocked it, or the download may have failed — check your internet connection and press Run again.');
         });
     }
     return pythonRuntimePromise;
@@ -632,11 +634,11 @@
     pyodide.setStdout({
       batched: function (line) { appendConsole(line, 'output'); }
     });
-    pyodide.setStderr({
-      batched: function (line) { appendConsole(line, 'error'); }
-    });
-    // Python errors are rethrown as-is here; the interpreter turns them
-    // into a friendly English RuntimeError with a hint.
+    // Python's own error output (tracebacks, warnings, stderr text) is
+    // captured and thrown away on purpose: the only error messages the
+    // user ever sees are the IDE's own plain-English ones. Python errors
+    // thrown by runPythonAsync are translated by the interpreter.
+    pyodide.setStderr({ batched: function () { /* captured, never displayed */ } });
     await pyodide.runPythonAsync(code, { globals: pythonNamespace });
   }
 
@@ -755,7 +757,7 @@
   var initial = files.some(function (f) { return f.name === 'hello.eppl'; }) ? 'hello.eppl' : (files[0] && files[0].name);
   if (initial) openFile(initial);
   else refreshEditor();
-  appendConsole('Welcome to the E++ IDE (build v6). Open a .eppl file on the left and press Run.', 'system');
+  appendConsole('Welcome to the E++ IDE (build v7). Open a .eppl file on the left and press Run.', 'system');
   // Boot-time safety self-check: Python must refuse to run without the
   // Python library. If this ever stops refusing, say so loudly.
   try {

@@ -116,6 +116,28 @@ console.log('Interpreter: maths precedence & strings');
   ok('precedence: times before plus, parentheses, left associativity');
 }
 
+console.log('Bare words must mean something');
+await expectError('say hello is an error, not literal text', 'say hello', /The word "hello" does not mean anything in E\+\+ yet/);
+await expectError('say hello world is an error too', 'say hello world', /do not mean anything in E\+\+ yet/);
+await expectError('using an undefined bare word in maths is an error', 'say 1 plus banana', /"banana" does not mean anything/);
+{
+  const { output } = await run('Define name as Adonis.\nsay \'name\'\nDefine greeting as Hello there.\nsay \'greeting\'');
+  assert.deepEqual([...output], ['Adonis', 'Hello there']);
+  ok('Define <name> as <bare words> still stores the literal words (spec example)');
+}
+{
+  const { output } = await run('Define count as 3.\nif count is equal to 3 then say "three" otherwise say "other"');
+  assert.deepEqual([...output], ['three']);
+  ok('a bare word that IS a defined variable still works (if output is equal to ...)');
+}
+{
+  // The lexer is generic: it knows nothing about Python at all. A dash
+  // block fed to the lexer alone is just an unterminated string; the
+  // parser extracts Python blocks before lexing (tested below).
+  assert.throws(() => EPP.Lexer.tokenize('python code "-print(1)\nprint(2)\n"'), /never ends/);
+  ok('the lexer has no Python knowledge (dash blocks are a parser concern)');
+}
+
 console.log('Increase / Decrease');
 {
   const { output } = await run(
@@ -131,7 +153,7 @@ console.log('Increase / Decrease');
 }
 await expectError('increasing an undefined variable explains how to define it', 'Increase missing by 1', /has not been defined yet/);
 await expectError('decreasing text explains it is not a number', 'Define name as Bob.\nDecrease name by 1', /not a number/);
-await expectError('increasing by text explains the amount must be a number', 'Define score as 1.\nIncrease score by Bob', /amount is not a number/);
+await expectError('increasing by text explains the amount must be a number', 'Define score as 1.\nIncrease score by "Bob"', /amount is not a number/);
 await expectError('Increase without "by" is an English ParseError', 'Define score as 1.\nIncrease score 1', /needs the word "by"/);
 
 console.log('Asking again, branches, comparisons, not-a-number');
@@ -236,9 +258,10 @@ await expectError('python without a connected runner is an English RuntimeError'
     });
   } catch (e) { caught = e; }
   assert.ok(caught, 'expected a Python error');
-  assert.match(caught.format(), /Python stopped with an error: NameError/);
+  assert.match(caught.format(), /Python stopped with a problem: Python tried to use a name that has not been created yet \(Python calls this a NameError\)\./);
   assert.match(caught.format(), /Hint:/);
-  ok('Python failures become English RuntimeErrors with hints');
+  assert.doesNotMatch(caught.format(), /Traceback|File "<exec>"/);
+  ok('Python failures become our own English errors — no Python traceback text is shown');
 }
 {
   // Runtime gating even when the AST was built by hand (no parser).

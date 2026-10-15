@@ -124,6 +124,54 @@
   // Internal control-flow signal for `stop` inside loops.
   function BreakSignal() { this.isBreakSignal = true; }
 
+  /*
+   * Turns a raw Python failure into ONE plain-English E++ message.
+   * Python's own traceback text is never shown to the user: we work out
+   * what kind of mistake it was and explain it in our own words, naming
+   * the Python error type only as a helpful label. Returns
+   * { type, friendly } — `type` is null when nothing Python-like was found
+   * (for example, the runner itself failed to load, in which case the
+   * caller keeps the host's own English message).
+   */
+  var PYTHON_ERROR_EXPLANATIONS = {
+    NameError: 'Python tried to use a name that has not been created yet',
+    UnboundLocalError: 'Python tried to use a name before anything was stored in it',
+    SyntaxError: 'Python could not understand the code — something is spelled, ordered or punctuated in a way Python does not accept',
+    IndentationError: 'Python is unhappy with the spaces at the start of a line — Python uses those spaces to group code together',
+    TabError: 'Python found a mixture of tabs and spaces at the start of a line',
+    TypeError: 'Python was given the wrong kind of thing — for example, trying to add words and numbers together',
+    ValueError: 'Python was given a value it cannot use in that way',
+    ZeroDivisionError: 'Python tried to divide by zero',
+    IndexError: 'Python tried to pick an item from a list at a position that does not exist',
+    KeyError: 'Python looked for a key that does not exist',
+    AttributeError: 'Python tried to use something that the thing it was used on does not have',
+    ModuleNotFoundError: 'Python could not find a library it was asked to import',
+    ImportError: 'Python could not import something it was asked for',
+    EOFError: 'Python asked for input, but no input was available',
+    FileNotFoundError: 'Python looked for a file that does not exist',
+    PermissionError: 'Python was not allowed to touch that file',
+    RuntimeError: 'Python ran into a problem while the code was running',
+    RecursionError: 'Python repeated something so many times that it gave up',
+    MemoryError: 'Python ran out of memory',
+    StopIteration: 'Python ran out of items to work through',
+    KeyboardInterrupt: 'Python was interrupted'
+  };
+
+  function translatePythonError(error) {
+    var raw = error && error.message ? String(error.message) : String(error || '');
+    var type = null;
+    var match;
+    var pattern = /(^|\n)\s*([A-Za-z_][A-Za-z0-9_.]*?(?:Error|Exception|KeyboardInterrupt|StopIteration|GeneratorExit|SystemExit))\s*:/g;
+    while ((match = pattern.exec(raw)) !== null) {
+      var candidate = match[2].split('.').pop();
+      type = candidate; // keep the last (deepest) Python error type
+    }
+    if (!type) return { type: null, friendly: null };
+    var friendly = PYTHON_ERROR_EXPLANATIONS[type] ||
+      'Python ran into a problem it could not fix by itself';
+    return { type: type, friendly: friendly };
+  }
+
   // ---------------- Interpreter ----------------
   function Interpreter(options) {
     options = options || {};
@@ -191,7 +239,14 @@
     switch (node.type) {
       case AST.DEFINE:
       case AST.SET: {
-        var value = await this.evaluate(node.value);
+        // Bare words on the right-hand side of Define/Set are the literal
+        // words themselves (the spec's `Define name as Adonis.`). Writing
+        // 'name' with single quotes is how you copy another variable.
+        // Everywhere else, a bare word must be the name of a variable
+        // that exists — see BareWord below.
+        var value = node.value.type === AST.BARE_WORD
+          ? node.value.text
+          : await this.evaluate(node.value);
         this.variables.set(node.name.toLowerCase(), value);
         return;
       }
@@ -292,13 +347,27 @@
           await this.pythonExecutor(node.code, node);
         } catch (e) {
           if (e && e.format && e.category) throw e; // already an E++ error
-          var detail = e && e.message ? String(e.message).trim() : 'unknown problem';
-          // Keep the most useful line of a Python traceback.
-          var lines = detail.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
-          var lastLine = lines.length ? lines[lines.length - 1] : detail;
-          throw new RuntimeError('Python stopped with an error: ' + lastLine,
+          // Never show Python's own error text (tracebacks and all).
+          // Explain, in our own words, what kind of mistake Python found.
+          var translated = translatePythonError(e);
+          if (translated.type) {
+            throw new RuntimeError(
+              'Python stopped with a problem: ' + translated.friendly +
+              ' (Python calls this a ' + translated.type + ').',
+              node.line, node.column,
+              'Remember, the code inside the quotes is Python, not E++: it follows Python\u2019s rules, not E++\u2019s. Check that part of your program and try again.');
+          }
+          var detail = e && e.message ? String(e.message).trim() : '';
+          // A short, single-line message from the host itself (for
+          // example "the Python runner could not be downloaded") is
+          // already plain English and safe to pass through.
+          if (detail && detail.indexOf('\n') === -1 && detail.indexOf('Traceback') === -1 && detail.length <= 240) {
+            throw new RuntimeError(detail, node.line, node.column,
+              'Check your internet connection and press Run again. If it keeps happening, try a shorter or simpler piece of Python code.');
+          }
+          throw new RuntimeError('Python could not run this code.',
             node.line, node.column,
-            'Python is a different language from E++ — check the Python code inside the quotes on this line. Python words, spelling and punctuation must all be exactly right.');
+            'Check the Python code inside the quotes on this line — spelling, punctuation and spaces at the start of lines all matter in Python.');
         }
         if (this.cancelled) throw new RuntimeError('Execution was stopped.', node.line, node.column, null);
         return;
@@ -399,11 +468,21 @@
       }
 
       case AST.BARE_WORD: {
-        // A bare word is a variable when one exists with that name,
-        // otherwise it is literal text (Define name as Adonis).
+        // A bare word must mean something: the variable of that name.
+        // If no such variable exists it is an error — bare words are
+        // maths or keywords, and this is neither. (The one exception is
+        // the right-hand side of Define/Set, handled above, where bare
+        // words are the literal value: Define name as Adonis.)
         var bareKey = node.text.toLowerCase();
         if (this.variables.has(bareKey)) return this.variables.get(bareKey);
-        return node.text;
+        var plural = node.text.indexOf(' ') !== -1;
+        throw new RuntimeError(
+          (plural ? 'The words "' + node.text + '" do' : 'The word "' + node.text + '" does') +
+          ' not mean anything in E++ yet — ' + (plural ? 'they are' : 'it is') +
+          ' not a variable, a number, or an E++ keyword.',
+          node.line, node.column,
+          'If you want these exact words, put them in double quotes, like this: say "' + node.text + '". ' +
+          'If you meant a variable, define it first (Define ' + node.text.split(' ')[0] + ' as ...) and write it with single quotes.');
       }
 
       case AST.UNARY: {
@@ -524,6 +603,7 @@
   EPP.Interpreter = Interpreter;
   EPP.run = run;
   EPP.stringifyValue = stringify;
+  EPP.translatePythonError = translatePythonError;
 
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = { Interpreter: Interpreter, Fraction: Fraction, run: run, stringifyValue: stringify };

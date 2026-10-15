@@ -50,6 +50,28 @@
 
   function highlight(source) {
     source = source === undefined || source === null ? '' : String(source);
+    // Raw dash-mode Python blocks never reach the lexer (the parser
+    // extracts them first), so highlight around them: E++ segments are
+    // tokenized normally, each Python block is one string span.
+    if (typeof EPP.extractPythonBlocks === 'function') {
+      var extraction = EPP.extractPythonBlocks(source);
+      if (extraction.blocks.length) {
+        var composed = '';
+        var cursor = 0;
+        extraction.blocks.forEach(function (block) {
+          composed += highlightSegment(source.slice(cursor, block.start));
+          composed += '<span class="tok-string">' + escapeHtml(source.slice(block.start, block.end)) + '</span>';
+          cursor = block.end;
+        });
+        composed += highlightSegment(source.slice(cursor));
+        if (source.endsWith('\n')) composed += ' ';
+        return composed;
+      }
+    }
+    return highlightSegment(source);
+  }
+
+  function highlightSegment(source) {
     var tokens;
     try {
       tokens = EPP.Lexer.tokenize(source);
