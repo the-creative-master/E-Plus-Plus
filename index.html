@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<title>E++ IDE — Programs that read like English</title>
-<meta name="description" content="The official online IDE for E++, the programming language that looks like English, reads like English, and behaves like code. Create, save, import, export and run .eppl files.">
-<link rel="stylesheet" href="css/ide.css?v=9">
+<title>E++ IDE (Dev Build 4) — Programs that read like English</title>
+<meta name="description" content="The official online IDE for E++ Dev Build 4, the programming language that looks like English, reads like English, and behaves like code. Features pure .eppl and library-supported .eppla files.">
+<link rel="stylesheet" href="css/ide.css?v=10">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>E</text></svg>">
 </head>
 <body data-mobile-view="editor">
@@ -16,24 +16,49 @@
   <div class="brand">
     <div class="logo" aria-hidden="true">E<span>++</span></div>
     <div>
-      <h1>E++ IDE <span class="build-badge" title="E++ Dev Build 3">Dev Build 3</span></h1>
-      <p>Looks like English. Reads like English. Behaves like code.</p>
+      <h1>E++ IDE <span class="build-badge" title="E++ Dev Build 4">Dev Build 4</span></h1>
+      <p>Based on WeeklyHow's AI video · Looks like English. Reads like English. Behaves like code.</p>
     </div>
   </div>
   <div class="top-actions">
     <span id="saveStatus" class="save-status" role="status">Saved</span>
     <div class="action-group file-actions">
-      <button id="btnSave" class="btn" type="button" title="Save (Ctrl+S)">Save</button>
-      <button id="btnExport" class="btn" type="button" title="Download this file as a .eppl file" aria-label="Export .eppl file">Export</button>
-      <button id="btnImport" class="btn" type="button" title="Open a .eppl file from your computer" aria-label="Import .eppl file">Import</button>
-      <input id="importInput" type="file" accept=".eppl" multiple hidden>
+      <button id="btnSave" class="btn" type="button" title="Save (Ctrl+S)">💾 Save</button>
+      <button id="btnExport" class="btn" type="button" title="Download this file (.eppl or .eppla)" aria-label="Export file">⤓ Export</button>
+      <button id="btnImport" class="btn" type="button" title="Open a .eppl or .eppla file" aria-label="Import file">⤒ Import</button>
+      <button id="btnZip" class="btn btn-zip" type="button" title="Download entire E++ runtime as E++.zip">📦 E++.zip</button>
+      <button id="btnTutorial" class="btn btn-tutorial" type="button" title="Open Interactive Guided Tutorial">🎓 Tutorial</button>
+      <input id="importInput" type="file" accept=".eppl,.eppla" multiple hidden>
     </div>
     <div class="action-group run-actions">
-      <button id="btnStop" class="btn btn-danger" type="button" disabled>Stop</button>
+      <button id="btnStop" class="btn btn-danger" type="button" disabled>■ Stop</button>
       <button id="btnRun" class="btn btn-run" type="button" title="Run (Ctrl+Enter)">▶ Run</button>
     </div>
   </div>
 </header>
+
+<!-- Dashboard Overhaul: Live Stats Bar -->
+<div class="dash-banner" id="dashBanner" aria-label="Project dashboard">
+  <div class="dash-stat">
+    <span class="dash-label">Active File:</span>
+    <span id="dashFile" class="dash-val">untitled.eppl</span>
+  </div>
+  <div class="dash-stat">
+    <span class="dash-label">File Type:</span>
+    <span id="dashType" class="dash-badge-pill badge-eppl">.eppl (Pure)</span>
+  </div>
+  <div class="dash-stat">
+    <span class="dash-label">Active Libraries:</span>
+    <span id="dashLibs" class="dash-val">None</span>
+  </div>
+  <div class="dash-stat">
+    <span class="dash-label">Lines of Code:</span>
+    <span id="dashLines" class="dash-val">0</span>
+  </div>
+  <div class="dash-stat dash-stat-build">
+    <span class="dash-badge-pill badge-version">Dev Build 4 • Project Humanizer</span>
+  </div>
+</div>
 
 <nav class="mobile-view-nav" aria-label="IDE panels">
   <button class="mobile-view-btn" type="button" data-mobile-view="files" aria-pressed="false" aria-controls="sidebar">
@@ -53,31 +78,33 @@
   <!-- ============ File explorer ============ -->
   <aside class="sidebar" id="sidebar" aria-label="File explorer">
     <div class="sidebar-head">
-      <h2>.eppl Files</h2>
+      <h2>Files <span class="head-sub">(.eppl / .eppla)</span></h2>
       <button id="btnNew" class="btn btn-small btn-accent" type="button">+ New</button>
     </div>
-    <input id="fileSearch" class="file-search" type="search" placeholder="Search files…" aria-label="Search files">
+    <input id="fileSearch" class="file-search" type="search" placeholder="Search .eppl & .eppla files…" aria-label="Search files">
     <ul id="fileList" class="file-list"></ul>
-    <p id="noFiles" class="no-files" hidden>No .eppl files yet.<br>Create one with “New”.</p>
+    <p id="noFiles" class="no-files" hidden>No files yet.<br>Create one with “New”.</p>
 
     <div class="sidebar-actions">
       <button id="btnRestoreExamples" class="btn btn-small" type="button">Restore example files</button>
     </div>
 
     <section class="libraries-panel" aria-label="Available libraries">
-      <h2>Libraries</h2>
-      <p class="panel-note">Add one at the top of a program:<br><code>library "Math" add</code></p>
+      <h2>Libraries <span class="head-sub">(.eppla only)</span></h2>
+      <p class="panel-note">Humanizer syntax:<br><code>add library "Math"</code></p>
       <div id="libraryList"></div>
     </section>
 
     <section class="help-panel">
-      <h2>E++ quick reference</h2>
-      <pre>Define name as Adonis.
+      <h2>E++ Dev Build 4 quick reference</h2>
+      <pre>note: Pure .eppl files (no libraries)
+Define name as WeeklyHow.
 say "Hello " plus 'name'.
 ask "Age?" and save answer as age
-if age is equal to 11 then say "Hi"
-wait 1.
-library "Math" add
+if 'age' is equal to 11 then say "Hi"
+
+note: .eppla files (with libraries)
+add library "Math"
 display 1 divided by 2 as fraction</pre>
     </section>
   </aside>
@@ -142,14 +169,44 @@ display 1 divided by 2 as fraction</pre>
 </main>
 
 <footer class="footer">
-  <span><strong>E++</strong> runs entirely in your browser. Only this IDE interprets <code>.eppl</code> files — your files are stored locally on this device.</span>
+  <span><strong>E++ Dev Build 4</strong> · Based on WeeklyHow's AI programming language video · <code>.eppl</code> without libraries, <code>.eppla</code> with libraries.</span>
   <span>Shortcuts: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run · <kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span>
 </footer>
 
+<!-- Interactive Guided Tutorial Dialog (Requirement 11) -->
+<dialog id="tutorialDialog" class="tutorial-dialog">
+  <div class="tutorial-head">
+    <div class="tutorial-title-wrap">
+      <span id="tutBadge" class="tutorial-badge">Basics</span>
+      <h2 id="tutTitle">1. Welcome to E++ (Dev Build 4)</h2>
+    </div>
+    <button id="tutClose" class="btn-close" type="button" aria-label="Close tutorial">&times;</button>
+  </div>
+  <div class="tutorial-body">
+    <p id="tutSummary" class="tutorial-summary"></p>
+    <p id="tutExplanation" class="tutorial-explanation"></p>
+    <div class="tutorial-code-box">
+      <div class="code-box-header">
+        <span>Example Code</span>
+        <button id="tutTry" class="btn btn-small btn-accent" type="button">▶ Try in Editor</button>
+      </div>
+      <pre id="tutCode" class="tutorial-code"></pre>
+    </div>
+  </div>
+  <div class="tutorial-foot">
+    <span id="tutStepCount" class="tutorial-steps">Step 1 of 6</span>
+    <div class="tutorial-nav-buttons">
+      <button id="tutPrev" class="btn btn-small" type="button">← Previous</button>
+      <button id="tutNext" class="btn btn-small btn-accent" type="button">Next →</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- File creation / rename dialog -->
 <dialog id="fileDialog" class="file-dialog">
   <form method="dialog" id="fileDialogForm">
-    <h2 id="fileDialogTitle">New .eppl file</h2>
-    <label for="fileDialogInput">File name</label>
+    <h2 id="fileDialogTitle">New File</h2>
+    <label for="fileDialogInput">File name (.eppl for pure code, .eppla for libraries)</label>
     <input id="fileDialogInput" type="text" placeholder="my-program.eppl" autocomplete="off">
     <p id="fileDialogError" class="dialog-error" role="alert"></p>
     <div class="dialog-actions">
@@ -161,14 +218,16 @@ display 1 divided by 2 as fraction</pre>
 
 <div id="toast" class="toast" role="status" hidden></div>
 
-<script src="js/errors.js?v=9"></script>
-<script src="js/lexer.js?v=9"></script>
-<script src="js/ast.js?v=9"></script>
-<script src="js/libraries.js?v=9"></script>
-<script src="js/parser.js?v=9"></script>
-<script src="js/interpreter.js?v=9"></script>
-<script src="js/files.js?v=9"></script>
-<script src="js/highlight.js?v=9"></script>
-<script src="js/ide.js?v=9"></script>
+<script src="js/errors.js?v=10"></script>
+<script src="js/lexer.js?v=10"></script>
+<script src="js/ast.js?v=10"></script>
+<script src="js/libraries.js?v=10"></script>
+<script src="js/parser.js?v=10"></script>
+<script src="js/python-runner.js?v=10"></script>
+<script src="js/interpreter.js?v=10"></script>
+<script src="js/files.js?v=10"></script>
+<script src="js/highlight.js?v=10"></script>
+<script src="js/standalone-generator.js?v=10"></script>
+<script src="js/ide.js?v=10"></script>
 </body>
 </html>

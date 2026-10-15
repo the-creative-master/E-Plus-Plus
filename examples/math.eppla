@@ -1,6 +1,6 @@
 note: The Math library unlocks fractions, decimals, percentages,
 note: square roots, powers and division.
-library "Math" add
+add library "Math"
 
 display 1 divided by 2 as fraction
 display 1 divided by 2 as decimal

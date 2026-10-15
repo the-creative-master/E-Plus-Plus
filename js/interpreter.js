@@ -202,6 +202,8 @@
     this.loadedLibraries = new Set(); // canonical library names
     this.sprites = new Map();         // lowercased name -> { name, x, y }
     this.lastIf = null;               // nearest previous if (for loopback)
+    this.pythonGlobals = Object.create(null);
+    this.pythonRunner = null;
     this.steps = 0;
     this.loopIterations = 0;
   };
@@ -245,7 +247,7 @@
       case AST.DEFINE:
       case AST.SET: {
         // Bare words on the right-hand side of Define/Set are the literal
-        // words themselves (the spec's `Define name as Adonis.`). Writing
+        // words themselves (e.g. `Define name as WeeklyHow.`). Writing
         // 'name' with single quotes is how you copy another variable.
         // Everywhere else, a bare word must be the name of a variable
         // that exists — see BareWord below.
@@ -286,7 +288,7 @@
       }
       case AST.IF: {
         // Remember this if: it becomes the nearest previous if that a
-        // later `loopback to if` re-evaluates (Dev Build 3).
+        // later `loopback to if` re-evaluates (Dev Build 4).
         this.lastIf = node;
         // Chained form: try each branch in order; a branch with no
         // condition is the final `otherwise`.
@@ -391,38 +393,36 @@
         if (!this.loadedLibraries.has('Python')) {
           throw new LibraryError('You cannot run Python code yet, because the Python library has not been added.',
             node.line, node.column,
-            'Add this line above your Python code: library "Python" add — then python code "..." will work.');
+            'Add this line above your Python code: add library "Python" — then python code "..." will work.');
         }
-        if (typeof this.pythonExecutor !== 'function') {
+        var self = this;
+        var executor = this.pythonExecutor;
+        if (!executor && EPP.PythonRunner) {
+          executor = async function (code) {
+            if (!self.pythonRunner) {
+              self.pythonRunner = new EPP.PythonRunner({
+                output: self.output,
+                globals: self.pythonGlobals
+              });
+            }
+            self.pythonRunner.run(code);
+          };
+        }
+        if (typeof executor !== 'function') {
           throw new RuntimeError('Python code cannot run here, because no Python runner is connected to this E++ IDE.',
             node.line, node.column,
             'Open this file in the E++ IDE in a web browser, then press Run again.');
         }
         try {
-          await this.pythonExecutor(node.code, node);
+          await executor(node.code, node);
         } catch (e) {
           if (e && e.format && e.category) throw e; // already an E++ error
-          // Never show Python's own error text (tracebacks and all).
-          // Explain, in our own words, what kind of mistake Python found.
-          var translated = translatePythonError(e);
-          if (translated.type) {
-            throw new RuntimeError(
-              'Python stopped with a problem: ' + translated.friendly +
-              ' (Python calls this a ' + translated.type + ').',
-              node.line, node.column,
-              'Remember, the code inside the quotes is Python, not E++: it follows Python\u2019s rules, not E++\u2019s. Check that part of your program and try again.');
-          }
-          var detail = e && e.message ? String(e.message).trim() : '';
-          // A short, single-line message from the host itself (for
-          // example "the Python runner could not be downloaded") is
-          // already plain English and safe to pass through.
-          if (detail && detail.indexOf('\n') === -1 && detail.indexOf('Traceback') === -1 && detail.length <= 240) {
-            throw new RuntimeError(detail, node.line, node.column,
-              'Press Run again. If it keeps happening, try a shorter or simpler piece of Python code.');
-          }
-          throw new RuntimeError('Python could not run this code.',
-            node.line, node.column,
-            'Check the Python code inside the quotes on this line — spelling, punctuation and spaces at the start of lines all matter in Python.');
+          // Requirement 3: "BRO JUST USE THE PYTHONS OWN ERROR CODES"
+          var rawMsg = e && e.message ? String(e.message).trim() : String(e || '');
+          var match = /(?:^|\n)([A-Za-z_][A-Za-z0-9_.]*(?:Error|Exception|Interrupt|Iteration)[^\n]*)/.exec(rawMsg);
+          var pyCode = match ? match[1] : rawMsg;
+          throw new RuntimeError(pyCode, node.line, node.column,
+            'Check your Python code — it follows Python\u2019s own syntax and rules.');
         }
         if (this.cancelled) throw new RuntimeError('Execution was stopped.', node.line, node.column, null);
         return;
@@ -523,15 +523,15 @@
       }
 
       case AST.BARE_WORD: {
-        // Dev Build 3: a bare word is never a variable reference
+        // Dev Build 4: a bare word is never a variable reference
         // (variables must be written inside single quotes). If no such
         // variable exists it is an error — bare words are
         // maths or keywords, and this is neither. (The one exception is
         // the right-hand side of Define/Set, handled above, where bare
-        // words are the literal value: Define name as Adonis.)
+        // words are the literal value: Define name as WeeklyHow.)
         var bareKey = node.text.toLowerCase();
         if (this.variables.has(bareKey)) {
-          // Dev Build 3: variables MUST be written inside single quotes,
+          // Dev Build 4: variables MUST be written inside single quotes,
           // so a bare word is never a variable reference.
           throw new RuntimeError(
             '"' + node.text + '" is a variable, but it is not written as one \u2014 variables must be written inside single quotes.',
