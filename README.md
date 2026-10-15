@@ -45,12 +45,16 @@ npm test
   `text-tools.eppl` are seeded on first launch (and kept in `/examples`).
 - **Small screens** — at 900px and below the IDE switches to an app-style
   layout: **Files / Code / Console** tabs show one full-height panel at a
-  time (the IDE fits `100dvh` and each panel scrolls internally), the
-  header actions become a compact horizontal scroll row with Run first,
-  opening a file jumps to Code, running jumps to Console (with a badge for
-  new output), and controls/inputs use touch-sized 16px text so mobile
-  browsers don't auto-zoom. Narrower breakpoints (560px/380px) further
-  compact the status bar, file list and editor chrome.
+  time (panel visibility is enforced in JS as well as CSS, so panels can
+  never overlap; the IDE fits `100dvh` and each panel scrolls internally).
+  The header compacts to brand + Run on one row with Save/Export/Import in
+  a slim row beneath (a single row in short landscape), opening a file
+  jumps to Code, running jumps to Console (with a badge for new output),
+  and controls/inputs use touch-sized 16px text so mobile browsers don't
+  auto-zoom. Narrower breakpoints (560px/380px) further compact the status
+  bar, file list and editor chrome. Stylesheets/scripts are cache-busted
+  (`?v=`) so an updated IDE can never mix new markup with a stale
+  stylesheet.
 
 ## The E++ language in 60 seconds
 

@@ -17,6 +17,8 @@
 }
 
 * { box-sizing: border-box; }
+/* `hidden` must always win — the IDE toggles panels with it on small screens. */
+[hidden] { display: none !important; }
 html, body { height: 100%; }
 body {
   margin: 0;
@@ -52,7 +54,8 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .save-status { color: var(--muted); font-size: 12.5px; margin-right: 4px; }
 .save-status.dirty { color: var(--warning); }
-.action-label-short { display: none; }
+.action-group { display: flex; align-items: center; gap: 8px; }
+.run-actions { margin-left: 4px; }
 
 /* Small-screen panel switcher — only visible in the mobile layout below. */
 .mobile-view-nav { display: none; }
@@ -278,66 +281,71 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     overscroll-behavior: none;
   }
 
-  /* --- compact header + horizontally scrolling action row --- */
+  /* --- compact two-row header: brand + Run, then file actions --- */
   .topbar {
     position: relative;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "brand run"
+      "files files";
+    align-items: center;
     gap: 6px 10px;
-    padding: max(8px, env(safe-area-inset-top)) 10px 6px;
+    padding: max(8px, env(safe-area-inset-top)) 10px 8px;
+    background: #0c1425;
   }
-  .brand { flex: 1 1 auto; gap: 9px; }
-  .logo { font-size: 20px; padding: 8px 9px; border-radius: 9px; box-shadow: none; }
-  .logo span { font-size: 14px; }
-  .brand h1 { font-size: 17px; white-space: nowrap; }
+  .brand { grid-area: brand; gap: 9px; min-width: 0; }
+  .logo { font-size: 19px; padding: 8px 9px; border-radius: 9px; box-shadow: none; }
+  .logo span { font-size: 13px; }
+  .brand h1 { font-size: 16px; white-space: nowrap; }
   .brand p, .save-status { display: none; }
-  .top-actions {
-    order: 3;
-    flex: 1 0 100%;
-    flex-wrap: nowrap;
-    justify-content: flex-start;
+  .top-actions { display: contents; }
+  .file-actions {
+    grid-area: files;
     gap: 6px;
+    min-width: 0;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 2px 1px 4px;
+    padding: 1px 1px 2px;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
   }
-  .top-actions::-webkit-scrollbar { display: none; }
+  .file-actions::-webkit-scrollbar { display: none; }
+  .run-actions { grid-area: run; gap: 6px; margin-left: 0; }
   .top-actions .btn {
     flex: 0 0 auto;
-    min-height: 42px;
-    padding: 8px 13px;
+    min-height: 40px;
+    padding: 7px 13px;
     border-radius: 9px;
     white-space: nowrap;
   }
-  #btnRun { order: -2; }
-  #btnStop { order: -1; }
+  .btn-run { padding: 8px 18px; }
 
-  /* --- Files / Code / Console switcher --- */
+  /* --- Files / Code / Console segmented control --- */
   .mobile-view-nav {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
-    padding: 7px 10px;
-    background: rgba(11, 17, 32, .96);
+    gap: 4px;
+    padding: 6px 8px;
+    background: #0c1425;
     border-bottom: 1px solid var(--border);
   }
   .mobile-view-btn {
     appearance: none;
-    display: flex; align-items: center; justify-content: center; gap: 7px;
-    min-width: 0; min-height: 44px;
-    padding: 8px 6px;
-    background: var(--panel-2);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    min-width: 0; min-height: 42px;
+    padding: 7px 6px;
+    background: rgba(255, 255, 255, .03);
     color: var(--muted);
-    border: 1px solid var(--border);
-    border-radius: 10px;
+    border: 1px solid transparent;
+    border-radius: 9px;
     font-size: 13.5px; font-weight: 700;
     cursor: pointer;
   }
   .mobile-view-btn.active {
-    background: linear-gradient(135deg, rgba(52,211,153,.2), rgba(167,139,250,.18));
-    border-color: var(--accent);
-    color: var(--text);
+    background: rgba(52, 211, 153, .16);
+    border-color: rgba(52, 211, 153, .55);
+    color: #ecfdf5;
   }
   .mobile-view-icon { font-family: var(--mono); font-size: 13px; color: var(--accent); }
 
@@ -438,10 +446,8 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 
 /* Phones: compress everything one more step. */
 @media (max-width: 560px) {
-  .top-actions .btn { min-height: 40px; padding: 7px 11px; font-size: 12.5px; }
-  .action-label-long { display: none; }
-  .action-label-short { display: inline; }
-  .mobile-view-nav { padding: 6px 8px; }
+  .top-actions .btn { min-height: 38px; padding: 6px 11px; font-size: 12.5px; }
+  .mobile-view-nav { padding: 5px 6px; }
   .mobile-view-btn { min-height: 42px; font-size: 13px; gap: 5px; }
   .layout { padding: 6px 6px max(6px, env(safe-area-inset-bottom)); }
   .editor-head-actions .btn { padding: 6px 7px; font-size: 12px; }
@@ -462,11 +468,16 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   .tab { font-size: 12px; }
 }
 
-/* Short landscape phones: slim the chrome so code gets the height. */
+/* Short landscape phones: one-row header so code gets the height. */
 @media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
-  .topbar { padding-top: 5px; padding-bottom: 3px; }
-  .top-actions .btn { min-height: 36px; }
-  .mobile-view-nav { padding: 4px 8px; }
-  .mobile-view-btn { min-height: 36px; }
+  .topbar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "brand files run";
+    padding-top: 5px; padding-bottom: 5px;
+  }
+  .brand h1 { display: none; }
+  .top-actions .btn { min-height: 34px; padding: 5px 10px; }
+  .mobile-view-nav { padding: 4px 6px; }
+  .mobile-view-btn { min-height: 34px; }
   .logo { padding: 6px 8px; }
 }

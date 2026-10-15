@@ -196,6 +196,7 @@
       button.classList.toggle('active', active);
       button.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
+    applyPanelVisibility();
     if (view === 'console') {
       $('consoleBadge').hidden = true;
       window.requestAnimationFrame(function () {
@@ -203,6 +204,41 @@
       });
     }
   }
+
+  /*
+   * Panel visibility is enforced with the `hidden` attribute as well as
+   * CSS, so exactly one panel can ever be on screen at a time on small
+   * screens (and panels can never overlap or bleed into each other).
+   * On larger screens everything is visible again.
+   */
+  function applyPanelVisibility() {
+    var view = document.body.getAttribute('data-mobile-view') || 'editor';
+    var small = isSmallScreen();
+    var sidebarEl = $('sidebar');
+    var workspaceEl = $('workspace');
+    var editorEl = $('editorCard');
+    var consoleEl = $('consoleCard');
+    if (!small) {
+      sidebarEl.hidden = false;
+      workspaceEl.hidden = false;
+      editorEl.hidden = false;
+      consoleEl.hidden = false;
+      return;
+    }
+    sidebarEl.hidden = view !== 'files';
+    workspaceEl.hidden = view === 'files';
+    editorEl.hidden = view !== 'editor';
+    consoleEl.hidden = view !== 'console';
+  }
+
+  if (typeof smallScreenQuery.addEventListener === 'function') {
+    smallScreenQuery.addEventListener('change', applyPanelVisibility);
+  } else if (typeof smallScreenQuery.addListener === 'function') {
+    smallScreenQuery.addListener(applyPanelVisibility);
+  }
+  window.addEventListener('orientationchange', function () {
+    setTimeout(applyPanelVisibility, 60);
+  });
 
   mobileViewButtons.forEach(function (button) {
     button.addEventListener('click', function () {

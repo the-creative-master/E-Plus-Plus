@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <title>E++ IDE — Programs that read like English</title>
 <meta name="description" content="The official online IDE for E++, the programming language that looks like English, reads like English, and behaves like code. Create, save, import, export and run .eppl files.">
-<link rel="stylesheet" href="css/ide.css">
+<link rel="stylesheet" href="css/ide.css?v=4">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>E</text></svg>">
 </head>
 <body data-mobile-view="editor">
@@ -20,12 +22,16 @@
   </div>
   <div class="top-actions">
     <span id="saveStatus" class="save-status" role="status">Saved</span>
-    <button id="btnSave" class="btn" type="button" title="Save (Ctrl+S)">Save</button>
-    <button id="btnExport" class="btn" type="button" title="Download this .eppl file" aria-label="Export .eppl file"><span class="action-label-long">Export .eppl</span><span class="action-label-short" aria-hidden="true">Export</span></button>
-    <button id="btnImport" class="btn" type="button" title="Open a .eppl file from your computer" aria-label="Import .eppl file"><span class="action-label-long">Import .eppl</span><span class="action-label-short" aria-hidden="true">Import</span></button>
-    <input id="importInput" type="file" accept=".eppl" multiple hidden>
-    <button id="btnStop" class="btn btn-danger" type="button" disabled>Stop</button>
-    <button id="btnRun" class="btn btn-run" type="button" title="Run (Ctrl+Enter)">▶ Run</button>
+    <div class="action-group file-actions">
+      <button id="btnSave" class="btn" type="button" title="Save (Ctrl+S)">Save</button>
+      <button id="btnExport" class="btn" type="button" title="Download this file as a .eppl file" aria-label="Export .eppl file">Export</button>
+      <button id="btnImport" class="btn" type="button" title="Open a .eppl file from your computer" aria-label="Import .eppl file">Import</button>
+      <input id="importInput" type="file" accept=".eppl" multiple hidden>
+    </div>
+    <div class="action-group run-actions">
+      <button id="btnStop" class="btn btn-danger" type="button" disabled>Stop</button>
+      <button id="btnRun" class="btn btn-run" type="button" title="Run (Ctrl+Enter)">▶ Run</button>
+    </div>
   </div>
 </header>
 
@@ -94,7 +100,7 @@ display 1 divided by 2 as fraction</pre>
         <div class="line-numbers" aria-hidden="true"><div id="lineNumberInner">1</div></div>
         <div class="code-area">
           <pre class="highlight-layer" aria-hidden="true"><code id="highlightCode"></code></pre>
-          <textarea id="editor" aria-label="E++ code editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="Write E++ here… for example: say &quot;Hello, world&quot;."></textarea>
+          <textarea id="editor" aria-label="E++ code editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="Write E++ here…"></textarea>
         </div>
       </div>
 
@@ -147,14 +153,14 @@ display 1 divided by 2 as fraction</pre>
 
 <div id="toast" class="toast" role="status" hidden></div>
 
-<script src="js/errors.js"></script>
-<script src="js/lexer.js"></script>
-<script src="js/ast.js"></script>
-<script src="js/libraries.js"></script>
-<script src="js/parser.js"></script>
-<script src="js/interpreter.js"></script>
-<script src="js/files.js"></script>
-<script src="js/highlight.js"></script>
-<script src="js/ide.js"></script>
+<script src="js/errors.js?v=4"></script>
+<script src="js/lexer.js?v=4"></script>
+<script src="js/ast.js?v=4"></script>
+<script src="js/libraries.js?v=4"></script>
+<script src="js/parser.js?v=4"></script>
+<script src="js/interpreter.js?v=4"></script>
+<script src="js/files.js?v=4"></script>
+<script src="js/highlight.js?v=4"></script>
+<script src="js/ide.js?v=4"></script>
 </body>
 </html>
