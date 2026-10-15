@@ -574,6 +574,12 @@
   var PYTHON_CDN = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';
   var pythonRuntimePromise = null;
   var pythonNamespace = null;
+  // Host-level lock: the IDE's Python runner itself refuses to run unless
+  // the program that is currently running has actually executed
+  // `library "Python" add` (signalled through the interpreter's onLibrary
+  // callback). This is a third, independent gate on top of the parser and
+  // interpreter checks — Python cannot run without the library, period.
+  var pythonAuthorized = false;
 
   function resetPythonRuntime() {
     if (pythonNamespace && typeof pythonNamespace.destroy === 'function') {
@@ -613,6 +619,14 @@
   }
 
   async function executePython(code) {
+    if (!pythonAuthorized) {
+      // Plain-English refusal, thrown as an E++ LibraryError so it is
+      // shown exactly like the language-level gate.
+      throw new EPP.LibraryError(
+        'You cannot run Python code yet, because the Python library has not been added.',
+        null, null,
+        'Add this line above your Python code: library "Python" add — then python code "..." will work.');
+    }
     var pyodide = await getPythonRuntime();
     if (!pythonNamespace) pythonNamespace = pyodide.toPy({});
     pyodide.setStdout({
@@ -642,6 +656,10 @@
     loadedLibraries = [];
     updateLibrariesStatus();
     resetPythonRuntime(); // every Run starts Python with a clean slate
+    pythonAuthorized = false; // Python starts locked on every Run
+    // Start each Run with a clean console, so output from earlier runs
+    // can never be mistaken for this run's output.
+    consoleOutput.innerHTML = '';
     // On small screens, running a program takes you to its output.
     if (isSmallScreen()) setMobileView('console');
 
@@ -670,6 +688,9 @@
       onLibrary: function (name) {
         loadedLibraries.push(name);
         updateLibrariesStatus();
+        // Only an actually-executed `library "Python" add` unlocks the
+        // IDE's Python runner for this run.
+        if (name === 'Python') pythonAuthorized = true;
         appendConsole('Library loaded: ' + name, 'library');
       }
     });
@@ -734,5 +755,17 @@
   var initial = files.some(function (f) { return f.name === 'hello.eppl'; }) ? 'hello.eppl' : (files[0] && files[0].name);
   if (initial) openFile(initial);
   else refreshEditor();
-  appendConsole('Welcome to the E++ IDE. Open a .eppl file on the left and press Run.', 'system');
+  appendConsole('Welcome to the E++ IDE (build v6). Open a .eppl file on the left and press Run.', 'system');
+  // Boot-time safety self-check: Python must refuse to run without the
+  // Python library. If this ever stops refusing, say so loudly.
+  try {
+    EPP.Parser.parse('python code "print(1)"');
+    appendConsole('WARNING: the Python safety check FAILED — Python ran without the Python library. Please report this!', 'error');
+  } catch (selfCheckError) {
+    if (selfCheckError && selfCheckError.category === 'LibraryError') {
+      appendConsole('Safety check passed: Python cannot run unless your program adds library "Python" add first.', 'system');
+    } else {
+      appendConsole('Safety check: Python was stopped before it could run (' + (selfCheckError && selfCheckError.message) + ')', 'system');
+    }
+  }
 })();

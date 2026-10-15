@@ -52,7 +52,9 @@
     },
     Python: {
       name: 'Python',
-      aliases: ['python', 'python3', 'py'],
+      // No short aliases on purpose: only library "Python" add unlocks
+      // Python code. (Letter case does not matter, as with all libraries.)
+      aliases: [],
       description: 'Run real Python code from E++: python code "..." for one line, or python code "-..." for a multi-line block.',
       unlocks: [
         { feature: 'python code', kind: 'statement' }

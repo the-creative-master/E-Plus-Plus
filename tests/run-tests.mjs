@@ -193,6 +193,10 @@ await expectError('python code without the Python library is a clear English Lib
   'python code "print(1)"', /You cannot run Python code yet, because the Python library has not been added/);
 await expectError('python code before the library line is still refused (order matters)',
   'python code "print(1)"\nlibrary "Python" add', /Python library has not been added/);
+await expectError('a library line inside a branch that never runs does not unlock Python',
+  'if 1 is equal to 2 then library "Python" add\npython code "print(1)"', /Python library has not been added/);
+await expectError('a library line inside a repeat that never runs does not unlock Python',
+  'repeat 0 times library "Python" add\npython code "print(1)"', /Python library has not been added/);
 {
   const seen = [];
   const { output } = await run('library "Python" add\npython code "print(\'Hello from Python\')"', {
