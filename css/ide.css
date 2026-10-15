@@ -134,10 +134,19 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 }
 
 /* ---------- workspace ---------- */
-.workspace { display: grid; grid-template-rows: minmax(320px, 1fr) 260px; gap: 16px; min-height: 0; }
+.workspace { display: grid; grid-template-rows: minmax(320px, 1fr) 260px auto; gap: 16px; min-height: 0; }
 .editor-card, .console-card {
   background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
   display: flex; flex-direction: column; overflow: hidden; min-height: 0;
+}
+.draw-card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  display: flex; flex-direction: column; overflow: hidden; flex: 0 0 auto;
+}
+.draw-card[hidden] { display: none; }
+#drawCanvas {
+  display: block; width: 100%; height: auto; max-height: 320px;
+  background: #0b1020;
 }
 .editor-head, .console-head {
   display: flex; align-items: center; gap: 10px; padding: 9px 12px;
@@ -380,6 +389,10 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   }
   body[data-mobile-view="editor"] .console-card { display: none; }
   body[data-mobile-view="console"] .editor-card { display: none; }
+  body[data-mobile-view="editor"] .draw-card,
+  body[data-mobile-view="files"] .draw-card { display: none; }
+  body[data-mobile-view="console"] .workspace { grid-template-rows: minmax(0, 1fr) auto; }
+  body[data-mobile-view="console"] #drawCanvas { max-height: 220px; }
 
   .editor-card, .console-card { height: 100%; border-radius: 12px; }
 

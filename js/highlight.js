@@ -14,7 +14,8 @@
     answer: 1, wait: 1, library: 1, add: 1, load: 1, 'import': 1,
     'if': 1, then: 1, otherwise: 1, end: 1, repeat: 1, times: 1,
     'while': 1, 'do': 1, stop: 1, set: 1, change: 1, to: 1, note: 1,
-    increase: 1, decrease: 1, python: 1, code: 1
+    increase: 1, decrease: 1, python: 1, code: 1,
+    loopback: 1, drawing: 1, sprite: 1, move: 1
   };
   var OPERATORS = {
     plus: 1, minus: 1, times: 1, divided: 1, by: 1, power: 1, percent: 1,

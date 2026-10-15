@@ -38,8 +38,11 @@ Define total as 'price' times 'quantity'.
 
 `Define <name> as <value>.` creates (or replaces) a variable. Names are
 single words. Refer to a variable with single quotes: `say 'name'`.
-Bare references work too when the word is used where a value is expected,
-as in the spec example `if output is equal to 11 ...`.
+Since Dev Build 3, **every** variable reference must be written inside
+single quotes — writing a variable's name bare (for example
+`if output is equal to 11`) is an English error explaining the rule.
+The value in a `Define`/`Set` may still be bare words, which are then
+the literal value: `Define name as Adonis.`
 
 Change an existing variable (extension, same idea):
 
@@ -185,6 +188,19 @@ ask "What is 5 plus 6?" and save answer as output
 if output is equal to 11 then say "Correct!" otherwise ask "What is 5 plus 6?" and save answer as output
 ```
 
+### Loopback (Dev Build 3)
+
+```eppl
+loopback to if
+```
+
+`loopback to if` re-evaluates the nearest previous `if`. It only
+triggers when that if's condition is true **at the moment of the
+loopback** (the condition is checked again, not remembered): the if
+runs again. When the condition is false, the loopback is ignored and
+execution simply continues with the next statement. There are no
+modifiers or guards — the whole statement is `loopback to if`.
+
 ## 9. Loops (extensions)
 
 ```eppl
@@ -250,18 +266,20 @@ library "Python" add
 python code "print('Hello from Python')"
 ```
 
-Multi-line "dash mode": when the quoted code begins with `-`, everything
-after the dash until the closing quote is raw Python — it may span lines
-and is never parsed as E++. The parser lifts the whole block out of the
-program *before* the E++ lexer runs; the lexer itself is generic,
-language-agnostic JavaScript and contains no Python knowledge at all
-(and, like everything else in the language core, it never executes
-anything):
+Multi-line "dash mode" (Dev Build 3 form): the block opens with `"-` and
+closes with `-"`. Everything between those two dashes is raw Python —
+it may span lines, contain double quotes, E++ keywords and any symbols,
+and is never parsed as E++ or seen by the E++ lexer. The parser lifts
+the whole block out of the program *before* the lexer runs; the lexer
+itself is generic, language-agnostic JavaScript and contains no Python
+knowledge at all (and, like everything else in the language core, it
+never executes anything). A block closed with a plain `"` (no closing
+dash) still works for Python that contains no double quotes of its own:
 
 ```eppl
 python code "-for number in range(3):
-    print(number)
-"
+    print("counting", number)
+-"
 ```
 
 In the IDE, Python really executes (via Pyodide/WebAssembly, bundled
@@ -276,6 +294,25 @@ through the language core can supply their own runner with the
 `pythonExecutor` interpreter option; with no runner connected, Python
 statements fail with a clear English `RuntimeError` instead of doing
 nothing.
+
+### Draw (Dev Build 3)
+
+Create a drawing sprite, then move it. Pixel amounts must always be
+written as text in double quotes:
+
+```eppl
+define 'hero' as drawing sprite
+'hero' move right "60"
+'hero' move down "30"
+'hero' move left "20"
+'hero' move up "10"
+```
+
+Sprites start at the centre of the drawing, position (0, 0); right and
+down add to the position, left and up subtract. In the IDE the sprite
+appears on a drawing canvas under the console (see
+`examples/drawing.eppl`). Writing the pixels without quotes
+(`'hero' move up 10`) or with non-numeric text is an English error.
 
 ## 11. `.eppl` files
 
@@ -318,7 +355,11 @@ program        := statement*
 statement      := define | set | say | ask | wait | library
                 | if | repeat | while | stop | note
                 | increase | decrease | python
+                | loopback | sprite-move                       [Dev Build 3]
 define         := "Define" name "as" expression
+                | "define" VARIABLE "as" "drawing" "sprite"    [Draw]
+loopback       := "loopback" "to" "if"                         [Dev Build 3]
+sprite-move    := VARIABLE "move" ("up"|"down"|"left"|"right") STRING
 set            := ("Set"|"Change") name "to" expression
 say            := ("say"|"display"|"show") expression
 ask            := "ask" expression "and save answer as" name

@@ -60,6 +60,16 @@
         { feature: 'python code', kind: 'statement' }
       ],
       example: 'library "Python" add\npython code "print(\'Hello from Python\')"'
+    },
+    Draw: {
+      name: 'Draw',
+      aliases: ['draw', 'drawing', 'sprites'],
+      description: 'Drawing sprites you can move around: define \'hero\' as drawing sprite, then \'hero\' move up "10".',
+      unlocks: [
+        { feature: 'drawing sprite', kind: 'statement' },
+        { feature: 'move up/down/left/right', kind: 'statement' }
+      ],
+      example: 'define \'hero\' as drawing sprite\n\'hero\' move right "40"\n\'hero\' move down "20"'
     }
   };
 

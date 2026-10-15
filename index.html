@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <title>E++ IDE — Programs that read like English</title>
 <meta name="description" content="The official online IDE for E++, the programming language that looks like English, reads like English, and behaves like code. Create, save, import, export and run .eppl files.">
-<link rel="stylesheet" href="css/ide.css?v=8">
+<link rel="stylesheet" href="css/ide.css?v=9">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>E</text></svg>">
 </head>
 <body data-mobile-view="editor">
@@ -16,7 +16,7 @@
   <div class="brand">
     <div class="logo" aria-hidden="true">E<span>++</span></div>
     <div>
-      <h1>E++ IDE <span class="build-badge" title="Build v6 — Python only runs with library &quot;Python&quot; add">build v8</span></h1>
+      <h1>E++ IDE <span class="build-badge" title="E++ Dev Build 3">Dev Build 3</span></h1>
       <p>Looks like English. Reads like English. Behaves like code.</p>
     </div>
   </div>
@@ -130,6 +130,14 @@ display 1 divided by 2 as fraction</pre>
         <button class="btn btn-small btn-accent" type="submit">Answer</button>
       </form>
     </div>
+
+    <div class="draw-card" id="drawCard" hidden>
+      <div class="console-head">
+        <h2>Drawing</h2>
+        <span class="console-hint">Sprites appear here when a program uses the Draw library. (0, 0) is the centre; up is negative.</span>
+      </div>
+      <canvas id="drawCanvas" width="720" height="360">Your browser does not support drawing.</canvas>
+    </div>
   </section>
 </main>
 
@@ -153,14 +161,14 @@ display 1 divided by 2 as fraction</pre>
 
 <div id="toast" class="toast" role="status" hidden></div>
 
-<script src="js/errors.js?v=8"></script>
-<script src="js/lexer.js?v=8"></script>
-<script src="js/ast.js?v=8"></script>
-<script src="js/libraries.js?v=8"></script>
-<script src="js/parser.js?v=8"></script>
-<script src="js/interpreter.js?v=8"></script>
-<script src="js/files.js?v=8"></script>
-<script src="js/highlight.js?v=8"></script>
-<script src="js/ide.js?v=8"></script>
+<script src="js/errors.js?v=9"></script>
+<script src="js/lexer.js?v=9"></script>
+<script src="js/ast.js?v=9"></script>
+<script src="js/libraries.js?v=9"></script>
+<script src="js/parser.js?v=9"></script>
+<script src="js/interpreter.js?v=9"></script>
+<script src="js/files.js?v=9"></script>
+<script src="js/highlight.js?v=9"></script>
+<script src="js/ide.js?v=9"></script>
 </body>
 </html>

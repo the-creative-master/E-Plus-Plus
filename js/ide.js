@@ -44,7 +44,7 @@
         'note: A tiny quiz. The typed answer is text, but E++ compares\n' +
         'note: numeric answers as numbers automatically.\n' +
         'ask "What is 5 plus 6?" and save answer as output\n' +
-        'if output is equal to 11 then say "Correct!" otherwise say "Wrong!"\n' +
+        'if \'output\' is equal to 11 then say "Correct!" otherwise say "Wrong!"\n' +
         '\n' +
         'ask "What is 9 minus 4?" and save answer as second\n' +
         'if \'second\' is equal to 5 then\n' +
@@ -111,9 +111,9 @@
         'say \'score\'\n' +
         '\n' +
         'ask "Guess a number" and save answer as guess\n' +
-        'if guess is equal to 7 then say "That is the one!" and\n' +
+        'if \'guess\' is equal to 7 then say "That is the one!" and\n' +
         'otherwise if not a number then say "That was not a number at all." and\n' +
-        'otherwise if guess is lesser than 7 then ask "Too low — try again" and save answer as guess and\n' +
+        'otherwise if \'guess\' is lesser than 7 then ask "Too low — try again" and save answer as guess and\n' +
         'otherwise ask "Too high — try again" and save answer as guess\n'
     },
     {
@@ -130,6 +130,21 @@
         '"\n' +
         '\n' +
         'say "And now E++ is talking again."\n'
+    },
+    {
+      name: 'drawing.eppl',
+      content:
+        'note: The Draw library: make a sprite, then move it around.\n' +
+        'note: Sprites start in the centre of the drawing at (0, 0).\n' +
+        'note: Pixel amounts are always written as text, like "40".\n' +
+        '\n' +
+        'define \'hero\' as drawing sprite\n' +
+        '\'hero\' move right "60"\n' +
+        '\'hero\' move down "30"\n' +
+        '\'hero\' move left "20"\n' +
+        '\'hero\' move up "10"\n' +
+        '\n' +
+        'say "The hero sprite has moved - watch the drawing below!"\n'
     }
   ];
 
@@ -539,6 +554,71 @@
   })();
 
   // ------------------------------------------------------------------
+  // Draw library: sprites on a canvas. Sprites live at (x, y) with the
+  // centre of the canvas as (0, 0); up is negative, right is positive,
+  // exactly matching the interpreter's coordinates.
+  // ------------------------------------------------------------------
+  var drawCard = $('drawCard');
+  var drawCanvas = $('drawCanvas');
+  var drawSprites = {}; // lowercased name -> { name, x, y, hue }
+
+  function resetDrawing() {
+    drawSprites = {};
+    if (drawCard) drawCard.hidden = true;
+  }
+
+  function handleSprite(event) {
+    var key = String(event.name).toLowerCase();
+    if (!drawSprites[key]) {
+      drawSprites[key] = {
+        name: event.name, x: event.x, y: event.y,
+        hue: (Object.keys(drawSprites).length * 67) % 360
+      };
+    } else {
+      drawSprites[key].x = event.x;
+      drawSprites[key].y = event.y;
+    }
+    if (drawCard) drawCard.hidden = false;
+    drawScene();
+  }
+
+  function drawScene() {
+    if (!drawCanvas || !drawCanvas.getContext) return;
+    var ctx = drawCanvas.getContext('2d');
+    if (!ctx) return;
+    var w = drawCanvas.width, h = drawCanvas.height;
+    ctx.fillStyle = '#0b1020';
+    ctx.fillRect(0, 0, w, h);
+    // Grid + centre axes.
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.14)';
+    ctx.lineWidth = 1;
+    for (var gx = 0; gx <= w; gx += 40) { ctx.beginPath(); ctx.moveTo(gx + 0.5, 0); ctx.lineTo(gx + 0.5, h); ctx.stroke(); }
+    for (var gy = 0; gy <= h; gy += 40) { ctx.beginPath(); ctx.moveTo(0, gy + 0.5); ctx.lineTo(w, gy + 0.5); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+    ctx.beginPath(); ctx.moveTo(w / 2 + 0.5, 0); ctx.lineTo(w / 2 + 0.5, h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, h / 2 + 0.5); ctx.lineTo(w, h / 2 + 0.5); ctx.stroke();
+    Object.keys(drawSprites).forEach(function (key) {
+      var s = drawSprites[key];
+      var cx = w / 2 + s.x, cy = h / 2 + s.y;
+      ctx.fillStyle = 'hsl(' + s.hue + ', 75%, 55%)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.lineWidth = 2;
+      var r = 16;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = '13px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(s.name, cx, cy - r - 8);
+      ctx.font = '11px system-ui, sans-serif';
+      ctx.fillStyle = 'rgba(226, 232, 240, 0.75)';
+      ctx.fillText('(' + Math.round(s.x) + ', ' + Math.round(s.y) + ')', cx, cy + r + 16);
+    });
+  }
+
+  // ------------------------------------------------------------------
   // Execution engine: console I/O + run/stop
   // ------------------------------------------------------------------
   consoleInputForm.addEventListener('submit', function (event) {
@@ -668,6 +748,7 @@
     saveCurrent(false);
     loadedLibraries = [];
     updateLibrariesStatus();
+    resetDrawing(); // sprites start fresh on every Run
     resetPythonRuntime(); // every Run starts Python with a clean slate
     pythonAuthorized = false; // Python starts locked on every Run
     // Start each Run with a clean console, so output from earlier runs
@@ -698,6 +779,7 @@
         });
       },
       pythonExecutor: executePython,
+      onSprite: handleSprite,
       onLibrary: function (name) {
         loadedLibraries.push(name);
         updateLibrariesStatus();
@@ -771,7 +853,7 @@
   var initial = files.some(function (f) { return f.name === 'hello.eppl'; }) ? 'hello.eppl' : (files[0] && files[0].name);
   if (initial) openFile(initial);
   else refreshEditor();
-  appendConsole('Welcome to the E++ IDE (build v8). Open a .eppl file on the left and press Run.', 'system');
+  appendConsole('You are running E++ Dev Build 3. Open a .eppl file on the left and press Run.', 'system');
   // Boot-time safety self-check: Python must refuse to run without the
   // Python library. If this ever stops refusing, say so loudly.
   try {

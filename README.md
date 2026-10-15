@@ -79,6 +79,23 @@ npm test
   printing command. See `examples/python.eppl` and
   `examples/score-tracker.eppl`.
 
+## Dev Build 3
+
+- **Quoted variables** — every variable reference must be written inside
+  single quotes (`'x'`); a bare variable name is a plain-English error.
+- **If blocks** use `then`; multi-line if actions continue with `and`.
+- **Loopback** — `loopback to if` re-evaluates the nearest previous if;
+  it only triggers when that if's condition is true at that moment, and
+  is ignored when it is false.
+- **Python isolation** — Python only runs inside `python code "..."`
+  (one line) or `python code "- ... -"` (multiple lines; the closing
+  dash means the Python may contain double quotes and anything else,
+  all exempt from E++ rules). Python anywhere else is invalid.
+- **Draw library** — `define 'hero' as drawing sprite`, then
+  `'hero' move up "10"` / `down` / `left` / `right` (pixels always a
+  quoted string). Sprites move on a canvas in the IDE;
+  see `examples/drawing.eppl`.
+
 ## The E++ language in 60 seconds
 
 ```eppl

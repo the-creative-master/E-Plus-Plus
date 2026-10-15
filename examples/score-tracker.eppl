@@ -6,7 +6,7 @@ Decrease score by 3
 say 'score'
 
 ask "Guess a number" and save answer as guess
-if guess is equal to 7 then say "That is the one!" and
+if 'guess' is equal to 7 then say "That is the one!" and
 otherwise if not a number then say "That was not a number at all." and
-otherwise if guess is lesser than 7 then ask "Too low — try again" and save answer as guess and
+otherwise if 'guess' is lesser than 7 then ask "Too low — try again" and save answer as guess and
 otherwise ask "Too high — try again" and save answer as guess

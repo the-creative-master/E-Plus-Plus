@@ -87,8 +87,8 @@ console.log('Interpreter: basics from the spec');
   ok('ask ... and save answer as ...');
 }
 {
-  const right = await run('ask "5 plus 6?" and save answer as output\nif output is equal to 11 then say "Correct!" otherwise say "Wrong!"', { answers: ['11'] });
-  const wrong = await run('ask "5 plus 6?" and save answer as output\nif output is equal to 11 then say "Correct!" otherwise say "Wrong!"', { answers: ['9'] });
+  const right = await run('ask "5 plus 6?" and save answer as output\nif \'output\' is equal to 11 then say "Correct!" otherwise say "Wrong!"', { answers: ['11'] });
+  const wrong = await run('ask "5 plus 6?" and save answer as output\nif \'output\' is equal to 11 then say "Correct!" otherwise say "Wrong!"', { answers: ['9'] });
   assert.deepEqual([...right.output], ['Correct!']);
   assert.deepEqual([...wrong.output], ['Wrong!']);
   ok('if ... is equal to ... then ... otherwise ... (typed numbers compare as numbers)');
@@ -125,10 +125,11 @@ await expectError('using an undefined bare word in maths is an error', 'say 1 pl
   assert.deepEqual([...output], ['Adonis', 'Hello there']);
   ok('Define <name> as <bare words> still stores the literal words (spec example)');
 }
+await expectError('Dev Build 3: a bare variable name is an error (must be single-quoted)', 'Define count as 3.\nif count is equal to 3 then say "three" otherwise say "other"', /variables must be written inside single quotes/);
 {
-  const { output } = await run('Define count as 3.\nif count is equal to 3 then say "three" otherwise say "other"');
+  const { output } = await run('Define count as 3.\nif \'count\' is equal to 3 then say "three" otherwise say "other"');
   assert.deepEqual([...output], ['three']);
-  ok('a bare word that IS a defined variable still works (if output is equal to ...)');
+  ok("Dev Build 3: the same condition with 'count' in single quotes works");
 }
 {
   // The lexer is generic: it knows nothing about Python at all. A dash
@@ -154,6 +155,64 @@ await expectError('print with a bare word is refused too', 'print hello', /is Py
   ok('python code "..." with the library still reaches the runner');
 }
 
+console.log('Dev Build 3: quoted variables, loopback, Draw sprites');
+await expectError('loopback with no if before it is an English error', 'loopback to if', /no if for this loopback/);
+await expectError('loopback without "to if" is an English ParseError', 'loopback if', /Expected "to" after "loopback"/);
+{
+  // Condition true at loopback time: the if runs again.
+  const { output } = await run(
+    "Define count as 0\n" +
+    "ask \"Number?\" and save answer as n\n" +
+    "if 'n' is equal to 1 then Increase count by 1 and\n" +
+    "otherwise say \"not one\"\n" +
+    "loopback to if\n" +
+    "say 'count'", { answers: ['1'] });
+  assert.deepEqual([...output], ['2']);
+  ok('loopback to if re-runs the if when its condition is true');
+}
+{
+  // Condition false at loopback time: loopback is ignored.
+  const { output } = await run(
+    "ask \"Number?\" and save answer as n\n" +
+    "if 'n' is equal to 1 then say \"one\" otherwise say \"other\"\n" +
+    "loopback to if\n" +
+    "say \"after\"");
+  assert.deepEqual([...output], ['other', 'after']);
+  ok('loopback to if is ignored when the condition is false');
+}
+{
+  // The condition is re-evaluated, not remembered: it changed since.
+  const { output } = await run(
+    "Define flag as 1\n" +
+    "if 'flag' is equal to 1 then say \"first\" otherwise say \"never\"\n" +
+    "Set flag to 2\n" +
+    "loopback to if\n" +
+    "say \"done\"");
+  assert.deepEqual([...output], ['first', 'done']);
+  ok('loopback re-evaluates the condition (changed value means no trigger)');
+}
+{
+  const events = [];
+  const result = await (async () => {
+    const interp = new EPP.Interpreter({ output: () => {}, input: async () => '', delay: async () => {}, onSprite: (e) => events.push(e) });
+    return interp.run(EPP.Parser.parse(
+      "define 'hero' as drawing sprite\n" +
+      "'hero' move right \"30\"\n" +
+      "'hero' move up \"10\"\n" +
+      "'hero' move left \"5\"\n" +
+      "'hero' move down \"2\""));
+  })();
+  const hero = result.sprites.get('hero');
+  assert.deepEqual([hero.x, hero.y], [25, -8]);
+  assert.equal(events.length, 5);
+  assert.equal(events[0].action, 'create');
+  ok('Draw: define \'<name>\' as drawing sprite + movements track x/y');
+}
+await expectError('Draw: pixels must be a quoted string', "define 'hero' as drawing sprite\n'hero' move up 10", /pixels must be written as text in double quotes/);
+await expectError('Draw: pixels must be a number inside the quotes', "define 'hero' as drawing sprite\n'hero' move up \"ten\"", /not a number/);
+await expectError('Draw: moving an undefined sprite explains how to create it', "'ghost' move up \"10\"", /no sprite called 'ghost'/);
+await expectError('Draw: a bad direction is an English ParseError', "define 'hero' as drawing sprite\n'hero' move sideways \"10\"", /Expected a direction/);
+
 console.log('Increase / Decrease');
 {
   const { output } = await run(
@@ -177,7 +236,7 @@ console.log('Asking again, branches, comparisons, not-a-number');
   // Feature 2 exactly: the otherwise branch asks the same question again.
   const { output } = await run(
     'ask "What is 5 plus 6?" and save answer as output\n' +
-    'if output is equal to 11 then say "Correct!" otherwise ask "What is 5 plus 6?" and save answer as output\n' +
+    'if \'output\' is equal to 11 then say "Correct!" otherwise ask "What is 5 plus 6?" and save answer as output\n' +
     'say \'output\'',
     { answers: ['9', '11'] }
   );
@@ -205,9 +264,9 @@ console.log('Asking again, branches, comparisons, not-a-number');
 {
   const program =
     'ask "Pick a number" and save answer as answer\n' +
-    'if answer is equal to 1 then say "One" and\n' +
+    'if \'answer\' is equal to 1 then say "One" and\n' +
     'otherwise if not a number then say "Not a number" and\n' +
-    'otherwise if answer is greater than 10 then say "Big" and\n' +
+    'otherwise if \'answer\' is greater than 10 then say "Big" and\n' +
     'otherwise say "Small"';
   for (const [answer, expected] of [['1', 'One'], ['abc', 'Not a number'], ['42', 'Big'], ['5', 'Small'], ['', 'Not a number']]) {
     const { output } = await run(program, { answers: [answer] });
@@ -259,6 +318,27 @@ await expectError('a library line inside a repeat that never runs does not unloc
   assert.ok(seen[0].startsWith('total = 1 + 2'));
   assert.ok(seen[0].includes('for i in range(3):\n    print(i)\n'));
   ok('dash mode passes the whole multi-line block through raw, with no E++ parsing');
+}
+{
+  // Dev Build 3 dash form: python code "- ... -" — the closing dash lets
+  // the Python contain double quotes and E++ symbols, all untouched.
+  const seen = [];
+  await run(
+    'library "Python" add\n' +
+    'python code "-import random\n' +
+    'print("Welcome!")\n' +
+    'if __name__ == "__main__":\n' +
+    '    print(f"total={1 + 2}")\n' +
+    'game() -"\n' +
+    'say "back to E++"',
+    { pythonExecutor: async (code) => { seen.push(code); } }
+  );
+  assert.equal(seen.length, 1);
+  assert.ok(seen[0].startsWith('import random'));
+  assert.ok(seen[0].includes('print("Welcome!")'));
+  assert.ok(seen[0].includes('if __name__ == "__main__":'));
+  assert.ok(seen[0].trimEnd().endsWith('game()'));
+  ok('dash mode with closing dash: Python with double quotes passes through untouched');
 }
 await expectError('an unterminated Python block is an English LexError',
   'library "Python" add\npython code "-print(1)\nprint(2)', /Python code block never ends/);

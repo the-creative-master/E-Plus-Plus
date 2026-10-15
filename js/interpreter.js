@@ -188,6 +188,9 @@
     this.pythonExecutor = typeof options.pythonExecutor === 'function' ? options.pythonExecutor
       : (typeof options.executePython === 'function' ? options.executePython : null);
     this.onStatement = typeof options.onStatement === 'function' ? options.onStatement : null;
+    // Draw library hook: called whenever a sprite is created or moved,
+    // with { name, x, y, action: 'create' | 'move', direction }.
+    this.onSprite = typeof options.onSprite === 'function' ? options.onSprite : function () {};
     this.maxSteps = options.maxSteps || 100000;
     this.maxLoopIterations = options.maxLoopIterations || 10000;
     this.cancelled = false;
@@ -197,6 +200,8 @@
   Interpreter.prototype.reset = function () {
     this.variables = new Map();       // lowercased name -> value
     this.loadedLibraries = new Set(); // canonical library names
+    this.sprites = new Map();         // lowercased name -> { name, x, y }
+    this.lastIf = null;               // nearest previous if (for loopback)
     this.steps = 0;
     this.loopIterations = 0;
   };
@@ -222,7 +227,7 @@
       throw new RuntimeError('The interpreter needs a parsed E++ program.');
     }
     await this.executeBlock(program.body);
-    return { variables: this.variables, loadedLibraries: this.loadedLibraries };
+    return { variables: this.variables, loadedLibraries: this.loadedLibraries, sprites: this.sprites };
   };
 
   Interpreter.prototype.executeBlock = async function (statements) {
@@ -280,6 +285,9 @@
         return;
       }
       case AST.IF: {
+        // Remember this if: it becomes the nearest previous if that a
+        // later `loopback to if` re-evaluates (Dev Build 3).
+        this.lastIf = node;
         // Chained form: try each branch in order; a branch with no
         // condition is the final `otherwise`.
         if (node.branches && node.branches.length) {
@@ -294,6 +302,53 @@
         }
         var branch = (await this.evaluateCondition(node.condition)) ? node.thenBranch : node.elseBranch;
         await this.executeBlock(branch);
+        return;
+      }
+      case AST.LOOPBACK: {
+        // loopback to if: re-evaluate the nearest previous if. It only
+        // triggers when that if's condition is true (checked again now);
+        // when it is false the loopback is ignored and the program
+        // simply carries on with the next statement.
+        var target = this.lastIf;
+        if (!target) {
+          throw new RuntimeError('There is no if for this loopback to go back to.',
+            node.line, node.column,
+            'loopback to if goes back to the closest if above it, so an if has to come before this line.');
+        }
+        var firstCondition = target.branches && target.branches.length
+          ? target.branches[0].condition : target.condition;
+        if (firstCondition && (await this.evaluateCondition(firstCondition))) {
+          await this.executeStatement(target);
+        }
+        return;
+      }
+      case AST.DEFINE_SPRITE: {
+        var sprite = { name: node.name, x: 0, y: 0 };
+        this.sprites.set(node.name.toLowerCase(), sprite);
+        this.variables.set(node.name.toLowerCase(), node.name);
+        this.onSprite({ name: sprite.name, x: sprite.x, y: sprite.y, action: 'create', direction: null });
+        return;
+      }
+      case AST.MOVE_SPRITE: {
+        var moveKey = node.name.toLowerCase();
+        if (!this.sprites.has(moveKey)) {
+          throw new RuntimeError('There is no sprite called \'' + node.name + '\' to move.',
+            node.line, node.column,
+            'Create it first, for example: define \'' + node.name + '\' as drawing sprite. Then \'' + node.name + '\' move ' + node.direction + ' "10" will work.');
+        }
+        var moving = this.sprites.get(moveKey);
+        var pixelText = String(node.pixels).trim();
+        if (!/^-?\d+(\.\d+)?$/.test(pixelText)) {
+          throw new RuntimeError('The sprite can only move by a number of pixels, but "' + node.pixels + '" is not a number.',
+            node.line, node.column,
+            'Write the pixels as numbers inside double quotes, for example: \'' + node.name + '\' move ' + node.direction + ' "10"');
+        }
+        var pixels = parseFloat(pixelText);
+        if (node.direction === 'up') moving.y -= pixels;
+        else if (node.direction === 'down') moving.y += pixels;
+        else if (node.direction === 'left') moving.x -= pixels;
+        else if (node.direction === 'right') moving.x += pixels;
+        this.onSprite({ name: moving.name, x: moving.x, y: moving.y, action: 'move', direction: node.direction });
         return;
       }
       case AST.INCREASE:
@@ -468,13 +523,21 @@
       }
 
       case AST.BARE_WORD: {
-        // A bare word must mean something: the variable of that name.
-        // If no such variable exists it is an error — bare words are
+        // Dev Build 3: a bare word is never a variable reference
+        // (variables must be written inside single quotes). If no such
+        // variable exists it is an error — bare words are
         // maths or keywords, and this is neither. (The one exception is
         // the right-hand side of Define/Set, handled above, where bare
         // words are the literal value: Define name as Adonis.)
         var bareKey = node.text.toLowerCase();
-        if (this.variables.has(bareKey)) return this.variables.get(bareKey);
+        if (this.variables.has(bareKey)) {
+          // Dev Build 3: variables MUST be written inside single quotes,
+          // so a bare word is never a variable reference.
+          throw new RuntimeError(
+            '"' + node.text + '" is a variable, but it is not written as one \u2014 variables must be written inside single quotes.',
+            node.line, node.column,
+            "Write it with single quotes, like this: '" + node.text + "'.");
+        }
         var plural = node.text.indexOf(' ') !== -1;
         throw new RuntimeError(
           (plural ? 'The words "' + node.text + '" do' : 'The word "' + node.text + '" does') +

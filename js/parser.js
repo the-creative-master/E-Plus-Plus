@@ -157,10 +157,17 @@
         // Copy `python code ` up to the quote, remembering its position.
         while (i < quoteIndex) copyChar();
         var quoteLine = line, quoteColumn = column;
-        var closeIndex = source.indexOf('"', quoteIndex + 2);
+        // Multi-line dash mode ends at the closing dash: the terminator
+        // is the two characters -" . The Python in between may contain
+        // anything at all — double quotes, E++ keywords, symbols — none
+        // of it is ever seen by E++. (A block with no closing dash falls
+        // back to ending at the next double quote, as before.)
+        var dashEnd = source.indexOf('-"', quoteIndex + 2);
+        var closeIndex = dashEnd === -1 ? source.indexOf('"', quoteIndex + 2) : dashEnd;
         var unterminated = closeIndex === -1;
-        var blockEnd = unterminated ? source.length : closeIndex + 1;
-        var code = source.slice(quoteIndex + 2, unterminated ? source.length : closeIndex);
+        var codeEnd = unterminated ? source.length : closeIndex;
+        var blockEnd = unterminated ? source.length : closeIndex + (dashEnd === -1 ? 1 : 2);
+        var code = source.slice(quoteIndex + 2, codeEnd);
         var segment = source.slice(quoteIndex, blockEnd);
         var newlines = 0;
         for (var k = 0; k < segment.length; k++) if (segment[k] === '\n') newlines += 1;
@@ -274,6 +281,9 @@
 
   Parser.prototype.parseStatement = function () {
     var t = this.current();
+    // A statement starting with a quoted name is a Draw movement:
+    // 'hero' move up "10"
+    if (t.type === 'VARIABLE') return this.parseMoveSprite();
     if (t.type !== 'WORD') {
       // A statement may also start with a value-less token error:
       throw new ParseError('Expected a statement but found ' + this.describe(t) + '.',
@@ -303,6 +313,7 @@
       case 'increase': return this.parseIncreaseDecrease(true);
       case 'decrease': return this.parseIncreaseDecrease(false);
       case 'python': return this.parsePython();
+      case 'loopback': return this.parseLoopback();
       default:
         throw new ParseError('I do not understand the statement starting with "' + t.value + '".',
           t.line, t.column,
@@ -322,10 +333,72 @@
 
   Parser.prototype.parseDefine = function () {
     var kw = this.advance(); // Define
+    // Draw library form: define '<name>' as drawing sprite
+    if (this.current().type === 'VARIABLE') {
+      var spriteName = this.advance().value;
+      this.expectWord('as', 'in a sprite definition, for example: define \'' + spriteName + '\' as drawing sprite.');
+      if (!this.matchWord('drawing')) {
+        var badDraw = this.current();
+        throw new ParseError('Expected the words "drawing sprite" after "as" in a sprite definition but found ' + this.describe(badDraw) + '.',
+          badDraw.line, badDraw.column,
+          'Write it like this: define \'' + spriteName + '\' as drawing sprite.');
+      }
+      if (!this.matchWord('sprite')) {
+        var badSprite = this.current();
+        throw new ParseError('Expected the word "sprite" after "drawing" but found ' + this.describe(badSprite) + '.',
+          badSprite.line, badSprite.column,
+          'Write it like this: define \'' + spriteName + '\' as drawing sprite.');
+      }
+      return EPP.AST.DefineSprite(spriteName, kw);
+    }
     var name = this.parseName('after "Define"');
     this.expectWord('as', 'in a Define statement, for example: Define ' + name + ' as 10.');
     var value = this.parseExpression();
     return EPP.AST.Define(name, value, kw);
+  };
+
+  /** loopback to if — re-evaluates the nearest previous if (Dev Build 3). */
+  Parser.prototype.parseLoopback = function () {
+    var kw = this.advance(); // loopback
+    if (!this.matchWord('to')) {
+      var bad = this.current();
+      throw new ParseError('Expected "to" after "loopback" but found ' + this.describe(bad) + '.',
+        bad.line, bad.column, 'Write it like this: loopback to if');
+    }
+    if (!this.matchWord('if')) {
+      var bad2 = this.current();
+      throw new ParseError('Expected "if" after "loopback to" but found ' + this.describe(bad2) + '.',
+        bad2.line, bad2.column, 'loopback only goes back to an if, so write it like this: loopback to if');
+    }
+    return EPP.AST.Loopback(kw);
+  };
+
+  /** 'name' move up/down/left/right "<pixels>" — Draw movement. */
+  Parser.prototype.parseMoveSprite = function () {
+    var nameToken = this.advance(); // 'name'
+    var name = nameToken.value;
+    if (!this.matchWord('move')) {
+      var bad = this.current();
+      throw new ParseError('Expected the word "move" after \'' + name + '\' but found ' + this.describe(bad) + '.',
+        bad.line, bad.column,
+        'Move a sprite like this: \'' + name + '\' move up "10" — the direction is up, down, left or right, and the pixels go in double quotes.');
+    }
+    var dirToken = this.current();
+    var direction = dirToken.type === 'WORD' ? dirToken.value.toLowerCase() : '';
+    if (['up', 'down', 'left', 'right'].indexOf(direction) === -1) {
+      throw new ParseError('Expected a direction (up, down, left or right) after "move" but found ' + this.describe(dirToken) + '.',
+        dirToken.line, dirToken.column,
+        'Write it like this: \'' + name + '\' move up "10"');
+    }
+    this.advance(); // direction
+    var pixelsToken = this.current();
+    if (pixelsToken.type !== 'STRING') {
+      throw new ParseError('The number of pixels must be written as text in double quotes, like "10", but found ' + this.describe(pixelsToken) + '.',
+        pixelsToken.line, pixelsToken.column,
+        'Write it like this: \'' + name + '\' move ' + direction + ' "10"');
+    }
+    this.advance(); // pixels
+    return EPP.AST.MoveSprite(name, direction, pixelsToken.value, nameToken);
   };
 
   Parser.prototype.parseSet = function () {

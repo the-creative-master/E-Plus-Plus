@@ -21,6 +21,9 @@
     INCREASE: 'Increase',
     DECREASE: 'Decrease',
     PYTHON_CODE: 'PythonCode',
+    LOOPBACK: 'Loopback',
+    DEFINE_SPRITE: 'DefineSprite',
+    MOVE_SPRITE: 'MoveSprite',
     REPEAT: 'Repeat',
     WHILE: 'While',
     STOP: 'Stop',
@@ -74,6 +77,11 @@
     Decrease: function (name, amount, token) { return at({ type: Type.DECREASE, name: name, amount: amount }, token); },
     PythonCode: function (code, token, block) {
       return at({ type: Type.PYTHON_CODE, code: code, block: !!block }, token);
+    },
+    Loopback: function (token) { return at({ type: Type.LOOPBACK }, token); },
+    DefineSprite: function (name, token) { return at({ type: Type.DEFINE_SPRITE, name: name }, token); },
+    MoveSprite: function (name, direction, pixels, token) {
+      return at({ type: Type.MOVE_SPRITE, name: name, direction: direction, pixels: pixels }, token);
     },
     Repeat: function (count, body, token) { return at({ type: Type.REPEAT, count: count, body: body || [] }, token); },
     While: function (condition, body, token) { return at({ type: Type.WHILE, condition: condition, body: body || [] }, token); },
