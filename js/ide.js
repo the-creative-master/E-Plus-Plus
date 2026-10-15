@@ -116,6 +116,8 @@
   var fileList = $('fileList');
   var btnRun = $('btnRun');
   var btnStop = $('btnStop');
+  var mobileViewButtons = Array.prototype.slice.call(document.querySelectorAll('.mobile-view-btn'));
+  var smallScreenQuery = window.matchMedia('(max-width: 900px)');
 
   // ------------------------------------------------------------------
   // State
@@ -150,6 +152,12 @@
     line.textContent = text;
     consoleOutput.appendChild(line);
     consoleOutput.scrollTop = consoleOutput.scrollHeight;
+    // On small screens the console is its own panel: flag new activity
+    // on its tab until the user looks at it.
+    if (isSmallScreen() && document.body.getAttribute('data-mobile-view') !== 'console' &&
+        (cls === 'output' || cls === 'error' || cls === 'prompt' || cls === 'library')) {
+      $('consoleBadge').hidden = false;
+    }
   }
 
   function clearConsole() {
@@ -174,6 +182,33 @@
       ? 'Libraries: ' + loadedLibraries.join(', ')
       : 'Libraries: none loaded';
   }
+
+  // ------------------------------------------------------------------
+  // Small-screen panel switching (Files / Code / Console)
+  // ------------------------------------------------------------------
+  function isSmallScreen() { return smallScreenQuery.matches; }
+
+  function setMobileView(view) {
+    if (view !== 'files' && view !== 'editor' && view !== 'console') return;
+    document.body.setAttribute('data-mobile-view', view);
+    mobileViewButtons.forEach(function (button) {
+      var active = button.getAttribute('data-mobile-view') === view;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    if (view === 'console') {
+      $('consoleBadge').hidden = true;
+      window.requestAnimationFrame(function () {
+        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+      });
+    }
+  }
+
+  mobileViewButtons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      setMobileView(button.getAttribute('data-mobile-view'));
+    });
+  });
 
   // ------------------------------------------------------------------
   // Editor: highlighting, line numbers, cursor
@@ -228,7 +263,11 @@
       return !filter || f.name.toLowerCase().indexOf(filter) !== -1;
     });
     fileList.innerHTML = '';
-    $('noFiles').hidden = store.listFiles().length > 0;
+    var totalFiles = store.listFiles().length;
+    $('noFiles').hidden = totalFiles > 0;
+    var badge = $('fileCountBadge');
+    badge.textContent = String(totalFiles);
+    badge.hidden = totalFiles === 0;
     files.forEach(function (file) {
       var li = document.createElement('li');
       var button = document.createElement('button');
@@ -260,7 +299,10 @@
       setRunStatus('Ready');
       refreshEditor();
       renderFileList();
-      editor.focus();
+      // On small screens, jump straight to the code — without popping the
+      // on-screen keyboard open before the user asks for it.
+      if (isSmallScreen()) setMobileView('editor');
+      else editor.focus();
     } catch (e) {
       toast(e.message, true);
     }
@@ -353,6 +395,7 @@
         $('statusFile').textContent = 'No file open';
         refreshEditor();
         renderFileList();
+        if (isSmallScreen()) setMobileView('files');
       }
     } catch (e) { toast(e.message, true); }
   });
@@ -445,6 +488,7 @@
 
   function consoleAsk(prompt) {
     return new Promise(function (resolve) {
+      if (isSmallScreen()) setMobileView('console');
       appendConsole(prompt, 'prompt');
       consoleInputPrompt.textContent = prompt;
       consoleInputForm.hidden = false;
@@ -468,6 +512,8 @@
     saveCurrent(false);
     loadedLibraries = [];
     updateLibrariesStatus();
+    // On small screens, running a program takes you to its output.
+    if (isSmallScreen()) setMobileView('console');
 
     appendConsole('—— Running ' + currentName + ' ——', 'divider');
     setRunStatus('Running…', 'running');
@@ -550,6 +596,7 @@
   // ------------------------------------------------------------------
   // Boot
   // ------------------------------------------------------------------
+  setMobileView('editor');
   clearConsole();
   renderFileList();
   var files = store.listFiles();

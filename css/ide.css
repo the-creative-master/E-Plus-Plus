@@ -29,6 +29,8 @@ body {
 }
 button, input, textarea { font: inherit; }
 code, kbd { font-family: var(--mono); }
+button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ---------- top bar ---------- */
 .topbar {
@@ -50,6 +52,17 @@ code, kbd { font-family: var(--mono); }
 .top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .save-status { color: var(--muted); font-size: 12.5px; margin-right: 4px; }
 .save-status.dirty { color: var(--warning); }
+.action-label-short { display: none; }
+
+/* Small-screen panel switcher — only visible in the mobile layout below. */
+.mobile-view-nav { display: none; }
+.mobile-badge {
+  min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px;
+  background: var(--panel-3); border: 1px solid var(--border); color: var(--text);
+  font-size: 11px; font-weight: 700; line-height: 18px; text-align: center;
+}
+.mobile-badge-alert { background: var(--danger); border-color: var(--danger); color: #fff; }
+.mobile-badge[hidden] { display: none !important; }
 
 .btn {
   appearance: none; border: 1px solid var(--border); background: var(--panel-3);
@@ -69,7 +82,7 @@ code, kbd { font-family: var(--mono); }
 .layout {
   flex: 1; display: grid; grid-template-columns: 290px minmax(0, 1fr);
   gap: 16px; padding: 16px 20px; max-width: 1600px; width: 100%; margin: 0 auto;
-  min-height: 0;
+  min-height: 0; min-width: 0;
 }
 
 /* ---------- sidebar ---------- */
@@ -236,9 +249,224 @@ code, kbd { font-family: var(--mono); }
 }
 .toast.error { border-color: var(--danger); }
 
-@media (max-width: 900px) {
-  .layout { grid-template-columns: 1fr; }
-  .sidebar { order: 2; }
-  .workspace { grid-template-rows: minmax(300px, 52vh) 240px; }
+/* ==================================================================
+   Responsive layout
+   ================================================================== */
+
+/* Laptops / large tablets: tighten the two-column desktop layout first. */
+@media (max-width: 1180px) {
+  .layout { grid-template-columns: 248px minmax(0, 1fr); gap: 12px; padding: 14px; }
+  .topbar { padding: 10px 14px; }
   .brand p { display: none; }
+  .workspace { grid-template-rows: minmax(300px, 1fr) 230px; gap: 12px; }
+  .footer { padding: 8px 14px; }
+}
+
+/*
+ * Small screens (tablets in portrait and phones): the IDE becomes an
+ * app-style, single-panel layout. Files / Code / Console are switched with
+ * the mobile panel bar, the whole IDE fits the visible viewport height
+ * (100dvh, including phones where browser chrome comes and goes), and
+ * each panel scrolls internally. No more one very long page.
+ */
+@media (max-width: 900px) {
+  html, body { height: 100%; height: 100dvh; }
+  body {
+    min-height: 0;
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  /* --- compact header + horizontally scrolling action row --- */
+  .topbar {
+    position: relative;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    padding: max(8px, env(safe-area-inset-top)) 10px 6px;
+  }
+  .brand { flex: 1 1 auto; gap: 9px; }
+  .logo { font-size: 20px; padding: 8px 9px; border-radius: 9px; box-shadow: none; }
+  .logo span { font-size: 14px; }
+  .brand h1 { font-size: 17px; white-space: nowrap; }
+  .brand p, .save-status { display: none; }
+  .top-actions {
+    order: 3;
+    flex: 1 0 100%;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 2px 1px 4px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .top-actions::-webkit-scrollbar { display: none; }
+  .top-actions .btn {
+    flex: 0 0 auto;
+    min-height: 42px;
+    padding: 8px 13px;
+    border-radius: 9px;
+    white-space: nowrap;
+  }
+  #btnRun { order: -2; }
+  #btnStop { order: -1; }
+
+  /* --- Files / Code / Console switcher --- */
+  .mobile-view-nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    padding: 7px 10px;
+    background: rgba(11, 17, 32, .96);
+    border-bottom: 1px solid var(--border);
+  }
+  .mobile-view-btn {
+    appearance: none;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    min-width: 0; min-height: 44px;
+    padding: 8px 6px;
+    background: var(--panel-2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 13.5px; font-weight: 700;
+    cursor: pointer;
+  }
+  .mobile-view-btn.active {
+    background: linear-gradient(135deg, rgba(52,211,153,.2), rgba(167,139,250,.18));
+    border-color: var(--accent);
+    color: var(--text);
+  }
+  .mobile-view-icon { font-family: var(--mono); font-size: 13px; color: var(--accent); }
+
+  /* --- one panel at a time, exactly filling the remaining height --- */
+  .layout {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 8px 8px max(8px, env(safe-area-inset-bottom));
+    gap: 0;
+  }
+  .sidebar, .workspace { width: 100%; min-height: 0; }
+
+  body[data-mobile-view="files"] .sidebar {
+    display: flex; flex: 1 1 auto; overflow-y: auto; padding: 2px 0 6px;
+    overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  }
+  body[data-mobile-view="files"] .workspace { display: none; }
+  body[data-mobile-view="editor"] .sidebar,
+  body[data-mobile-view="console"] .sidebar { display: none; }
+
+  body[data-mobile-view="editor"] .workspace,
+  body[data-mobile-view="console"] .workspace {
+    flex: 1 1 auto; display: grid; grid-template-rows: minmax(0, 1fr); gap: 0;
+  }
+  body[data-mobile-view="editor"] .console-card { display: none; }
+  body[data-mobile-view="console"] .editor-card { display: none; }
+
+  .editor-card, .console-card { height: 100%; border-radius: 12px; }
+
+  /* --- editor: larger touch-friendly code, slimmer gutter --- */
+  .editor-head { padding: 7px 8px; gap: 6px; }
+  .tab { min-width: 0; flex: 1 1 auto; padding: 6px 9px; font-size: 12.5px; }
+  #currentFileName { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .editor-head-actions { flex: 0 0 auto; }
+  .editor-head-actions .btn { min-height: 38px; padding: 6px 9px; }
+  .line-numbers {
+    flex-basis: 42px;
+    padding: 12px 7px 12px 0;
+    /* Smaller numerals, but the same 24.8px line height as the 16px code
+       (16 x 1.55), so numbers stay aligned with their lines. */
+    font-size: 12.5px; line-height: 24.8px;
+  }
+  .highlight-layer, #editor {
+    padding: 12px;
+    /* 16px also stops iOS Safari auto-zooming when the editor is tapped. */
+    font-size: 16px; line-height: 1.55;
+  }
+  .statusbar {
+    flex-wrap: nowrap; gap: 6px; overflow: hidden; white-space: nowrap;
+    padding: 6px 9px; font-size: 11px;
+  }
+  .statusbar .status-optional { display: none; }
+  .status-spacer { min-width: 4px; }
+  .status-run { overflow: hidden; text-overflow: ellipsis; }
+
+  /* --- console --- */
+  .console-head { padding: 7px 8px; }
+  .console-hint { display: none; }
+  .console-head .btn { min-height: 38px; }
+  .console-output { padding: 10px 12px; font-size: 13px; }
+  .console-input { flex-wrap: wrap; padding: 8px; }
+  .console-input-prompt { flex: 1 0 100%; min-width: 0; overflow-wrap: anywhere; }
+  .console-input input { flex: 1 1 auto; min-width: 0; min-height: 44px; font-size: 16px; }
+  .console-input .btn { min-height: 44px; }
+
+  /* --- files view --- */
+  .sidebar { gap: 10px; }
+  .file-search { min-height: 44px; font-size: 16px; }
+  .file-list { gap: 7px; }
+  .file-item { min-height: 48px; padding: 9px 10px; }
+  .sidebar-actions .btn { width: 100%; min-height: 42px; }
+  .libraries-panel, .help-panel { padding: 12px; }
+  .help-panel pre { max-height: 132px; }
+
+  .footer { display: none; }
+
+  /* --- overlays --- */
+  .toast {
+    left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom));
+    transform: none; width: auto; text-align: center; font-size: 13px;
+  }
+  .file-dialog {
+    width: calc(100vw - 24px);
+    max-width: 420px;
+    padding: 18px;
+  }
+  .file-dialog input { min-height: 48px; font-size: 16px; }
+  .dialog-actions .btn { flex: 1; min-height: 44px; }
+}
+
+/* Larger phones in portrait get a two-column file grid (less scrolling). */
+@media (min-width: 600px) and (max-width: 900px) {
+  .file-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .file-list li { min-width: 0; }
+}
+
+/* Phones: compress everything one more step. */
+@media (max-width: 560px) {
+  .top-actions .btn { min-height: 40px; padding: 7px 11px; font-size: 12.5px; }
+  .action-label-long { display: none; }
+  .action-label-short { display: inline; }
+  .mobile-view-nav { padding: 6px 8px; }
+  .mobile-view-btn { min-height: 42px; font-size: 13px; gap: 5px; }
+  .layout { padding: 6px 6px max(6px, env(safe-area-inset-bottom)); }
+  .editor-head-actions .btn { padding: 6px 7px; font-size: 12px; }
+  .statusbar .status-lines-item { display: none; }
+  .file-item .file-date { display: none; }
+  .library-card p { display: none; }
+  .library-card ul { display: flex; flex-wrap: wrap; gap: 4px 12px; padding-left: 0; list-style: none; }
+  .console-output { font-size: 12.5px; }
+}
+
+/* Very narrow phones: keep the essentials reachable, drop decorative bits. */
+@media (max-width: 380px) {
+  .brand h1 { font-size: 16px; }
+  .logo { font-size: 18px; padding: 7px 8px; }
+  .mobile-view-icon { display: none; }
+  .line-numbers { flex-basis: 36px; padding-right: 5px; }
+  .highlight-layer, #editor { padding: 10px 8px; }
+  .tab { font-size: 12px; }
+}
+
+/* Short landscape phones: slim the chrome so code gets the height. */
+@media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
+  .topbar { padding-top: 5px; padding-bottom: 3px; }
+  .top-actions .btn { min-height: 36px; }
+  .mobile-view-nav { padding: 4px 8px; }
+  .mobile-view-btn { min-height: 36px; }
+  .logo { padding: 6px 8px; }
 }

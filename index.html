@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="css/ide.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>E</text></svg>">
 </head>
-<body>
+<body data-mobile-view="editor">
 
 <header class="topbar">
   <div class="brand">
@@ -21,17 +21,31 @@
   <div class="top-actions">
     <span id="saveStatus" class="save-status" role="status">Saved</span>
     <button id="btnSave" class="btn" type="button" title="Save (Ctrl+S)">Save</button>
-    <button id="btnExport" class="btn" type="button" title="Download this .eppl file">Export .eppl</button>
-    <button id="btnImport" class="btn" type="button" title="Open a .eppl file from your computer">Import .eppl</button>
+    <button id="btnExport" class="btn" type="button" title="Download this .eppl file" aria-label="Export .eppl file"><span class="action-label-long">Export .eppl</span><span class="action-label-short" aria-hidden="true">Export</span></button>
+    <button id="btnImport" class="btn" type="button" title="Open a .eppl file from your computer" aria-label="Import .eppl file"><span class="action-label-long">Import .eppl</span><span class="action-label-short" aria-hidden="true">Import</span></button>
     <input id="importInput" type="file" accept=".eppl" multiple hidden>
     <button id="btnStop" class="btn btn-danger" type="button" disabled>Stop</button>
     <button id="btnRun" class="btn btn-run" type="button" title="Run (Ctrl+Enter)">▶ Run</button>
   </div>
 </header>
 
+<nav class="mobile-view-nav" aria-label="IDE panels">
+  <button class="mobile-view-btn" type="button" data-mobile-view="files" aria-pressed="false" aria-controls="sidebar">
+    <span class="mobile-view-icon" aria-hidden="true">▤</span><span>Files</span>
+    <span id="fileCountBadge" class="mobile-badge" hidden>0</span>
+  </button>
+  <button class="mobile-view-btn active" type="button" data-mobile-view="editor" aria-pressed="true" aria-controls="editorCard">
+    <span class="mobile-view-icon" aria-hidden="true">&lt;/&gt;</span><span>Code</span>
+  </button>
+  <button class="mobile-view-btn" type="button" data-mobile-view="console" aria-pressed="false" aria-controls="consoleCard">
+    <span class="mobile-view-icon" aria-hidden="true">›_</span><span>Console</span>
+    <span id="consoleBadge" class="mobile-badge mobile-badge-alert" hidden aria-label="New console output">•</span>
+  </button>
+</nav>
+
 <main class="layout">
   <!-- ============ File explorer ============ -->
-  <aside class="sidebar" aria-label="File explorer">
+  <aside class="sidebar" id="sidebar" aria-label="File explorer">
     <div class="sidebar-head">
       <h2>.eppl Files</h2>
       <button id="btnNew" class="btn btn-small btn-accent" type="button">+ New</button>
@@ -63,8 +77,8 @@ display 1 divided by 2 as fraction</pre>
   </aside>
 
   <!-- ============ Editor + console ============ -->
-  <section class="workspace">
-    <div class="editor-card">
+  <section class="workspace" id="workspace">
+    <div class="editor-card" id="editorCard">
       <div class="editor-head">
         <div class="tab" id="currentTab">
           <span class="tab-dot" aria-hidden="true"></span>
@@ -85,19 +99,19 @@ display 1 divided by 2 as fraction</pre>
       </div>
 
       <div class="statusbar">
-        <span id="statusFile">No file open</span>
-        <span class="status-sep">·</span>
+        <span id="statusFile" class="status-optional">No file open</span>
+        <span class="status-sep status-optional">·</span>
         <span id="statusCursor">Line 1, Column 1</span>
-        <span class="status-sep">·</span>
-        <span id="statusLines">0 lines</span>
+        <span class="status-sep status-lines-item">·</span>
+        <span id="statusLines" class="status-lines-item">0 lines</span>
         <span class="status-spacer"></span>
-        <span id="statusLibraries">Libraries: none loaded</span>
-        <span class="status-sep">·</span>
+        <span id="statusLibraries" class="status-optional">Libraries: none loaded</span>
+        <span class="status-sep status-optional">·</span>
         <span id="statusRun" class="status-run">Ready</span>
       </div>
     </div>
 
-    <div class="console-card">
+    <div class="console-card" id="consoleCard">
       <div class="console-head">
         <h2>Console</h2>
         <span id="consoleHint" class="console-hint">Output and errors appear here.</span>

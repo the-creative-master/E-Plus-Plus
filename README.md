@@ -43,6 +43,14 @@ npm test
 - **Bundled examples** — `hello.eppl`, `math.eppl`, `quiz.eppl`,
   `countdown.eppl`, `calculator.eppl`, `guessing-game.eppl` and
   `text-tools.eppl` are seeded on first launch (and kept in `/examples`).
+- **Small screens** — at 900px and below the IDE switches to an app-style
+  layout: **Files / Code / Console** tabs show one full-height panel at a
+  time (the IDE fits `100dvh` and each panel scrolls internally), the
+  header actions become a compact horizontal scroll row with Run first,
+  opening a file jumps to Code, running jumps to Console (with a badge for
+  new output), and controls/inputs use touch-sized 16px text so mobile
+  browsers don't auto-zoom. Narrower breakpoints (560px/380px) further
+  compact the status bar, file list and editor chrome.
 
 ## The E++ language in 60 seconds
 
