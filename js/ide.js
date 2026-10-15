@@ -566,11 +566,16 @@
 
   // ------------------------------------------------------------------
   // Python runner (for the Python library's `python code` statements).
-  // Real Python (Pyodide/WebAssembly) is downloaded lazily the first time
-  // a program actually runs Python — E++ itself never waits for it. Each
+  // Real Python (Pyodide/WebAssembly) is bundled with the IDE in
+  // vendor/pyodide and started lazily the first time a program actually
+  // runs Python — E++ itself never waits for it. Each
   // Run gets a fresh Python namespace; Python's print() goes to the E++
   // console, and Python errors are turned into plain English messages.
   // ------------------------------------------------------------------
+  // Python ships WITH the IDE (vendor/pyodide, same origin, works
+  // offline). The public CDN is kept only as a fallback in case the
+  // bundled files are missing.
+  var PYTHON_LOCAL = new URL('vendor/pyodide/', window.location.href).href;
   var PYTHON_CDN = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';
   var pythonRuntimePromise = null;
   var pythonNamespace = null;
@@ -588,33 +593,39 @@
     pythonNamespace = null;
   }
 
-  function loadPythonScript() {
+  function loadPythonScript(base) {
     return new Promise(function (resolve, reject) {
       if (window.loadPyodide) { resolve(); return; }
       var script = document.createElement('script');
-      script.src = PYTHON_CDN + 'pyodide.js';
+      script.src = base + 'pyodide.js';
       script.onload = function () { resolve(); };
-      script.onerror = function () {
-        reject(new Error('The Python runner could not be downloaded. Python needs an internet connection the first time it runs — check your connection and press Run again.'));
-      };
+      script.onerror = function () { reject(new Error('loader script failed')); };
       document.head.appendChild(script);
     });
   }
 
+  function startPythonFrom(base) {
+    return loadPythonScript(base)
+      .then(function () { return window.loadPyodide({ indexURL: base }); });
+  }
+
   function getPythonRuntime() {
     if (!pythonRuntimePromise) {
-      appendConsole('Loading the Python runner for the first time — this can take a few seconds…', 'system');
-      pythonRuntimePromise = loadPythonScript()
-        .then(function () { return window.loadPyodide({ indexURL: PYTHON_CDN }); })
+      appendConsole('Loading Python (it is built into the IDE) — the first run can take a few seconds…', 'system');
+      pythonRuntimePromise = startPythonFrom(PYTHON_LOCAL)
+        .catch(function () {
+          // Bundled copy unavailable for some reason: try the CDN.
+          delete window.loadPyodide;
+          return startPythonFrom(PYTHON_CDN);
+        })
         .then(function (pyodide) {
           appendConsole('Python is ready.', 'system');
           return pyodide;
         })
-        .catch(function (e) {
+        .catch(function () {
           pythonRuntimePromise = null; // allow a retry on the next Run
           // Always our own words, never a raw browser/engine error.
-          if (e && /could not be downloaded/.test(e.message || '')) throw e;
-          throw new Error('The Python runner could not start. Your browser may have blocked it, or the download may have failed — check your internet connection and press Run again.');
+          throw new Error('Python could not start in this browser. Try a recent version of Chrome, Edge, Firefox or Safari, then press Run again.');
         });
     }
     return pythonRuntimePromise;
@@ -716,7 +727,10 @@
         setRunStatus('Stopped', 'error');
       }
     }).catch(function (e) {
-      if (interpreter.cancelled || /stopped/i.test(e && e.message || '')) {
+      // Only the interpreter's own stop signal counts as "stopped" —
+      // never pattern-match error text (a friendly Python error may
+      // legitimately contain the word "stopped").
+      if (interpreter.cancelled || (e && e.message === 'Execution was stopped.')) {
         appendConsole('Execution stopped.', 'system');
         setRunStatus('Stopped', 'error');
       } else {
@@ -757,7 +771,7 @@
   var initial = files.some(function (f) { return f.name === 'hello.eppl'; }) ? 'hello.eppl' : (files[0] && files[0].name);
   if (initial) openFile(initial);
   else refreshEditor();
-  appendConsole('Welcome to the E++ IDE (build v7). Open a .eppl file on the left and press Run.', 'system');
+  appendConsole('Welcome to the E++ IDE (build v8). Open a .eppl file on the left and press Run.', 'system');
   // Boot-time safety self-check: Python must refuse to run without the
   // Python library. If this ever stops refusing, say so loudly.
   try {

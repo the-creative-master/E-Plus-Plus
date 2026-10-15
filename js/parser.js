@@ -11,7 +11,7 @@
  *                   | increase | decrease | python
  *   define         := "Define" <name> "as" <expression>
  *   set            := ("Set"|"Change") <name> "to" <expression>
- *   say            := ("say"|"display"|"show"|"print") <expression>
+ *   say            := ("say"|"display"|"show") <expression>
  *   ask            := "ask" <expression> "and save answer as" <name>
  *   wait           := "wait" <expression>
  *   library        := "library" <STRING> ("add"|"load"|"import")
@@ -284,7 +284,14 @@
     switch (word) {
       case 'define': return this.parseDefine();
       case 'set': case 'change': return this.parseSet();
-      case 'say': case 'display': case 'show': case 'print': return this.parseSay();
+      case 'say': case 'display': case 'show': return this.parseSay();
+      case 'print':
+        // print("...") is Python, not E++ — it must never quietly behave
+        // like `say`. Python may only run inside python code "...", and
+        // only after the Python library has been added.
+        throw new ParseError('\"' + t.value + '\" is Python, not E++, so E++ will not run it on its own.',
+          t.line, t.column,
+          'To run Python, first add the Python library with: library \"Python\" add — then put the Python inside python code, like this: python code \"print(1)\". If you just want E++ to show something, use the word say.');
       case 'ask': return this.parseAsk();
       case 'wait': return this.parseWait();
       case 'library': return this.parseLibrary();
@@ -330,7 +337,7 @@
   };
 
   Parser.prototype.parseSay = function () {
-    var kw = this.advance(); // say / display / show / print
+    var kw = this.advance(); // say / display / show
     if (this.isSeparator(this.current()) || this.atEnd()) {
       throw new ParseError('"' + kw.value + '" needs something after it.', kw.line, kw.column,
         'For example: ' + kw.value + ' "Hello". or ' + kw.value + ' 1 plus 1.');

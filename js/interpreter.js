@@ -341,7 +341,7 @@
         if (typeof this.pythonExecutor !== 'function') {
           throw new RuntimeError('Python code cannot run here, because no Python runner is connected to this E++ IDE.',
             node.line, node.column,
-            'Open this file in the E++ IDE in a web browser (with an internet connection for the first Python run), then press Run again.');
+            'Open this file in the E++ IDE in a web browser, then press Run again.');
         }
         try {
           await this.pythonExecutor(node.code, node);
@@ -363,7 +363,7 @@
           // already plain English and safe to pass through.
           if (detail && detail.indexOf('\n') === -1 && detail.indexOf('Traceback') === -1 && detail.length <= 240) {
             throw new RuntimeError(detail, node.line, node.column,
-              'Check your internet connection and press Run again. If it keeps happening, try a shorter or simpler piece of Python code.');
+              'Press Run again. If it keeps happening, try a shorter or simpler piece of Python code.');
           }
           throw new RuntimeError('Python could not run this code.',
             node.line, node.column,

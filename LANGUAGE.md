@@ -72,7 +72,7 @@ variable, its line, and how to define it.
 
 ```eppl
 say <value>
-display <value>      (say, display, show and print are synonyms)
+display <value>      (say, display and show are synonyms)
 ```
 
 - `"in quotes"` → printed literally: `say "1 plus 1"` prints `1 plus 1`.
@@ -239,7 +239,9 @@ both bounds are whole numbers, a decimal otherwise.
 Unlocks: `python code`. Python code **cannot run without this library**:
 writing `python code "..."` before `library "Python" add` is an English
 `LibraryError` (checked while parsing and again while running) that tells
-you exactly which line to add.
+you exactly which line to add. Writing bare Python such as `print("Hello")`
+as an E++ statement is also refused with an English `ParseError` — Python
+only ever runs inside `python code "..."`, never as an E++ statement.
 
 Single line:
 
@@ -262,9 +264,9 @@ python code "-for number in range(3):
 "
 ```
 
-In the IDE, Python really executes (via Pyodide/WebAssembly, downloaded
-the first time Python runs; an internet connection is needed for that
-first download). Each Run starts with a fresh Python namespace, Python's
+In the IDE, Python really executes (via Pyodide/WebAssembly, bundled
+with the IDE itself in `vendor/pyodide` — no download and no internet
+connection needed). Each Run starts with a fresh Python namespace, Python's
 `print` writes to the E++ console, Python's own error output is captured
 and never displayed, and Python errors are reported back as the IDE's own
 plain-English errors explaining what kind of mistake Python found (for
@@ -318,7 +320,7 @@ statement      := define | set | say | ask | wait | library
                 | increase | decrease | python
 define         := "Define" name "as" expression
 set            := ("Set"|"Change") name "to" expression
-say            := ("say"|"display"|"show"|"print") expression
+say            := ("say"|"display"|"show") expression
 ask            := "ask" expression "and save answer as" name
 wait           := "wait" expression ["seconds"]
 library        := "library" STRING ("add"|"load"|"import")

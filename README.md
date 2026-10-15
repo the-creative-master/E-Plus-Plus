@@ -72,9 +72,12 @@ npm test
   Python refuses to run without the library — at parse time, at run time,
   and in the IDE host itself — with a plain-English `LibraryError` telling
   you the exact line to add. In the IDE, Python really executes (Pyodide,
-  loaded on first use), and Python's own error text is never shown: you
-  get the IDE's plain-English explanation instead. See
-  `examples/python.eppl` and `examples/score-tracker.eppl`.
+  **bundled with the IDE** in `vendor/pyodide` — no CDN, no internet
+  needed), and Python's own error text is never shown: you get the IDE's
+  plain-English explanation instead. Bare Python such as `print("Hello")`
+  typed as an E++ statement is refused in English — it is not an E++
+  printing command. See `examples/python.eppl` and
+  `examples/score-tracker.eppl`.
 
 ## The E++ language in 60 seconds
 

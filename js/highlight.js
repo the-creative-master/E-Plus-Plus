@@ -10,7 +10,7 @@
   var EPP = global.EPP || (global.EPP = {});
 
   var KEYWORDS = {
-    define: 1, say: 1, display: 1, show: 1, print: 1, ask: 1, save: 1,
+    define: 1, say: 1, display: 1, show: 1, ask: 1, save: 1,
     answer: 1, wait: 1, library: 1, add: 1, load: 1, 'import': 1,
     'if': 1, then: 1, otherwise: 1, end: 1, repeat: 1, times: 1,
     'while': 1, 'do': 1, stop: 1, set: 1, change: 1, to: 1, note: 1,

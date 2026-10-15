@@ -138,6 +138,22 @@ await expectError('using an undefined bare word in maths is an error', 'say 1 pl
   ok('the lexer has no Python knowledge (dash blocks are a parser concern)');
 }
 
+console.log('Python-looking code is not E++');
+await expectError('print("HELLO") does not print anything', 'print("HELLO")', /is Python, not E\+\+, so E\+\+ will not run it/);
+await expectError('PRINT("HELLO") does not print anything either', 'PRINT("HELLO")', /is Python, not E\+\+/);
+await expectError('bare print is refused even WITH the Python library', 'library "Python" add\nprint("HELLO")', /is Python, not E\+\+/);
+await expectError('print with a bare word is refused too', 'print hello', /is Python, not E\+\+/);
+{
+  // ...while real Python, properly wrapped and with the library, works.
+  const seen = [];
+  await run(
+    'library "Python" add\npython code "print(\'HELLO\')"',
+    { pythonExecutor: async (code) => { seen.push(code); } }
+  );
+  assert.deepEqual(seen, ["print('HELLO')"]);
+  ok('python code "..." with the library still reaches the runner');
+}
+
 console.log('Increase / Decrease');
 {
   const { output } = await run(
