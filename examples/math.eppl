@@ -1,0 +1,12 @@
+note: The Math library unlocks fractions, decimals, percentages,
+note: square roots, powers and division.
+library "Math" add
+
+display 1 divided by 2 as fraction
+display 1 divided by 2 as decimal
+display 1 divided by 3 as fraction
+say 50 percent of 200
+say square root of 16
+say 2 power of 3
+say 1 plus 1
+say "1 plus 1"

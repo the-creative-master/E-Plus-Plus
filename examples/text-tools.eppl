@@ -1,0 +1,6 @@
+note: The Text library works with words and sentences.
+library "Text" add
+
+say uppercase of "hello e++"
+say lowercase of "LOUD NOISES"
+say length of "How long am I?"

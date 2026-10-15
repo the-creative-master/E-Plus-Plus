@@ -1,0 +1,7 @@
+note: Your first E++ program.
+Define name as Adonis.
+say "Hello " plus 'name' plus "!"
+say "E++ looks like English, reads like English, and behaves like code."
+
+ask "What is your name?" and save answer as visitor
+say "Nice to meet you, " plus 'visitor' plus "."

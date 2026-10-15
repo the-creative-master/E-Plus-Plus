@@ -1,0 +1,542 @@
+/*
+ * E++ Parser.
+ *
+ * Consumes the lexer token stream and builds an AST (see ast.js).
+ *
+ * Grammar (statements end with a period '.' or a newline):
+ *
+ *   program        := statement*
+ *   statement      := define | set | say | ask | wait | library
+ *                   | if | repeat | while | stop | note
+ *   define         := "Define" <name> "as" <expression>
+ *   set            := ("Set"|"Change") <name> "to" <expression>
+ *   say            := ("say"|"display"|"show"|"print") <expression>
+ *   ask            := "ask" <expression> "and save answer as" <name>
+ *   wait           := "wait" <expression>
+ *   library        := "library" <STRING> ("add"|"load"|"import")
+ *   if             := "if" <condition> "then" <statement>
+ *                     ["otherwise" <statement>]                        (inline)
+ *                   | "if" <condition> "then" NEWLINE statement*
+ *                     ["otherwise" statement*] "end if"                 (block)
+ *   repeat         := "repeat" <expression> "times" (statement | block "end repeat")
+ *   while          := "while" <condition> "do" (statement | block "end while")
+ *   condition      := <expression> [ ("is" ["not"] <comparison>) <expression> ]
+ *   expression     := additive [ "as" ("fraction"|"decimal") ]
+ *   additive       := multiplicative (("plus"|"minus") multiplicative)*
+ *   multiplicative := power (("times"|"divided by"|"percent of") power)*
+ *   power          := unary [ "power of" power ]
+ *   unary          := ["minus"|"square root of"] unary | primary
+ *   primary        := NUMBER | STRING | VARIABLE | bare words
+ *                   | "(" expression ")"
+ *                   | ("uppercase of"|"lowercase of"|"length of") unary   [Text]
+ *                   | "random number between" power "and" power          [Random]
+ *
+ * Bare words that are not operators are read as a value: at runtime a bare
+ * word resolves to the variable of that name if one exists, otherwise it is
+ * literal text (so `Define name as Adonis.` stores the text Adonis).
+ *
+ * Library gating: operators owned by a library (see libraries.js) raise a
+ * LibraryError at parse time when the library has not been added earlier in
+ * the program. `divided by` and `power of` are also listed in the basic
+ * maths section of the spec; E++ follows the Math-library section and treats
+ * them (with the other Math features) as unlocked by `library "Math" add`.
+ */
+(function (global) {
+  'use strict';
+
+  var EPP = global.EPP || (global.EPP = {});
+  var ParseError = EPP.ParseError;
+  var LibraryError = EPP.LibraryError;
+
+  // Words that can never be part of a bare-word value or expression.
+  var RESERVED = {
+    plus: 1, minus: 1, times: 1, divided: 1, by: 1, power: 1, percent: 1,
+    square: 1, root: 1, of: 1, as: 1, is: 1, equal: 1, greater: 1, less: 1,
+    than: 1, then: 1, otherwise: 1, 'if': 1, end: 1, repeat: 1, 'while': 1,
+    'do': 1, and: 1, not: 1, different: 1, from: 1, between: 1, or: 1
+  };
+
+  function Parser(source) {
+    var Lexer = EPP.Lexer;
+    this.tokens = new Lexer(source).tokenize().filter(function (t) { return t.type !== 'COMMENT'; });
+    this.pos = 0;
+    this.loadedLibraries = {}; // canonical name -> true, in source order
+  }
+
+  // ---------- token helpers ----------
+  Parser.prototype.current = function () { return this.tokens[this.pos]; };
+  Parser.prototype.peek = function (offset) { return this.tokens[this.pos + (offset || 0)]; };
+  Parser.prototype.atEnd = function () { return this.current().type === 'EOF'; };
+  Parser.prototype.advance = function () { return this.tokens[this.pos++]; };
+  Parser.prototype.isSeparator = function (token) {
+    return token && (token.type === 'NEWLINE' || token.type === 'PERIOD' || token.type === 'SEMICOLON');
+  };
+  Parser.prototype.skipSeparators = function () {
+    while (this.isSeparator(this.current())) this.advance();
+  };
+  Parser.prototype.isWord = function (word, token) {
+    var t = token || this.current();
+    return t && t.type === 'WORD' && t.value.toLowerCase() === word;
+  };
+  Parser.prototype.matchWord = function (word) {
+    if (this.isWord(word)) { this.advance(); return true; }
+    return false;
+  };
+  Parser.prototype.expectWord = function (word, context) {
+    var t = this.current();
+    if (!this.isWord(word)) {
+      throw new ParseError(
+        'Expected the word "' + word + '"' + (context ? ' ' + context : '') + ' but found ' + this.describe(t) + '.',
+        t.line, t.column,
+        'Check the sentence structure — E++ statements read like English sentences.'
+      );
+    }
+    return this.advance();
+  };
+  Parser.prototype.expect = function (type, what) {
+    var t = this.current();
+    if (t.type !== type) {
+      throw new ParseError('Expected ' + what + ' but found ' + this.describe(t) + '.', t.line, t.column, null);
+    }
+    return this.advance();
+  };
+  Parser.prototype.describe = function (token) {
+    if (!token || token.type === 'EOF') return 'the end of the program';
+    if (token.type === 'NEWLINE') return 'the end of the line';
+    if (token.type === 'PERIOD') return '"."';
+    return '"' + token.raw + '"';
+  };
+
+  Parser.prototype.requireLibrary = function (feature, token) {
+    var owner = EPP.Libraries ? EPP.Libraries.ownerOf(feature) : null;
+    if (owner && !this.loadedLibraries[owner]) {
+      throw new LibraryError(
+        '"' + feature + '" belongs to the ' + owner + ' library, which has not been added yet.',
+        token.line, token.column,
+        'Add this near the top of your program: library "' + owner + '" add'
+      );
+    }
+  };
+
+  // ---------- program & statements ----------
+  Parser.prototype.parse = function () {
+    var body = [];
+    this.skipSeparators();
+    while (!this.atEnd()) {
+      if (this.isWord('end') || this.isWord('otherwise')) {
+        var t = this.current();
+        throw new ParseError('Unexpected "' + t.value + '" here — there is no matching opening statement.',
+          t.line, t.column, 'Remove it, or add the "if"/"repeat"/"while" statement it belongs to.');
+      }
+      body.push(this.parseStatement());
+      this.skipSeparators();
+    }
+    return EPP.AST.Program(body);
+  };
+
+  Parser.prototype.parseStatement = function () {
+    var t = this.current();
+    if (t.type !== 'WORD') {
+      // A statement may also start with a value-less token error:
+      throw new ParseError('Expected a statement but found ' + this.describe(t) + '.',
+        t.line, t.column,
+        'Statements start with a word such as Define, say, ask, if, wait or library.');
+    }
+    var word = t.value.toLowerCase();
+    switch (word) {
+      case 'define': return this.parseDefine();
+      case 'set': case 'change': return this.parseSet();
+      case 'say': case 'display': case 'show': case 'print': return this.parseSay();
+      case 'ask': return this.parseAsk();
+      case 'wait': return this.parseWait();
+      case 'library': return this.parseLibrary();
+      case 'if': return this.parseIf();
+      case 'repeat': return this.parseRepeat();
+      case 'while': return this.parseWhile();
+      case 'stop': case 'break': this.advance(); return EPP.AST.Stop(t);
+      case 'note': return this.parseNote();
+      default:
+        throw new ParseError('I do not understand the statement starting with "' + t.value + '".',
+          t.line, t.column,
+          'Statements start with Define, say, display, ask, if, repeat, while, wait or library "..." add.');
+    }
+  };
+
+  Parser.prototype.parseName = function (context) {
+    var t = this.current();
+    if (t.type !== 'WORD') {
+      throw new ParseError('Expected a variable name ' + context + ' but found ' + this.describe(t) + '.',
+        t.line, t.column, 'Variable names are single words, for example: name, score, answer2.');
+    }
+    this.advance();
+    return t.value;
+  };
+
+  Parser.prototype.parseDefine = function () {
+    var kw = this.advance(); // Define
+    var name = this.parseName('after "Define"');
+    this.expectWord('as', 'in a Define statement, for example: Define ' + name + ' as 10.');
+    var value = this.parseExpression();
+    return EPP.AST.Define(name, value, kw);
+  };
+
+  Parser.prototype.parseSet = function () {
+    var kw = this.advance(); // Set / Change
+    var name = this.parseName('after "' + kw.value + '"');
+    this.expectWord('to', ', for example: Set ' + name + ' to 5.');
+    var value = this.parseExpression();
+    return EPP.AST.Set(name, value, kw);
+  };
+
+  Parser.prototype.parseSay = function () {
+    var kw = this.advance(); // say / display / show / print
+    if (this.isSeparator(this.current()) || this.atEnd()) {
+      throw new ParseError('"' + kw.value + '" needs something after it.', kw.line, kw.column,
+        'For example: ' + kw.value + ' "Hello". or ' + kw.value + ' 1 plus 1.');
+    }
+    var value = this.parseExpression();
+    return EPP.AST.Say(value, kw);
+  };
+
+  Parser.prototype.parseAsk = function () {
+    var kw = this.advance(); // ask
+    var prompt = this.parseExpression();
+    // and save answer as <name>   (a few words may be omitted, kept forgiving)
+    this.expectWord('and', 'in an ask statement, for example: ask "Your name?" and save answer as name.');
+    this.matchWord('save');
+    this.matchWord('answer');
+    this.matchWord('the');
+    this.expectWord('as', 'before the variable name.');
+    var name = this.parseName('at the end of the ask statement');
+    return EPP.AST.Ask(prompt, name, kw);
+  };
+
+  Parser.prototype.parseWait = function () {
+    var kw = this.advance(); // wait
+    var duration = this.parseExpression();
+    this.matchWord('seconds'); this.matchWord('second');
+    return EPP.AST.Wait(duration, kw);
+  };
+
+  Parser.prototype.parseLibrary = function () {
+    var kw = this.advance(); // library
+    var nameToken = this.current();
+    if (nameToken.type !== 'STRING') {
+      throw new ParseError('A library name must be written in double quotes, for example: library "Math" add.',
+        nameToken.line, nameToken.column, null);
+    }
+    this.advance();
+    if (!(this.matchWord('add') || this.matchWord('load') || this.matchWord('import'))) {
+      var t = this.current();
+      throw new ParseError('Expected the word "add" after the library name but found ' + this.describe(t) + '.',
+        t.line, t.column, 'Write it like this: library "' + nameToken.value + '" add.');
+    }
+    if (!EPP.Libraries || !EPP.Libraries.isKnown(nameToken.value)) {
+      var available = EPP.Libraries ? EPP.Libraries.names().join(', ') : 'Math';
+      throw new LibraryError('There is no library called "' + nameToken.value + '".',
+        nameToken.line, nameToken.column, 'Available libraries: ' + available + '.');
+    }
+    var canonical = EPP.Libraries.canonical(nameToken.value);
+    this.loadedLibraries[canonical] = true;
+    return EPP.AST.Library(canonical, kw);
+  };
+
+  Parser.prototype.parseNote = function () {
+    var kw = this.advance(); // note
+    if (this.current().type === 'COLON') this.advance();
+    // A note runs to the end of the statement; its words are ignored.
+    while (!this.isSeparator(this.current()) && !this.atEnd()) this.advance();
+    return EPP.AST.Note('', kw);
+  };
+
+  /**
+   * Reads either an inline body (a single statement on the same line as
+   * `markerToken`) or a block body (statements on following lines).
+   * Returns { body: [...], block: boolean }.
+   */
+  Parser.prototype.parseBranch = function (markerToken) {
+    var next = this.current();
+    var block = this.isSeparator(next) || next.type === 'EOF' || next.line !== markerToken.line;
+    if (!block) {
+      return { body: [this.parseStatement()], block: false };
+    }
+    this.skipSeparators();
+    return { body: this.parseBlock(), block: true };
+  };
+
+  Parser.prototype.parseBlock = function () {
+    var body = [];
+    this.skipSeparators();
+    while (!this.atEnd() && !this.isWord('end') && !this.isWord('otherwise')) {
+      body.push(this.parseStatement());
+      this.skipSeparators();
+    }
+    return body;
+  };
+
+  Parser.prototype.expectEnd = function (kind, openToken) {
+    this.skipSeparators();
+    var t = this.current();
+    if (!this.isWord('end')) {
+      throw new ParseError('This "' + kind + '" statement (started on line ' + openToken.line + ') never ends.',
+        t.line, t.column, 'Close it with: end ' + kind);
+    }
+    this.advance(); // end
+    this.matchWord(kind);
+    if (kind === 'if') this.matchWord('statement');
+  };
+
+  Parser.prototype.parseIf = function () {
+    var kw = this.advance(); // if
+    var condition = this.parseCondition();
+    var thenToken = this.expectWord('then', 'after the if condition.');
+    var thenPart = this.parseBranch(thenToken);
+
+    var elseBranch = [];
+    var elseWasBlock = false;
+    // `otherwise` may follow on the same line or on a later line.
+    var savedPos = this.pos;
+    this.skipSeparators();
+    if (this.isWord('otherwise')) {
+      var otherwiseToken = this.advance();
+      var elsePart = this.parseBranch(otherwiseToken);
+      elseBranch = elsePart.body;
+      elseWasBlock = elsePart.block;
+    } else {
+      this.pos = savedPos;
+    }
+
+    if (thenPart.block) {
+      // A block if must be closed with `end if` (also when its otherwise
+      // part was written inline, e.g. `otherwise say "x"` before `end if`).
+      this.expectEnd('if', kw);
+    }
+    return EPP.AST.If(condition, thenPart.body, elseBranch, kw);
+  };
+
+  Parser.prototype.parseRepeat = function () {
+    var kw = this.advance(); // repeat
+    // In "repeat 3 times", the word "times" ends the count — it is not the
+    // multiplication operator. Suppress `times` as an operator while the
+    // count is being read (use parentheses for a count containing `times`).
+    this.timesSuppressed = (this.timesSuppressed || 0) + 1;
+    var count;
+    try { count = this.parseExpression(); }
+    finally { this.timesSuppressed -= 1; }
+    var marker = this.expectWord('times', 'in a repeat statement, for example: repeat 3 times.');
+    var part = this.parseBranch(marker);
+    if (part.block) this.expectEnd('repeat', kw);
+    return EPP.AST.Repeat(count, part.body, kw);
+  };
+
+  Parser.prototype.parseWhile = function () {
+    var kw = this.advance(); // while
+    var condition = this.parseCondition();
+    var marker = this.current();
+    if (this.matchWord('do')) marker = this.tokens[this.pos - 1];
+    var part = this.parseBranch(marker.type ? marker : kw);
+    if (part.block) this.expectEnd('while', kw);
+    return EPP.AST.While(condition, part.body, kw);
+  };
+
+  // ---------- conditions ----------
+  Parser.prototype.parseCondition = function () {
+    var left = this.parseExpression();
+    var t = this.current();
+
+    if (this.isWord('equals')) {
+      this.advance();
+      var r1 = this.parseExpression();
+      return EPP.AST.Condition('equal', left, r1, t);
+    }
+    if (!this.isWord('is')) {
+      return EPP.AST.Condition('truthy', left, null, t);
+    }
+    this.advance(); // is
+    var negated = this.matchWord('not');
+
+    if (this.matchWord('equal')) {
+      this.expectWord('to', 'in "is equal to".');
+      var req = this.parseExpression();
+      return EPP.AST.Condition(negated ? 'notEqual' : 'equal', left, req, t);
+    }
+    if (this.matchWord('different')) {
+      this.expectWord('from', 'in "is different from".');
+      var rd = this.parseExpression();
+      return EPP.AST.Condition('notEqual', left, rd, t);
+    }
+    if (this.matchWord('greater')) {
+      this.expectWord('than', 'in "is greater than".');
+      if (this.matchWord('or')) {
+        this.expectWord('equal', 'in "or equal to".');
+        this.expectWord('to', 'in "or equal to".');
+        var rge = this.parseExpression();
+        return EPP.AST.Condition('greaterOrEqual', left, rge, t);
+      }
+      var rg = this.parseExpression();
+      return EPP.AST.Condition('greater', left, rg, t);
+    }
+    if (this.matchWord('less')) {
+      this.expectWord('than', 'in "is less than".');
+      if (this.matchWord('or')) {
+        this.expectWord('equal', 'in "or equal to".');
+        this.expectWord('to', 'in "or equal to".');
+        var rle = this.parseExpression();
+        return EPP.AST.Condition('lessOrEqual', left, rle, t);
+      }
+      var rl = this.parseExpression();
+      return EPP.AST.Condition('less', left, rl, t);
+    }
+    var bad = this.current();
+    throw new ParseError('After "is" I expected a comparison such as "equal to", "greater than" or "less than", but found ' +
+      this.describe(bad) + '.', bad.line, bad.column,
+      'For example: if \'score\' is equal to 10 then say "Perfect".');
+  };
+
+  // ---------- expressions ----------
+  Parser.prototype.parseExpression = function () {
+    var expr = this.parseAdditive();
+    // Postfix conversion applies to the whole expression:
+    //   1 divided by 2 as fraction
+    while (this.isWord('as')) {
+      var asToken = this.current();
+      var lookahead = this.peek(1);
+      var kind = lookahead && lookahead.type === 'WORD' ? lookahead.value.toLowerCase() : '';
+      if (kind !== 'fraction' && kind !== 'decimal') break;
+      this.requireLibrary('as ' + kind, asToken);
+      this.advance(); this.advance();
+      expr = EPP.AST.Conversion(kind, expr, asToken);
+    }
+    return expr;
+  };
+
+  Parser.prototype.parseAdditive = function () {
+    var left = this.parseMultiplicative();
+    while (this.isWord('plus') || this.isWord('minus')) {
+      var op = this.advance();
+      var right = this.parseMultiplicative();
+      left = EPP.AST.Binary(op.value.toLowerCase(), left, right, op);
+    }
+    return left;
+  };
+
+  Parser.prototype.parseMultiplicative = function () {
+    var left = this.parsePower();
+    for (;;) {
+      if (this.isWord('times') && !this.timesSuppressed) {
+        var t1 = this.advance();
+        left = EPP.AST.Binary('times', left, this.parsePower(), t1);
+      } else if (this.isWord('divided')) {
+        var t2 = this.current();
+        this.requireLibrary('divided by', t2);
+        this.advance();
+        this.expectWord('by', 'in "divided by".');
+        left = EPP.AST.Binary('dividedBy', left, this.parsePower(), t2);
+      } else if (this.isWord('percent')) {
+        var t3 = this.current();
+        this.requireLibrary('percent of', t3);
+        this.advance();
+        this.expectWord('of', 'in "percent of", for example: 50 percent of 200.');
+        left = EPP.AST.PercentOf(left, this.parsePower(), t3);
+      } else break;
+    }
+    return left;
+  };
+
+  Parser.prototype.parsePower = function () {
+    var left = this.parseUnary();
+    if (this.isWord('power')) {
+      var t = this.current();
+      this.requireLibrary('power of', t);
+      this.advance();
+      this.expectWord('of', 'in "power of", for example: 2 power of 3.');
+      var right = this.parsePower(); // right-associative
+      return EPP.AST.Binary('powerOf', left, right, t);
+    }
+    return left;
+  };
+
+  Parser.prototype.parseUnary = function () {
+    var t = this.current();
+    if (this.isWord('minus')) {
+      this.advance();
+      return EPP.AST.Unary('minus', this.parseUnary(), t);
+    }
+    if (this.isWord('square')) {
+      this.requireLibrary('square root of', t);
+      this.advance();
+      this.expectWord('root', 'in "square root of".');
+      this.expectWord('of', 'in "square root of".');
+      return EPP.AST.SquareRoot(this.parseUnary(), t);
+    }
+    return this.parsePrimary();
+  };
+
+  Parser.prototype.parsePrimary = function () {
+    var t = this.current();
+
+    if (t.type === 'NUMBER') { this.advance(); return EPP.AST.Literal(parseFloat(t.value), t); }
+    if (t.type === 'STRING') { this.advance(); return EPP.AST.Literal(t.value, t); }
+    if (t.type === 'VARIABLE') { this.advance(); return EPP.AST.Variable(t.value, t); }
+
+    if (t.type === 'LPAREN') {
+      this.advance();
+      var inner = this.parseExpression();
+      this.expect('RPAREN', 'a closing ")"');
+      return inner;
+    }
+
+    if (t.type === 'WORD') {
+      var word = t.value.toLowerCase();
+
+      if (word === 'true' || word === 'yes') { this.advance(); return EPP.AST.Literal(true, t); }
+      if (word === 'false' || word === 'no') { this.advance(); return EPP.AST.Literal(false, t); }
+
+      // Text library functions.
+      if (word === 'uppercase' || word === 'lowercase' || word === 'length') {
+        this.requireLibrary(word + ' of', t);
+        this.advance();
+        this.expectWord('of', 'in "' + word + ' of".');
+        return EPP.AST.TextFunction(word, this.parseUnary(), t);
+      }
+
+      // Random library function.
+      if (word === 'random') {
+        this.requireLibrary('random number between ... and ...', t);
+        this.advance();
+        this.expectWord('number', 'in "random number between ... and ...".');
+        this.expectWord('between', 'in "random number between ... and ...".');
+        var low = this.parsePower();
+        this.expectWord('and', 'between the two numbers.');
+        var high = this.parsePower();
+        return EPP.AST.RandomNumber(low, high, t);
+      }
+
+      if (RESERVED[word]) {
+        throw new ParseError('Expected a value but found the word "' + t.value + '".',
+          t.line, t.column,
+          'Values can be "text in quotes", \'a variable\', a number, or maths such as 1 plus 1.');
+      }
+
+      // Bare words: one or more words that are not operators/keywords.
+      var words = [];
+      var first = t;
+      while (this.current().type === 'WORD' && !RESERVED[this.current().value.toLowerCase()]) {
+        words.push(this.advance().value);
+      }
+      return EPP.AST.BareWord(words.join(' '), first);
+    }
+
+    throw new ParseError('Expected a value but found ' + this.describe(t) + '.',
+      t.line, t.column,
+      'Values can be "text in quotes", \'a variable\', a number, or maths such as 1 plus 1.');
+  };
+
+  Parser.parse = function (source) { return new Parser(source).parse(); };
+
+  EPP.Parser = Parser;
+
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { Parser: Parser };
+  }
+})(typeof window !== 'undefined' ? window : globalThis);

@@ -1,0 +1,5 @@
+note: Answers from ask are text, but maths treats numbers as numbers.
+ask "First number?" and save answer as first
+ask "Second number?" and save answer as second
+say 'first' plus 'second'
+say 'first' times 'second'

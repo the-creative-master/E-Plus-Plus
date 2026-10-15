@@ -1,0 +1,9 @@
+note: Loops with repeat, and changing a variable with Set.
+Define count as 3.
+
+repeat 3 times
+  say 'count'
+  Set count to 'count' minus 1.
+end repeat
+
+say "Blast off!"
