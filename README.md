@@ -10,21 +10,7 @@ loads, saves, imports, exports and runs them, all locally in your browser.
 
 ## Run the IDE instantly
 
-No build step and no dependencies — the IDE is plain HTML/CSS/JS.
-
-```bash
-# Option 1: dev server (recommended)
-npm start            # then open http://localhost:8000
-
-# Option 2: just open the file
-open index.html      # (or double-click it)
-```
-
-Run the language test-suite (Node ≥ 18):
-
-```bash
-npm test
-```
+Just open the website
 
 ## What's in the IDE
 
