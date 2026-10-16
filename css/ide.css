@@ -560,12 +560,13 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   border: 1px solid var(--border); background: var(--panel); color: var(--text);
   border-radius: var(--radius); padding: 0; max-width: 620px; width: calc(100vw - 32px);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75);
-  overflow: hidden;
+  max-height: 90vh; display: flex; flex-direction: column; position: relative;
 }
 .tutorial-dialog::backdrop { background: rgba(3, 7, 18, 0.75); backdrop-filter: blur(4px); }
 .tutorial-head {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 20px; background: var(--panel-2); border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 .tutorial-title-wrap { display: flex; align-items: center; gap: 10px; }
 .tutorial-badge {
@@ -579,7 +580,7 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   line-height: 1; cursor: pointer; padding: 2px 6px; border-radius: 6px;
 }
 .btn-close:hover { color: var(--text); background: rgba(255, 255, 255, 0.1); }
-.tutorial-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.tutorial-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; }
 .tutorial-summary { font-size: 14.5px; font-weight: 500; color: #f1f5f9; line-height: 1.5; margin: 0; }
 .tutorial-explanation { font-size: 13.5px; color: var(--muted); line-height: 1.5; margin: 0; }
 .tutorial-code-box {
@@ -598,6 +599,7 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .tutorial-foot {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 20px; background: var(--panel-2); border-top: 1px solid var(--border);
+  flex-shrink: 0;
 }
 .tutorial-steps { font-size: 12px; color: var(--muted); font-family: var(--mono); }
 .tutorial-nav-buttons { display: flex; align-items: center; gap: 8px; }
