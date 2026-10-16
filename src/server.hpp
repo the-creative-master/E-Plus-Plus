@@ -61,8 +61,6 @@ private:
     Json officialTutorial() const; // data/tutorial.json only
     std::string workspaceFile(const std::string& name) const;
     std::string settingsClass() const;
-    std::string baseVars(const std::string& title, const std::string& content, const std::string& notice,
-                         const std::string& kind) const;
 
     std::string projectRoot_;
     std::string webDir_;

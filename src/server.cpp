@@ -161,18 +161,6 @@ std::string App::flashHtml(const std::string& notice, const std::string& kind) c
     return html + "</p>";
 }
 
-std::string App::baseVars(const std::string& title, const std::string& content, const std::string& notice,
-                          const std::string& kind) const {
-    return renderTemplate(webDir_ + "/layout.html",
-                          {{"title", htmlEscape(title)},
-                           {"pageClass", htmlEscape(settingsClass())},
-                           {"codeSize", htmlEscape(settings_.at("fontSize").string("14"))},
-                           {"topbar", renderTemplate(webDir_ + "/partials/topbar.html", {})},
-                           {"footer", renderTemplate(webDir_ + "/partials/footer.html", {{"build", text_.get("build")}})},
-                           {"content", content},
-                           {"flash", flashHtml(notice, kind)}});
-}
-
 Response App::page(const std::string& title, const std::string& content, const std::string& notice,
                    const std::string& kind, const std::string& extraClass) {
     std::string html = renderTemplate(webDir_ + "/layout.html",
