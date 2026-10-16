@@ -73,7 +73,8 @@
     plus: 1, minus: 1, times: 1, divided: 1, by: 1, power: 1, percent: 1,
     square: 1, root: 1, of: 1, as: 1, is: 1, equal: 1, greater: 1, less: 1,
     than: 1, then: 1, otherwise: 1, 'if': 1, end: 1, repeat: 1, 'while': 1,
-    'do': 1, and: 1, not: 1, different: 1, from: 1, between: 1, or: 1
+    'do': 1, and: 1, not: 1, different: 1, from: 1, between: 1, or: 1,
+    contains: 1
   };
 
   /*
@@ -315,6 +316,7 @@
       case 'decrease': return this.parseIncreaseDecrease(false);
       case 'python': return this.parsePython();
       case 'loopback': return this.parseLoopback();
+      case 'check': return this.parseCheck();
       default:
         throw new ParseError('I do not understand the statement starting with "' + t.value + '".',
           t.line, t.column,
@@ -367,23 +369,39 @@
 
   Parser.prototype.parseDefine = function () {
     var kw = this.advance(); // Define
-    // Draw library form: define '<name>' as drawing sprite
+    // Quoted variable name form: define '<name>' as <value>
+    // Also: define '<name>' as drawing sprite  (Draw library)
+    // Also: define '<name>' as image "<filename>"  (Image library)
     if (this.current().type === 'VARIABLE') {
-      var spriteName = this.advance().value;
-      this.expectWord('as', 'in a sprite definition, for example: define \'' + spriteName + '\' as drawing sprite.');
-      if (!this.matchWord('drawing')) {
-        var badDraw = this.current();
-        throw new ParseError('Expected the words "drawing sprite" after "as" in a sprite definition but found ' + this.describe(badDraw) + '.',
-          badDraw.line, badDraw.column,
-          'Write it like this: define \'' + spriteName + '\' as drawing sprite.');
+      var quotedName = this.advance().value;
+      this.expectWord('as', 'in a definition, for example: define \'' + quotedName + '\' as ...');
+      // Check for "drawing sprite" (Draw library)
+      if (this.isWord('drawing')) {
+        this.advance(); // drawing
+        if (!this.matchWord('sprite')) {
+          var badSprite = this.current();
+          throw new ParseError('Expected the word "sprite" after "drawing" but found ' + this.describe(badSprite) + '.',
+            badSprite.line, badSprite.column,
+            'Write it like this: define \'' + quotedName + '\' as drawing sprite.');
+        }
+        return EPP.AST.DefineSprite(quotedName, kw);
       }
-      if (!this.matchWord('sprite')) {
-        var badSprite = this.current();
-        throw new ParseError('Expected the word "sprite" after "drawing" but found ' + this.describe(badSprite) + '.',
-          badSprite.line, badSprite.column,
-          'Write it like this: define \'' + spriteName + '\' as drawing sprite.');
+      // Check for "image <source>" (Image library)
+      if (this.isWord('image')) {
+        this.requireLibrary('define image', kw);
+        this.advance(); // image
+        if (this.isSeparator(this.current()) || this.atEnd()) {
+          var badImg = this.current();
+          throw new ParseError('Expected a Base64 image string after "image" in the definition.',
+            badImg.line, badImg.column,
+            'Write it like this: define \'' + quotedName + '\' as image "<base64-string>".');
+        }
+        var source = this.parseExpression();
+        return EPP.AST.DefineImage(quotedName, source, kw);
       }
-      return EPP.AST.DefineSprite(spriteName, kw);
+      // Dev Build 5: regular variable definition with quoted name
+      var value = this.parseExpression();
+      return EPP.AST.Define(quotedName, value, kw);
     }
     var name = this.parseName('after "Define"');
     this.expectWord('as', 'in a Define statement, for example: Define ' + name + ' as 10.');
@@ -405,6 +423,33 @@
         bad2.line, bad2.column, 'loopback only goes back to an if, so write it like this: loopback to if');
     }
     return EPP.AST.Loopback(kw);
+  };
+
+  /**
+   * Dev Build 5: check if '<variable>' exists — Image library.
+   * Checks whether an image variable has been defined.
+   */
+  Parser.prototype.parseCheck = function () {
+    var kw = this.advance(); // check
+    this.requireLibrary('check if exists', kw);
+    if (!this.matchWord('if')) {
+      var badIf = this.current();
+      throw new ParseError('Expected "if" after "check" but found ' + this.describe(badIf) + '.',
+        badIf.line, badIf.column, 'Write it like this: check if \'cat\' exists.');
+    }
+    // Expect a variable reference (quoted name)
+    var varToken = this.current();
+    if (varToken.type !== 'VARIABLE') {
+      throw new ParseError('Expected a variable name in single quotes after "if" but found ' + this.describe(varToken) + '.',
+        varToken.line, varToken.column, 'Write it like this: check if \'cat\' exists.');
+    }
+    this.advance(); // consume the variable token
+    if (!this.matchWord('exists')) {
+      var badExists = this.current();
+      throw new ParseError('Expected "exists" after the variable but found ' + this.describe(badExists) + '.',
+        badExists.line, badExists.column, 'Write it like this: check if \'cat\' exists.');
+    }
+    return EPP.AST.CheckExists(varToken.value, kw);
   };
 
   /** 'name' move up/down/left/right "<pixels>" — Draw movement. */
@@ -437,7 +482,13 @@
 
   Parser.prototype.parseSet = function () {
     var kw = this.advance(); // Set / Change
-    var name = this.parseName('after "' + kw.value + '"');
+    var name;
+    // Dev Build 5: Set also accepts a quoted variable name: Set 'count' to 5.
+    if (this.current().type === 'VARIABLE') {
+      name = this.advance().value;
+    } else {
+      name = this.parseName('after "' + kw.value + '"');
+    }
     this.expectWord('to', ', for example: Set ' + name + ' to 5.');
     var value = this.parseExpression();
     return EPP.AST.Set(name, value, kw);
@@ -448,6 +499,13 @@
     if (this.isSeparator(this.current()) || this.atEnd()) {
       throw new ParseError('"' + kw.value + '" needs something after it.', kw.line, kw.column,
         'For example: ' + kw.value + ' "Hello". or ' + kw.value + ' 1 plus 1.');
+    }
+    // Dev Build 5: display image '<name>' — Image library
+    if (this.isWord('image') && this.peek(1) && this.peek(1).type === 'VARIABLE') {
+      this.requireLibrary('display image', kw);
+      this.advance(); // image
+      var imgName = this.advance().value; // 'name'
+      return EPP.AST.DisplayImage(imgName, kw);
     }
     var value = this.parseExpression();
     return EPP.AST.Say(value, kw);
@@ -462,7 +520,13 @@
     this.matchWord('answer');
     this.matchWord('the');
     this.expectWord('as', 'before the variable name.');
-    var name = this.parseName('at the end of the ask statement');
+    // Dev Build 5: ask also accepts a quoted variable name: ask "..." and save answer as 'name'.
+    var name;
+    if (this.current().type === 'VARIABLE') {
+      name = this.advance().value;
+    } else {
+      name = this.parseName('at the end of the ask statement');
+    }
     return EPP.AST.Ask(prompt, name, kw);
   };
 
@@ -770,6 +834,13 @@
     var left = this.parseExpression();
     var t = this.current();
 
+    // Dev Build 5: <value> contains <value> — core logic (no library needed)
+    if (this.isWord('contains')) {
+      this.advance(); // contains
+      var contRight = this.parseExpression();
+      return EPP.AST.Condition('contains', left, contRight, t);
+    }
+
     if (this.isWord('equals')) {
       this.advance();
       var r1 = this.parseExpression();
@@ -780,6 +851,41 @@
     }
     this.advance(); // is
     var negated = this.matchWord('not');
+
+    // Dev Build 5: is [not] a positive number / a negative number (Math library)
+    if (this.isWord('a') && this.peek(1) && this.peek(1).type === 'WORD') {
+      var nextWord = this.peek(1).value.toLowerCase();
+      if (nextWord === 'positive') {
+        this.advance(); // a
+        this.advance(); // positive
+        this.expectWord('number', 'in "is a positive number".');
+        this.requireLibrary('is a positive number', t);
+        return EPP.AST.Condition(negated ? 'notPositive' : 'positive', left, null, t);
+      }
+      if (nextWord === 'negative') {
+        this.advance(); // a
+        this.advance(); // negative
+        this.expectWord('number', 'in "is a negative number".');
+        this.requireLibrary('is a negative number', t);
+        return EPP.AST.Condition(negated ? 'notNegative' : 'negative', left, null, t);
+      }
+    }
+
+    // Dev Build 5: is [not] in the range of A to B (Math library)
+    if (this.isWord('in') && this.peek(1) && this.peek(1).type === 'WORD' &&
+        this.peek(1).value.toLowerCase() === 'the' &&
+        this.peek(2) && this.peek(2).type === 'WORD' &&
+        this.peek(2).value.toLowerCase() === 'range') {
+      this.advance(); // in
+      this.advance(); // the
+      this.advance(); // range
+      this.expectWord('of', 'in "is in the range of A to B".');
+      this.requireLibrary('is in the range of', t);
+      var low = this.parsePower();
+      this.expectWord('to', 'in "is in the range of A to B" — write the upper bound after "to".');
+      var high = this.parsePower();
+      return EPP.AST.Condition(negated ? 'notInRange' : 'inRange', left, { low: low, high: high }, t);
+    }
 
     // is a number / is not a number / is number / is not number
     if (this.isWord('a') || this.isWord('number')) {
@@ -792,6 +898,12 @@
       return EPP.AST.Condition(negated ? 'notNumber' : 'number', left, null, t);
     }
 
+    if (this.matchWord('exactly')) {
+      this.expectWord('equal', 'in "is exactly equal to".');
+      this.expectWord('to', 'in "is exactly equal to".');
+      var exreq = this.parseExpression();
+      return EPP.AST.Condition(negated ? 'notExactEqual' : 'exactEqual', left, exreq, t);
+    }
     if (this.matchWord('equal')) {
       this.expectWord('to', 'in "is equal to".');
       var req = this.parseExpression();
@@ -825,7 +937,7 @@
       return EPP.AST.Condition('less', left, rl, t);
     }
     var bad = this.current();
-    throw new ParseError('After "is" I expected a comparison such as "equal to", "greater than", "lesser than" or "not a number", but found ' +
+    throw new ParseError('After "is" I expected a comparison such as "equal to", "greater than", "lesser than", "a positive number", "in the range of" or "not a number", but found ' +
       this.describe(bad) + '.', bad.line, bad.column,
       'For example: if \'score\' is equal to 10 then say "Perfect".');
   };

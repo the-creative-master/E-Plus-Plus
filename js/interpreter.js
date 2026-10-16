@@ -191,6 +191,17 @@
     // Draw library hook: called whenever a sprite is created or moved,
     // with { name, x, y, action: 'create' | 'move', direction }.
     this.onSprite = typeof options.onSprite === 'function' ? options.onSprite : function () {};
+    // Dev Build 5: Image library hooks.
+    // onImageDisplay: called when `display image '<name>'` runs.
+    //   Receives { name, source } where source is the filename/data.
+    this.onImageDisplay = typeof options.onImageDisplay === 'function' ? options.onImageDisplay : function (info) {
+      // Default: no-op (the IDE provides a real implementation)
+    };
+    // onImageCheck: called when `check if "<file>" exists in device` runs.
+    //   Receives the filename string, returns boolean or Promise<boolean>.
+    this.onImageCheck = typeof options.onImageCheck === 'function' ? options.onImageCheck : function () {
+      return false; // default: nothing exists in the pure interpreter
+    };
     this.maxSteps = options.maxSteps || 100000;
     this.maxLoopIterations = options.maxLoopIterations || 10000;
     this.cancelled = false;
@@ -201,6 +212,7 @@
     this.variables = new Map();       // lowercased name -> value
     this.loadedLibraries = new Set(); // canonical library names
     this.sprites = new Map();         // lowercased name -> { name, x, y }
+    this.images = new Map();          // Dev Build 5: lowercased name -> { name, source }
     this.lastIf = null;               // nearest previous if (for loopback)
     this.pythonGlobals = Object.create(null);
     this.pythonRunner = null;
@@ -229,7 +241,7 @@
       throw new RuntimeError('The interpreter needs a parsed E++ program.');
     }
     await this.executeBlock(program.body);
-    return { variables: this.variables, loadedLibraries: this.loadedLibraries, sprites: this.sprites };
+    return { variables: this.variables, loadedLibraries: this.loadedLibraries, sprites: this.sprites, images: this.images };
   };
 
   Interpreter.prototype.executeBlock = async function (statements) {
@@ -351,6 +363,34 @@
         else if (node.direction === 'left') moving.x -= pixels;
         else if (node.direction === 'right') moving.x += pixels;
         this.onSprite({ name: moving.name, x: moving.x, y: moving.y, action: 'move', direction: node.direction });
+        return;
+      }
+      case AST.DEFINE_IMAGE: {
+        // Dev Build 5: define '<name>' as image "<base64-string>"
+        var imgSource = stringify(await this.evaluate(node.source));
+        this.images.set(node.name.toLowerCase(), { name: node.name, source: imgSource });
+        this.variables.set(node.name.toLowerCase(), node.name);
+        return;
+      }
+      case AST.DISPLAY_IMAGE: {
+        // Dev Build 5: display image '<name>'
+        var dKey = node.name.toLowerCase();
+        if (!this.images.has(dKey)) {
+          throw new RuntimeError('There is no image called \'' + node.name + '\' to display.',
+            node.line, node.column,
+            'Create it first, for example: define \'' + node.name + '\' as image "<base64-string>". Then display image \'' + node.name + '\' will work.');
+        }
+        var img = this.images.get(dKey);
+        this.onImageDisplay({ name: img.name, source: img.source });
+        return;
+      }
+      case AST.CHECK_EXISTS: {
+        // Dev Build 5: check if '<variable>' exists
+        // The node.name is the raw variable name (from the parser).
+        // We look it up directly in the images map.
+        var lookupName = node.name;
+        var exists = this.images.has(lookupName.toLowerCase());
+        this.output(lookupName + (exists ? ' exists' : ' does not exist'));
         return;
       }
       case AST.INCREASE:
@@ -476,6 +516,41 @@
     // one ("11" is a number, "eleven" and "" are not).
     if (node.operator === 'notNumber') return !isNumericLike(left);
     if (node.operator === 'number') return isNumericLike(left);
+    // Dev Build 5: positive / negative number tests (Math library)
+    if (node.operator === 'positive') {
+      return isNumericLike(left) && this.toNumber(left, node, 'positive check') > 0;
+    }
+    if (node.operator === 'notPositive') {
+      return !isNumericLike(left) || this.toNumber(left, node, 'positive check') <= 0;
+    }
+    if (node.operator === 'negative') {
+      return isNumericLike(left) && this.toNumber(left, node, 'negative check') < 0;
+    }
+    if (node.operator === 'notNegative') {
+      return !isNumericLike(left) || this.toNumber(left, node, 'negative check') >= 0;
+    }
+    // Dev Build 5: contains — core logic (no library needed)
+    if (node.operator === 'contains') {
+      var leftStr = stringify(left);
+      var rightStr = stringify(await this.evaluate(node.right));
+      return leftStr.indexOf(rightStr) !== -1;
+    }
+    // Dev Build 6: exactEqual — case-sensitive, strict comparison
+    if (node.operator === 'exactEqual' || node.operator === 'notExactEqual') {
+      var right = await this.evaluate(node.right);
+      var exactCmp = stringify(left) === stringify(right);
+      return node.operator === 'exactEqual' ? exactCmp : !exactCmp;
+    }
+    // Dev Build 5: in the range of A to B (Math library)
+    if (node.operator === 'inRange' || node.operator === 'notInRange') {
+      var val = this.toNumber(left, node, 'range check');
+      var low = this.toNumber(await this.evaluate(node.right.low), node, 'range check');
+      var high = this.toNumber(await this.evaluate(node.right.high), node, 'range check');
+      var minVal = Math.min(low, high);
+      var maxVal = Math.max(low, high);
+      var inRange = val >= minVal && val <= maxVal;
+      return node.operator === 'inRange' ? inRange : !inRange;
+    }
     var right = await this.evaluate(node.right);
     var cmp;
     if (isNumericLike(left) && isNumericLike(right)) {
@@ -487,8 +562,17 @@
       cmp = sa < sb ? -1 : sa > sb ? 1 : 0;
     }
     switch (node.operator) {
-      case 'equal': return cmp === 0;
-      case 'notEqual': return cmp !== 0;
+      // Dev Build 6: 'equal' and 'notEqual' are now case-insensitive for strings
+      case 'equal':
+        if (typeof left === 'string' && typeof right === 'string') {
+          return left.toLowerCase() === right.toLowerCase();
+        }
+        return cmp === 0;
+      case 'notEqual':
+        if (typeof left === 'string' && typeof right === 'string') {
+          return left.toLowerCase() !== right.toLowerCase();
+        }
+        return cmp !== 0;
       case 'greater': return cmp > 0;
       case 'greaterOrEqual': return cmp >= 0;
       case 'less': return cmp < 0;

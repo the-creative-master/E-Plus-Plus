@@ -47,6 +47,8 @@
     if (/\b(?:drawing\s+sprite|python\s+code)\b/i.test(source)) return true;
     if (/\b(?:square\s+root\s+of|as\s+fraction|as\s+decimal|divided\s+by|power\s+of|percent\s+of)\b/i.test(source)) return true;
     if (/\b(?:uppercase\s+of|lowercase\s+of|length\s+of|random\s+number\s+between)\b/i.test(source)) return true;
+    // Dev Build 5: Image library + new condition patterns
+    if (/\b(?:display\s+image|as\s+image|check\s+if.*exists|is\s+(?:a\s+)?(?:positive|negative)\s+number|is\s+(?:not\s+)?in\s+the\s+range\s+of|\bcontains\b)\b/i.test(source)) return true;
     return false;
   }
 

@@ -24,6 +24,9 @@
     LOOPBACK: 'Loopback',
     DEFINE_SPRITE: 'DefineSprite',
     MOVE_SPRITE: 'MoveSprite',
+    DEFINE_IMAGE: 'DefineImage',
+    DISPLAY_IMAGE: 'DisplayImage',
+    CHECK_EXISTS: 'CheckExists',
     REPEAT: 'Repeat',
     WHILE: 'While',
     STOP: 'Stop',
@@ -83,6 +86,9 @@
     MoveSprite: function (name, direction, pixels, token) {
       return at({ type: Type.MOVE_SPRITE, name: name, direction: direction, pixels: pixels }, token);
     },
+    DefineImage: function (name, source, token) { return at({ type: Type.DEFINE_IMAGE, name: name, source: source }, token); },
+    DisplayImage: function (name, token) { return at({ type: Type.DISPLAY_IMAGE, name: name }, token); },
+    CheckExists: function (name, token) { return at({ type: Type.CHECK_EXISTS, name: name }, token); },
     Repeat: function (count, body, token) { return at({ type: Type.REPEAT, count: count, body: body || [] }, token); },
     While: function (condition, body, token) { return at({ type: Type.WHILE, condition: condition, body: body || [] }, token); },
     Stop: function (token) { return at({ type: Type.STOP }, token); },

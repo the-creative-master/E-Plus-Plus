@@ -1,36 +1,38 @@
-# E++ and the E++ IDE (Dev Build 4)
+# E++ and the E++ IDE (Dev Build 5)
 
 **E++ looks like English, reads like English, and behaves like code.**
 
-> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 4 humanizes the language into something genuinely fun, accessible, and English-like.
+> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 5 humanizes the language into something genuinely fun, accessible, and English-like.
 
 E++ is a complete programming language implemented from scratch in this
 repository — lexer, parser, AST, interpreter, runtime, library system, Python runner, and
 error system — together with a complete online IDE in which the language
 runs.
 
-## What's New in Dev Build 4 (Project Humanizer)
+## What's New in Dev Build 5
 
-1. **Pure `.eppl` vs Extended `.eppla` Files**:
-   - **`.eppl`** is strictly for files **WITHOUT** any libraries.
-   - **`.eppla`** is for files **WITH** libraries (ANY library: Math, Random, Text, Draw, Python).
-   - Exporting now uses raw binary octet streams so files never save as `.eppl.txt`.
-2. **Project Humanizer Syntax**:
-   - Use `add library "Name"` (e.g. `add library "Math"`).
-   - Non-English punctuation removed: multi-line Python uses commas `", ... ,"` instead of dashes `"- ... -"`.
-3. **Lexer-Based Python Runner & Native Error Codes**:
-   - Python code runs directly in pure JavaScript via our lexer-based Python runner — Pyodide and WebAssembly are no longer used!
-   - Real Python error codes: errors in Python code report Python's OWN error codes directly (`NameError`, `ZeroDivisionError`, `SyntaxError`, `IndentationError`, `TypeError`), rather than generic translations.
-4. **Direct File Deletion in File Explorer**:
-   - You can now delete any file directly from the sidebar files menu with the inline delete button (`✕`), without having to open the file first.
-5. **Standalone Portable Runtime (`E++.zip`)**:
-   - A dedicated **E++.zip** button downloads the standalone E++ runtime as a single-file portable IDE inside a zip archive.
-   - Run pure `.eppl` code offline anywhere (libraries are not supported in `E++.zip`).
-   - Manual save feature: type `save project as <name>.eppl` into the command bar to save your file.
-6. **Interactive Guided Tutorial**:
-   - Click the **Tutorial** button to access a 6-step interactive guide with live code you can inject directly into the editor and run.
-7. **Dashboard Overhaul**:
-   - Modernized status banner showing active file, project mode (`.eppl` pure vs `.eppla` extended), loaded libraries, lines of code, and quick library insert buttons.
+1. **Core Logic Conditions (no library needed)**:
+   - `contains` — check if a value contains a substring: `if 'text' contains "hello" then ...`
+2. **Math Logic Conditions (requires Math library)**:
+   - `is a positive number` / `is not a positive number`
+   - `is a negative number` / `is not a negative number`
+   - `is in the range of A to B` / `is not in the range of A to B`
+3. **Variable System Fixed**:
+   - Variables **MUST** be inside single quotes — any word in quotes is valid
+   - Whitelist removed: multi-word names, numeric names, special characters all work
+   - `Define 'my var' as "hello"` and `Set 'my var' to 42` now work
+4. **Loop + Mutation (Arena Additions, Now Officially Supported)**:
+   - `repeat N times ... end repeat` fully documented and tested
+   - `Set 'variable' to new value` — quoted variable names accepted
+5. **Image Library (New)**:
+   - `add library "Image"` unlocks image support
+   - `define 'cat' as image "<base64-string>"` — define images from Base64 data
+   - `check if 'cat' exists` — check if an image variable has been defined
+   - `display image 'cat'` — display images in the console (auto-detects PNG/JPEG/GIF/WebP)
+6. **General Language Cleanup**:
+   - `ask/save answer` now works correctly with quoted variables
+   - `if/otherwise` now works correctly with quoted variables
+   - All logic conditions work inside loops and Set
 
 ## What's in the IDE
 
@@ -60,14 +62,23 @@ if 'output' is equal to 11 then say "Correct!" otherwise say "Wrong!"
 note: Files with libraries must be saved as .eppla
 add library "Math"
 display 1 divided by 2 as fraction
+
+note: Dev Build 5 — new conditions
+if 'output' is a positive number then say "Above zero"
+if 'output' is in the range of 1 to 20 then say "In range"
+
+note: Dev Build 5 — contains
+Define greeting as "Hello World"
+if 'greeting' contains "World" then say "Found it!"
 ```
 
 - `"text in double quotes"` is printed literally.
-- `'name'` in single quotes means “the variable called name”. Bare variable names are errors.
+- `'name'` in single quotes means "the variable called name". Bare variable names are errors.
 - Bare words and numbers are maths or keywords: `say 1 plus 1` → `2`, while
   `say "1 plus 1"` prints the text.
-- Change variables with `Set count to 'count' plus 1.` or `Increase score by 5`.
+- Change variables with `Set count to 'count' plus 1.` or `Set 'count' to 'count' plus 1.`.
 - Loop with `repeat 3 times ... end repeat` or `loopback to if`.
+- Check substrings with `contains`, positive/negative with `is a positive number`, ranges with `is in the range of A to B`.
 
 ## Project Structure
 
@@ -78,7 +89,7 @@ js/
   errors.js                 EppError + LexError / ParseError / RuntimeError / LibraryError / FileError
   lexer.js                  Generic tokenizer (pure JavaScript)
   ast.js                    AST node definitions + tree walker
-  libraries.js              Library registry (Math, Text, Random, Python, Draw)
+  libraries.js              Library registry (Math, Text, Random, Python, Draw, Image)
   parser.js                 Parser with Humanizer syntax (add library, comma Python blocks, .eppl vs .eppla)
   python-runner.js          Pure JS Python lexer & interpreter (native Python error codes, no Pyodide)
   interpreter.js            Interpreter & execution engine

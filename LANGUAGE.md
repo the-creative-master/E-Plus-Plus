@@ -1,8 +1,8 @@
-# The E++ Language Reference (Dev Build 4)
+# The E++ Language Reference (Dev Build 6)
 
 **E++ looks like English, reads like English, and behaves like code.**
 
-> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 4 humanizes the language into something genuinely fun, accessible, and English-like.
+> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 6 humanizes the language into something genuinely fun, accessible, and English-like.
 
 This document describes the language exactly as implemented in this
 repository (`js/lexer.js`, `js/parser.js`, `js/ast.js`, `js/interpreter.js`,
@@ -31,7 +31,7 @@ repository (`js/lexer.js`, `js/parser.js`, `js/ast.js`, `js/interpreter.js`,
 | `WeeklyHow` (bare word) | the variable `WeeklyHow` if one exists; otherwise an English error — bare words must be a variable, a number or a keyword. Exception: on the right-hand side of `Define`/`Set`, bare words are the literal value (`Define name as WeeklyHow.`) |
 | `true` / `yes`, `false` / `no` | booleans |
 
-## 3. Variables
+## 3. Variables (Dev Build 5: Fixed)
 
 ```eppl
 Define name as WeeklyHow.
@@ -41,16 +41,25 @@ Define total as 'price' times 'quantity'.
 
 `Define <name> as <value>.` creates (or replaces) a variable. Names are
 single words. Refer to a variable with single quotes: `say 'name'`.
-Since Dev Build 4, **every** variable reference must be written inside
-single quotes — writing a variable's name bare (for example
-`if output is equal to 11`) is an English error explaining the rule.
-The value in a `Define`/`Set` may still be bare words, which are then
-the literal value: `Define name as WeeklyHow.`
 
-Change an existing variable:
+**Dev Build 5 changes:**
+- Variables **MUST** be inside single quotes: `'name'`
+- Variables **NOT** in quotes are **ILLEGAL** (an error is shown)
+- **ANY** word inside quotes is a valid variable — the whitelist has been removed
+- Multi-word names, names with numbers, and names with special characters all work: `Define 'my variable' as "hello".`
+
+You can also define variables with quoted names:
+```eppl
+Define 'my score' as 100.
+Define 'player 1' as "Alice".
+say 'my score'
+```
+
+Change an existing variable (Dev Build 5: also works with quoted names):
 
 ```eppl
 Set count to 'count' plus 1.
+Set 'count' to 'count' plus 1.    (also valid)
 ```
 
 ### Increasing and decreasing
@@ -95,6 +104,7 @@ With `add library "Math"` (§10) you also unlock `divided by`, `power of`,
 
 ```eppl
 ask "<prompt>" and save answer as <variable>
+ask "<prompt>" and save answer as '<variable>'    (Dev Build 5: quoted names also work)
 ```
 
 Prints the prompt in the IDE console and waits for the user to type an
@@ -127,6 +137,41 @@ otherwise
 end if
 ```
 
+### Condition types
+
+#### Core Logic (no library needed)
+
+| Condition | Example |
+|---|---|
+| is a number | `if 'x' is a number then ...` |
+| is not a number | `if 'x' is not a number then ...` |
+| contains | `if 'text' contains "hello" then ...` |
+| is equal to | `if 'x' is equal to "hello" then ...` (case-insensitive) |
+| is not equal to | `if 'x' is not equal to "hello" then ...` (case-insensitive) |
+| is exactly equal to | `if 'x' is exactly equal to "Hello" then ...` (case-sensitive) |
+| is not exactly equal to | `if 'x' is not exactly equal to "Hello" then ...` (case-sensitive) |
+
+**Notes on equality:**
+- `is equal to` is **case-insensitive**: `"hello"` equals `"HELLO"` equals `"Hello"`.
+- `is exactly equal to` is **case-sensitive**: `"hello"` does NOT equal `"Hello"`.
+
+#### Math Logic (requires Math library)
+
+| Condition | Example |
+|---|---|
+| is a positive number | `if 'x' is a positive number then ...` |
+| is not a positive number | `if 'x' is not a positive number then ...` |
+| is a negative number | `if 'x' is a negative number then ...` |
+| is not a negative number | `if 'x' is not a negative number then ...` |
+| is in the range of A to B | `if 'x' is in the range of 1 to 10 then ...` |
+| is not in the range of A to B | `if 'x' is not in the range of 1 to 10 then ...` |
+
+**Notes:**
+- Zero is **neither** positive nor negative.
+- Non-numeric values are "not a positive number" and "not a negative number".
+- Range checks are **inclusive**: `is in the range of 1 to 10` includes both 1 and 10.
+- Range bounds can be written in either order: `1 to 10` and `10 to 1` are equivalent.
+
 ### Loopback (Dev Build 4)
 
 ```eppl
@@ -152,9 +197,11 @@ end while
 
 `stop` leaves the current loop early.
 
+Dev Build 5: All condition types (contains, positive/negative, range) work inside loops.
+
 ## 10. Libraries (.eppla Files Only)
 
-In Dev Build 4, libraries are added with the humanized syntax:
+In Dev Build 5, libraries are added with the humanized syntax:
 
 ```eppl
 add library "<LibraryName>"
@@ -166,12 +213,16 @@ add library "<LibraryName>"
 - Attempting to add a library inside a `.eppl` file produces a clear error advising the user to rename the file to `.eppla`.
 
 ### Math
-Unlocks: `divided by`, `power of`, `as fraction`, `as decimal`, `percent of`, `square root of`.
+Unlocks: `divided by`, `power of`, `as fraction`, `as decimal`, `percent of`, `square root of`, `is a positive number`, `is a negative number`, `is in the range of A to B`.
 
 ```eppl
 add library "Math"
 display 1 divided by 2 as fraction   (prints 1/2)
 display 1 divided by 2 as decimal    (prints 0.5)
+
+Define score as 50
+if 'score' is a positive number then say "Above zero"
+if 'score' is in the range of 1 to 100 then say "In range"
 ```
 
 ### Text
@@ -219,6 +270,23 @@ define 'hero' as drawing sprite
 'hero' move down "30"
 ```
 
+### Image (Dev Build 5: New)
+Define, check, and display images using Base64-encoded data:
+
+```eppl
+add library "Image"
+
+define 'cat' as image "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ..."
+check if 'cat' exists
+display image 'cat'
+```
+
+- `define '<name>' as image "<base64-string>"` — defines an image variable with Base64-encoded image data
+- `check if '<name>' exists` — checks if an image variable has been defined
+- `display image '<name>'` — displays the image in the console (automatically detects PNG/JPEG/GIF/WebP formats)
+
+The Base64 string can be either raw Base64 data or a full data URI (e.g., `"data:image/png;base64,..."`).
+
 ## 11. Standalone Runtime: E++.zip (Requirements 6 & 7)
 
 Clicking the **E++.zip** button downloads the entire E++ runtime as a portable, single-file offline IDE inside `E++.zip`:
@@ -234,23 +302,36 @@ statement      := define | set | say | ask | wait | library | add_library
                 | if | repeat | while | stop | note
                 | increase | decrease | python
                 | loopback | sprite-move
+                | check | display-image | define-image
 add_library    := "add" "library" STRING
 library        := "library" STRING ("add"|"load"|"import")
 define         := "Define" name "as" expression
+                | "Define" VARIABLE "as" expression
                 | "define" VARIABLE "as" "drawing" "sprite"
-set            := ("Set"|"Change") name "to" expression
+                | "define" VARIABLE "as" "image" expression            [Image]
+set            := ("Set"|"Change") (name | VARIABLE) "to" expression
 say            := ("say"|"display"|"show") expression
-ask            := "ask" expression "and save answer as" name
+display-image  := ("display"|"say"|"show") "image" VARIABLE             [Image]
+ask            := "ask" expression "and save answer as" (name | VARIABLE)
 wait           := "wait" expression ["seconds"]
 increase       := "Increase" name "by" expression
 decrease       := "Decrease" name "by" expression
 python         := "python" "code" STRING
                   (STRING starting with "," or "-" = raw multi-line Python)
 loopback       := "loopback" "to" "if"
+check          := "check" "if" VARIABLE "exists"                                 [Image]
 sprite-move    := VARIABLE "move" ("up"|"down"|"left"|"right") STRING
 if             := "if" condition "then" branch
                   ("otherwise if" condition "then" branch)*
                   ["otherwise" branch] ["end if" when block form]
+                  — branches may chain without limit
+condition      := <expression> [comparison <expression>]
+                  comparisons include:
+                    "is equal to", "is greater than", "is less than"
+                    "is a number", "is not a number"
+                    "contains"                                          (core)
+                    "is a positive number", "is a negative number"      [Math]
+                    "is in the range of" A "to" B                       [Math]
 repeat         := "repeat" expression "times" (statement | block "end repeat")
 while          := "while" condition ["do"] (statement | block "end while")
 ```

@@ -560,12 +560,13 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   border: 1px solid var(--border); background: var(--panel); color: var(--text);
   border-radius: var(--radius); padding: 0; max-width: 620px; width: calc(100vw - 32px);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75);
-  overflow: hidden;
+  max-height: 90vh; display: flex; flex-direction: column; position: relative;
 }
 .tutorial-dialog::backdrop { background: rgba(3, 7, 18, 0.75); backdrop-filter: blur(4px); }
 .tutorial-head {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 20px; background: var(--panel-2); border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 .tutorial-title-wrap { display: flex; align-items: center; gap: 10px; }
 .tutorial-badge {
@@ -579,7 +580,7 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   line-height: 1; cursor: pointer; padding: 2px 6px; border-radius: 6px;
 }
 .btn-close:hover { color: var(--text); background: rgba(255, 255, 255, 0.1); }
-.tutorial-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.tutorial-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; }
 .tutorial-summary { font-size: 14.5px; font-weight: 500; color: #f1f5f9; line-height: 1.5; margin: 0; }
 .tutorial-explanation { font-size: 13.5px; color: var(--muted); line-height: 1.5; margin: 0; }
 .tutorial-code-box {
@@ -598,6 +599,68 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .tutorial-foot {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 20px; background: var(--panel-2); border-top: 1px solid var(--border);
+  flex-shrink: 0;
 }
 .tutorial-steps { font-size: 12px; color: var(--muted); font-family: var(--mono); }
 .tutorial-nav-buttons { display: flex; align-items: center; gap: 8px; }
+
+/* ---------- Settings Dialog (Dev Build 6) ---------- */
+.settings-dialog {
+  border: 1px solid var(--border); background: var(--panel); color: var(--text);
+  border-radius: var(--radius); padding: 0; max-width: 480px; width: calc(100vw - 32px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75);
+}
+.settings-dialog::backdrop { background: rgba(3, 7, 18, 0.75); backdrop-filter: blur(4px); }
+.settings-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; background: var(--panel-2); border-bottom: 1px solid var(--border);
+}
+.settings-head h2 { margin: 0; font-size: 17px; }
+.settings-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.setting-row label { display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; }
+.setting-row select {
+  background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer;
+}
+.setting-row input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+.setting-desc { font-size: 12px; color: var(--muted); margin: 4px 0 0 28px; line-height: 1.4; }
+
+/* ---------- Light Theme (Dev Build 6) ---------- */
+body.light-theme {
+  --bg: #f0f4f8;
+  --panel: #ffffff;
+  --panel-2: #f8fafc;
+  --panel-3: #e2e8f0;
+  --border: #cbd5e1;
+  --text: #1e293b;
+  --muted: #64748b;
+  --accent: #059669;
+  --danger: #dc2626;
+  color: var(--text);
+  background: var(--bg);
+}
+body.light-theme .topbar { background: #ffffff; border-bottom-color: var(--border); }
+body.light-theme .sidebar { background: #ffffff; border-right-color: var(--border); }
+body.light-theme .file-item { color: var(--text); }
+body.light-theme .file-item:hover { background: var(--panel-3); }
+body.light-theme .file-item.active { background: rgba(5, 150, 105, 0.12); color: #065f46; }
+body.light-theme .editor-card { background: #ffffff; border-color: var(--border); }
+body.light-theme .editor { color: var(--text); }
+body.light-theme .highlight-layer { color: var(--text); }
+body.light-theme .line-numbers { background: #f8fafc; color: var(--muted); border-right-color: var(--border); }
+body.light-theme .console-card { background: #ffffff; border-color: var(--border); }
+body.light-theme .console-output { background: #f8fafc; }
+body.light-theme .statusbar { background: #f8fafc; border-color: var(--border); color: var(--muted); }
+body.light-theme .footer { background: #ffffff; border-top-color: var(--border); color: var(--muted); }
+body.light-theme .tutorial-dialog,
+body.light-theme .settings-dialog { background: #ffffff; color: var(--text); }
+body.light-theme .tutorial-head,
+body.light-theme .settings-head,
+body.light-theme .tutorial-foot { background: #f8fafc; }
+body.light-theme .tutorial-code-box { background: #f8fafc; }
+body.light-theme .code-box-header { background: #e2e8f0; }
+body.light-theme .tok-keyword { color: #7c3aed; }
+body.light-theme .tok-string { color: #059669; }
+body.light-theme .tok-variable { color: #d97706; }
+body.light-theme .tok-number { color: #2563eb; }
+body.light-theme .tok-comment { color: #94a3b8; }

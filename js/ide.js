@@ -1,5 +1,5 @@
 /*
- * E++ IDE application (Dev Build 4).
+ * E++ IDE application (Dev Build 5).
  *
  * Project Humanizer:
  * - Pure .eppl files (no libraries) vs .eppla files (with libraries).
@@ -23,7 +23,7 @@
     {
       name: 'hello.eppl',
       content:
-        'note: Your first E++ program (Dev Build 4).\n' +
+        'note: Your first E++ program (Dev Build 5).\n' +
         'note: Based on WeeklyHow\'s AI programming language video.\n' +
         'Define name as WeeklyHow.\n' +
         'say "Hello " plus \'name\' plus "!"\n' +
@@ -162,11 +162,11 @@
   // ------------------------------------------------------------------
   var TUTORIAL_LESSONS = [
     {
-      title: '1. Welcome to E++ (Dev Build 4)',
+      title: '1. Welcome to E++ (Dev Build 5)',
       badge: 'Basics',
       summary: 'E++ is an English-like language based on WeeklyHow’s AI video, where AI was asked to create a coding language that reads like human language.',
       explanation: 'Statements in E++ end with a period (.) or a newline. Comments start with "note:". Words like "say" print text to the console.',
-      code: 'note: Welcome to E++ Dev Build 4!\n' +
+      code: 'note: Welcome to E++ Dev Build 5!\n' +
             'note: Inspired by WeeklyHow\'s AI video.\n' +
             'say "Hello, world!"\n' +
             'say "E++ looks like English, reads like English, and behaves like code."'
@@ -230,6 +230,21 @@
             '    print(\'Python count:\', i)\n' +
             ',"\n\n' +
             'say "Back to plain English in E++!"'
+    },
+    {
+      title: '7. Image Library',
+      badge: 'Images',
+      summary: 'The Image library lets you work with Base64-encoded images. Define images, check if they exist, and display them in the console!',
+      explanation: 'Images use Base64 encoding (a way to store images as text). The library auto-detects PNG, JPEG, GIF, and WebP formats. Use "define", "check if", and "display image" commands.',
+      code: 'note: Image Library Example (Dev Build 5)\n' +
+            'note: This tiny PNG is a 1x1 red pixel\n\n' +
+            'add library "Image"\n\n' +
+            'define \'red_pixel\' as image "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="\n\n' +
+            'check if \'red_pixel\' exists\n\n' +
+            'display image \'red_pixel\'\n\n' +
+            'note: Check for an image that doesn\'t exist\n' +
+            'check if \'nonexistent\' exists\n\n' +
+            'say "Image library works!"'
     }
   ];
 
@@ -436,6 +451,22 @@
     setSaveStatus('Unsaved changes…', true);
     clearTimeout(saveTimer);
     saveTimer = setTimeout(function () { saveCurrent(false); }, 450);
+    // Dev Build 6: Auto-change to .eppla if library usage detected
+    if (settings.autoEppla && currentName && /\.eppl$/i.test(currentName) && !/\.eppla$/i.test(currentName)) {
+      if (EPP.hasLibraryUsage(editor.value)) {
+        var newName = currentName.replace(/\.eppl$/i, '.eppla');
+        if (!store.exists(newName)) {
+          try {
+            store.deleteFile(currentName);
+            var saved = store.saveFile(newName, editor.value);
+            currentName = saved.name;
+            refreshFileList(currentName);
+            updateDashboard();
+            toast('Auto-changed to .eppla (library detected)');
+          } catch (e) {}
+        }
+      }
+    }
   });
   editor.addEventListener('scroll', syncScroll);
   editor.addEventListener('keyup', updateCursor);
@@ -719,6 +750,60 @@
     });
   }
 
+  // Dev Build 6: Settings
+  var SETTINGS_KEY = 'eplusplus.settings.v1';
+  var settings = { theme: 'dark', autoEppla: true };
+  try {
+    var saved = localStorage.getItem(SETTINGS_KEY);
+    if (saved) settings = Object.assign(settings, JSON.parse(saved));
+  } catch (e) {}
+
+  function saveSettings() {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+  }
+
+  function applyTheme(theme) {
+    if (theme === 'light') {
+      document.body.classList.add('light-theme');
+    } else {
+      document.body.classList.remove('light-theme');
+    }
+  }
+  applyTheme(settings.theme);
+
+  var btnSettings = $('btnSettings');
+  if (btnSettings) {
+    btnSettings.addEventListener('click', function () {
+      var dialog = $('settingsDialog');
+      if (!dialog) return;
+      var themeSelect = $('themeSelect');
+      var autoEpplaToggle = $('autoEpplaToggle');
+      if (themeSelect) themeSelect.value = settings.theme;
+      if (autoEpplaToggle) autoEpplaToggle.checked = settings.autoEppla;
+      dialog.showModal();
+    });
+  }
+
+  var settingsClose = $('settingsClose');
+  if (settingsClose) settingsClose.addEventListener('click', function () { $('settingsDialog').close(); });
+
+  var themeSelect = $('themeSelect');
+  if (themeSelect) {
+    themeSelect.addEventListener('change', function () {
+      settings.theme = themeSelect.value;
+      applyTheme(settings.theme);
+      saveSettings();
+    });
+  }
+
+  var autoEpplaToggle = $('autoEpplaToggle');
+  if (autoEpplaToggle) {
+    autoEpplaToggle.addEventListener('change', function () {
+      settings.autoEppla = autoEpplaToggle.checked;
+      saveSettings();
+    });
+  }
+
   var importInput = $('importInput');
   $('btnImport').addEventListener('click', function () { importInput.click(); });
   importInput.addEventListener('change', function () {
@@ -966,6 +1051,41 @@
       },
       pythonExecutor: executePython,
       onSprite: handleSprite,
+      onImageDisplay: function (info) {
+        // Dev Build 5: render Base64 image as an actual <img> in the console.
+        // The source may be a raw base64 string or a full data-URI.
+        var src = info.source;
+        if (src && !/^data:/i.test(src)) {
+          // Try to detect the image type from the base64 prefix.
+          // PNG starts with iVBOR, JPEG with /9j=, GIF with R0lGOD, WebP with UklGR
+          var prefix = src.slice(0, 8);
+          var mime = 'image/png'; // default
+          if (/^\/9j=/i.test(src)) mime = 'image/jpeg';
+          else if (/^R0lGOD/i.test(src)) mime = 'image/gif';
+          else if (/^UklGR/i.test(src)) mime = 'image/webp';
+          else if (/^iVBOR/i.test(src)) mime = 'image/png';
+          src = 'data:' + mime + ';base64,' + src;
+        }
+        var line = document.createElement('div');
+        line.className = 'console-line output';
+        var label = document.createElement('span');
+        label.textContent = '[Image: ' + info.name + '] ';
+        line.appendChild(label);
+        var img = document.createElement('img');
+        img.src = src;
+        img.alt = info.name;
+        img.style.maxWidth = '300px';
+        img.style.maxHeight = '300px';
+        img.style.borderRadius = '4px';
+        img.style.display = 'block';
+        img.style.marginTop = '4px';
+        img.onerror = function () {
+          line.appendChild(document.createTextNode(' (could not decode image — invalid Base64 data)'));
+        };
+        line.appendChild(img);
+        consoleOutput.appendChild(line);
+        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+      },
       onLibrary: function (name) {
         loadedLibraries.push(name);
         updateLibrariesStatus();
@@ -1034,6 +1154,6 @@
   var initial = files.some(function (f) { return f.name === 'hello.eppl'; }) ? 'hello.eppl' : (files[0] && files[0].name);
   if (initial) openFile(initial);
   else refreshEditor();
-  appendConsole('You are running E++ Dev Build 4. Open a .eppl or .eppla file on the left and press Run.', 'system');
+  appendConsole('You are running E++ Dev Build 5. Open a .eppl or .eppla file on the left and press Run.', 'system');
   updateDashboard();
 })();

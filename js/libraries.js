@@ -19,14 +19,17 @@
     Math: {
       name: 'Math',
       aliases: ['math', 'maths', 'mathematics'],
-      description: 'Advanced maths: fractions, decimals, percentages, square roots and powers.',
+      description: 'Advanced maths: fractions, decimals, percentages, square roots and powers. Also unlocks number tests: is a positive/negative number, is in the range of A to B.',
       unlocks: [
         { feature: 'divided by', kind: 'operator' },
         { feature: 'power of', kind: 'operator' },
         { feature: 'as fraction', kind: 'conversion' },
         { feature: 'as decimal', kind: 'conversion' },
         { feature: 'percent of', kind: 'operator' },
-        { feature: 'square root of', kind: 'operator' }
+        { feature: 'square root of', kind: 'operator' },
+        { feature: 'is a positive number', kind: 'condition' },
+        { feature: 'is a negative number', kind: 'condition' },
+        { feature: 'is in the range of', kind: 'condition' }
       ],
       example: 'add library "Math"\ndisplay 1 divided by 2 as fraction.'
     },
@@ -70,6 +73,17 @@
         { feature: 'move up/down/left/right', kind: 'statement' }
       ],
       example: 'define \'hero\' as drawing sprite\n\'hero\' move right "40"\n\'hero\' move down "20"'
+    },
+    Image: {
+      name: 'Image',
+      aliases: ['image', 'images', 'picture', 'pictures', 'photo', 'photos'],
+      description: 'Working with images: define an image from a Base64 string, check if an image exists, and display it.',
+      unlocks: [
+        { feature: 'define image', kind: 'statement' },
+        { feature: 'display image', kind: 'statement' },
+        { feature: 'check if exists', kind: 'statement' }
+      ],
+      example: 'add library "Image"\ndefine \'cat\' as image "<base64-string>"\ncheck if \'cat\' exists\ndisplay image \'cat\''
     }
   };
 
