@@ -1,5 +1,5 @@
-note: Your first E++ program (Dev Build 4).
-note: This project is based on WeeklyHow's AI programming language video.
+note: Your first E++ program (Dev Build 6.1).
+note: The tutorial now loads its lessons from tutorial/pack.json.
 Define name as WeeklyHow.
 say "Hello " plus 'name' plus "!"
 say "E++ looks like English, reads like English, and behaves like code."

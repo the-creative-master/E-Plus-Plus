@@ -1,38 +1,59 @@
-# E++ and the E++ IDE (Dev Build 5)
+# E++ and the E++ IDE (Dev Build 6.1)
 
 **E++ looks like English, reads like English, and behaves like code.**
 
-> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 5 humanizes the language into something genuinely fun, accessible, and English-like.
+> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 6.1 humanizes the language into something genuinely fun, accessible, and English-like.
 
 E++ is a complete programming language implemented from scratch in this
 repository — lexer, parser, AST, interpreter, runtime, library system, Python runner, and
 error system — together with a complete online IDE in which the language
 runs.
 
-## What's New in Dev Build 5
+## What's New in Dev Build 6.1
 
-1. **Core Logic Conditions (no library needed)**:
-   - `contains` — check if a value contains a substring: `if 'text' contains "hello" then ...`
-2. **Math Logic Conditions (requires Math library)**:
-   - `is a positive number` / `is not a positive number`
-   - `is a negative number` / `is not a negative number`
-   - `is in the range of A to B` / `is not in the range of A to B`
-3. **Variable System Fixed**:
-   - Variables **MUST** be inside single quotes — any word in quotes is valid
-   - Whitelist removed: multi-word names, numeric names, special characters all work
-   - `Define 'my var' as "hello"` and `Set 'my var' to 42` now work
-4. **Loop + Mutation (Arena Additions, Now Officially Supported)**:
-   - `repeat N times ... end repeat` fully documented and tested
-   - `Set 'variable' to new value` — quoted variable names accepted
-5. **Image Library (New)**:
-   - `add library "Image"` unlocks image support
-   - `define 'cat' as image "<base64-string>"` — define images from Base64 data
-   - `check if 'cat' exists` — check if an image variable has been defined
-   - `display image 'cat'` — display images in the console (auto-detects PNG/JPEG/GIF/WebP)
-6. **General Language Cleanup**:
-   - `ask/save answer` now works correctly with quoted variables
-   - `if/otherwise` now works correctly with quoted variables
-   - All logic conditions work inside loops and Set
+1. **The tutorial is no longer hardbaked into the IDE** (the big one):
+   - Lesson content lives in the lesson pack `tutorial/pack.json` — the IDE
+     only renders it. Edit the file and reload: the tutorial changes, no IDE
+     code touched.
+   - Over http(s) the pack is fetched at runtime; `js/tutorial-pack.js` is a
+     generated offline fallback (`npm run build:tutorial`), and both are
+     validated before use, with readable English errors for broken packs.
+   - **Your own lessons**: “★ Save editor file as lesson”, “⤓ Export pack”,
+     “⤒ Import pack”, “↺ Reset”, stored in your browser alongside the official
+     lessons.
+   - **Progress tracking**: visited lessons are ticked in the lesson rail and
+     the pack remembers where you stopped.
+   - **“Try in editor” can no longer eat your code**: it saves the file you were
+     working on and opens the example in its own `tutorial-<lesson>.eppl[a]`
+     file. (Previously it overwrote the open file.)
+   - 10 lessons, every example verified to parse *and* run by the test suite.
+2. **Much more in Settings**, grouped into Appearance · Editor · Behaviour ·
+   Tutorial · Data:
+   - *Appearance*: theme (dark / light / **match system**), layout density
+     (comfortable / compact), console height (compact / normal / tall), editor
+     font size, and toggles for the dashboard bar, line numbers, Libraries panel
+     and Quick reference panel.
+   - *Editor*: tab size (2/4/8) and spaces-vs-tab, word wrap, auto-save on/off
+     and auto-save delay.
+   - *Behaviour*: auto-`.eppla` rename, clear console before running, confirm
+     before deleting, re-open the last file on start.
+   - *Tutorial*: lesson-pack source readout, auto-open on first visit, and
+     reset of progress/custom lessons.
+   - *Data*: restore example files, reset all settings, delete all local data.
+3. **Layout cleanup**: the settings dialog is grouped and scrollable with a
+   title bar and footer, the tutorial is a two-pane dialog (lesson rail +
+   lesson), the Libraries and Quick reference panels collapse, the header has
+   its file and app actions separated, and the dashboard bar is tidier and can
+   be switched off.
+4. **Bug fixed — auto-`.eppl` → `.eppla` rename**: the handler called a function
+   that did not exist, so the rename failed silently and left the tab and file
+   list showing the old name. It now renames in place and keeps the whole UI in
+   sync.
+
+Everything from the earlier builds still works: `contains`,
+`is a positive number`, `is in the range of A to B`, quoted variables,
+`repeat N times`, the Image library, `is exactly equal to`, and the `.eppl` /
+`.eppla` split.
 
 ## What's in the IDE
 
@@ -46,7 +67,9 @@ runs.
   Files are stored locally in the browser (`localStorage`) and auto-save as you type.
 - **Import / Export** — download the current file as `.eppl` or `.eppla` without `.txt` being appended.
 - **E++.zip** — download the standalone E++ engine.
-- **Tutorial** — interactive lessons teaching variables, math, conditions, libraries, and Python.
+- **Tutorial** — 10 interactive lessons that load from the editable lesson pack
+  (`tutorial/pack.json`), with your own lessons, import/export, progress ticks,
+  and non-destructive "Try in editor".
 - **Bundled examples** — `hello.eppl`, `calculator.eppl`, `countdown.eppl`, `quiz.eppl`, `score-tracker.eppl`, `math.eppla`, `guessing-game.eppla`, `text-tools.eppla`, `python.eppla`, `drawing.eppla`.
 
 ## The E++ Language in 60 Seconds
@@ -63,11 +86,11 @@ note: Files with libraries must be saved as .eppla
 add library "Math"
 display 1 divided by 2 as fraction
 
-note: Dev Build 5 — new conditions
+note: Dev Build 6.1 — new conditions
 if 'output' is a positive number then say "Above zero"
 if 'output' is in the range of 1 to 20 then say "In range"
 
-note: Dev Build 5 — contains
+note: Dev Build 6.1 — contains
 Define greeting as "Hello World"
 if 'greeting' contains "World" then say "Found it!"
 ```
@@ -96,7 +119,38 @@ js/
   files.js                  .eppl (pure) and .eppla (libraries) file store with octet-stream export
   highlight.js              Syntax highlighting built on the real lexer
   standalone-generator.js   Generates self-contained standalone index.html & E++.zip archive
-  ide.js                    IDE app controller, file explorer, tutorial, dashboard
+  tutorial-pack.js          GENERATED offline copy of the lesson pack (npm run build:tutorial)
+  tutorial.js               Tutorial engine: loads/validates/merges lesson packs, progress
+  ide.js                    IDE app controller, file explorer, settings, tutorial renderer, dashboard
+tutorial/pack.json          THE lesson pack — edit this to change the tutorial
+tools/build-tutorial-pack.mjs  Generates js/tutorial-pack.js from tutorial/pack.json
 examples/                   Bundled example programs (.eppl and .eppla)
-tests/run-tests.mjs         Test suite for language core, files, Python, and E++.zip
+tests/run-tests.mjs         Test suite for the language core, files, Python, E++.zip, lesson packs
+tests/ide-smoke.mjs         Optional jsdom smoke test for the whole IDE (npm run test:ide)
+```
+
+## Editing the tutorial
+
+The tutorial is data, not IDE code:
+
+```bash
+# 1. Edit the lessons (title, badge, summary, explanation, code)
+$EDITOR tutorial/pack.json
+
+# 2. Refresh the offline copy the IDE falls back to
+npm run build:tutorial
+
+# 3. Reload the IDE (in a browser over the dev server, step 2 is optional:
+#    the IDE fetches tutorial/pack.json directly)
+```
+
+You can also add lessons from inside the IDE (Settings ▸ Tutorial, or the
+lesson-pack buttons in the tutorial dialog) and export the whole set as a
+shareable `epp-tutorial-pack.json`.
+
+## Tests
+
+```bash
+npm test          # language core, file store, E++.zip, lesson pack (97 groups)
+npm run test:ide  # boots the real IDE in jsdom and drives it (needs: npm i --no-save jsdom)
 ```

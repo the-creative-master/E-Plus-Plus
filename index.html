@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<title>E++ IDE (Dev Build 6) — Programs that read like English</title>
-<meta name="description" content="The official online IDE for E++ Dev Build 6, the programming language that looks like English, reads like English, and behaves like code. Features pure .eppl and library-supported .eppla files.">
-<link rel="stylesheet" href="css/ide.css?v=10">
+<title>E++ IDE (Dev Build 6.1) — Programs that read like English</title>
+<meta name="description" content="The official online IDE for E++ Dev Build 6.1, the programming language that looks like English, reads like English, and behaves like code. Pure .eppl files, library-powered .eppla files, and a tutorial loaded from an editable lesson pack.">
+<link rel="stylesheet" href="css/ide.css?v=11">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>E</text></svg>">
 </head>
 <body data-mobile-view="editor">
@@ -15,8 +15,8 @@
 <header class="topbar">
   <div class="brand">
     <div class="logo" aria-hidden="true">E<span>++</span></div>
-    <div>
-      <h1>E++ IDE <span class="build-badge" title="E++ Dev Build 6">Dev Build 6</span></h1>
+    <div class="brand-text">
+      <h1>E++ IDE <span class="build-badge" title="E++ Dev Build 6.1">Dev Build 6.1</span></h1>
       <p>Based on WeeklyHow's AI video · Looks like English. Reads like English. Behaves like code.</p>
     </div>
   </div>
@@ -26,9 +26,10 @@
       <button id="btnSave" class="btn" type="button" title="Save (Ctrl+S)">💾 Save</button>
       <button id="btnExport" class="btn" type="button" title="Download this file (.eppl or .eppla)" aria-label="Export file">⤓ Export</button>
       <button id="btnImport" class="btn" type="button" title="Open a .eppl or .eppla file" aria-label="Import file">⤒ Import</button>
-      <button id="btnZip" class="btn btn-zip" type="button" title="Download entire E++ runtime as E++.zip">📦 E++.zip</button>
+      <button id="btnZip" class="btn btn-zip" type="button" title="Download the standalone E++ runtime as E++.zip">📦 E++.zip</button>
+      <span class="action-divider" aria-hidden="true"></span>
       <button id="btnSettings" class="btn" type="button" title="Settings">⚙️ Settings</button>
-      <button id="btnTutorial" class="btn btn-tutorial" type="button" title="Open Interactive Guided Tutorial">🎓 Tutorial</button>
+      <button id="btnTutorial" class="btn btn-tutorial" type="button" title="Open the guided tutorial (loaded from the lesson pack)">🎓 Tutorial</button>
       <input id="importInput" type="file" accept=".eppl,.eppla" multiple hidden>
     </div>
     <div class="action-group run-actions">
@@ -38,26 +39,26 @@
   </div>
 </header>
 
-<!-- Dashboard Overhaul: Live Stats Bar -->
+<!-- Dashboard: live stats (toggle it in Settings ▸ Appearance) -->
 <div class="dash-banner" id="dashBanner" aria-label="Project dashboard">
   <div class="dash-stat">
-    <span class="dash-label">Active File:</span>
+    <span class="dash-label">Active file</span>
     <span id="dashFile" class="dash-val">untitled.eppl</span>
   </div>
   <div class="dash-stat">
-    <span class="dash-label">File Type:</span>
+    <span class="dash-label">Type</span>
     <span id="dashType" class="dash-badge-pill badge-eppl">.eppl (Pure)</span>
   </div>
   <div class="dash-stat">
-    <span class="dash-label">Active Libraries:</span>
+    <span class="dash-label">Libraries</span>
     <span id="dashLibs" class="dash-val">None</span>
   </div>
   <div class="dash-stat">
-    <span class="dash-label">Lines of Code:</span>
+    <span class="dash-label">Lines</span>
     <span id="dashLines" class="dash-val">0</span>
   </div>
   <div class="dash-stat dash-stat-build">
-    <span class="dash-badge-pill badge-version">Dev Build 6 • Project Humanizer</span>
+    <span class="dash-badge-pill badge-version">Dev Build 6.1 • Project Humanizer</span>
   </div>
 </div>
 
@@ -82,7 +83,7 @@
       <h2>Files <span class="head-sub">(.eppl / .eppla)</span></h2>
       <button id="btnNew" class="btn btn-small btn-accent" type="button">+ New</button>
     </div>
-    <input id="fileSearch" class="file-search" type="search" placeholder="Search .eppl & .eppla files…" aria-label="Search files">
+    <input id="fileSearch" class="file-search" type="search" placeholder="Search .eppl &amp; .eppla files…" aria-label="Search files">
     <ul id="fileList" class="file-list"></ul>
     <p id="noFiles" class="no-files" hidden>No files yet.<br>Create one with “New”.</p>
 
@@ -90,14 +91,14 @@
       <button id="btnRestoreExamples" class="btn btn-small" type="button">Restore example files</button>
     </div>
 
-    <section class="libraries-panel" aria-label="Available libraries">
-      <h2>Libraries <span class="head-sub">(.eppla only)</span></h2>
+    <details class="side-section" id="librariesPanel" open>
+      <summary>Libraries <span class="head-sub">(.eppla only)</span></summary>
       <p class="panel-note">Humanizer syntax:<br><code>add library "Math"</code></p>
       <div id="libraryList"></div>
-    </section>
+    </details>
 
-    <section class="help-panel">
-      <h2>E++ Dev Build 6 quick reference</h2>
+    <details class="side-section" id="helpPanel" open>
+      <summary>Quick reference <span class="head-sub">Dev Build 6.1</span></summary>
       <pre>note: Pure .eppl files (no libraries)
 Define name as WeeklyHow.
 say "Hello " plus 'name'.
@@ -107,7 +108,7 @@ if 'age' is equal to 11 then say "Hi"
 note: .eppla files (with libraries)
 add library "Math"
 display 1 divided by 2 as fraction</pre>
-    </section>
+    </details>
   </aside>
 
   <!-- ============ Editor + console ============ -->
@@ -170,62 +171,175 @@ display 1 divided by 2 as fraction</pre>
 </main>
 
 <footer class="footer">
-  <span><strong>E++ Dev Build 6</strong> · Based on WeeklyHow's AI programming language video · <code>.eppl</code> without libraries, <code>.eppla</code> with libraries.</span>
+  <span><strong>E++ Dev Build 6.1</strong> · Based on WeeklyHow's AI programming language video · <code>.eppl</code> without libraries, <code>.eppla</code> with libraries.</span>
   <span>Shortcuts: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run · <kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span>
 </footer>
 
-<!-- Interactive Guided Tutorial Dialog (Requirement 11) -->
+<!-- ============================================================
+     Tutorial dialog (Dev Build 6.1)
+     Lessons are rendered from the external lesson pack — see
+     tutorial/pack.json and js/tutorial.js. Nothing here is hardcoded.
+     ============================================================ -->
 <dialog id="tutorialDialog" class="tutorial-dialog">
   <div class="tutorial-head">
     <div class="tutorial-title-wrap">
       <span id="tutBadge" class="tutorial-badge">Basics</span>
-      <h2 id="tutTitle">1. Welcome to E++ (Dev Build 6)</h2>
+      <h2 id="tutTitle">E++ Guided Tutorial</h2>
     </div>
     <button id="tutClose" class="btn-close" type="button" aria-label="Close tutorial">&times;</button>
   </div>
-  <div class="tutorial-body">
-    <p id="tutSummary" class="tutorial-summary"></p>
-    <p id="tutExplanation" class="tutorial-explanation"></p>
-    <div class="tutorial-code-box">
-      <div class="code-box-header">
-        <span>Example Code</span>
-        <button id="tutTry" class="btn btn-small btn-accent" type="button">▶ Try in Editor</button>
+
+  <p id="tutSource" class="tutorial-source">Lesson pack: loading…</p>
+
+  <div class="tutorial-main">
+    <nav class="tutorial-lessons" id="tutLessonList" aria-label="Lessons"></nav>
+
+    <div class="tutorial-body">
+      <p id="tutSummary" class="tutorial-summary"></p>
+      <p id="tutExplanation" class="tutorial-explanation"></p>
+      <div class="tutorial-code-box">
+        <div class="code-box-header">
+          <span>Example code</span>
+          <button id="tutTry" class="btn btn-small btn-accent" type="button">▶ Try in editor</button>
+        </div>
+        <pre id="tutCode" class="tutorial-code"></pre>
       </div>
-      <pre id="tutCode" class="tutorial-code"></pre>
     </div>
   </div>
+
   <div class="tutorial-foot">
-    <span id="tutStepCount" class="tutorial-steps">Step 1 of 6</span>
+    <span id="tutStepCount" class="tutorial-steps">Lesson 1 of 1</span>
     <div class="tutorial-nav-buttons">
       <button id="tutPrev" class="btn btn-small" type="button">← Previous</button>
       <button id="tutNext" class="btn btn-small btn-accent" type="button">Next →</button>
+      <button id="tutResetPack" class="btn btn-small" type="button" title="Clear your own lessons and tutorial progress">↺ Reset</button>
     </div>
+  </div>
+
+  <div class="tutorial-tools">
+    <span class="tutorial-tools-label">Lesson pack</span>
+    <button id="tutSaveLesson" class="btn btn-small" type="button" title="Save the code in the editor as your own tutorial lesson">★ Save editor file as lesson</button>
+    <button id="tutExportPack" class="btn btn-small" type="button" title="Download the active lesson pack as JSON">⤓ Export pack</button>
+    <button id="tutImportPack" class="btn btn-small" type="button" title="Import lessons from a lesson pack JSON file">⤒ Import pack</button>
+    <input id="tutPackInput" type="file" accept=".json,application/json" hidden>
+    <span class="tutorial-tools-note">Packs live in <code>tutorial/pack.json</code> — edit that file and reload to change the lessons.</span>
   </div>
 </dialog>
 
-<!-- Settings Dialog -->
+<!-- ============================================================
+     Settings dialog (Dev Build 6.1) — grouped and scrollable
+     ============================================================ -->
 <dialog id="settingsDialog" class="settings-dialog">
   <div class="settings-head">
-    <h2>Settings</h2>
+    <div>
+      <h2>Settings</h2>
+      <p class="settings-sub">Dev Build 6.1 · everything here is stored in this browser</p>
+    </div>
     <button id="settingsClose" class="btn-close" type="button" aria-label="Close settings">&times;</button>
   </div>
+
   <div class="settings-body">
-    <div class="setting-row">
-      <label>
-        <span>Theme</span>
-        <select id="themeSelect">
-          <option value="dark">Dark Mode</option>
-          <option value="light">Light Mode</option>
+    <section class="settings-group">
+      <h3>Appearance</h3>
+      <div class="setting-row">
+        <label for="themeSelect">Theme</label>
+        <select id="themeSelect" data-setting="theme">
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+          <option value="system">Match system</option>
         </select>
-      </label>
-    </div>
-    <div class="setting-row">
-      <label>
-        <input type="checkbox" id="autoEpplaToggle">
-        <span>Auto-change to .eppla when library is detected</span>
-      </label>
-      <p class="setting-desc">Automatically changes file extension to .eppla when <code>add library</code> is detected</p>
-    </div>
+        <p class="setting-desc" id="settingsThemeNote"></p>
+      </div>
+      <div class="setting-row">
+        <label for="densitySelect">Layout density</label>
+        <select id="densitySelect" data-setting="density">
+          <option value="comfortable">Comfortable</option>
+          <option value="compact">Compact</option>
+        </select>
+        <p class="setting-desc">Compact trims padding so more code fits on screen.</p>
+      </div>
+      <div class="setting-row">
+        <label for="consoleHeightSelect">Console height</label>
+        <select id="consoleHeightSelect" data-setting="consoleHeight">
+          <option value="compact">Compact</option>
+          <option value="normal">Normal</option>
+          <option value="tall">Tall</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label for="fontSizeSelect">Editor font size</label>
+        <select id="fontSizeSelect" data-setting="editorFontSize">
+          <option value="12">12 px</option>
+          <option value="13">13 px</option>
+          <option value="14">14 px</option>
+          <option value="15">15 px</option>
+          <option value="16">16 px</option>
+          <option value="18">18 px</option>
+        </select>
+      </div>
+      <label class="setting-check"><input type="checkbox" id="showDashboardToggle" data-setting="showDashboard"> Show the project dashboard bar</label>
+      <label class="setting-check"><input type="checkbox" id="showLineNumbersToggle" data-setting="showLineNumbers"> Show line numbers in the editor</label>
+      <label class="setting-check"><input type="checkbox" id="showLibrariesPanelToggle" data-setting="showLibrariesPanel"> Show the Libraries panel</label>
+      <label class="setting-check"><input type="checkbox" id="showHelpPanelToggle" data-setting="showHelpPanel"> Show the Quick reference panel</label>
+    </section>
+
+    <section class="settings-group">
+      <h3>Editor</h3>
+      <div class="setting-row">
+        <label for="tabSizeSelect">Tab size</label>
+        <select id="tabSizeSelect" data-setting="tabSize">
+          <option value="2">2 spaces</option>
+          <option value="4">4 spaces</option>
+          <option value="8">8 spaces</option>
+        </select>
+      </div>
+      <label class="setting-check"><input type="checkbox" id="tabCharToggle" data-setting="tabChar"> Tab key inserts a real tab character</label>
+      <label class="setting-check"><input type="checkbox" id="wordWrapToggle" data-setting="wordWrap"> Wrap long lines instead of scrolling sideways</label>
+      <label class="setting-check"><input type="checkbox" id="autoSaveToggle" data-setting="autoSave"> Auto-save as you type</label>
+      <div class="setting-row">
+        <label for="autoSaveDelaySelect">Auto-save delay</label>
+        <select id="autoSaveDelaySelect" data-setting="autoSaveDelay">
+          <option value="300">300 ms</option>
+          <option value="450">450 ms</option>
+          <option value="900">900 ms</option>
+          <option value="1500">1500 ms</option>
+        </select>
+        <p class="setting-desc">Only used while auto-save is on. <kbd>Ctrl</kbd>+<kbd>S</kbd> always saves.</p>
+      </div>
+    </section>
+
+    <section class="settings-group">
+      <h3>Behaviour</h3>
+      <label class="setting-check"><input type="checkbox" id="autoEpplaToggle" data-setting="autoEppla"> Auto-change to .eppla when a library is detected</label>
+      <p class="setting-desc indent">E++ keeps .eppl strictly library-free; this renames the file the moment <code>add library</code> appears.</p>
+      <label class="setting-check"><input type="checkbox" id="clearConsoleToggle" data-setting="clearConsoleOnRun"> Clear the console before every run</label>
+      <label class="setting-check"><input type="checkbox" id="confirmDeleteToggle" data-setting="confirmDelete"> Ask before deleting a file</label>
+      <label class="setting-check"><input type="checkbox" id="restoreLastFileToggle" data-setting="restoreLastFile"> Re-open the last file when the IDE starts</label>
+    </section>
+
+    <section class="settings-group">
+      <h3>Tutorial</h3>
+      <p class="setting-desc" id="settingsTutorialInfo">Loading the lesson pack…</p>
+      <label class="setting-check"><input type="checkbox" id="autoOpenTutorialToggle" data-setting="autoOpenTutorial"> Open the tutorial automatically on your first visit</label>
+      <div class="setting-actions">
+        <button id="settingsResetTutorial" class="btn btn-small" type="button">Reset tutorial progress &amp; my lessons</button>
+      </div>
+    </section>
+
+    <section class="settings-group settings-group-last">
+      <h3>Data</h3>
+      <p class="setting-desc">Files, settings and lessons are kept in this browser's localStorage — nothing leaves your machine.</p>
+      <div class="setting-actions">
+        <button id="settingsRestoreExamples" class="btn btn-small" type="button">Restore example files</button>
+        <button id="settingsReset" class="btn btn-small" type="button">Reset all settings</button>
+        <button id="settingsWipe" class="btn btn-small btn-danger-outline" type="button">Delete all local data…</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="settings-foot">
+    <span class="settings-note">Dev Build 6.1</span>
+    <button id="settingsDone" class="btn btn-small btn-accent" type="button">Done</button>
   </div>
 </dialog>
 
@@ -233,7 +347,7 @@ display 1 divided by 2 as fraction</pre>
 <dialog id="fileDialog" class="file-dialog">
   <form method="dialog" id="fileDialogForm">
     <h2 id="fileDialogTitle">New File</h2>
-    <label for="fileDialogInput">File name (.eppl for pure code, .eppla for libraries)</label>
+    <label for="fileDialogInput" id="fileDialogLabel">File name (.eppl for pure code, .eppla for libraries)</label>
     <input id="fileDialogInput" type="text" placeholder="my-program.eppl" autocomplete="off">
     <p id="fileDialogError" class="dialog-error" role="alert"></p>
     <div class="dialog-actions">
@@ -245,16 +359,18 @@ display 1 divided by 2 as fraction</pre>
 
 <div id="toast" class="toast" role="status" hidden></div>
 
-<script src="js/errors.js?v=10"></script>
-<script src="js/lexer.js?v=10"></script>
-<script src="js/ast.js?v=10"></script>
-<script src="js/libraries.js?v=10"></script>
-<script src="js/parser.js?v=10"></script>
-<script src="js/python-runner.js?v=10"></script>
-<script src="js/interpreter.js?v=10"></script>
-<script src="js/files.js?v=10"></script>
-<script src="js/highlight.js?v=10"></script>
-<script src="js/standalone-generator.js?v=10"></script>
-<script src="js/ide.js?v=10"></script>
+<script src="js/errors.js?v=11"></script>
+<script src="js/lexer.js?v=11"></script>
+<script src="js/ast.js?v=11"></script>
+<script src="js/libraries.js?v=11"></script>
+<script src="js/parser.js?v=11"></script>
+<script src="js/python-runner.js?v=11"></script>
+<script src="js/interpreter.js?v=11"></script>
+<script src="js/files.js?v=11"></script>
+<script src="js/highlight.js?v=11"></script>
+<script src="js/standalone-generator.js?v=11"></script>
+<script src="js/tutorial-pack.js?v=11"></script>
+<script src="js/tutorial.js?v=11"></script>
+<script src="js/ide.js?v=11"></script>
 </body>
 </html>

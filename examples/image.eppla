@@ -1,5 +1,5 @@
-note: Image Library Example (Dev Build 5)
-note: This demonstrates the new Image library with Base64-encoded images
+note: Image Library Example (Dev Build 6.1)
+note: The Image library turns Base64 text into a picture in the console.
 
 add library "Image"
 

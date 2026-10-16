@@ -1,5 +1,5 @@
 /**
- * Headless test-suite for the E++ language core (Dev Build 4).
+ * Headless test-suite for the E++ language core (Dev Build 6.1).
  * Loads the browser scripts into a VM context, then exercises
  * lexer -> parser -> AST -> interpreter, the library system, the .eppl/.eppla
  * file store, Python runner, and the E++.zip standalone package.
@@ -23,11 +23,13 @@ context.globalThis = context;
 
 for (const file of [
   'errors.js', 'lexer.js', 'ast.js', 'libraries.js', 'parser.js',
-  'python-runner.js', 'interpreter.js', 'files.js', 'highlight.js', 'standalone-generator.js'
+  'python-runner.js', 'interpreter.js', 'files.js', 'highlight.js', 'standalone-generator.js',
+  'tutorial-pack.js', 'tutorial.js'
 ]) {
   vm.runInContext(readFileSync(join(root, 'js', file), 'utf8'), context, { filename: file });
 }
 const EPP = context.EPP;
+context.localStorage = new EPP.MemoryStorage();
 assert.ok(EPP && EPP.Lexer && EPP.Parser && EPP.Interpreter, 'E++ core loaded');
 
 let passed = 0;
@@ -764,5 +766,108 @@ console.log('\n--- Dev Build 6: Exact Equality ---');
   assert.deepEqual([...output], ['different']);
   ok('is not exactly equal to: case-sensitive difference detected');
 }
+
+// ===== Dev Build 6.1: tutorial lesson pack (no longer hardbaked) =====
+console.log('\n--- Dev Build 6.1: External Tutorial Lesson Pack ---');
+{
+  const packPath = join(root, 'tutorial', 'pack.json');
+  const pack = JSON.parse(readFileSync(packPath, 'utf8'));
+  assert.equal(pack.format, 'eplusplus-tutorial-pack');
+  assert.ok(pack.lessons.length >= 8, 'the official pack ships a full set of lessons');
+
+  const ids = new Set();
+  for (const lesson of pack.lessons) {
+    assert.ok(lesson.id && lesson.title && lesson.badge && lesson.summary && lesson.explanation, `lesson ${lesson.id} is complete`);
+    assert.ok(!ids.has(lesson.id), `lesson id ${lesson.id} is unique`);
+    ids.add(lesson.id);
+  }
+  ok('tutorial/pack.json holds valid, uniquely identified lessons');
+
+  // Every lesson must be runnable E++ — a broken example is a broken tutorial.
+  for (const lesson of pack.lessons) {
+    const fileName = EPP.Tutorial.suggestFileName(lesson);
+    assert.ok(EPP.isEpplFile(fileName), `lesson ${lesson.id} maps to a .eppl/.eppla file name`);
+    EPP.Parser.parse(lesson.code, { fileName });
+  }
+  ok('every lesson example parses as E++ (and picks the right .eppl / .eppla name)');
+
+  const parsed = EPP.Tutorial.parsePack(readFileSync(packPath, 'utf8'));
+  assert.ok(parsed.ok, 'the shipped pack passes pack validation');
+
+  const broken = EPP.Tutorial.parsePack('{"lessons": [{"id": "x"}]}');
+  assert.equal(broken.ok, false);
+  assert.match(broken.error, /needs a "title"/);
+  const notJson = EPP.Tutorial.parsePack('not json at all');
+  assert.equal(notJson.ok, false);
+  assert.match(notJson.error, /not valid JSON/);
+  ok('broken lesson packs are rejected with a readable English error');
+}
+
+{
+  const loaded = await EPP.Tutorial.load();
+  assert.equal(loaded.lessons.length, JSON.parse(readFileSync(join(root, 'tutorial', 'pack.json'), 'utf8')).lessons.length);
+  assert.equal(loaded.custom.length, 0);
+  ok('EPP.Tutorial.load() falls back to the generated pack when there is no server to fetch from');
+}
+
+{
+  const before = (await EPP.Tutorial.load()).lessons;
+  const added = EPP.Tutorial.addCustomLesson({
+    title: 'My own lesson',
+    badge: 'Mine',
+    summary: 'Written by the person using the IDE.',
+    explanation: 'Saved from the editor.',
+    code: 'say "hi from my lesson"\n'
+  }, before);
+  assert.ok(added.ok, added.error);
+  assert.equal(added.lesson.id, 'my-own-lesson');
+  assert.equal(added.lesson.custom, true);
+  assert.equal(added.lesson.fileName, 'tutorial-my-own-lesson.eppl');
+
+  const merged = await EPP.Tutorial.load();
+  assert.equal(merged.lessons.length, before.length + 1);
+  assert.equal(merged.lessons[merged.lessons.length - 1].custom, true);
+
+  const exported = JSON.parse(EPP.Tutorial.exportPack(merged.pack));
+  assert.equal(exported.format, 'eplusplus-tutorial-pack');
+  assert.equal(exported.lessons.length, merged.lessons.length);
+  ok('custom lessons can be added, reloaded, and exported as a lesson pack');
+
+  EPP.Tutorial.removeCustomLesson('my-own-lesson');
+  assert.equal((await EPP.Tutorial.load()).lessons.length, before.length);
+  EPP.Tutorial.addCustomLesson({ title: 'My own lesson', summary: 's', badge: 'b', code: 'say "x"' }, before);
+  EPP.Tutorial.clearCustomLessons();
+  assert.equal((await EPP.Tutorial.load()).custom.length, 0);
+  ok('custom lessons can be removed individually or all at once');
+}
+
+{
+  assert.deepEqual(EPP.Tutorial.getProgress().visited, []);
+  EPP.Tutorial.visitLesson(2, 'maths');
+  assert.deepEqual(EPP.Tutorial.getProgress().visited, ['maths']);
+  assert.equal(EPP.Tutorial.getProgress().lastStep, 2);
+  EPP.Tutorial.resetProgress();
+  assert.deepEqual(EPP.Tutorial.getProgress().visited, []);
+  ok('lesson progress is remembered and can be reset');
+}
+
+{
+  const ideSource = readFileSync(join(root, 'js', 'ide.js'), 'utf8');
+  const pack = JSON.parse(readFileSync(join(root, 'tutorial', 'pack.json'), 'utf8'));
+  assert.ok(!/TUTORIAL_LESSONS/.test(ideSource), 'the IDE must not hardbake a lesson array');
+  for (const lesson of pack.lessons) {
+    assert.ok(!ideSource.includes(lesson.summary), `lesson "${lesson.id}" summary must not live in ide.js`);
+    assert.ok(!ideSource.includes(lesson.explanation), `lesson "${lesson.id}" explanation must not live in ide.js`);
+  }
+  ok('ide.js renders the lesson pack instead of hardbaking tutorial content');
+
+  const html = readFileSync(join(root, 'index.html'), 'utf8');
+  assert.ok(html.includes('js/tutorial.js'), 'the IDE loads the tutorial engine');
+  assert.ok(html.includes('js/tutorial-pack.js'), 'the IDE loads the offline lesson pack fallback');
+  assert.ok(html.includes('data-setting="theme"') && html.includes('data-setting="editorFontSize"'), 'settings are data-driven');
+  assert.ok(html.includes('Dev Build 6.1'), 'the IDE is labelled Dev Build 6.1');
+  ok('index.html wires the lesson pack, the data-driven settings and the 6.1 build label');
+}
+
 
 console.log('\nAll ' + passed + ' E++ test groups passed.');

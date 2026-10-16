@@ -1,0 +1,13 @@
+# Tooling
+node_modules/
+npm-debug.log*
+
+# Local editor / OS noise
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Scratch output from the build tools
+/tmp-*

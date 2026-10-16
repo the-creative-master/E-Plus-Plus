@@ -14,7 +14,7 @@
 
   function generateStandaloneHtml(initialCode) {
     initialCode = initialCode || (
-      'note: Welcome to E++ Standalone Runtime (Dev Build 5)!\n' +
+      'note: Welcome to E++ Standalone Runtime (Dev Build 6.1)!\n' +
       'note: Type "save project as name.eppl" in the command bar to save.\n' +
       'note: Libraries are not supported in E++.zip — pure .eppl code only.\n\n' +
       'Define greeting as Hello from E++!\n' +
@@ -29,7 +29,7 @@
 '<head>\n' +
 '<meta charset="UTF-8">\n' +
 '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
-'<title>E++ Standalone Runtime — Dev Build 5</title>\n' +
+'<title>E++ Standalone Runtime — Dev Build 6.1</title>\n' +
 '<style>\n' +
 '  :root {\n' +
 '    --bg: #0b1120;\n' +
@@ -118,7 +118,7 @@
 '    <div class="logo">E++</div>\n' +
 '    <div>\n' +
 '      <strong>E++ Standalone Runtime</strong>\n' +
-'      <span class="badge">Dev Build 5</span>\n' +
+'      <span class="badge">Dev Build 6.1</span>\n' +
 '      <span class="badge badge-warn">Pure .eppl (No Libraries)</span>\n' +
 '    </div>\n' +
 '  </div>\n' +
@@ -146,7 +146,7 @@
 '      <button id="btnClear" class="btn" style="padding: 3px 8px; font-size: 11px;">Clear</button>\n' +
 '    </div>\n' +
 '    <div class="console-out" id="consoleOut">\n' +
-'      <div class="console-line system">E++ Standalone Runtime (Dev Build 5) Ready.</div>\n' +
+'      <div class="console-line system">E++ Standalone Runtime (Dev Build 6.1) Ready.</div>\n' +
 '      <div class="console-line system">Note: Libraries are not supported in E++.zip. Use pure .eppl code.</div>\n' +
 '      <div class="console-line prompt">Type "save project as name.eppl" below to save your code.</div>\n' +
 '    </div>\n' +

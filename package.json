@@ -1,12 +1,14 @@
 {
   "name": "e-plus-plus",
-  "version": "1.0.0",
-  "description": "E++ — a programming language that looks like English, reads like English, and behaves like code — plus its complete online IDE for .eppl files.",
+  "version": "6.1.0",
+  "description": "E++ Dev Build 6.1 — a programming language that looks like English, reads like English, and behaves like code — plus its complete online IDE for .eppl and .eppla files.",
   "private": true,
   "type": "commonjs",
   "scripts": {
     "start": "python3 -m http.server 8000",
-    "test": "node tests/run-tests.mjs"
+    "build:tutorial": "node tools/build-tutorial-pack.mjs",
+    "test": "node tools/build-tutorial-pack.mjs && node tests/run-tests.mjs",
+    "test:ide": "node tests/ide-smoke.mjs"
   },
   "engines": {
     "node": ">=18"

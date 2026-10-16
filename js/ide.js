@@ -1,5 +1,5 @@
 /*
- * E++ IDE application (Dev Build 5).
+ * E++ IDE application (Dev Build 6.1).
  *
  * Project Humanizer:
  * - Pure .eppl files (no libraries) vs .eppla files (with libraries).
@@ -8,8 +8,11 @@
  * - Lexer-based Python runner (no Pyodide) with Python's OWN error codes.
  * - Direct delete button on every file row in files menu.
  * - Standalone runtime "E++.zip" with "save project as name.eppl" manual command.
- * - Interactive multi-step tutorial.
- * - Dashboard overhaul with real-time stats and library insert buttons.
+ * - Tutorial lessons are NOT hardbaked here any more: this file renders the
+ *   external lesson pack (tutorial/pack.json, see js/tutorial.js). Lessons are
+ *   loadable, importable, extendable and never overwrite an open file.
+ * - Dashboard with real-time stats and library insert buttons.
+ * - Settings for appearance, editor, behaviour, tutorial and data.
  * - WeeklyHow attribution (based on WeeklyHow's AI programming language video).
  */
 (function () {
@@ -23,7 +26,7 @@
     {
       name: 'hello.eppl',
       content:
-        'note: Your first E++ program (Dev Build 5).\n' +
+        'note: Your first E++ program (Dev Build 6.1).\n' +
         'note: Based on WeeklyHow\'s AI programming language video.\n' +
         'Define name as WeeklyHow.\n' +
         'say "Hello " plus \'name\' plus "!"\n' +
@@ -158,95 +161,41 @@
   ];
 
   // ------------------------------------------------------------------
-  // Interactive Tutorial Lessons (Requirement 11)
+  // Interactive tutorial (Dev Build 6.1)
+  //
+  // Lesson content is NOT hardbaked into this file any more. It is loaded from
+  // the tutorial lesson pack by js/tutorial.js:
+  //   tutorial/pack.json  -> served over http(s), so editing it updates lessons
+  //   js/tutorial-pack.js -> generated offline fallback
+  //   localStorage        -> your own lessons + imported packs + progress
   // ------------------------------------------------------------------
-  var TUTORIAL_LESSONS = [
-    {
-      title: '1. Welcome to E++ (Dev Build 5)',
-      badge: 'Basics',
-      summary: 'E++ is an English-like language based on WeeklyHow’s AI video, where AI was asked to create a coding language that reads like human language.',
-      explanation: 'Statements in E++ end with a period (.) or a newline. Comments start with "note:". Words like "say" print text to the console.',
-      code: 'note: Welcome to E++ Dev Build 5!\n' +
-            'note: Inspired by WeeklyHow\'s AI video.\n' +
-            'say "Hello, world!"\n' +
-            'say "E++ looks like English, reads like English, and behaves like code."'
-    },
-    {
-      title: '2. Variables & Quotes',
-      badge: 'Variables',
-      summary: 'Define variables using "Define <name> as <value>." Variables are ALWAYS referenced in single quotes (\'name\').',
-      explanation: 'Values inside double quotes are literal text. Single quotes refer to variables. Join text with the "plus" operator.',
-      code: 'Define name as WeeklyHow.\n' +
-            'say "Hello " plus \'name\' plus "!"\n' +
-            'Define score as 100.\n' +
-            'say "Your starting score is " plus \'score\'.'
-    },
-    {
-      title: '3. English Maths',
-      badge: 'Maths',
-      summary: 'Maths uses plain English words like plus, minus, and times. Adjust values with Increase and Decrease.',
-      explanation: 'Precedence works naturally: parentheses first, then times, then plus and minus. Increase and Decrease modify number variables.',
-      code: 'say 10 plus 5 times 2\n' +
-            'say (10 plus 5) times 2\n\n' +
-            'Define counter as 10.\n' +
-            'Increase counter by 5\n' +
-            'say "Counter after increase: " plus \'counter\'\n' +
-            'Decrease counter by 3\n' +
-            'say "Counter after decrease: " plus \'counter\'.'
-    },
-    {
-      title: '4. Questions & Conditions',
-      badge: 'Logic',
-      summary: 'Ask questions with "ask ... and save answer as <name>". Test answers using natural "if" statements.',
-      explanation: 'Answers from ask are text, but automatically compare numerically! You can use "is equal to", "otherwise", and "loopback to if".',
-      code: 'ask "What is 5 plus 6?" and save answer as answer\n' +
-            'if \'answer\' is equal to 11 then\n' +
-            '  say "Spot on! That is correct."\n' +
-            'otherwise\n' +
-            '  say "Not quite, try again!"\n' +
-            'end if'
-    },
-    {
-      title: '5. .eppl vs .eppla (Requirement 5)',
-      badge: 'Extensions',
-      summary: '.eppl files are strictly for code WITHOUT libraries. .eppla files unlock ANY library!',
-      explanation: 'This division ensures pure .eppl programs stay lightweight and run anywhere (including standalone E++.zip), while .eppla unlocks powerful libraries like Math, Text, Random, Draw, and Python.',
-      code: 'note: In .eppl files, keep code pure without libraries.\n' +
-            'note: In .eppla files, use: add library "Math"\n' +
-            'Define pureCode as .eppl has no libraries.\n' +
-            'Define libraryCode as .eppla unlocks all libraries.\n' +
-            'say \'pureCode\'\n' +
-            'say \'libraryCode\'.'
-    },
-    {
-      title: '6. Python & Project Humanizer',
-      badge: 'Humanizer',
-      summary: 'Add libraries using "add library \\"Python\\"". Multi-line Python uses commas ", ... ,", and errors use Python\'s OWN error codes!',
-      explanation: 'Project Humanizer removes unneeded symbols: multi-line Python uses ", ... ," instead of dashes. Python runs directly via our lexer without Pyodide!',
-      code: 'note: Save this as a .eppla file to use libraries!\n' +
-            'add library "Python"\n\n' +
-            'python code "print(\'Hello from Python inside E++!\')"\n\n' +
-            'python code ",for i in range(3):\n' +
-            '    print(\'Python count:\', i)\n' +
-            ',"\n\n' +
-            'say "Back to plain English in E++!"'
-    },
-    {
-      title: '7. Image Library',
-      badge: 'Images',
-      summary: 'The Image library lets you work with Base64-encoded images. Define images, check if they exist, and display them in the console!',
-      explanation: 'Images use Base64 encoding (a way to store images as text). The library auto-detects PNG, JPEG, GIF, and WebP formats. Use "define", "check if", and "display image" commands.',
-      code: 'note: Image Library Example (Dev Build 5)\n' +
-            'note: This tiny PNG is a 1x1 red pixel\n\n' +
-            'add library "Image"\n\n' +
-            'define \'red_pixel\' as image "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="\n\n' +
-            'check if \'red_pixel\' exists\n\n' +
-            'display image \'red_pixel\'\n\n' +
-            'note: Check for an image that doesn\'t exist\n' +
-            'check if \'nonexistent\' exists\n\n' +
-            'say "Image library works!"'
+  var tutorial = {
+    lessons: [],
+    source: 'loading…',
+    warnings: [],
+    index: 0,
+    loaded: false
+  };
+
+  function tutorialProgress() {
+    return EPP.Tutorial ? EPP.Tutorial.getProgress() : { visited: [], lastStep: 0 };
+  }
+
+  function loadTutorialPack() {
+    if (!EPP.Tutorial) {
+      tutorial.lessons = [];
+      tutorial.source = 'tutorial module missing';
+      tutorial.loaded = true;
+      return Promise.resolve(tutorial);
     }
-  ];
+    return EPP.Tutorial.load().then(function (result) {
+      tutorial.lessons = result.lessons || [];
+      tutorial.source = result.source;
+      tutorial.warnings = result.warnings || [];
+      tutorial.loaded = true;
+      return tutorial;
+    });
+  }
 
   // ------------------------------------------------------------------
   // DOM
@@ -279,7 +228,6 @@
   var toastTimer = null;
   var pythonAuthorized = false;
   var pythonGlobals = {};
-  var currentTutorialStep = 0;
 
   // ------------------------------------------------------------------
   // Small UI helpers
@@ -450,32 +398,59 @@
     refreshEditor();
     setSaveStatus('Unsaved changes…', true);
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(function () { saveCurrent(false); }, 450);
-    // Dev Build 6: Auto-change to .eppla if library usage detected
+    if (settings.autoSave) {
+      saveTimer = setTimeout(function () { saveCurrent(false); }, Number(settings.autoSaveDelay) || 450);
+    }
+    // Dev Build 6.1: a .eppl file may not use libraries, so the first
+    // "add library" upgrades the file to .eppla — tab and file list included.
     if (settings.autoEppla && currentName && /\.eppl$/i.test(currentName) && !/\.eppla$/i.test(currentName)) {
-      if (EPP.hasLibraryUsage(editor.value)) {
-        var newName = currentName.replace(/\.eppl$/i, '.eppla');
-        if (!store.exists(newName)) {
-          try {
-            store.deleteFile(currentName);
-            var saved = store.saveFile(newName, editor.value);
-            currentName = saved.name;
-            refreshFileList(currentName);
-            updateDashboard();
-            toast('Auto-changed to .eppla (library detected)');
-          } catch (e) {}
-        }
-      }
+      if (EPP.hasLibraryUsage(editor.value)) autoUpgradeToEppla();
     }
   });
+
+  /** Keeps the tab, status bar and dashboard in sync with the open file. */
+  function updateOpenFileChrome() {
+    var label = currentName || 'No file open';
+    $('currentFileName').textContent = label;
+    var statusFile = $('statusFile');
+    if (statusFile) {
+      statusFile.textContent = currentName
+        ? currentName + (/\.eppla$/i.test(currentName) ? ' (.eppla)' : ' (.eppl)')
+        : 'No file open';
+    }
+    updateDashboard();
+  }
+
+  /**
+   * Renames the open file from .eppl to .eppla in place, so the extension rule
+   * is kept without losing the code. (Dev Build 6 called a function that did
+   * not exist here, which swallowed the failure and left stale UI.)
+   */
+  function autoUpgradeToEppla() {
+    var newName = currentName.replace(/\.eppl$/i, '.eppla');
+    if (store.exists(newName)) return;
+    try {
+      saveCurrent(false);
+      var renamed = store.renameFile(currentName, newName);
+      currentName = renamed.name;
+      updateOpenFileChrome();
+      renderFileList();
+      rememberLastFile(currentName);
+      toast('Renamed to ' + currentName + ' — libraries need a .eppla file.');
+    } catch (e) {
+      toast('Could not rename to .eppla: ' + e.message, true);
+    }
+  }
   editor.addEventListener('scroll', syncScroll);
   editor.addEventListener('keyup', updateCursor);
   editor.addEventListener('click', updateCursor);
   editor.addEventListener('keydown', function (event) {
     if (event.key === 'Tab') {
       event.preventDefault();
+      var size = Number(settings.tabSize) || 2;
+      var insert = settings.tabChar ? '\t' : new Array(size + 1).join(' ');
       var start = editor.selectionStart;
-      editor.setRangeText('  ', start, editor.selectionEnd, 'end');
+      editor.setRangeText(insert, start, editor.selectionEnd, 'end');
       editor.dispatchEvent(new Event('input'));
     }
   });
@@ -537,7 +512,7 @@
   }
 
   function deleteFileDirect(name) {
-    if (!window.confirm('Delete "' + name + '"? This cannot be undone.')) return;
+    if (settings.confirmDelete && !window.confirm('Delete "' + name + '"? This cannot be undone.')) return;
     try {
       store.deleteFile(name);
       toast('Deleted ' + name);
@@ -568,13 +543,12 @@
       loadedLibraries = [];
       updateLibrariesStatus();
       updateDashboard();
-      $('currentFileName').textContent = file.name;
-      var extLabel = /\.eppla$/i.test(file.name) ? ' (.eppla)' : ' (.eppl)';
-      $('statusFile').textContent = file.name + extLabel;
+      updateOpenFileChrome();
       setSaveStatus('Saved');
       setRunStatus('Ready');
       refreshEditor();
       renderFileList();
+      rememberLastFile(file.name);
       if (isSmallScreen()) setMobileView('editor');
       else editor.focus();
     } catch (e) {
@@ -595,15 +569,26 @@
     }
   }
 
-  // Small promise-based dialog for New / Rename.
+  // Small promise-based dialog for New / Rename (and plain-text prompts,
+  // such as naming a tutorial lesson, which are not file names).
   var dialogResolve = null;
-  function askFileName(title, confirmLabel, initial) {
+  var dialogPlainText = false;
+  function askFileName(title, confirmLabel, initial, options) {
+    options = options || {};
     return new Promise(function (resolve) {
       dialogResolve = resolve;
+      dialogPlainText = options.plainText === true;
       $('fileDialogTitle').textContent = title;
       $('fileDialogConfirm').textContent = confirmLabel;
       $('fileDialogError').textContent = '';
+      var label = $('fileDialogLabel');
+      if (label) {
+        label.textContent = dialogPlainText
+          ? 'Name'
+          : 'File name (.eppl for pure code, .eppla for libraries)';
+      }
       var input = $('fileDialogInput');
+      input.placeholder = dialogPlainText ? 'My own lesson' : 'my-program.eppl';
       input.value = initial || '';
       $('fileDialog').showModal();
       setTimeout(function () { input.focus(); input.select(); }, 30);
@@ -612,19 +597,29 @@
   $('fileDialogForm').addEventListener('submit', function (event) {
     event.preventDefault();
     var value = $('fileDialogInput').value;
+    var resolve = dialogResolve;
     try {
+      if (dialogPlainText) {
+        var text = String(value || '').trim();
+        if (!text) throw new EPP.FileError('Please type a name.');
+        $('fileDialog').close();
+        dialogResolve = null;
+        if (resolve) resolve(text);
+        return;
+      }
       var valid = EPP.validateEpplFileName(value, editor.value);
       $('fileDialog').close();
-      if (dialogResolve) dialogResolve(valid);
+      dialogResolve = null;
+      if (resolve) resolve(valid);
     } catch (e) {
       $('fileDialogError').textContent = e.message;
     }
-    dialogResolve = null;
   });
   $('fileDialogCancel').addEventListener('click', function () {
     $('fileDialog').close();
-    if (dialogResolve) dialogResolve(null);
+    var resolve = dialogResolve;
     dialogResolve = null;
+    if (resolve) resolve(null);
   });
 
   $('btnNew').addEventListener('click', function () {
@@ -651,11 +646,9 @@
         saveCurrent(false);
         store.renameFile(currentName, name);
         currentName = name;
-        $('currentFileName').textContent = name;
-        var extLabel = /\.eppla$/i.test(name) ? ' (.eppla)' : ' (.eppl)';
-        $('statusFile').textContent = name + extLabel;
+        updateOpenFileChrome();
         renderFileList();
-        updateDashboard();
+        rememberLastFile(currentName);
         toast('Renamed to ' + name);
       } catch (e) { toast(e.message, true); }
     });
@@ -690,96 +683,360 @@
   if (btnZip) {
     btnZip.addEventListener('click', triggerZipDownload);
   }
-  var btnDashZip = $('btnDashZip');
-  if (btnDashZip) {
-    btnDashZip.addEventListener('click', triggerZipDownload);
-  }
-
-  // Requirement 11: Interactive Tutorial
+  // ------------------------------------------------------------------
+  // Interactive Tutorial (Dev Build 6.1) — renders the external lesson pack.
+  // "Try in editor" opens a tutorial scratch file instead of overwriting the
+  // file you were working on, so the tutorial can never eat your code.
+  // ------------------------------------------------------------------
   var btnTutorial = $('btnTutorial');
   if (btnTutorial) {
     btnTutorial.addEventListener('click', function () {
-      openTutorial(0);
+      openTutorial(tutorialProgress().lastStep || 0);
+    });
+  }
+
+  function renderTutorialList() {
+    var host = $('tutLessonList');
+    if (!host) return;
+    var visited = tutorialProgress().visited || [];
+    host.innerHTML = '';
+    tutorial.lessons.forEach(function (lesson, index) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'tut-lesson' + (index === tutorial.index ? ' active' : '') +
+        (lesson.custom ? ' custom' : '') + (visited.indexOf(lesson.id) !== -1 ? ' visited' : '');
+      var number = document.createElement('span');
+      number.className = 'tut-lesson-num';
+      number.textContent = String(index + 1);
+      var label = document.createElement('span');
+      label.className = 'tut-lesson-label';
+      label.textContent = lesson.title;
+      button.appendChild(number);
+      button.appendChild(label);
+      if (lesson.custom) {
+        var tag = document.createElement('span');
+        tag.className = 'tut-lesson-tag';
+        tag.textContent = 'mine';
+        button.appendChild(tag);
+      }
+      if (visited.indexOf(lesson.id) !== -1) {
+        var check = document.createElement('span');
+        check.className = 'tut-lesson-check';
+        check.textContent = '✓';
+        check.title = 'Already visited';
+        button.appendChild(check);
+      }
+      button.addEventListener('click', function () { openTutorial(index); });
+      host.appendChild(button);
     });
   }
 
   function openTutorial(step) {
-    currentTutorialStep = Math.max(0, Math.min(step, TUTORIAL_LESSONS.length - 1));
-    var lesson = TUTORIAL_LESSONS[currentTutorialStep];
     var dialog = $('tutorialDialog');
     if (!dialog) return;
+    if (!tutorial.lessons.length) {
+      toast('The tutorial lesson pack is still loading — try again in a moment.', true);
+      return;
+    }
+    tutorial.index = Math.max(0, Math.min(step || 0, tutorial.lessons.length - 1));
+    var lesson = tutorial.lessons[tutorial.index];
     $('tutTitle').textContent = lesson.title;
     $('tutBadge').textContent = lesson.badge;
     $('tutSummary').textContent = lesson.summary;
     $('tutExplanation').textContent = lesson.explanation;
     $('tutCode').textContent = lesson.code;
-    $('tutStepCount').textContent = 'Step ' + (currentTutorialStep + 1) + ' of ' + TUTORIAL_LESSONS.length;
-    $('tutPrev').disabled = currentTutorialStep === 0;
-    $('tutNext').textContent = currentTutorialStep === TUTORIAL_LESSONS.length - 1 ? 'Finish' : 'Next →';
-    dialog.showModal();
+    var countEl = $('tutStepCount');
+    if (countEl) {
+      countEl.textContent = 'Lesson ' + (tutorial.index + 1) + ' of ' + tutorial.lessons.length +
+        ' · saves as ' + EPP.Tutorial.suggestFileName(lesson);
+    }
+    var sourceEl = $('tutSource');
+    if (sourceEl) {
+      sourceEl.textContent = tutorial.source
+        ? 'Lesson pack: ' + tutorial.source + (tutorial.lessons.length ? ' — ' + tutorial.lessons.length + ' lessons' : '')
+        : 'Lesson pack: bundled';
+    }
+    $('tutPrev').disabled = tutorial.index === 0;
+    $('tutNext').textContent = tutorial.index === tutorial.lessons.length - 1 ? 'Finish' : 'Next →';
+    renderTutorialList();
+    updateTutorialSettingsInfo();
+    if (!dialog.open) dialog.showModal();
+  }
+
+  function markTutorialVisit() {
+    var lesson = tutorial.lessons[tutorial.index];
+    if (!lesson || !EPP.Tutorial) return;
+    EPP.Tutorial.visitLesson(tutorial.index, lesson.id);
   }
 
   var tutPrev = $('tutPrev');
   if (tutPrev) {
     tutPrev.addEventListener('click', function () {
-      if (currentTutorialStep > 0) openTutorial(currentTutorialStep - 1);
+      markTutorialVisit();
+      if (tutorial.index > 0) openTutorial(tutorial.index - 1);
     });
   }
   var tutNext = $('tutNext');
   if (tutNext) {
     tutNext.addEventListener('click', function () {
-      if (currentTutorialStep < TUTORIAL_LESSONS.length - 1) {
-        openTutorial(currentTutorialStep + 1);
-      } else {
-        $('tutorialDialog').close();
-      }
+      markTutorialVisit();
+      if (tutorial.index < tutorial.lessons.length - 1) openTutorial(tutorial.index + 1);
+      else { $('tutorialDialog').close(); toast('Tutorial finished — nice work!'); }
     });
   }
   var tutClose = $('tutClose');
-  if (tutClose) tutClose.addEventListener('click', function () { $('tutorialDialog').close(); });
+  if (tutClose) tutClose.addEventListener('click', function () { markTutorialVisit(); $('tutorialDialog').close(); });
+
+  /**
+   * Writes a lesson's example code to its own tutorial file. The file you were
+   * editing is saved first and left untouched.
+   */
+  function openLessonInEditor(lesson) {
+    if (!lesson) return;
+    if (currentName) saveCurrent(false);
+    var name = EPP.Tutorial.suggestFileName(lesson);
+    try {
+      if (store.exists(name)) store.saveFile(name, lesson.code);
+      else store.createFile(name, lesson.code);
+      loadedLibraries = [];
+      updateLibrariesStatus();
+      openFile(name);
+      toast('Tutorial example ready in ' + name + ' — press ▶ Run (your old file is untouched).');
+    } catch (e) {
+      toast(e.message, true);
+    }
+  }
+
   var tutTry = $('tutTry');
   if (tutTry) {
     tutTry.addEventListener('click', function () {
-      var lesson = TUTORIAL_LESSONS[currentTutorialStep];
-      editor.value = lesson.code;
-      refreshEditor();
-      setSaveStatus('Unsaved changes…', true);
+      var lesson = tutorial.lessons[tutorial.index];
+      markTutorialVisit();
       $('tutorialDialog').close();
-      if (isSmallScreen()) setMobileView('editor');
-      toast('Loaded tutorial step into editor. Press ▶ Run to test!');
+      openLessonInEditor(lesson);
     });
   }
 
-  // Dev Build 6: Settings
+  // Lesson pack management: yours to extend, export, import and reset.
+  var tutSaveLesson = $('tutSaveLesson');
+  if (tutSaveLesson) {
+    tutSaveLesson.addEventListener('click', function () {
+      askFileName('Save the open file as a tutorial lesson', 'Save lesson',
+        (currentName || 'my-lesson').replace(/\.(eppl|eppla)$/i, ''),
+        { plainText: true }).then(function (title) {
+        if (!title) return;
+        if (!editor.value.trim()) { toast('Write some E++ in the editor first.', true); return; }
+        var result = EPP.Tutorial.addCustomLesson({
+          title: title,
+          badge: 'My lesson',
+          summary: 'A lesson saved from the editor by you.',
+          explanation: 'Saved from ' + (currentName || 'the editor') + '. Use Export pack to share it.',
+          code: editor.value
+        }, tutorial.lessons);
+        if (!result.ok) { toast(result.error.split('\n')[0], true); return; }
+        loadTutorialPack().then(function () {
+          openTutorial(tutorial.lessons.length - 1);
+          toast('Added your lesson to the tutorial (stored in this browser).');
+        });
+      });
+    });
+  }
+
+  var tutExportPack = $('tutExportPack');
+  if (tutExportPack) {
+    tutExportPack.addEventListener('click', function () {
+      try {
+        var json = EPP.Tutorial.exportPack({ version: '6.1', title: 'E++ Guided Tutorial', lessons: tutorial.lessons });
+        var blob = new Blob([json], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = url;
+        link.download = 'epp-tutorial-pack.json';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 500);
+        toast('Exported ' + tutorial.lessons.length + ' lessons as epp-tutorial-pack.json');
+      } catch (e) {
+        toast('Export failed: ' + e.message, true);
+      }
+    });
+  }
+
+  var tutImportPack = $('tutImportPack');
+  var tutPackInput = $('tutPackInput');
+  if (tutImportPack && tutPackInput) {
+    tutImportPack.addEventListener('click', function () { tutPackInput.click(); });
+    tutPackInput.addEventListener('change', function () {
+      var file = (tutPackInput.files || [])[0];
+      tutPackInput.value = '';
+      if (!file) return;
+      file.text().then(function (text) { return importTutorialPack(text); })
+        .catch(function (e) { toast('Could not read that pack: ' + e.message, true); });
+    });
+  }
+
+  function importTutorialPack(text) {
+    var parsed = EPP.Tutorial.parsePack(text);
+    if (!parsed.ok) { toast(parsed.error.split('\n')[0], true); return; }
+    var added = 0;
+    var failures = 0;
+    parsed.pack.lessons.forEach(function (lesson) {
+      var result = EPP.Tutorial.addCustomLesson({
+        title: lesson.title, badge: lesson.badge, summary: lesson.summary,
+        explanation: lesson.explanation, code: lesson.code
+      }, tutorial.lessons);
+      if (result.ok) added += 1; else failures += 1;
+    });
+    loadTutorialPack().then(function () {
+      openTutorial(tutorial.lessons.length - added);
+      toast('Imported ' + added + ' lesson' + (added === 1 ? '' : 's') +
+        (failures ? ' (' + failures + ' skipped)' : '') + ' from the pack.');
+    });
+  }
+
+  var tutResetPack = $('tutResetPack');
+  if (tutResetPack) {
+    tutResetPack.addEventListener('click', function () {
+      if (!window.confirm('Remove every lesson you added and reset which lessons you have visited?')) return;
+      EPP.Tutorial.clearCustomLessons();
+      EPP.Tutorial.resetProgress();
+      loadTutorialPack().then(function () {
+        tutorial.index = 0;
+        openTutorial(0);
+        toast('Custom lessons and progress cleared — back to the official lesson pack.');
+      });
+    });
+  }
+
+  function updateTutorialSettingsInfo() {
+    var el = $('settingsTutorialInfo');
+    if (!el) return;
+    var custom = tutorial.lessons.filter(function (lesson) { return lesson.custom; }).length;
+    el.textContent = tutorial.loaded
+      ? 'Lesson pack: ' + tutorial.source + ' · ' + tutorial.lessons.length + ' lessons (' + custom + ' yours).'
+      : 'Loading the lesson pack…';
+  }
+
+  // ------------------------------------------------------------------
+  // Settings (Dev Build 6.1)
+  // Appearance · Editor · Behaviour · Tutorial · Data
+  // ------------------------------------------------------------------
   var SETTINGS_KEY = 'eplusplus.settings.v1';
-  var settings = { theme: 'dark', autoEppla: true };
+  var LAST_FILE_KEY = 'eplusplus.lastFile.v1';
+
+  var DEFAULT_SETTINGS = {
+    theme: 'dark',             // dark | light | system
+    density: 'comfortable',    // comfortable | compact
+    showDashboard: true,
+    showLineNumbers: true,
+    showLibrariesPanel: true,
+    showHelpPanel: true,
+    editorFontSize: 14,
+    wordWrap: false,
+    tabSize: 2,
+    tabChar: false,
+    autoSave: true,
+    autoSaveDelay: 450,
+    consoleHeight: 'normal',   // compact | normal | tall
+    autoEppla: true,
+    clearConsoleOnRun: true,
+    confirmDelete: true,
+    restoreLastFile: true,
+    autoOpenTutorial: true
+  };
+
+  var settings = {};
+  Object.keys(DEFAULT_SETTINGS).forEach(function (key) { settings[key] = DEFAULT_SETTINGS[key]; });
   try {
-    var saved = localStorage.getItem(SETTINGS_KEY);
-    if (saved) settings = Object.assign(settings, JSON.parse(saved));
-  } catch (e) {}
+    var savedSettings = localStorage.getItem(SETTINGS_KEY);
+    if (savedSettings) {
+      var parsedSettings = JSON.parse(savedSettings);
+      Object.keys(DEFAULT_SETTINGS).forEach(function (key) {
+        if (parsedSettings && parsedSettings[key] !== undefined) settings[key] = parsedSettings[key];
+      });
+    }
+  } catch (e) { /* keep the defaults */ }
 
   function saveSettings() {
-    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ }
   }
 
-  function applyTheme(theme) {
-    if (theme === 'light') {
-      document.body.classList.add('light-theme');
-    } else {
-      document.body.classList.remove('light-theme');
+  var systemThemeQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
+
+  function applyTheme() {
+    var light = settings.theme === 'light' ||
+      (settings.theme === 'system' && systemThemeQuery && systemThemeQuery.matches);
+    document.body.classList.toggle('light-theme', !!light);
+  }
+
+  if (systemThemeQuery && typeof systemThemeQuery.addEventListener === 'function') {
+    systemThemeQuery.addEventListener('change', function () {
+      if (settings.theme === 'system') applyTheme();
+    });
+  }
+
+  /** Pushes every setting into the DOM (CSS classes + CSS variables). */
+  function applySettings() {
+    var body = document.body;
+    applyTheme();
+    body.classList.toggle('compact-ui', settings.density === 'compact');
+    body.classList.toggle('hide-dashboard', !settings.showDashboard);
+    body.classList.toggle('hide-line-numbers', !settings.showLineNumbers);
+    body.classList.toggle('wrap-code', !!settings.wordWrap);
+    body.classList.toggle('hide-libraries-panel', !settings.showLibrariesPanel);
+    body.classList.toggle('hide-help-panel', !settings.showHelpPanel);
+    body.classList.toggle('console-compact', settings.consoleHeight === 'compact');
+    body.classList.toggle('console-tall', settings.consoleHeight === 'tall');
+    body.style.setProperty('--code-font-size', Number(settings.editorFontSize) + 'px');
+    body.style.setProperty('--tab-size', String(settings.tabSize));
+    syncSettingsUI();
+  }
+
+  function syncSettingsUI() {
+    Array.prototype.slice.call(document.querySelectorAll('[data-setting]')).forEach(function (control) {
+      var key = control.getAttribute('data-setting');
+      if (!(key in settings)) return;
+      if (control.type === 'checkbox') control.checked = !!settings[key];
+      else control.value = String(settings[key]);
+    });
+    updateTutorialSettingsInfo();
+    var themeNote = $('settingsThemeNote');
+    if (themeNote) {
+      themeNote.textContent = settings.theme === 'system'
+        ? 'Following your operating system (currently ' + ((systemThemeQuery && systemThemeQuery.matches) ? 'light' : 'dark') + ').'
+        : 'Theme is saved in this browser only.';
     }
   }
-  applyTheme(settings.theme);
+
+  function onSettingChanged(key) {
+    if (key === 'autoSave' && settings.autoSave && editor.value !== undefined) {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(function () { saveCurrent(false); }, Number(settings.autoSaveDelay) || 450);
+    }
+    if (key === 'showDashboard') updateDashboard();
+    if (key === 'editorFontSize' || key === 'showLineNumbers' || key === 'wordWrap' || key === 'tabSize') refreshEditor();
+  }
+
+  Array.prototype.slice.call(document.querySelectorAll('[data-setting]')).forEach(function (control) {
+    var key = control.getAttribute('data-setting');
+    if (!(key in DEFAULT_SETTINGS)) return;
+    control.addEventListener('change', function () {
+      var isNumberSetting = typeof DEFAULT_SETTINGS[key] === 'number';
+      if (control.type === 'checkbox') settings[key] = control.checked;
+      else settings[key] = isNumberSetting ? Number(control.value) : control.value;
+      saveSettings();
+      applySettings();
+      onSettingChanged(key);
+    });
+  });
 
   var btnSettings = $('btnSettings');
   if (btnSettings) {
     btnSettings.addEventListener('click', function () {
       var dialog = $('settingsDialog');
       if (!dialog) return;
-      var themeSelect = $('themeSelect');
-      var autoEpplaToggle = $('autoEpplaToggle');
-      if (themeSelect) themeSelect.value = settings.theme;
-      if (autoEpplaToggle) autoEpplaToggle.checked = settings.autoEppla;
+      syncSettingsUI();
       dialog.showModal();
     });
   }
@@ -787,21 +1044,63 @@
   var settingsClose = $('settingsClose');
   if (settingsClose) settingsClose.addEventListener('click', function () { $('settingsDialog').close(); });
 
-  var themeSelect = $('themeSelect');
-  if (themeSelect) {
-    themeSelect.addEventListener('change', function () {
-      settings.theme = themeSelect.value;
-      applyTheme(settings.theme);
+  var settingsDone = $('settingsDone');
+  if (settingsDone) settingsDone.addEventListener('click', function () { $('settingsDialog').close(); });
+
+  var settingsReset = $('settingsReset');
+  if (settingsReset) {
+    settingsReset.addEventListener('click', function () {
+      Object.keys(DEFAULT_SETTINGS).forEach(function (key) { settings[key] = DEFAULT_SETTINGS[key]; });
       saveSettings();
+      applySettings();
+      refreshEditor();
+      toast('All settings are back to their Dev Build 6.1 defaults.');
     });
   }
 
-  var autoEpplaToggle = $('autoEpplaToggle');
-  if (autoEpplaToggle) {
-    autoEpplaToggle.addEventListener('change', function () {
-      settings.autoEppla = autoEpplaToggle.checked;
-      saveSettings();
+  var settingsResetTutorial = $('settingsResetTutorial');
+  if (settingsResetTutorial) {
+    settingsResetTutorial.addEventListener('click', function () {
+      if (!window.confirm('Forget your custom tutorial lessons and which lessons you have visited?')) return;
+      EPP.Tutorial.clearCustomLessons();
+      EPP.Tutorial.resetProgress();
+      loadTutorialPack().then(function () {
+        updateTutorialSettingsInfo();
+        toast('Tutorial progress cleared.');
+      });
     });
+  }
+
+  var settingsRestoreExamples = $('settingsRestoreExamples');
+  if (settingsRestoreExamples) {
+    settingsRestoreExamples.addEventListener('click', function () {
+      var added = restoreExampleFiles();
+      toast(added ? 'Restored ' + added + ' example file' + (added === 1 ? '' : 's') + '.' : 'Every example file is already here.');
+    });
+  }
+
+  var settingsWipe = $('settingsWipe');
+  if (settingsWipe) {
+    settingsWipe.addEventListener('click', function () {
+      if (!window.confirm('Delete EVERY file stored in this browser, plus all settings and tutorial progress?')) return;
+      try {
+        localStorage.removeItem('eplusplus.files.v1');
+        localStorage.removeItem(SETTINGS_KEY);
+        localStorage.removeItem(LAST_FILE_KEY);
+      } catch (e) { /* ignore */ }
+      EPP.Tutorial.clearCustomLessons();
+      EPP.Tutorial.resetProgress();
+      window.location.reload();
+    });
+  }
+
+  function rememberLastFile(name) {
+    if (!settings.restoreLastFile) return;
+    try { localStorage.setItem(LAST_FILE_KEY, name || ''); } catch (e) { /* ignore */ }
+  }
+
+  function lastRememberedFile() {
+    try { return localStorage.getItem(LAST_FILE_KEY) || ''; } catch (e) { return ''; }
   }
 
   var importInput = $('importInput');
@@ -842,14 +1141,19 @@
   var fileSearch = $('fileSearch');
   if (fileSearch) fileSearch.addEventListener('input', renderFileList);
 
-  $('btnRestoreExamples').addEventListener('click', function () {
+  function restoreExampleFiles() {
     var added = 0;
     EXAMPLES.forEach(function (ex) {
       if (!store.exists(ex.name)) { store.saveFile(ex.name, ex.content); added += 1; }
     });
     renderFileList();
-    toast(added ? 'Restored ' + added + ' example file' + (added === 1 ? '' : 's') + '.' : 'All example files are already here.');
     if (added && !currentName) openFile(EXAMPLES[0].name);
+    return added;
+  }
+
+  $('btnRestoreExamples').addEventListener('click', function () {
+    var added = restoreExampleFiles();
+    toast(added ? 'Restored ' + added + ' example file' + (added === 1 ? '' : 's') + '.' : 'All example files are already here.');
   });
 
   // ------------------------------------------------------------------
@@ -1030,6 +1334,7 @@
     consoleOutput.innerHTML = '';
     if (isSmallScreen()) setMobileView('console');
 
+    if (settings.clearConsoleOnRun) appendConsole('Cleared before run (turn this off in Settings).', 'system');
     appendConsole('—— Running ' + currentName + ' ——', 'divider');
     setRunStatus('Running…', 'running');
     btnRun.disabled = true;
@@ -1145,15 +1450,32 @@
   });
 
   // ------------------------------------------------------------------
-  // Boot
+  // Boot (Dev Build 6.1)
   // ------------------------------------------------------------------
+  applySettings();
   setMobileView('editor');
   clearConsole();
   renderFileList();
+
+  // The tutorial pack is loaded asynchronously — editing tutorial/pack.json
+  // changes the lessons without touching this file.
+  loadTutorialPack().then(function () {
+    updateTutorialSettingsInfo();
+    if (!settings.autoOpenTutorial) return;
+    var visited = tutorialProgress().visited || [];
+    if (!visited.length && tutorial.lessons.length) {
+      openTutorial(tutorialProgress().lastStep || 0);
+      markTutorialVisit();
+    }
+  });
+
   var files = store.listFiles();
-  var initial = files.some(function (f) { return f.name === 'hello.eppl'; }) ? 'hello.eppl' : (files[0] && files[0].name);
+  var remembered = lastRememberedFile();
+  var initial = (settings.restoreLastFile && remembered && store.exists(remembered))
+    ? remembered
+    : (files.some(function (f) { return f.name === 'hello.eppl'; }) ? 'hello.eppl' : (files[0] && files[0].name));
   if (initial) openFile(initial);
   else refreshEditor();
-  appendConsole('You are running E++ Dev Build 5. Open a .eppl or .eppla file on the left and press Run.', 'system');
+  appendConsole('You are running E++ Dev Build 6.1. Tutorial lessons come from the lesson pack (tutorial/pack.json), not from the IDE code — open Settings to swap, extend or reset it.', 'system');
   updateDashboard();
 })();

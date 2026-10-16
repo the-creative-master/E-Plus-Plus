@@ -1,8 +1,8 @@
-# The E++ Language Reference (Dev Build 6)
+# The E++ Language Reference (Dev Build 6.1)
 
 **E++ looks like English, reads like English, and behaves like code.**
 
-> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 6 humanizes the language into something genuinely fun, accessible, and English-like.
+> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 6.1 humanizes the language into something genuinely fun, accessible, and English-like.
 
 This document describes the language exactly as implemented in this
 repository (`js/lexer.js`, `js/parser.js`, `js/ast.js`, `js/interpreter.js`,
@@ -334,4 +334,46 @@ condition      := <expression> [comparison <expression>]
                     "is in the range of" A "to" B                       [Math]
 repeat         := "repeat" expression "times" (statement | block "end repeat")
 while          := "while" condition ["do"] (statement | block "end while")
+```
+
+---
+
+## 11. Tutorial Lesson Packs (Dev Build 6.1)
+
+The E++ IDE tutorial is data, not code. Lessons live in a **lesson pack**:
+`tutorial/pack.json` (the source of truth), with `js/tutorial-pack.js` as the
+generated offline copy used when the IDE is opened without a web server.
+
+```json
+{
+  "format": "eplusplus-tutorial-pack",
+  "version": "6.1",
+  "title": "E++ Guided Tutorial",
+  "lessons": [
+    {
+      "id": "variables",
+      "title": "Variables & Quotes",
+      "badge": "Variables",
+      "summary": "One sentence: what this lesson teaches.",
+      "explanation": "A little more detail, including any gotchas.",
+      "code": "Define name as WeeklyHow.\nsay \"Hello \" plus 'name'\n",
+      "fileName": "tutorial-variables.eppl"
+    }
+  ]
+}
+```
+
+- `id` — unique, lower-case, letters/numbers/dashes. Defaults the example file
+  name to `tutorial-<id>.eppl`, or `.eppla` when the code uses a library.
+- `title` / `badge` / `summary` / `explanation` / `code` — required; a pack with
+  a missing field is rejected with an English error.
+- `fileName` — optional override for the file "Try in editor" creates.
+- Packs can be imported and exported from the tutorial dialog
+  (`epp-tutorial-pack.json`); lessons you add from the editor are kept in your
+  browser and merged after the official lessons.
+
+Regenerate the offline copy after editing the pack:
+
+```bash
+npm run build:tutorial
 ```
