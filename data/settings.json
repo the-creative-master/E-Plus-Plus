@@ -1,6 +1,6 @@
 {
   "format": "eplusplus-settings",
-  "version": "6.2",
+  "version": "6.3",
   "source": "data/settings.json",
   "defaults": {
     "theme": "dark",

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Project No Refs, as checks:
-#   * the browser gets HTML and nothing else
-#   * the pages carry no words of their own: every label comes from data/messages.json
+#   * the browser gets HTML, one script file and one stylesheet
+#   * that script holds no wording of its own: every label comes from data/messages.json
+#   * the pages carry no words of their own either
 #   * the two file endings are explained in one place
 #   * no name or phrase is repeated until it grates
 set -u
@@ -12,22 +13,70 @@ FAILED=0
 ok()  { PASS=$((PASS + 1)); printf '  ok   %s\n' "$1"; }
 bad() { FAILED=$((FAILED + 1)); printf '  FAIL %s\n' "$1"; }
 
-echo "no javascript"
-if [ -z "$(find . -path ./build -prune -o -path ./workspace -prune -o \( -name '*.js' -o -name '*.mjs' -o -name 'package.json' \) -print)" ]; then
-  ok "there is no javascript in the tree"
+echo "one script, and no wording inside it"
+front=$(find web -name '*.js' -o -name '*.mjs' | sort | tr '\n' ' ')
+if [ "$front" = "web/app.js " ]; then
+  ok "the browser gets exactly one script: web/app.js"
 else
-  bad "javascript files are still here: $(find . -path ./build -prune -o -name '*.js' -print | tr '\n' ' ')"
+  bad "the front end is not a single script: ${front:-none}"
 fi
-if grep -rIl "<script" web data src Makefile README.md LANGUAGE.md > /dev/null; then
-  bad "a page still loads a script"
+stray=$(find . -path ./build -prune -o -path ./workspace -prune -o -path ./node_modules -prune -o \
+        -path ./tests -prune -o -path ./web -prune -o \
+        \( -name '*.js' -o -name '*.mjs' \) -print | tr '\n' ' ')
+if [ -z "$stray" ]; then
+  ok "no javascript hides outside web/ and tests/"
 else
-  ok "no page loads a script"
+  bad "javascript outside web/ and tests/: $stray"
 fi
-if [ -z "$(find css js vendor -maxdepth 1 -type d 2>/dev/null)" ]; then
-  ok "the old browser front end is gone"
+
+if grep -rIl "<script" web data src Makefile README.md LANGUAGE.md 2>/dev/null | grep -v '^web/layout.html$' | grep -q .; then
+  bad "something other than the shell loads a script"
 else
-  bad "leftovers from the old front end: $(find css js vendor -maxdepth 1 -type d 2>/dev/null | tr '\n' ' ')"
+  ok "only the shell loads a script"
 fi
+
+if grep -q '<script' web/partials/*.html 2>/dev/null; then
+  bad "a partial carries a script tag"
+else
+  ok "no partial carries a script tag"
+fi
+if grep -qE '<script[^>]*>[^<]' web/layout.html; then
+  bad "the shell carries javascript inline"
+else
+  ok "the shell carries no javascript inline"
+fi
+
+python3 - <<'FRONT' || exit_status=$?
+import json, re, sys
+
+messages = json.load(open('data/messages.json'))
+front = open('web/app.js').read()
+
+# Every sentence the front end can show has to be catalogued under a key.
+wanted = set(re.findall(r"say\('([\w.]+)'", front))
+missing = sorted(k for k in wanted if k not in messages)
+if missing:
+    print("  FAIL web/app.js asks for labels that are not in data/messages.json:",
+          ", ".join(missing))
+    sys.exit(1)
+print(f"  ok   all {len(wanted)} labels the front end asks for come from data/messages.json")
+
+# And it must not carry a sentence of its own in a string literal.
+prose = []
+for literal in re.findall(r"'([^'\\\n]{25,})'", front) + re.findall(r'"([^"\\\n]{25,})"', front):
+    if re.search(r'[=<>\[\]{}()/;:]', literal):
+        continue                      # selectors, routes, hand-built markup
+    if len(re.findall(r'[A-Za-z]{2,}', literal)) < 4:
+        continue                      # a couple of joined keys is not a sentence
+    prose.append(literal)
+if prose:
+    print("  FAIL prose is hardbaked in web/app.js:", "; ".join(sorted(set(prose))[:5]))
+    sys.exit(1)
+print("  ok   web/app.js holds no sentences of its own")
+sys.exit(0)
+FRONT
+if [ "${exit_status:-0}" -eq 0 ]; then PASS=$((PASS + 2)); else FAILED=$((FAILED + 1)); fi
+unset exit_status
 
 echo
 echo "the pages carry no words of their own"
@@ -50,20 +99,22 @@ if missing:
 else:
     print(f"  ok   all {len(used)} labels used by the templates come from data/messages.json")
 
-# 2. and no template may carry a sentence of its own
+# 2. markup may hold structure, not sentences: anything longer than a short
+#    label has to have come from the catalogue, not from the file
 noisy = []
 for path in glob.glob('web/**/*.html', recursive=True):
     body = open(path).read()
-    body = re.sub(r'<[^>]*>', ' ', body)          # tags and their attributes
-    body = re.sub(r'\{\{[^}]*\}\}', ' ', body)    # placeholders the server fills in
-    visible = re.sub(r'\s+', '', body)
-    if len(visible) > 40:
-        noisy.append(f"{path} ({len(visible)} characters)")
+    body = re.sub(r'<[^>]*>', ' ', body)           # tags and their attributes
+    body = re.sub(r'\{\{[^}]*\}\}', ' ', body)     # placeholders the server fills in
+    for run in re.split(r'\s+', body):
+        words = run.strip('.,:;!?"\'()[]')
+        if len(words) > 24:
+            noisy.append(f"{path} ({words})")
 if noisy:
-    print("  FAIL wording is hardbaked in the markup:", ", ".join(noisy))
+    print("  FAIL wording is hardbaked in the markup:", ", ".join(sorted(set(noisy))[:6]))
     failed += 1
 else:
-    print("  ok   the templates hold no sentences of their own")
+    print("  ok   the templates hold structure, not sentences")
 
 sys.exit(1 if failed else 0)
 PY

@@ -470,7 +470,7 @@ void testDataFiles() {
     std::string error;
     epp::Json messages = epp::jsonParse(readFile("data/messages.json"), &error);
     check(error.empty() && messages.isObject(), "data/messages.json is valid json");
-    checkText(messages.at("build").string(), "Dev Build 6.2", "the build label is in one place");
+    checkText(messages.at("build").string(), "Dev Build 6.3", "the build label is in one place");
 
     epp::Json schema = epp::jsonParse(readFile("data/settings.json"), &error);
     check(error.empty() && schema.isObject(), "data/settings.json is valid json");
@@ -530,12 +530,28 @@ void testPages() {
     }
     check(allThere, "every template exists");
 
-    std::string scripted;
+    // The front end is allowed one script file, loaded from the shell. What no
+    // template may do is carry logic of its own or point at a second script.
+    std::string inlineScript;
+    std::string externalScripts;
     for (const std::string& name : templates) {
         std::string body = readFile("web/" + name);
-        if (body.find("<script") != std::string::npos) scripted += name + " ";
+        size_t at = body.find("<script");
+        while (at != std::string::npos) {
+            size_t end = body.find('>', at);
+            std::string tag = end == std::string::npos ? body.substr(at) : body.substr(at, end - at);
+            if (tag.find("src=") != std::string::npos) {
+                if (tag.find("/app.js") == std::string::npos || name != "layout.html") externalScripts += name + " ";
+            } else {
+                inlineScript += name + " ";
+            }
+            at = body.find("<script", at + 1);
+        }
     }
-    check(scripted.empty(), "no template carries javascript" + (scripted.empty() ? "" : " (" + scripted + ")"));
+    check(inlineScript.empty(), "no template carries javascript of its own" + (inlineScript.empty() ? "" : " (" + inlineScript + ")"));
+    check(externalScripts.empty(), "the only script a page loads is /app.js" + (externalScripts.empty() ? "" : " (" + externalScripts + ")"));
+    check(readFile("web/app.js").find("say('") != std::string::npos,
+          "the front end asks the catalogue for its wording");
 
     std::string markup = readFile("web/ide.html");
     check(markup.find("{{t:ui.run}}") != std::string::npos, "pages take their words from the catalogue");

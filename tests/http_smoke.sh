@@ -43,6 +43,7 @@ get()  { curl -sL "http://127.0.0.1:$PORT$1"; }
 post_page() { curl -sL -X POST "$@"; }   # follows the redirect the server sends back
 code() { curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT$1"; }
 post() { curl -s -X POST "$@"; }
+scripts_in() { printf '%s' "$1" | grep -o '<script' | wc -l | tr -d ' '; }
 status() { post "$@" -o /dev/null -w '%{http_code}'; }
 
 echo "server pages"
@@ -52,15 +53,18 @@ check_has "a first visit opens the tutorial" "$first" "/tutorial"
 
 body=$(get /)
 check_has "the IDE page is served" "$body" "E++"
-check_has "the console greeting comes from the catalogue" "$body" "$(words ui.consoleEmpty)"
+check_has "the console greeting comes from the catalogue" "$body" "$(words console.empty)"
 check_has "the example programs were copied in" "$body" "demo.eppla"
-check_not "the IDE page carries no javascript" "$body" "<script"
+check_has "the IDE page loads the front end" "$body" 'src="/app.js"'
+if [ "$(scripts_in "$body")" = "1" ]; then ok "the IDE page loads exactly one script"; else bad "the IDE page loads $(scripts_in "$body") scripts"; fi
+check_has "the IDE page loads the stylesheet" "$body" "/style.css"
 
 body=$(get /tutorial)
 check_has "the tutorial shows the first lesson" "$body" "$(lesson 0 title)"
 check_has "the tutorial shows the last lesson" "$body" "$(lesson 7 title)"
 check_has "the lessons file is named on the page" "$body" "$(words tutorial.source)"
-check_not "the tutorial page carries no javascript" "$body" "<script"
+check_has "the tutorial page posts to the lesson opener" "$body" 'action="/tutorial/open"'
+if [ "$(scripts_in "$body")" = "1" ]; then ok "the tutorial page loads exactly one script"; else bad "the tutorial page loads $(scripts_in "$body") scripts"; fi
 
 echo
 echo "settings come from data/settings.json"
@@ -93,7 +97,7 @@ echo "running programs"
 body=$(post -d "file=hello.eppl" --data-urlencode 'code=Define who as "Sharjah".
 say "Hello, " plus '"'"'who'"'"' plus "!"' "http://127.0.0.1:$PORT/run")
 check_has "output appears in the console" "$body" "Hello, Sharjah!"
-check_has "the run is timed" "$body" "Finished in"
+check_has "the run is timed, in the catalogue's words" "$body" "$(words console.finished | cut -d'{' -f1)"
 
 body=$(post -d "file=test.eppla" --data-urlencode 'code=add library "Math"
 say square root of 144' "http://127.0.0.1:$PORT/run")
@@ -160,7 +164,9 @@ echo
 echo "small things"
 check_has "the stylesheet is served as css" "$(curl -s -D - -o /dev/null "http://127.0.0.1:$PORT/style.css" | tr -d '\r')" "text/css"
 if [ "$(code /nowhere)" = "404" ]; then ok "unknown pages are a 404"; else bad "unknown page did not return 404"; fi
-check_not "the 404 page is still styled" "$(get /nowhere)" "<script"
+notfound=$(get /nowhere)
+check_has "the 404 page is still styled" "$notfound" "/style.css"
+if [ "$(scripts_in "$notfound")" = "1" ]; then ok "the 404 page still loads the front end"; else bad "the 404 page loads $(scripts_in "$notfound") scripts"; fi
 
 printf '\n%s end-to-end checks passed' "$PASS"
 if [ "$FAILED" -gt 0 ]; then printf ', %s failed.\n' "$FAILED"; exit 1; fi

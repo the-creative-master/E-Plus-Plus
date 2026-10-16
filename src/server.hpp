@@ -44,6 +44,14 @@ private:
     Response settingsPage(const std::string& notice);
     Response aboutPage();
     Response fileFormPage(const std::string& mode, const std::string& file);
+    Response jsonResponse(const Json& body, int status = 200) const;
+    Response jsonProblem(const std::string& message, int status = 400) const;
+    Response api(const std::string& route, const Request& request);
+
+    // The pieces the pages and the JavaScript front end both ask for, so the
+    // markup lives in one place: web/partials.
+    Json fileState(const std::string& name) const;
+    Json runResult(const std::string& file, const std::string& code, const std::vector<std::string>& answers) const;
     Response page(const std::string& title, const std::string& content, const std::string& notice = "",
                   const std::string& kind = "", const std::string& extraClass = "");
 
@@ -59,6 +67,7 @@ private:
 
     Json tutorial() const;         // data/tutorial.json plus the lessons you added
     Json officialTutorial() const; // data/tutorial.json only
+    std::map<std::string, std::string> pageVars() const;  // the catalogue, as template placeholders
     std::string workspaceFile(const std::string& name) const;
     std::string settingsClass() const;
 

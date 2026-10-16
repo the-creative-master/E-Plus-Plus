@@ -28,6 +28,9 @@ public:
 
     size_t size() const { return messages_.size(); }
 
+    // The whole catalogue, for the API and for templates that want it all.
+    const std::map<std::string, std::string>& all() const { return messages_; }
+
     // Lets templates write {{t:ui.run}} instead of passing every label in.
     static void install(const Text* text);
 

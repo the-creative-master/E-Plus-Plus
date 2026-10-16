@@ -18,7 +18,7 @@
     <pre class="highlight">{{highlight}}</pre>
     <form method="post" action="/tutorial/open" class="row-actions">
       <input type="hidden" name="lesson" value="{{id}}">
-      <button type="submit" class="primary">{{t:ui.try}}</button>
+      <button type="submit" class="primary">{{t:tutorial.try}}</button>
     </form>
     {{removeForm}}
   </section>
@@ -26,16 +26,16 @@
 
 <div class="columns two">
   <section class="panel">
-    <h2>{{t:ui.saveAsLesson}}</h2>
+    <h2>{{t:tutorial.saveAsLesson}}</h2>
     <form method="post" action="/tutorial/save">
       <input type="hidden" name="lesson" value="{{id}}">
-      <label for="title">{{t:ui.title}}</label>
+      <label for="title">{{t:tutorial.titleField}}</label>
       <input id="title" name="title" value="{{title}}" required>
-      <label for="badge">{{t:ui.badge}}</label>
+      <label for="badge">{{t:tutorial.badgeField}}</label>
       <input id="badge" name="badge" value="{{badge}}">
-      <label for="summary">{{t:ui.summary}}</label>
+      <label for="summary">{{t:tutorial.summaryField}}</label>
       <input id="summary" name="summary" value="{{summary}}">
-      <label for="explanation">{{t:ui.explanation}}</label>
+      <label for="explanation">{{t:tutorial.explanationField}}</label>
       <textarea id="explanation" name="explanation" rows="3">{{explanation}}</textarea>
       <label for="lesson-code">{{t:ui.code}}</label>
       <textarea id="lesson-code" name="code" rows="10" spellcheck="false">{{code}}</textarea>
@@ -51,6 +51,6 @@
       <textarea id="pack" name="pack" rows="10" spellcheck="false" placeholder="{ &quot;lessons&quot;: [ … ] }"></textarea>
       <div class="row-actions"><button type="submit">{{t:ui.importPack}}</button></div>
     </form>
-    <p class="hint">{{t:ui.lessonsNote}}</p>
+    <p class="hint">{{t:tutorial.importNote}}</p>
   </section>
 </div>

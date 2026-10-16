@@ -18,6 +18,7 @@ struct Error {
     std::string hint;
     int line = 0;
     int column = 0;
+    std::string code;  // a short tag the IDE can act on: no-answers, needs-eppla, library-missing
 
     bool empty() const { return message.empty(); }
     std::string format() const;

@@ -161,18 +161,26 @@ std::string App::flashHtml(const std::string& notice, const std::string& kind) c
     return html + "</p>";
 }
 
+// Every line the catalogue holds is available to the templates by name, so a
+// page can write {{ui.run}} without the server listing it here first.
+std::map<std::string, std::string> App::pageVars() const {
+    std::map<std::string, std::string> values = text_.all();
+    values["topbar"] = renderTemplate(webDir_ + "/partials/topbar.html", values);
+    values["footer"] = renderTemplate(webDir_ + "/partials/footer.html", values);
+    return values;
+}
+
 Response App::page(const std::string& title, const std::string& content, const std::string& notice,
                    const std::string& kind, const std::string& extraClass) {
-    std::string html = renderTemplate(webDir_ + "/layout.html",
-                                      {{"title", htmlEscape(title)},
-                                       {"codeSize", htmlEscape(settings_.at("fontSize").string("14"))},
-                                       {"pageClass", trim(settingsClass() + " " + extraClass)},
-                                       {"topbar", renderTemplate(webDir_ + "/partials/topbar.html", {})},
-                                       {"footer", renderTemplate(webDir_ + "/partials/footer.html", {{"build", text_.get("build")}})},
-                                       {"content", content},
-                                       {"flash", flashHtml(notice, kind)}});
+    std::map<std::string, std::string> values = pageVars();
+    values["title"] = htmlEscape(title);
+    values["codeSize"] = htmlEscape(settings_.at("fontSize").string("14"));
+    values["pageClass"] = trim(settingsClass() + " " + extraClass);
+    values["confirmDelete"] = settings_.at("confirmDelete").flag(true) ? "on" : "off";
+    values["content"] = content;
+    values["flash"] = flashHtml(notice, kind);
     Response response;
-    response.body = html;
+    response.body = renderTemplate(webDir_ + "/layout.html", values);
     return response;
 }
 
@@ -277,6 +285,106 @@ std::string App::renderSettingsGroups() const {
     return html;
 }
 
+Response App::jsonResponse(const Json& body, int status) const {
+    Response response;
+    response.status = status;
+    response.contentType = "application/json; charset=utf-8";
+    response.body = body.dump(2) + "\n";
+    return response;
+}
+
+Response App::jsonProblem(const std::string& message, int status) const {
+    Json body = Json::object();
+    body.set("ok", Json(false));
+    body.set("message", Json(message));
+    return jsonResponse(body, status);
+}
+
+// What the editor needs to show a file: its text, the coloured version of it
+// and the two lists that mention it.
+Json App::fileState(const std::string& name) const {
+    Json state = Json::object();
+    bool exists = !name.empty() && store_.exists(name);
+    std::string code = exists ? store_.read(name) : std::string();
+    state.set("name", Json(name));
+    state.set("exists", Json(exists));
+    state.set("code", Json(code));
+    state.set("highlight", Json(highlightToHtml(code)));
+    state.set("files", Json(renderFiles(name, "")));
+    state.set("cards", Json(renderLibraryCards(name)));
+    state.set("count", Json(double(store_.list().size())));
+    return state;
+}
+
+// One run, rendered the same way for the page and for the fetch call.
+Json App::runResult(const std::string& file, const std::string& code,
+                    const std::vector<std::string>& answers) const {
+    Options options;
+    options.fileName = file;
+    options.librariesAllowed = Store::extensionOf(file) != ".eppl";
+    options.answers = answers;
+    options.sleep = [](unsigned ms) { std::this_thread::sleep_for(std::chrono::milliseconds(ms)); };
+
+    std::vector<LineOut> lines;
+    Result result;
+    bool empty = trim(code).empty();
+
+    if (empty) {
+        lines.push_back({Line::System, text_.get("console.nothing")});
+    } else {
+        lines.push_back({Line::Divider, text_.get("console.runHeader",
+                                                  {{"name", file.empty() ? text_.get("ui.noFile") : file}})});
+        result = run(code, options);
+        for (const LineOut& line : result.lines) lines.push_back(line);
+        if (!result.ok && result.error.code == "no-answers") {
+            lines.push_back({Line::System, text_.get("console.needAnswers")});
+        }
+        lines.push_back({Line::Divider, text_.get(result.ok ? "console.finished" : "console.stopped",
+                                                       {{"ms", std::to_string(result.milliseconds)}})});
+    }
+
+    size_t limit = size_t(std::max(20.0, settings_.at("consoleLines").numeric(400)));
+
+    Json out = Json::object();
+    out.set("ok", Json(!empty && result.ok));
+    out.set("empty", Json(empty));
+    out.set("milliseconds", Json(double(empty ? 0 : result.milliseconds)));
+    out.set("console", Json(renderConsole(lines, limit)));
+    out.set("grid", Json(renderSpriteGrid(result.sprites)));
+    out.set("message", Json(empty ? text_.get("console.nothing")
+                                  : text_.get(result.ok ? "console.finished" : "console.stopped",
+                                              {{"ms", std::to_string(result.milliseconds)}})));
+    out.set("code", Json(result.error.code));
+    out.set("line", Json(double(result.error.line)));
+    out.set("column", Json(double(result.error.column)));
+    out.set("category", Json(result.error.category));
+    out.set("error", Json(result.error.empty() ? std::string() : result.error.format()));
+
+    Json libraries = Json::array();
+    for (const std::string& name : result.libraries) libraries.push(Json(name));
+    out.set("libraries", libraries);
+
+    Json linesJson = Json::array();
+    for (const LineOut& line : lines) {
+        std::string kind = "output";
+        switch (line.kind) {
+            case Line::Output: break;
+            case Line::System: kind = "system"; break;
+            case Line::Library: kind = "library"; break;
+            case Line::Prompt: kind = "prompt"; break;
+            case Line::Answer: kind = "answer"; break;
+            case Line::Error: kind = "error"; break;
+            case Line::Divider: kind = "divider"; break;
+        }
+        Json entry = Json::object();
+        entry.set("kind", Json(kind));
+        entry.set("text", Json(line.text));
+        linesJson.push(entry);
+    }
+    out.set("lines", linesJson);
+    return out;
+}
+
 std::string App::renderConsole(const std::vector<LineOut>& lines, size_t limit) const {
     if (lines.empty()) return renderTemplate(webDir_ + "/partials/console_empty.html", {});
     std::string html;
@@ -343,26 +451,28 @@ Response App::idePage(const std::string& file, const std::string& query, const s
     std::string console = output;
     if (console.empty()) console = renderTemplate(webDir_ + "/partials/console_empty.html", {});
 
-    std::string content = renderTemplate(
-        webDir_ + "/ide.html",
-        {{"files", renderFiles(active, query)},
-         {"search", htmlEscape(query)},
-         {"fileCount", std::to_string(store_.list().size())},
-         {"currentName", active.empty() ? text_.get("files.none") : htmlEscape(active)},
-         {"currentRaw", htmlEscape(active)},
-         {"currentUrl", urlEncode(active)},
-         {"code", htmlEscape(source)},
-         {"answers", htmlEscape(answersText)},
-         {"console", console},
-         {"libraryCards", renderLibraryCards(active)},
-         {"librariesHidden", settings_.at("showLibraries").flag(true) ? "" : " hidden"},
-         {"referenceHidden", settings_.at("showReference").flag(true) ? "" : " hidden"},
-         {"dashboardHidden", settings_.at("showDashboard").flag(true) ? "" : " hidden"},
-         {"spriteGrid", spriteGrid},
-         {"codeView", settings_.at("highlightCode").flag(true) && !source.empty() ? highlightToHtml(source) : ""},
-         {"lineLimit", settings_.at("consoleLines").string()},
-         {"extensionNote", htmlEscape(text_.get("extensions.note"))},
-         {"reference", htmlEscape(text_.get("reference.cheatsheet"))}});
+    std::map<std::string, std::string> values = pageVars();
+    values["files"] = renderFiles(active, query);
+    values["statusCount"] = text_.get("ui.filesCount", {{"count", std::to_string(store_.list().size())}});
+    values["codeViewClass"] = settings_.at("highlightCode").flag(true) ? "" : " plain";
+    values["code"] = htmlEscape(source);
+    values["highlight"] = highlightToHtml(source);
+    values["search"] = htmlEscape(query);
+    values["currentName"] = active.empty() ? text_.get("ui.noFile") : htmlEscape(active);
+    values["currentRaw"] = htmlEscape(active);
+    values["currentUrl"] = urlEncode(active);
+    values["answers"] = htmlEscape(answersText);
+    values["console"] = console;
+    values["libraryCards"] = renderLibraryCards(active);
+    values["librariesHidden"] = settings_.at("showLibraries").flag(true) ? "" : " hidden";
+    values["referenceHidden"] = settings_.at("showReference").flag(true) ? "" : " hidden";
+    values["dashboardHidden"] = settings_.at("showDashboard").flag(true) ? "" : " hidden";
+    values["spriteGrid"] = spriteGrid;
+    values["extensionNote"] = htmlEscape(text_.get("extensions.note"));
+    values["reference"] = htmlEscape(text_.get("reference.cheatsheet"));
+    values["consoleLines"] = settings_.at("consoleLines").string("400");
+
+    std::string content = renderTemplate(webDir_ + "/ide.html", values);
     return page(text_.get("brand.title"), content, notice, kind);
 }
 
@@ -471,25 +581,15 @@ Response App::handle(const Request& request) {
 
     if (path == "/run" && request.method == "POST") {
         std::string fileName = form("file");
-        std::string code = form("code");
-        std::string answers = form("answers");
-        Options options;
-        options.fileName = fileName;
-        options.librariesAllowed = Store::extensionOf(fileName) == ".eppla";
-        options.sleep = [](unsigned ms) { std::this_thread::sleep_for(std::chrono::milliseconds(ms)); };
-        for (const std::string& line : splitLines(answers)) {
+        std::vector<std::string> answers;
+        for (const std::string& line : splitLines(form("answers"))) {
             std::string answer = trim(line);
-            if (!answer.empty()) options.answers.push_back(answer);
+            if (!answer.empty()) answers.push_back(answer);
         }
-        std::vector<LineOut> lines;
-        lines.push_back({Line::Divider, "Run: " + (fileName.empty() ? std::string("(no file)") : fileName)});
-        Result result = run(code, options);
-        for (const LineOut& line : result.lines) lines.push_back(line);
-        lines.push_back({Line::Divider, result.ok ? "Finished in " + std::to_string(result.milliseconds) + " ms"
-                                                  : "Stopped after " + std::to_string(result.milliseconds) + " ms"});
-        size_t limit = size_t(std::max(20.0, settings_.at("consoleLines").numeric(400)));
-        return idePage(fileName, "", answers, code, "", result.ok ? "" : "error",
-                       renderConsole(lines, limit), renderSpriteGrid(result.sprites));
+        Json result = runResult(fileName, form("code"), answers);
+        return idePage(fileName, "", form("answers"), form("code"), "",
+                       result.at("ok").flag(false) ? "" : "error",
+                       result.at("console").string(), result.at("grid").string());
     }
 
     if (path == "/save" && request.method == "POST") {
@@ -561,8 +661,21 @@ Response App::handle(const Request& request) {
         std::string library = form("library");
         std::string file = currentFile(form("file"));
         std::string line = "add library \"" + library + "\"\n";
+        if (file.empty()) {
+            Response redirect;
+            redirect.status = 303;
+            redirect.headers["Location"] = "/?msg=" + urlEncode(text_.get("ui.pickFile")) + "&kind=error";
+            return redirect;
+        }
         std::string source = store_.read(file);
-        if (source.find(line) == std::string::npos) source = line + source;
+        if (source.find(line) != std::string::npos) {
+            Response redirect;
+            redirect.status = 303;
+            redirect.headers["Location"] = "/open?file=" + urlEncode(file) + "&msg=" +
+                                           urlEncode(text_.get("library.already"));
+            return redirect;
+        }
+        source = line + source;
         std::string upgraded = Store::upgradedFor(file, source);
         std::string note = text_.get("library.inserted", {{"name", library}});
         if (upgraded != file) {
@@ -740,69 +853,7 @@ Response App::handle(const Request& request) {
     if (path == "/rename") return fileFormPage("rename", query("file"));
     if (path == "/delete") return fileFormPage("delete", query("file"));
 
-    if (path == "/api/status") {
-        Json status = Json::object();
-        status.set("build", Json(text_.get("build")));
-        status.set("files", Json(double(store_.list().size())));
-        status.set("libraries", Json(double(libraryCatalogue().size())));
-        Json allLessons = tutorial();
-        status.set("lessons", Json(double(allLessons.items().size())));
-        Response response;
-        response.contentType = "application/json; charset=utf-8";
-        response.body = status.dump(2) + "\n";
-        return response;
-    }
-
-    if (path == "/api/run" && request.method == "POST") {
-        std::string error;
-        Json payload = jsonParse(request.body, &error);
-        Options options;
-        options.fileName = payload.at("file").string();
-        options.librariesAllowed = Store::extensionOf(options.fileName) != ".eppl";
-        for (const Json& answer : payload.at("answers").items()) options.answers.push_back(answer.string());
-        Result result = run(payload.at("code").string(), options);
-        Json out = Json::object();
-        out.set("ok", Json(result.ok));
-        out.set("milliseconds", Json(double(result.milliseconds)));
-        Json lines = Json::array();
-        for (const LineOut& line : result.lines) {
-            std::string kind = "output";
-            switch (line.kind) {
-                case Line::Output: break;
-                case Line::System: kind = "system"; break;
-                case Line::Library: kind = "library"; break;
-                case Line::Prompt: kind = "prompt"; break;
-                case Line::Answer: kind = "answer"; break;
-                case Line::Error: kind = "error"; break;
-                case Line::Divider: kind = "divider"; break;
-            }
-            Json entry = Json::object();
-            entry.set("kind", Json(kind));
-            entry.set("text", Json(line.text));
-            lines.push(entry);
-        }
-        out.set("lines", lines);
-        if (!result.ok) {
-            out.set("error", Json(result.error.format()));
-            out.set("category", Json(result.error.category));
-        }
-        Json libraries = Json::array();
-        for (const std::string& name : result.libraries) libraries.push(Json(name));
-        out.set("libraries", libraries);
-        Json sprites = Json::array();
-        for (const Sprite& sprite : result.sprites) {
-            Json entry = Json::object();
-            entry.set("name", Json(sprite.name));
-            entry.set("x", Json(sprite.x));
-            entry.set("y", Json(sprite.y));
-            sprites.push(entry);
-        }
-        out.set("sprites", sprites);
-        Response response;
-        response.contentType = "application/json; charset=utf-8";
-        response.body = out.dump(2) + "\n";
-        return response;
-    }
+    if (path.rfind("/api/", 0) == 0) return api(path.substr(5), request);
 
     // Anything else under /assets/ comes straight from web/.
     std::string clean = path;
@@ -920,6 +971,217 @@ void serve(int port, App& app) {
         if (client < 0) continue;
         std::thread(handleConnection, client, std::ref(app)).detach();
     }
+}
+
+
+// ---------------------------------------------------------------- the API
+//
+// The JavaScript front end talks to the engine through these calls. Everything
+// they return is either a value from the engine or markup from web/partials, so
+// the browser never has to know how E++ works.
+Response App::api(const std::string& route, const Request& request) {
+    auto field = [&](const char* key) {
+        auto found = request.form.find(key);
+        return found == request.form.end() ? std::string() : found->second;
+    };
+    std::string error;
+    Json payload = jsonParse(request.body, &error);
+    auto value = [&](const char* key) {
+        std::string fromForm = field(key);
+        return fromForm.empty() ? payload.at(key).string() : fromForm;
+    };
+    auto answers = [&]() {
+        std::vector<std::string> list;
+        for (const Json& line : payload.at("answers").items()) list.push_back(line.string());
+        if (list.empty()) {
+            for (const std::string& line : splitLines(field("answers"))) {
+                std::string answer = trim(line);
+                if (!answer.empty()) list.push_back(answer);
+            }
+        }
+        return list;
+    };
+
+    if (route == "status") {
+        Json status = Json::object();
+        status.set("build", Json(text_.get("build")));
+        status.set("files", Json(double(store_.list().size())));
+        status.set("libraries", Json(double(libraryCatalogue().size())));
+        Json lessons = tutorial();
+        status.set("lessons", Json(double(lessons.items().size())));
+        status.set("workspace", Json(store_.root()));
+        return jsonResponse(status);
+    }
+
+    if (route == "labels") {
+        Json labels = Json::object();
+        for (const auto& entry : text_.all()) labels.set(entry.first, Json(entry.second));
+        return jsonResponse(labels);
+    }
+
+    if (route == "files") {
+        Json out = Json::object();
+        out.set("html", Json(renderFiles(currentFile(value("file")), value("q"))));
+        out.set("count", Json(double(store_.list().size())));
+        return jsonResponse(out);
+    }
+
+    if (route == "file") {
+        std::string name = currentFile(value("name"));
+        Json state = fileState(name);
+        state.set("status", Json(text_.get("files.count", {{"count", std::to_string(store_.list().size())}})));
+        return jsonResponse(state);
+    }
+
+    if (route == "highlight") {
+        Json out = Json::object();
+        out.set("html", Json(highlightToHtml(value("code"))));
+        return jsonResponse(out);
+    }
+
+    if (route == "run") {
+        Json out = runResult(value("file"), value("code"), answers());
+        return jsonResponse(out);
+    }
+
+    if (route == "save") {
+        std::string wanted = value("file");
+        std::string code = value("code");
+        std::string name = Store::nameFor(wanted, code);
+        if (name.empty()) return jsonProblem(Store::errorForName(wanted, code), 400);
+        std::string upgraded = Store::upgradedFor(name, code);
+        std::string message = text_.get("files.saved", {{"name", upgraded}});
+        if (upgraded != name) {
+            if (store_.exists(name)) store_.remove(name);
+            message = text_.get("files.upgraded", {{"name", upgraded}});
+        }
+        store_.write(upgraded, code);
+        Json state = fileState(upgraded);
+        state.set("message", Json(message));
+        state.set("renamed", Json(upgraded != wanted));
+        state.set("status", Json(text_.get("files.count", {{"count", std::to_string(store_.list().size())}})));
+        return jsonResponse(state);
+    }
+
+    if (route == "new") {
+        std::string code = value("code");
+        std::string name = Store::nameFor(value("name"), code);
+        if (name.empty()) return jsonProblem(Store::errorForName(value("name"), code), 400);
+        if (store_.exists(name)) return jsonProblem(text_.get("files.exists", {{"name", name}}), 409);
+        store_.create(name, trim(code).empty() ? text_.get("files.starter") : code);
+        Json state = fileState(name);
+        state.set("message", Json(text_.get("files.created", {{"name", name}})));
+        state.set("status", Json(text_.get("files.count", {{"count", std::to_string(store_.list().size())}})));
+        return jsonResponse(state);
+    }
+
+    if (route == "rename") {
+        std::string from = value("file");
+        std::string code = store_.read(from);
+        std::string to = Store::nameFor(value("to"), code);
+        if (to.empty()) return jsonProblem(Store::errorForName(value("to"), code), 400);
+        if (!store_.rename(from, to)) return jsonProblem(text_.get("files.exists", {{"name", to}}), 409);
+        Json state = fileState(to);
+        state.set("message", Json(text_.get("files.renamed", {{"name", to}})));
+        state.set("status", Json(text_.get("files.count", {{"count", std::to_string(store_.list().size())}})));
+        return jsonResponse(state);
+    }
+
+    if (route == "delete") {
+        std::string name = value("file");
+        if (name.empty() || !store_.exists(name)) return jsonProblem(text_.get("ui.noFile"), 404);
+        store_.remove(name);
+        std::string next = currentFile("");
+        Json out = fileState(next);
+        out.set("message", Json(text_.get("files.deleted", {{"name", name}})));
+        out.set("status", Json(text_.get("files.count", {{"count", std::to_string(store_.list().size())}})));
+        return jsonResponse(out);
+    }
+
+    if (route == "insert-library") {
+        std::string library = value("library");
+        std::string file = currentFile(value("file"));
+        if (file.empty()) return jsonProblem(text_.get("ui.pickFile"), 400);
+        std::string line = "add library \"" + library + "\"\n";
+        std::string source = store_.read(file);
+        if (source.find(line) != std::string::npos) {
+            Json state = fileState(file);
+            state.set("message", Json(text_.get("library.already")));
+            return jsonResponse(state);
+        }
+        source = line + source;
+        std::string upgraded = Store::upgradedFor(file, source);
+        std::string message = text_.get("library.inserted", {{"name", library}});
+        if (upgraded != file) {
+            store_.remove(file);
+            std::map<std::string, std::string> values;
+            values["name"] = upgraded;
+            values["library"] = library;
+            message = text_.get("library.upgraded", values);
+        }
+        store_.write(upgraded, source);
+        Json state = fileState(upgraded);
+        state.set("message", Json(message));
+        state.set("status", Json(text_.get("files.count", {{"count", std::to_string(store_.list().size())}})));
+        return jsonResponse(state);
+    }
+
+    if (route == "settings") {
+        Json updated = settings_;
+        Json schema = jsonParse(readFile(dataDir_ + "/settings.json"));
+        for (const Json& group : schema.at("groups").items()) {
+            for (const Json& control : group.at("controls").items()) {
+                std::string key = control.at("key").string();
+                if (key.empty()) continue;
+                if (control.at("type").string() == "checkbox") {
+                    updated.set(key, Json(payload.has(key) ? payload.at(key).flag(false) : request.form.count(key) > 0));
+                } else {
+                    std::string given = value(key.c_str());
+                    if (!given.empty() || request.form.count(key) > 0 || payload.has(key)) {
+                        updated.set(key, Json(given.empty() ? control.at("default").string() : given));
+                    }
+                }
+            }
+        }
+        settings_ = updated;
+        store_.saveSettings(settings_);
+        Json out = Json::object();
+        out.set("message", Json(text_.get("settings.saved")));
+        out.set("settings", settings_);
+        out.set("classes", Json(trim(settingsClass())));
+        out.set("codeSize", Json(settings_.at("fontSize").string("14")));
+        out.set("consoleLines", Json(settings_.at("consoleLines").string("400")));
+        out.set("dashboard", Json(settings_.at("showDashboard").flag(true)));
+        out.set("libraries", Json(settings_.at("showLibraries").flag(true)));
+        out.set("reference", Json(settings_.at("showReference").flag(true)));
+        return jsonResponse(out);
+    }
+
+    if (route == "restore") {
+        int added = store_.restoreExamples(dataDir_ + "/examples");
+        Json state = fileState(currentFile(""));
+        state.set("message", Json(text_.get(added ? "files.examplesAdded" : "files.examplesThere",
+                                              {{"count", std::to_string(added)}})));
+        state.set("status", Json(text_.get("files.count", {{"count", std::to_string(store_.list().size())}})));
+        return jsonResponse(state);
+    }
+
+    if (route == "lessons/open") {
+        std::string id = value("lesson");
+        Json lesson;
+        Json all = tutorial();
+        for (const Json& candidate : all.items()) if (candidate.at("id").string() == id) lesson = candidate;
+        if (lesson.isNull()) return jsonProblem(text_.get("tutorial.missing"), 404);
+        std::string name = "tutorial-" + id + (usesLibrary(lesson.at("code").string()) ? ".eppla" : ".eppl");
+        if (store_.exists(name)) store_.write(name, lesson.at("code").string());
+        else store_.create(name, lesson.at("code").string());
+        Json state = fileState(name);
+        state.set("message", Json(text_.get("tutorial.opened", {{"name", name}})));
+        state.set("status", Json(text_.get("files.count", {{"count", std::to_string(store_.list().size())}})));
+        return jsonResponse(state);
+    }
+
+    return jsonProblem(text_.get("error.notFound"), 404);
 }
 
 }  // namespace epp

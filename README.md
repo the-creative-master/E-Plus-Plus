@@ -5,9 +5,9 @@ E++ is a programming language that reads like English: `say "Hello."` prints a l
 name to a value. This repository holds the language, the six libraries that come with it,
 a small Python runner, and the IDE that runs all of it.
 
-Dev Build 6.2 is a rewrite. The earlier build was JavaScript in the browser; this one is
-C++ on the machine you run it on. The browser gets HTML and a stylesheet, nothing else —
-no scripts, no framework, no build step for the front end.
+Dev Build 6.3. The engine, the libraries and the server are C++; the page is plain HTML,
+one stylesheet and one script that talks to the server's JSON API. No framework, and no
+build step for the front end: `make` is the whole toolchain.
 
 ## Build it
 
@@ -34,7 +34,7 @@ The command line has a few other uses:
 | Path | What it holds |
 | --- | --- |
 | `src/` | The whole program: lexer, parser, interpreter, libraries, Python runner, JSON reader, file store, HTTP server, command line |
-| `web/` | The HTML the server fills in, plus `style.css` |
+| `web/` | The HTML the server fills in, plus `style.css` and `app.js` (the only script the browser loads) |
 | `data/` | Everything the pages say and everything they offer: the words, the settings schema, the lessons, the example programs |
 | `tests/` | The engine tests, an end-to-end pass through the server, and the checks on the house rules |
 | `workspace/` | Made on first run: your programs, your settings and any lessons you add |
@@ -97,6 +97,25 @@ It is a small runner, not CPython: printing, assignment and `+=`/`-=`, `if`/`eli
 `range`/`len`/`int`/`float`/`str`/`abs`/`round`/`sum`. Python errors keep their Python
 names, so `NameError`, `ZeroDivisionError` and `IndentationError` read as usual.
 
+## How the page talks to the server
+
+The page never computes anything about E++ itself. When you type, run a file or press a
+button, `web/app.js` asks the C++ server and puts the answer on screen — so there is one
+implementation of the language, and the browser is only a view onto it. The wording it
+displays comes from `GET /api/labels`, which is `data/messages.json` as JSON.
+
+| Route | Answers with |
+| --- | --- |
+| `GET /api/status`, `GET /api/labels` | the build, the file count, and every message the IDE can show |
+| `GET /api/file`, `GET /api/files` | one file's text and colours, or the file list |
+| `POST /api/run` | the console, the sprite grid, the timing, and the line to blame on an error |
+| `POST /api/save`, `new`, `rename`, `delete` | the file's new state, plus a sentence for the toast |
+| `POST /api/insert-library`, `restore`, `lessons/open`, `settings` | the same shape: what changed, and what to say about it |
+
+Failures come back as `{ "ok": false, "message": "..." }` with a 400, 404 or 409, and the
+engine tags the interesting ones (`needs-eppla`, `no-answers`, `library-missing`) so the
+page can open the right box instead of reading the prose.
+
 ## Settings, lessons and the rest
 
 Nothing in the IDE is written into its markup. Labels, options, defaults, lessons and the
@@ -115,10 +134,14 @@ Wipe `workspace/` to start over; press *Restore examples* to bring the example p
 
 ```sh
 make test                 # everything
-./build/engine_test       # 175 checks over the language, libraries, Python, JSON, store
-tests/http_smoke.sh       # 43 checks against a running server
-tests/no_refs.sh          # no javascript, no hardbaked wording, one explanation of the endings
+./build/engine_test       # 177 checks over the language, libraries, Python, JSON, store
+tests/http_smoke.sh       # 47 checks against a running server
+tests/no_refs.sh          # one script for the browser, no hardbaked wording, one explanation of the endings
+node tests/front_end.mjs  # 23 checks driving the pages through jsdom (needs `npm install jsdom`)
 ```
+
+The engine tests and the two shell scripts need nothing beyond a compiler. The jsdom pass is
+optional and says so when it is missing.
 
 ## Credit
 

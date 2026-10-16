@@ -154,64 +154,70 @@ std::string renderTemplate(const std::string& path, const std::map<std::string, 
 }
 
 std::string highlightToHtml(const std::string& source) {
-    std::string out;
-    size_t pos = 0;
-    int line = 1;
-    out += "<span class=\"ln\">1</span> ";
-    while (pos < source.size()) {
-        char c = source[pos];
-        if (c == '\n') {
-            ++line;
-            out += "\n";
-            std::string number = std::to_string(line);
-            out += "<span class=\"ln\">" + number + "</span> ";
-            ++pos;
-            continue;
-        }
-        if (c == ' ' || c == '\t') { out.push_back(c); ++pos; continue; }
-        if (c == '"') {
-            size_t end = source.find('"', pos + 1);
-            if (end == std::string::npos) end = source.size() - 1;
-            out += "<span class=\"t-str\">" + htmlEscape(source.substr(pos, end - pos + 1)) + "</span>";
-            pos = end + 1;
-            continue;
-        }
-        if (c == '\'') {
-            size_t end = source.find('\'', pos + 1);
-            if (end == std::string::npos) end = source.size() - 1;
-            out += "<span class=\"t-var\">" + htmlEscape(source.substr(pos, end - pos + 1)) + "</span>";
-            pos = end + 1;
-            continue;
-        }
-        if (std::isdigit(static_cast<unsigned char>(c))) {
-            size_t end = pos;
-            while (end < source.size() && (std::isdigit(static_cast<unsigned char>(source[end])) || source[end] == '.')) ++end;
-            out += "<span class=\"t-num\">" + htmlEscape(source.substr(pos, end - pos)) + "</span>";
-            pos = end;
-            continue;
-        }
-        if (std::isalpha(static_cast<unsigned char>(c))) {
-            size_t end = pos;
-            while (end < source.size() && (std::isalnum(static_cast<unsigned char>(source[end])) || source[end] == '_')) ++end;
-            std::string word = source.substr(pos, end - pos);
-            std::string lowered = lower(word);
-            if (lowered == "note" && end < source.size() && source[end] == ':') {
-                size_t lineEnd = source.find('\n', end);
-                if (lineEnd == std::string::npos) lineEnd = source.size();
-                out += "<span class=\"t-note\">" + htmlEscape(source.substr(pos, lineEnd - pos)) + "</span>";
-                pos = lineEnd;
+    // The result is one span per source line, so the numbers can live in a
+    // gutter painted by CSS and the text still starts at the same x offset the
+    // textarea uses. That is what keeps the coloured layer under the cursor
+    // lined up with what is being typed.
+    auto tokens = [](const std::string& text) {
+        std::string out;
+        size_t pos = 0;
+        while (pos < text.size()) {
+            char c = text[pos];
+            if (c == ' ' || c == '\t') { out.push_back(c); ++pos; continue; }
+            if (c == '"') {
+                size_t end = text.find('"', pos + 1);
+                if (end == std::string::npos) end = text.size() - 1;
+                out += "<span class=\"t-str\">" + htmlEscape(text.substr(pos, end - pos + 1)) + "</span>";
+                pos = end + 1;
                 continue;
             }
-            if (commandWords().count(lowered)) out += "<span class=\"t-key\">" + htmlEscape(word) + "</span>";
-            else if (helperWords().count(lowered)) out += "<span class=\"t-helper\">" + htmlEscape(word) + "</span>";
-            else out += "<span class=\"t-word\">" + htmlEscape(word) + "</span>";
-            pos = end;
-            continue;
+            if (c == '\'') {
+                size_t end = text.find('\'', pos + 1);
+                if (end == std::string::npos) end = text.size() - 1;
+                out += "<span class=\"t-var\">" + htmlEscape(text.substr(pos, end - pos + 1)) + "</span>";
+                pos = end + 1;
+                continue;
+            }
+            if (std::isdigit(static_cast<unsigned char>(c))) {
+                size_t end = pos;
+                while (end < text.size() && (std::isdigit(static_cast<unsigned char>(text[end])) || text[end] == '.')) ++end;
+                out += "<span class=\"t-num\">" + htmlEscape(text.substr(pos, end - pos)) + "</span>";
+                pos = end;
+                continue;
+            }
+            if (std::isalpha(static_cast<unsigned char>(c))) {
+                size_t end = pos;
+                while (end < text.size() && (std::isalnum(static_cast<unsigned char>(text[end])) || text[end] == '_')) ++end;
+                std::string word = text.substr(pos, end - pos);
+                std::string lowered = lower(word);
+                if (lowered == "note" && end < text.size() && text[end] == ':') {
+                    out += "<span class=\"t-note\">" + htmlEscape(text.substr(pos)) + "</span>";
+                    pos = text.size();
+                    continue;
+                }
+                if (commandWords().count(lowered)) out += "<span class=\"t-key\">" + htmlEscape(word) + "</span>";
+                else if (helperWords().count(lowered)) out += "<span class=\"t-helper\">" + htmlEscape(word) + "</span>";
+                else out += "<span class=\"t-word\">" + htmlEscape(word) + "</span>";
+                pos = end;
+                continue;
+            }
+            out += "<span class=\"t-op\">" + htmlEscape(std::string(1, c)) + "</span>";
+            ++pos;
         }
-        out += "<span class=\"t-op\">" + htmlEscape(std::string(1, c)) + "</span>";
-        ++pos;
+        return out;
+    };
+
+    std::string html = "<span class=\"src\">";
+    size_t start = 0;
+    while (true) {
+        size_t end = source.find('\n', start);
+        std::string line = source.substr(start, end == std::string::npos ? std::string::npos : end - start);
+        html += "<span class=\"ln\">" + tokens(line) + "</span>";
+        if (end == std::string::npos) break;
+        html += "\n";
+        start = end + 1;
     }
-    return out;
+    return html + "</span>";
 }
 
 }  // namespace epp

@@ -296,6 +296,8 @@ struct Cond {
     Expr left;
     Expr right;
     Expr expr2;  // the upper bound of "is in the range of A to B"
+    std::string join;             // "and" or "or", when another test is chained on
+    std::shared_ptr<Cond> next;   // that other test
     std::string op;  // equal, notEqual, exactlyEqual, notExactlyEqual, greater, less,
                      // greaterOrEqual, lessOrEqual, isNumber, notNumber, contains,
                      // positive, notPositive, negative, notNegative, inRange, notInRange
@@ -595,7 +597,18 @@ private:
         }
     }
 
+    // "if 'a' is greater than 1 and 'b' is less than 2" is two tests, joined.
     Cond condition() {
+        Cond cond = conditionClause();
+        if (atWord("and") || atWord("or")) {
+            cond.join = peek().lower;
+            advance();
+            cond.next = std::make_shared<Cond>(condition());
+        }
+        return cond;
+    }
+
+    Cond conditionClause() {
         skipInLine();
         Cond cond;
         cond.present = true;
@@ -991,11 +1004,13 @@ public:
 private:
     void emit(Line kind, const std::string& text) { result_.lines.push_back({kind, text}); }
 
-    [[noreturn]] void fail(const Stmt& node, const std::string& message, const std::string& hint = "") {
+    [[noreturn]] void fail(const Stmt& node, const std::string& message, const std::string& hint = "",
+                           const std::string& code = "") {
         Error error;
         error.category = "RuntimeError";
         error.message = message;
         error.hint = hint;
+        error.code = code;
         error.line = node.line;
         error.column = node.column;
         throw error;
@@ -1004,6 +1019,7 @@ private:
     [[noreturn]] void libraryFail(const Stmt& node, const std::string& library, const std::string& feature) {
         Error error;
         error.category = "LibraryError";
+        error.code = "library-missing";
         error.message = "\"" + feature + "\" belongs to the " + library + " library, which has not been added yet.";
         error.hint = "Add this line above it: add library \"" + library + "\"";
         error.line = node.line;
@@ -1140,6 +1156,13 @@ private:
     }
 
     bool test(const Cond& cond, const Stmt& node) {
+        bool value = testClause(cond, node);
+        if (cond.join.empty() || !cond.next) return value;
+        bool rest = test(*cond.next, node);
+        return cond.join == "and" ? (value && rest) : (value || rest);
+    }
+
+    bool testClause(const Cond& cond, const Stmt& node) {
         if (!cond.present) return true;
         Value left = evaluate(cond.left, node);
         Value right = cond.needsRight ? evaluate(cond.right, node) : Value::of(0.0);
@@ -1244,7 +1267,7 @@ private:
                     emit(Line::Prompt, node.text);
                     if (answers_.empty()) {
                         fail(node, "This program asked a question, but no answers were given.",
-                             "Type one answer per line in the Answers box, then run again.");
+                             "Type one answer per line in the Answers box, then run again.", "no-answers");
                     }
                     std::string answer = answers_.front();
                     answers_.erase(answers_.begin());
@@ -1298,6 +1321,7 @@ private:
                     if (!options_.librariesAllowed) {
                         Error error;
                         error.category = "LibraryError";
+                        error.code = "needs-eppla";
                         error.message = "This file is .eppl, and .eppl files cannot use libraries. Change the name to end in .eppla to use \"" + node.text + "\".";
                         error.line = node.line;
                         error.column = node.column;
@@ -1446,6 +1470,7 @@ Result run(const std::string& source, const Options& options) {
                 if (!needed.empty()) {
                     Error error;
                     error.category = "LibraryError";
+                    error.code = "needs-eppla";
                     error.message = "\"" + options.fileName + "\" uses libraries, but a .eppl file is for programs without them.";
                     error.hint = "Rename the file so it ends in .eppla, then run it again.";
                     error.line = 1;
