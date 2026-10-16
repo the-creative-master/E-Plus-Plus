@@ -1,8 +1,8 @@
-# The E++ Language Reference (Dev Build 6.1)
+# The E++ Language Reference (Dev Build 6.1.1)
 
 **E++ looks like English, reads like English, and behaves like code.**
 
-> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 6.1 humanizes the language into something genuinely fun, accessible, and English-like.
+> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 6.1.1 humanizes the language into something genuinely fun, accessible, and English-like.
 
 This document describes the language exactly as implemented in this
 repository (`js/lexer.js`, `js/parser.js`, `js/ast.js`, `js/interpreter.js`,
@@ -338,7 +338,7 @@ while          := "while" condition ["do"] (statement | block "end while")
 
 ---
 
-## 11. Tutorial Lesson Packs (Dev Build 6.1)
+## 11. Tutorial Lesson Packs (Dev Build 6.1.1)
 
 The E++ IDE tutorial is data, not code. Lessons live in a **lesson pack**:
 `tutorial/pack.json` (the source of truth), with `js/tutorial-pack.js` as the
@@ -376,4 +376,45 @@ Regenerate the offline copy after editing the pack:
 
 ```bash
 npm run build:tutorial
+```
+
+### The settings schema
+
+Settings work exactly the same way. `settings/schema.json` defines every group,
+control, default and effect; the IDE renders it and applies each effect. The
+dialog markup in `index.html` ships empty, and `js/ide.js` contains no setting
+names, labels or defaults.
+
+```json
+{
+  "format": "eplusplus-settings-schema",
+  "version": "6.1.1",
+  "groups": [
+    {
+      "id": "editor",
+      "title": "Editor",
+      "controls": [
+        { "key": "tabSize", "type": "select", "label": "Tab size", "default": 2,
+          "options": [ { "value": 2, "label": "2 spaces" }, { "value": 4, "label": "4 spaces" } ],
+          "effect": { "kind": "css-var", "var": "--tab-size" } },
+        { "key": "wordWrap", "type": "checkbox", "label": "Wrap long lines",
+          "default": false,
+          "effect": { "kind": "class", "class": "wrap-code", "when": "truthy" } },
+        { "type": "actions",
+          "buttons": [ { "id": "settingsReset", "label": "Reset all settings", "action": "resetSettings" } ] }
+      ]
+    }
+  ]
+}
+```
+
+- `type` — `select`, `checkbox`, `info` or `actions`.
+- `effect.kind` — `theme`, `class` (with `when: truthy | falsy`),
+  `class-map` (value → CSS class) or `css-var` (value + optional `unit`).
+- `options`, `notes`, `description` and `descriptionId` are optional extras.
+- A schema that breaks these rules is rejected in plain English, and the IDE
+  falls back to the bundled copy.
+
+```bash
+npm run build:settings   # refresh js/settings-schema.js after editing the schema
 ```

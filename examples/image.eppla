@@ -1,4 +1,4 @@
-note: Image Library Example (Dev Build 6.1)
+note: Image Library Example (Dev Build 6.1.1)
 note: The Image library turns Base64 text into a picture in the console.
 
 add library "Image"

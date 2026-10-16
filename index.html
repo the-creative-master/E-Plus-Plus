@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<title>E++ IDE (Dev Build 6.1) — Programs that read like English</title>
-<meta name="description" content="The official online IDE for E++ Dev Build 6.1, the programming language that looks like English, reads like English, and behaves like code. Pure .eppl files, library-powered .eppla files, and a tutorial loaded from an editable lesson pack.">
-<link rel="stylesheet" href="css/ide.css?v=11">
+<title>E++ IDE (Dev Build 6.1.1) — Programs that read like English</title>
+<meta name="description" content="The official online IDE for E++ Dev Build 6.1.1, the programming language that looks like English, reads like English, and behaves like code. Pure .eppl files, library-powered .eppla files, and a tutorial loaded from an editable lesson pack.">
+<link rel="stylesheet" href="css/ide.css?v=12">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>E</text></svg>">
 </head>
 <body data-mobile-view="editor">
@@ -16,7 +16,7 @@
   <div class="brand">
     <div class="logo" aria-hidden="true">E<span>++</span></div>
     <div class="brand-text">
-      <h1>E++ IDE <span class="build-badge" title="E++ Dev Build 6.1">Dev Build 6.1</span></h1>
+      <h1>E++ IDE <span class="build-badge" title="E++ Dev Build 6.1.1">Dev Build 6.1.1</span></h1>
       <p>Based on WeeklyHow's AI video · Looks like English. Reads like English. Behaves like code.</p>
     </div>
   </div>
@@ -58,7 +58,7 @@
     <span id="dashLines" class="dash-val">0</span>
   </div>
   <div class="dash-stat dash-stat-build">
-    <span class="dash-badge-pill badge-version">Dev Build 6.1 • Project Humanizer</span>
+    <span class="dash-badge-pill badge-version">Dev Build 6.1.1 • Project Humanizer</span>
   </div>
 </div>
 
@@ -98,7 +98,7 @@
     </details>
 
     <details class="side-section" id="helpPanel" open>
-      <summary>Quick reference <span class="head-sub">Dev Build 6.1</span></summary>
+      <summary>Quick reference <span class="head-sub">Dev Build 6.1.1</span></summary>
       <pre>note: Pure .eppl files (no libraries)
 Define name as WeeklyHow.
 say "Hello " plus 'name'.
@@ -171,12 +171,12 @@ display 1 divided by 2 as fraction</pre>
 </main>
 
 <footer class="footer">
-  <span><strong>E++ Dev Build 6.1</strong> · Based on WeeklyHow's AI programming language video · <code>.eppl</code> without libraries, <code>.eppla</code> with libraries.</span>
+  <span><strong>E++ Dev Build 6.1.1</strong> · Based on WeeklyHow's AI programming language video · <code>.eppl</code> without libraries, <code>.eppla</code> with libraries.</span>
   <span>Shortcuts: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run · <kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span>
 </footer>
 
 <!-- ============================================================
-     Tutorial dialog (Dev Build 6.1)
+     Tutorial dialog (Dev Build 6.1.1)
      Lessons are rendered from the external lesson pack — see
      tutorial/pack.json and js/tutorial.js. Nothing here is hardcoded.
      ============================================================ -->
@@ -227,118 +227,25 @@ display 1 divided by 2 as fraction</pre>
 </dialog>
 
 <!-- ============================================================
-     Settings dialog (Dev Build 6.1) — grouped and scrollable
+     Settings dialog (Dev Build 6.1.1)
+     The groups, controls and defaults are NOT hardbaked here: they are
+     rendered from the settings schema — see settings/schema.json and
+     js/settings.js. Add a setting to that JSON file and it appears here.
      ============================================================ -->
 <dialog id="settingsDialog" class="settings-dialog">
   <div class="settings-head">
     <div>
-      <h2>Settings</h2>
-      <p class="settings-sub">Dev Build 6.1 · everything here is stored in this browser</p>
+      <h2 id="settingsTitle">Settings</h2>
+      <p class="settings-sub" id="settingsSub">Loading the settings schema…</p>
     </div>
     <button id="settingsClose" class="btn-close" type="button" aria-label="Close settings">&times;</button>
   </div>
 
-  <div class="settings-body">
-    <section class="settings-group">
-      <h3>Appearance</h3>
-      <div class="setting-row">
-        <label for="themeSelect">Theme</label>
-        <select id="themeSelect" data-setting="theme">
-          <option value="dark">Dark</option>
-          <option value="light">Light</option>
-          <option value="system">Match system</option>
-        </select>
-        <p class="setting-desc" id="settingsThemeNote"></p>
-      </div>
-      <div class="setting-row">
-        <label for="densitySelect">Layout density</label>
-        <select id="densitySelect" data-setting="density">
-          <option value="comfortable">Comfortable</option>
-          <option value="compact">Compact</option>
-        </select>
-        <p class="setting-desc">Compact trims padding so more code fits on screen.</p>
-      </div>
-      <div class="setting-row">
-        <label for="consoleHeightSelect">Console height</label>
-        <select id="consoleHeightSelect" data-setting="consoleHeight">
-          <option value="compact">Compact</option>
-          <option value="normal">Normal</option>
-          <option value="tall">Tall</option>
-        </select>
-      </div>
-      <div class="setting-row">
-        <label for="fontSizeSelect">Editor font size</label>
-        <select id="fontSizeSelect" data-setting="editorFontSize">
-          <option value="12">12 px</option>
-          <option value="13">13 px</option>
-          <option value="14">14 px</option>
-          <option value="15">15 px</option>
-          <option value="16">16 px</option>
-          <option value="18">18 px</option>
-        </select>
-      </div>
-      <label class="setting-check"><input type="checkbox" id="showDashboardToggle" data-setting="showDashboard"> Show the project dashboard bar</label>
-      <label class="setting-check"><input type="checkbox" id="showLineNumbersToggle" data-setting="showLineNumbers"> Show line numbers in the editor</label>
-      <label class="setting-check"><input type="checkbox" id="showLibrariesPanelToggle" data-setting="showLibrariesPanel"> Show the Libraries panel</label>
-      <label class="setting-check"><input type="checkbox" id="showHelpPanelToggle" data-setting="showHelpPanel"> Show the Quick reference panel</label>
-    </section>
-
-    <section class="settings-group">
-      <h3>Editor</h3>
-      <div class="setting-row">
-        <label for="tabSizeSelect">Tab size</label>
-        <select id="tabSizeSelect" data-setting="tabSize">
-          <option value="2">2 spaces</option>
-          <option value="4">4 spaces</option>
-          <option value="8">8 spaces</option>
-        </select>
-      </div>
-      <label class="setting-check"><input type="checkbox" id="tabCharToggle" data-setting="tabChar"> Tab key inserts a real tab character</label>
-      <label class="setting-check"><input type="checkbox" id="wordWrapToggle" data-setting="wordWrap"> Wrap long lines instead of scrolling sideways</label>
-      <label class="setting-check"><input type="checkbox" id="autoSaveToggle" data-setting="autoSave"> Auto-save as you type</label>
-      <div class="setting-row">
-        <label for="autoSaveDelaySelect">Auto-save delay</label>
-        <select id="autoSaveDelaySelect" data-setting="autoSaveDelay">
-          <option value="300">300 ms</option>
-          <option value="450">450 ms</option>
-          <option value="900">900 ms</option>
-          <option value="1500">1500 ms</option>
-        </select>
-        <p class="setting-desc">Only used while auto-save is on. <kbd>Ctrl</kbd>+<kbd>S</kbd> always saves.</p>
-      </div>
-    </section>
-
-    <section class="settings-group">
-      <h3>Behaviour</h3>
-      <label class="setting-check"><input type="checkbox" id="autoEpplaToggle" data-setting="autoEppla"> Auto-change to .eppla when a library is detected</label>
-      <p class="setting-desc indent">E++ keeps .eppl strictly library-free; this renames the file the moment <code>add library</code> appears.</p>
-      <label class="setting-check"><input type="checkbox" id="clearConsoleToggle" data-setting="clearConsoleOnRun"> Clear the console before every run</label>
-      <label class="setting-check"><input type="checkbox" id="confirmDeleteToggle" data-setting="confirmDelete"> Ask before deleting a file</label>
-      <label class="setting-check"><input type="checkbox" id="restoreLastFileToggle" data-setting="restoreLastFile"> Re-open the last file when the IDE starts</label>
-    </section>
-
-    <section class="settings-group">
-      <h3>Tutorial</h3>
-      <p class="setting-desc" id="settingsTutorialInfo">Loading the lesson pack…</p>
-      <label class="setting-check"><input type="checkbox" id="autoOpenTutorialToggle" data-setting="autoOpenTutorial"> Open the tutorial automatically on your first visit</label>
-      <div class="setting-actions">
-        <button id="settingsResetTutorial" class="btn btn-small" type="button">Reset tutorial progress &amp; my lessons</button>
-      </div>
-    </section>
-
-    <section class="settings-group settings-group-last">
-      <h3>Data</h3>
-      <p class="setting-desc">Files, settings and lessons are kept in this browser's localStorage — nothing leaves your machine.</p>
-      <div class="setting-actions">
-        <button id="settingsRestoreExamples" class="btn btn-small" type="button">Restore example files</button>
-        <button id="settingsReset" class="btn btn-small" type="button">Reset all settings</button>
-        <button id="settingsWipe" class="btn btn-small btn-danger-outline" type="button">Delete all local data…</button>
-      </div>
-    </section>
-  </div>
+  <!-- Filled in from the settings schema by js/ide.js (renderSettings). -->
+  <div class="settings-body" id="settingsGroups"></div>
 
   <div class="settings-foot">
-    <span class="settings-note">Dev Build 6.1</span>
+    <span class="settings-note" id="settingsSchemaNote">schema: settings/schema.json</span>
     <button id="settingsDone" class="btn btn-small btn-accent" type="button">Done</button>
   </div>
 </dialog>
@@ -359,18 +266,20 @@ display 1 divided by 2 as fraction</pre>
 
 <div id="toast" class="toast" role="status" hidden></div>
 
-<script src="js/errors.js?v=11"></script>
-<script src="js/lexer.js?v=11"></script>
-<script src="js/ast.js?v=11"></script>
-<script src="js/libraries.js?v=11"></script>
-<script src="js/parser.js?v=11"></script>
-<script src="js/python-runner.js?v=11"></script>
-<script src="js/interpreter.js?v=11"></script>
-<script src="js/files.js?v=11"></script>
-<script src="js/highlight.js?v=11"></script>
-<script src="js/standalone-generator.js?v=11"></script>
-<script src="js/tutorial-pack.js?v=11"></script>
-<script src="js/tutorial.js?v=11"></script>
-<script src="js/ide.js?v=11"></script>
+<script src="js/errors.js?v=12"></script>
+<script src="js/lexer.js?v=12"></script>
+<script src="js/ast.js?v=12"></script>
+<script src="js/libraries.js?v=12"></script>
+<script src="js/parser.js?v=12"></script>
+<script src="js/python-runner.js?v=12"></script>
+<script src="js/interpreter.js?v=12"></script>
+<script src="js/files.js?v=12"></script>
+<script src="js/highlight.js?v=12"></script>
+<script src="js/standalone-generator.js?v=12"></script>
+<script src="js/settings-schema.js?v=12"></script>
+<script src="js/settings.js?v=12"></script>
+<script src="js/tutorial-pack.js?v=12"></script>
+<script src="js/tutorial.js?v=12"></script>
+<script src="js/ide.js?v=12"></script>
 </body>
 </html>

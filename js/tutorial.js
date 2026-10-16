@@ -1,5 +1,5 @@
 /*
- * E++ Tutorial engine (Dev Build 6.1).
+ * E++ Tutorial engine (Dev Build 6.1.1).
  *
  * Project Humanizer — the tutorial is NOT hardbaked into the IDE any more.
  * Lesson content lives in the tutorial lesson pack (tutorial/pack.json, with

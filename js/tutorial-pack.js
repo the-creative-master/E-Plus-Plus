@@ -13,17 +13,17 @@
   var EPP = global.EPP || (global.EPP = {});
   EPP.TutorialPack = {
   "format": "eplusplus-tutorial-pack",
-  "version": "6.1",
+  "version": "6.1.1",
   "title": "E++ Guided Tutorial",
   "description": "The official E++ lesson pack. This file — not the IDE — is the single source of truth for tutorial content. Edit it and reload the IDE, or import your own pack from the tutorial dialog.",
   "lessons": [
     {
       "id": "welcome",
-      "title": "Welcome to E++ (Dev Build 6.1)",
+      "title": "Welcome to E++ (Dev Build 6.1.1)",
       "badge": "Basics",
       "summary": "E++ is an English-like language based on WeeklyHow's AI video, where AI was asked to create a coding language that reads like human language.",
       "explanation": "Statements in E++ end with a period (.) or a newline. Comments start with \"note:\". The word \"say\" prints text to the console. Press Run (or Ctrl+Enter) to try every example.",
-      "code": "note: Welcome to E++ Dev Build 6.1!\nnote: Based on WeeklyHow's AI programming language video.\nsay \"Hello, world!\"\nsay \"E++ looks like English, reads like English, and behaves like code.\"\n"
+      "code": "note: Welcome to E++ Dev Build 6.1.1!\nnote: Based on WeeklyHow's AI programming language video.\nsay \"Hello, world!\"\nsay \"E++ looks like English, reads like English, and behaves like code.\"\n"
     },
     {
       "id": "variables",

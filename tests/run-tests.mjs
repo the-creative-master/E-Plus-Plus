@@ -1,5 +1,5 @@
 /**
- * Headless test-suite for the E++ language core (Dev Build 6.1).
+ * Headless test-suite for the E++ language core (Dev Build 6.1.1).
  * Loads the browser scripts into a VM context, then exercises
  * lexer -> parser -> AST -> interpreter, the library system, the .eppl/.eppla
  * file store, Python runner, and the E++.zip standalone package.
@@ -24,7 +24,7 @@ context.globalThis = context;
 for (const file of [
   'errors.js', 'lexer.js', 'ast.js', 'libraries.js', 'parser.js',
   'python-runner.js', 'interpreter.js', 'files.js', 'highlight.js', 'standalone-generator.js',
-  'tutorial-pack.js', 'tutorial.js'
+  'tutorial-pack.js', 'tutorial.js', 'settings-schema.js', 'settings.js'
 ]) {
   vm.runInContext(readFileSync(join(root, 'js', file), 'utf8'), context, { filename: file });
 }
@@ -767,8 +767,8 @@ console.log('\n--- Dev Build 6: Exact Equality ---');
   ok('is not exactly equal to: case-sensitive difference detected');
 }
 
-// ===== Dev Build 6.1: tutorial lesson pack (no longer hardbaked) =====
-console.log('\n--- Dev Build 6.1: External Tutorial Lesson Pack ---');
+// ===== Dev Build 6.1.1: tutorial lesson pack (no longer hardbaked) =====
+console.log('\n--- Dev Build 6.1.1: External Tutorial Lesson Pack ---');
 {
   const packPath = join(root, 'tutorial', 'pack.json');
   const pack = JSON.parse(readFileSync(packPath, 'utf8'));
@@ -864,9 +864,141 @@ console.log('\n--- Dev Build 6.1: External Tutorial Lesson Pack ---');
   const html = readFileSync(join(root, 'index.html'), 'utf8');
   assert.ok(html.includes('js/tutorial.js'), 'the IDE loads the tutorial engine');
   assert.ok(html.includes('js/tutorial-pack.js'), 'the IDE loads the offline lesson pack fallback');
-  assert.ok(html.includes('data-setting="theme"') && html.includes('data-setting="editorFontSize"'), 'settings are data-driven');
-  assert.ok(html.includes('Dev Build 6.1'), 'the IDE is labelled Dev Build 6.1');
-  ok('index.html wires the lesson pack, the data-driven settings and the 6.1 build label');
+  assert.ok(html.includes('js/settings.js') && html.includes('js/settings-schema.js'), 'the IDE loads the settings engine and schema');
+  assert.ok(html.includes('Dev Build 6.1.1'), 'the IDE is labelled Dev Build 6.1.1');
+  ok('index.html wires the lesson pack, the settings engine and the build label');
+}
+
+
+// ===== Dev Build 6.1.1: settings are data, not hardbaked markup =====
+console.log('\n--- Dev Build 6.1.1: Data-Driven Settings ---');
+{
+  const schemaPath = join(root, 'settings', 'schema.json');
+  const schema = JSON.parse(readFileSync(schemaPath, 'utf8'));
+  assert.equal(schema.format, 'eplusplus-settings-schema');
+  assert.ok(schema.groups.length >= 5, 'the schema ships every settings group');
+  assert.equal(EPP.Settings.validate(schema).length, 0, 'the shipped schema is valid');
+
+  const keys = [];
+  for (const group of schema.groups) {
+    for (const control of group.controls) {
+      if (control.key) keys.push(control.key);
+    }
+  }
+  for (const wanted of ['theme', 'density', 'consoleHeight', 'editorFontSize', 'showDashboard',
+    'showLineNumbers', 'showLibrariesPanel', 'showHelpPanel', 'tabSize', 'tabChar', 'wordWrap',
+    'autoSave', 'autoSaveDelay', 'autoEppla', 'clearConsoleOnRun', 'confirmDelete',
+    'restoreLastFile', 'autoOpenTutorial']) {
+    assert.ok(keys.includes(wanted), `the schema still offers the ${wanted} setting`);
+  }
+  ok('settings/schema.json defines every group, control and default');
+
+  const parsed = EPP.Settings.parseSchema(readFileSync(schemaPath, 'utf8'));
+  assert.ok(parsed.ok, 'the shipped schema passes validation');
+  const badType = EPP.Settings.parseSchemaValue({ format: 'eplusplus-settings-schema', groups: [{ id: 'g', title: 'G', controls: [{ key: 'k', type: 'slider', label: 'K', default: 1 }] }] });
+  assert.equal(badType.ok, false);
+  assert.match(badType.error, /unknown type "slider"/);
+  const badDefault = EPP.Settings.parseSchemaValue({ format: 'eplusplus-settings-schema', groups: [{ id: 'g', title: 'G', controls: [{ key: 'k', type: 'select', label: 'K', default: 'z', options: [{ value: 'a', label: 'A' }] }] }] });
+  assert.equal(badDefault.ok, false);
+  assert.match(badDefault.error, /not one of its options/);
+  ok('broken settings schemas are rejected with a readable English error');
+}
+
+{
+  const loaded = await EPP.Settings.load();
+  const schema = JSON.parse(readFileSync(join(root, 'settings', 'schema.json'), 'utf8'));
+  assert.equal(loaded.schema.groups.length, schema.groups.length);
+  assert.match(loaded.source, /bundled schema/);
+  ok('EPP.Settings.load() falls back to the generated schema without a server');
+}
+
+{
+  const schema = JSON.parse(readFileSync(join(root, 'settings', 'schema.json'), 'utf8'));
+  const defaults = EPP.Settings.defaults(schema);
+  assert.equal(defaults.theme, 'dark');
+  assert.equal(defaults.editorFontSize, 14);
+  assert.equal(defaults.tabSize, 2);
+  assert.equal(defaults.autoOpenTutorial, true);
+  assert.equal(typeof defaults.wordWrap, 'boolean');
+  assert.equal(EPP.Settings.coerce(schema, 'editorFontSize', '18'), 18);
+  assert.equal(EPP.Settings.coerce(schema, 'tabSize', '4'), 4);
+  assert.equal(EPP.Settings.coerce(schema, 'theme', 'light'), 'light');
+  ok('defaults, types and coercion all come from the schema');
+
+  const merged = EPP.Settings.mergeStored(schema, { editorFontSize: 16, theme: 'light', notASetting: 5 });
+  assert.equal(merged.editorFontSize, 16);
+  assert.equal(merged.theme, 'light');
+  assert.equal(merged.notASetting, undefined);
+  assert.equal(merged.autoSave, true, 'missing values fall back to schema defaults');
+  const wrongType = EPP.Settings.mergeStored(schema, { editorFontSize: 'huge' });
+  assert.equal(wrongType.editorFontSize, 14, 'values of the wrong type are ignored');
+  ok('stored settings merge with the schema defaults and unknown keys are dropped');
+}
+
+{
+  const schema = JSON.parse(readFileSync(join(root, 'settings', 'schema.json'), 'utf8'));
+  const classes = new Set();
+  const vars = {};
+  const body = {
+    classList: {
+      add: (c) => classes.add(c),
+      remove: (c) => classes.delete(c),
+      toggle: (c, on) => { if (on) classes.add(c); else classes.delete(c); }
+    },
+    style: { setProperty: (k, v) => { vars[k] = v; } }
+  };
+  const settings = EPP.Settings.defaults(schema);
+  EPP.Settings.applyAll(settings, schema, { body });
+  assert.ok(!classes.has('light-theme'), 'dark is the default theme');
+  assert.equal(vars['--code-font-size'], '14px');
+  assert.equal(vars['--tab-size'], '2');
+  assert.ok(!classes.has('hide-dashboard'));
+
+  settings.theme = 'light';
+  settings.density = 'compact';
+  settings.consoleHeight = 'tall';
+  settings.wordWrap = true;
+  settings.showHelpPanel = false;
+  settings.editorFontSize = 18;
+  settings.tabSize = 4;
+  EPP.Settings.applyAll(settings, schema, { body });
+  assert.ok(classes.has('light-theme'));
+  assert.ok(classes.has('compact-ui'));
+  assert.ok(classes.has('console-tall') && !classes.has('console-compact'));
+  assert.ok(classes.has('wrap-code'));
+  assert.ok(classes.has('hide-help-panel'), 'a falsy toggle class only appears when the toggle is off');
+  assert.equal(vars['--code-font-size'], '18px');
+  assert.equal(vars['--tab-size'], '4');
+  ok('setting effects (classes, class maps, css variables) are applied from the schema');
+}
+
+{
+  const html = readFileSync(join(root, 'index.html'), 'utf8');
+  const ideSource = readFileSync(join(root, 'js', 'ide.js'), 'utf8');
+  const schema = JSON.parse(readFileSync(join(root, 'settings', 'schema.json'), 'utf8'));
+
+  assert.ok(!/data-setting=/.test(html), 'index.html must not hardbake settings controls');
+  assert.ok(html.includes('id="settingsGroups"'), 'the dialog exposes an empty host to render into');
+  assert.ok(/<div class="settings-body" id="settingsGroups"><\/div>/.test(html), 'that host ships empty');
+
+  for (const group of schema.groups) {
+    assert.ok(!html.includes('>' + group.title + '<'), `the group title "${group.title}" must not live in index.html`);
+  }
+  for (const control of EPP.Settings.controls(schema)) {
+    if (!control.label) continue;
+    assert.ok(!html.includes(control.label), `the label "${control.label}" must not live in index.html`);
+    const asString = new RegExp("['\"]" + control.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "['\"]");
+    assert.ok(!asString.test(ideSource), `the label "${control.label}" must not be written out in ide.js`);
+    if (control.notes) {
+      for (const note of Object.values(control.notes)) {
+        assert.ok(!ideSource.includes(note), `the note text must come from the schema, not ide.js`);
+      }
+    }
+  }
+  assert.ok(!/var DEFAULT_SETTINGS/.test(ideSource), 'the defaults must come from the schema, not ide.js');
+  assert.ok(!/settingsResetTutorial|settingsRestoreExamples|settingsWipe/.test(ideSource),
+    'action buttons are wired by their schema-declared action, not by hardcoded ids');
+  ok('no settings markup or labels are hardbaked in index.html or js/ide.js');
 }
 
 

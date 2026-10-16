@@ -1,5 +1,5 @@
 /*
- * E++ IDE application (Dev Build 6.1).
+ * E++ IDE application (Dev Build 6.1.1).
  *
  * Project Humanizer:
  * - Pure .eppl files (no libraries) vs .eppla files (with libraries).
@@ -26,7 +26,7 @@
     {
       name: 'hello.eppl',
       content:
-        'note: Your first E++ program (Dev Build 6.1).\n' +
+        'note: Your first E++ program (Dev Build 6.1.1).\n' +
         'note: Based on WeeklyHow\'s AI programming language video.\n' +
         'Define name as WeeklyHow.\n' +
         'say "Hello " plus \'name\' plus "!"\n' +
@@ -161,7 +161,7 @@
   ];
 
   // ------------------------------------------------------------------
-  // Interactive tutorial (Dev Build 6.1)
+  // Interactive tutorial (Dev Build 6.1.1)
   //
   // Lesson content is NOT hardbaked into this file any more. It is loaded from
   // the tutorial lesson pack by js/tutorial.js:
@@ -401,7 +401,7 @@
     if (settings.autoSave) {
       saveTimer = setTimeout(function () { saveCurrent(false); }, Number(settings.autoSaveDelay) || 450);
     }
-    // Dev Build 6.1: a .eppl file may not use libraries, so the first
+    // Dev Build 6.1.1: a .eppl file may not use libraries, so the first
     // "add library" upgrades the file to .eppla — tab and file list included.
     if (settings.autoEppla && currentName && /\.eppl$/i.test(currentName) && !/\.eppla$/i.test(currentName)) {
       if (EPP.hasLibraryUsage(editor.value)) autoUpgradeToEppla();
@@ -684,7 +684,7 @@
     btnZip.addEventListener('click', triggerZipDownload);
   }
   // ------------------------------------------------------------------
-  // Interactive Tutorial (Dev Build 6.1) — renders the external lesson pack.
+  // Interactive Tutorial (Dev Build 6.1.1) — renders the external lesson pack.
   // "Try in editor" opens a tutorial scratch file instead of overwriting the
   // file you were working on, so the tutorial can never eat your code.
   // ------------------------------------------------------------------
@@ -919,117 +919,249 @@
   }
 
   // ------------------------------------------------------------------
-  // Settings (Dev Build 6.1)
-  // Appearance · Editor · Behaviour · Tutorial · Data
+  // Settings (Dev Build 6.1.1)
+  //
+  // The dialog is NOT hardbaked in index.html and the behaviour is NOT a
+  // hardcoded list in this file: settings/schema.json (see js/settings.js)
+  // defines every group, control, default and effect. This code renders the
+  // schema, stores the values, and asks the engine to apply their effects.
   // ------------------------------------------------------------------
-  var SETTINGS_KEY = 'eplusplus.settings.v1';
-  var LAST_FILE_KEY = 'eplusplus.lastFile.v1';
-
-  var DEFAULT_SETTINGS = {
-    theme: 'dark',             // dark | light | system
-    density: 'comfortable',    // comfortable | compact
-    showDashboard: true,
-    showLineNumbers: true,
-    showLibrariesPanel: true,
-    showHelpPanel: true,
-    editorFontSize: 14,
-    wordWrap: false,
-    tabSize: 2,
-    tabChar: false,
-    autoSave: true,
-    autoSaveDelay: 450,
-    consoleHeight: 'normal',   // compact | normal | tall
-    autoEppla: true,
-    clearConsoleOnRun: true,
-    confirmDelete: true,
-    restoreLastFile: true,
-    autoOpenTutorial: true
-  };
-
+  var settingsSchema = null;
+  var settingsSource = 'loading…';
+  var settingsWarnings = [];
   var settings = {};
-  Object.keys(DEFAULT_SETTINGS).forEach(function (key) { settings[key] = DEFAULT_SETTINGS[key]; });
-  try {
-    var savedSettings = localStorage.getItem(SETTINGS_KEY);
-    if (savedSettings) {
-      var parsedSettings = JSON.parse(savedSettings);
-      Object.keys(DEFAULT_SETTINGS).forEach(function (key) {
-        if (parsedSettings && parsedSettings[key] !== undefined) settings[key] = parsedSettings[key];
-      });
-    }
-  } catch (e) { /* keep the defaults */ }
+
+  var LAST_FILE_KEY = 'eplusplus.lastFile.v1';
+  var SETTINGS_KEY = EPP.Settings ? EPP.Settings.storageKey : 'eplusplus.settings.v1';
+
+  // Behaviour switches the schema cannot express as a CSS class or variable.
+  // Each is looked up by key, so removing one from the schema is enough.
+  var SETTING_ACTIONS = {
+    autoSave: function (value) {
+      if (!value || !currentName) return;
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(function () { saveCurrent(false); }, Number(settings.autoSaveDelay) || 450);
+    },
+    editorFontSize: function () { refreshEditor(); },
+    tabSize: function () { refreshEditor(); },
+    showLineNumbers: function () { refreshEditor(); },
+    showDashboard: function () { updateDashboard(); },
+    showHelpPanel: function () { /* the engine toggles the class */ },
+    showLibrariesPanel: function () { /* the engine toggles the class */ },
+    wordWrap: function () { refreshEditor(); }
+  };
 
   function saveSettings() {
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ }
   }
 
-  var systemThemeQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
-
-  function applyTheme() {
-    var light = settings.theme === 'light' ||
-      (settings.theme === 'system' && systemThemeQuery && systemThemeQuery.matches);
-    document.body.classList.toggle('light-theme', !!light);
-  }
-
-  if (systemThemeQuery && typeof systemThemeQuery.addEventListener === 'function') {
-    systemThemeQuery.addEventListener('change', function () {
-      if (settings.theme === 'system') applyTheme();
+  /** Loads the settings schema (Settings ▸ everything) from data. */
+  function loadSettingsSchema() {
+    if (!EPP.Settings) {
+      settingsSchema = { groups: [] };
+      settingsSource = 'settings module missing';
+      return Promise.resolve(settingsSchema);
+    }
+    return EPP.Settings.load().then(function (result) {
+      settingsSchema = result.schema;
+      settingsSource = result.source;
+      settingsWarnings = result.warnings || [];
+      var stored = {};
+      try {
+        var raw = localStorage.getItem(SETTINGS_KEY);
+        if (raw) stored = JSON.parse(raw) || {};
+      } catch (e) { stored = {}; }
+      settings = EPP.Settings.mergeStored(settingsSchema, stored);
+      saveSettings();
+      return settingsSchema;
     });
   }
 
-  /** Pushes every setting into the DOM (CSS classes + CSS variables). */
   function applySettings() {
-    var body = document.body;
-    applyTheme();
-    body.classList.toggle('compact-ui', settings.density === 'compact');
-    body.classList.toggle('hide-dashboard', !settings.showDashboard);
-    body.classList.toggle('hide-line-numbers', !settings.showLineNumbers);
-    body.classList.toggle('wrap-code', !!settings.wordWrap);
-    body.classList.toggle('hide-libraries-panel', !settings.showLibrariesPanel);
-    body.classList.toggle('hide-help-panel', !settings.showHelpPanel);
-    body.classList.toggle('console-compact', settings.consoleHeight === 'compact');
-    body.classList.toggle('console-tall', settings.consoleHeight === 'tall');
-    body.style.setProperty('--code-font-size', Number(settings.editorFontSize) + 'px');
-    body.style.setProperty('--tab-size', String(settings.tabSize));
+    if (EPP.Settings) EPP.Settings.applyAll(settings, settingsSchema);
     syncSettingsUI();
   }
 
+  /** Rebuilds the Settings dialog from the schema — nothing is hardbaked. */
+  function renderSettings() {
+    var host = $('settingsGroups');
+    if (!host || !EPP.Settings) return;
+    host.innerHTML = '';
+    if (settingsWarnings.length) {
+      var warn = document.createElement('p');
+      warn.className = 'setting-desc settings-warning';
+      warn.textContent = settingsWarnings.join(' ');
+      host.appendChild(warn);
+    }
+    var allGroups = EPP.Settings.groups(settingsSchema);
+    allGroups.forEach(function (group, index) {
+      var card = document.createElement('section');
+      card.className = 'settings-group' + (index === allGroups.length - 1 ? ' settings-group-last' : '');
+      var heading = document.createElement('h3');
+      heading.textContent = group.title;
+      card.appendChild(heading);
+
+      (group.controls || []).forEach(function (control) {
+        if (control.type === 'info') {
+          var note = document.createElement('p');
+          note.className = 'setting-desc' + (control.className ? ' ' + control.className : '');
+          if (control.id) note.id = control.id;
+          note.textContent = control.text || '';
+          card.appendChild(note);
+          return;
+        }
+        if (control.type === 'actions') {
+          var actions = document.createElement('div');
+          actions.className = 'setting-actions';
+          (control.buttons || []).forEach(function (button) {
+            var el = document.createElement('button');
+            el.type = 'button';
+            el.className = 'btn btn-small' + (button.className ? ' ' + button.className : '');
+            el.textContent = button.label;
+            if (button.action) el.setAttribute('data-settings-action', button.action);
+            if (button.title) el.title = button.title;
+            actions.appendChild(el);
+          });
+          card.appendChild(actions);
+          return;
+        }
+
+        var key = control.key;
+        var id = 'setting-' + EPP.Settings.elementId(key);
+        if (control.type === 'select') {
+          var row = document.createElement('div');
+          row.className = 'setting-row';
+          var label = document.createElement('label');
+          label.setAttribute('for', id);
+          label.textContent = control.label;
+          var select = document.createElement('select');
+          select.id = id;
+          select.setAttribute('data-setting', key);
+          (control.options || []).forEach(function (option) {
+            var opt = document.createElement('option');
+            opt.value = String(option.value);
+            opt.textContent = option.label === undefined ? String(option.value) : option.label;
+            select.appendChild(opt);
+          });
+          row.appendChild(label);
+          row.appendChild(select);
+          if (control.description || control.descriptionId) {
+            var desc = document.createElement('p');
+            desc.className = 'setting-desc';
+            if (control.descriptionId) desc.id = control.descriptionId;
+            desc.textContent = control.description || '';
+            row.appendChild(desc);
+          }
+          card.appendChild(row);
+          return;
+        }
+
+        // checkbox
+        var check = document.createElement('label');
+        check.className = 'setting-check';
+        var box = document.createElement('input');
+        box.type = 'checkbox';
+        box.id = id;
+        box.setAttribute('data-setting', key);
+        var text = document.createElement('span');
+        text.textContent = control.label;
+        check.appendChild(box);
+        check.appendChild(text);
+        card.appendChild(check);
+        if (control.description) {
+          var note2 = document.createElement('p');
+          note2.className = 'setting-desc indent';
+          note2.textContent = control.description;
+          card.appendChild(note2);
+        }
+      });
+      host.appendChild(card);
+    });
+
+    // Wire the controls that were just created.
+    Array.prototype.slice.call(host.querySelectorAll('[data-setting]')).forEach(function (control) {
+      var key = control.getAttribute('data-setting');
+      control.addEventListener('change', function () {
+        if (control.type === 'checkbox') settings[key] = control.checked;
+        else settings[key] = EPP.Settings.coerce(settingsSchema, key, control.value);
+        saveSettings();
+        applySettings();
+        if (SETTING_ACTIONS[key]) SETTING_ACTIONS[key](settings[key]);
+      });
+    });
+    Array.prototype.slice.call(host.querySelectorAll('[data-settings-action]')).forEach(function (button) {
+      button.addEventListener('click', function () { runSettingsAction(button.getAttribute('data-settings-action')); });
+    });
+
+    var titleEl = $('settingsTitle');
+    if (titleEl && settingsSchema && settingsSchema.title) titleEl.textContent = settingsSchema.title;
+    var subEl = $('settingsSub');
+    if (subEl && settingsSchema && settingsSchema.subtitle) subEl.textContent = settingsSchema.subtitle;
+    var doneEl = $('settingsDone');
+    if (doneEl && settingsSchema && settingsSchema.doneLabel) doneEl.textContent = settingsSchema.doneLabel;
+    var noteEl = $('settingsSchemaNote');
+    if (noteEl) noteEl.textContent = 'schema: ' + settingsSource;
+  }
+
   function syncSettingsUI() {
-    Array.prototype.slice.call(document.querySelectorAll('[data-setting]')).forEach(function (control) {
+    var host = $('settingsGroups');
+    if (!host) return;
+    Array.prototype.slice.call(host.querySelectorAll('[data-setting]')).forEach(function (control) {
       var key = control.getAttribute('data-setting');
       if (!(key in settings)) return;
       if (control.type === 'checkbox') control.checked = !!settings[key];
       else control.value = String(settings[key]);
     });
     updateTutorialSettingsInfo();
-    var themeNote = $('settingsThemeNote');
-    if (themeNote) {
-      themeNote.textContent = settings.theme === 'system'
-        ? 'Following your operating system (currently ' + ((systemThemeQuery && systemThemeQuery.matches) ? 'light' : 'dark') + ').'
-        : 'Theme is saved in this browser only.';
+    if (EPP.Settings && settingsSchema) {
+      Array.prototype.slice.call(host.querySelectorAll('[data-setting]')).forEach(function (control) {
+        var key = control.getAttribute('data-setting');
+        EPP.Settings.applyNotes(settingsSchema, key, settings[key]);
+      });
     }
   }
 
-  function onSettingChanged(key) {
-    if (key === 'autoSave' && settings.autoSave && editor.value !== undefined) {
-      clearTimeout(saveTimer);
-      saveTimer = setTimeout(function () { saveCurrent(false); }, Number(settings.autoSaveDelay) || 450);
-    }
-    if (key === 'showDashboard') updateDashboard();
-    if (key === 'editorFontSize' || key === 'showLineNumbers' || key === 'wordWrap' || key === 'tabSize') refreshEditor();
-  }
-
-  Array.prototype.slice.call(document.querySelectorAll('[data-setting]')).forEach(function (control) {
-    var key = control.getAttribute('data-setting');
-    if (!(key in DEFAULT_SETTINGS)) return;
-    control.addEventListener('change', function () {
-      var isNumberSetting = typeof DEFAULT_SETTINGS[key] === 'number';
-      if (control.type === 'checkbox') settings[key] = control.checked;
-      else settings[key] = isNumberSetting ? Number(control.value) : control.value;
+  /** Schema-declared action buttons ("action": "resetSettings", …). */
+  var SETTINGS_ACTIONS = {
+    resetSettings: function () {
+      settings = EPP.Settings.defaults(settingsSchema);
       saveSettings();
       applySettings();
-      onSettingChanged(key);
-    });
-  });
+      refreshEditor();
+      toast('All settings are back to their Dev Build 6.1.1 defaults.');
+    },
+    resetTutorial: function () {
+      if (!window.confirm('Forget your custom tutorial lessons and which lessons you have visited?')) return;
+      EPP.Tutorial.clearCustomLessons();
+      EPP.Tutorial.resetProgress();
+      loadTutorialPack().then(function () {
+        updateTutorialSettingsInfo();
+        toast('Tutorial progress cleared.');
+      });
+    },
+    restoreExamples: function () {
+      var added = restoreExampleFiles();
+      toast(added ? 'Restored ' + added + ' example file' + (added === 1 ? '' : 's') + '.' : 'Every example file is already here.');
+    },
+    wipeData: function () {
+      if (!window.confirm('Delete EVERY file stored in this browser, plus all settings and tutorial progress?')) return;
+      try {
+        localStorage.removeItem('eplusplus.files.v1');
+        localStorage.removeItem(SETTINGS_KEY);
+        localStorage.removeItem(LAST_FILE_KEY);
+      } catch (e) { /* ignore */ }
+      if (EPP.Tutorial) {
+        EPP.Tutorial.clearCustomLessons();
+        EPP.Tutorial.resetProgress();
+      }
+      window.location.reload();
+    }
+  };
+
+  function runSettingsAction(name) {
+    if (SETTINGS_ACTIONS[name]) SETTINGS_ACTIONS[name]();
+    else toast('That settings action is not available in this build.', true);
+  }
 
   var btnSettings = $('btnSettings');
   if (btnSettings) {
@@ -1040,59 +1172,10 @@
       dialog.showModal();
     });
   }
-
   var settingsClose = $('settingsClose');
   if (settingsClose) settingsClose.addEventListener('click', function () { $('settingsDialog').close(); });
-
   var settingsDone = $('settingsDone');
   if (settingsDone) settingsDone.addEventListener('click', function () { $('settingsDialog').close(); });
-
-  var settingsReset = $('settingsReset');
-  if (settingsReset) {
-    settingsReset.addEventListener('click', function () {
-      Object.keys(DEFAULT_SETTINGS).forEach(function (key) { settings[key] = DEFAULT_SETTINGS[key]; });
-      saveSettings();
-      applySettings();
-      refreshEditor();
-      toast('All settings are back to their Dev Build 6.1 defaults.');
-    });
-  }
-
-  var settingsResetTutorial = $('settingsResetTutorial');
-  if (settingsResetTutorial) {
-    settingsResetTutorial.addEventListener('click', function () {
-      if (!window.confirm('Forget your custom tutorial lessons and which lessons you have visited?')) return;
-      EPP.Tutorial.clearCustomLessons();
-      EPP.Tutorial.resetProgress();
-      loadTutorialPack().then(function () {
-        updateTutorialSettingsInfo();
-        toast('Tutorial progress cleared.');
-      });
-    });
-  }
-
-  var settingsRestoreExamples = $('settingsRestoreExamples');
-  if (settingsRestoreExamples) {
-    settingsRestoreExamples.addEventListener('click', function () {
-      var added = restoreExampleFiles();
-      toast(added ? 'Restored ' + added + ' example file' + (added === 1 ? '' : 's') + '.' : 'Every example file is already here.');
-    });
-  }
-
-  var settingsWipe = $('settingsWipe');
-  if (settingsWipe) {
-    settingsWipe.addEventListener('click', function () {
-      if (!window.confirm('Delete EVERY file stored in this browser, plus all settings and tutorial progress?')) return;
-      try {
-        localStorage.removeItem('eplusplus.files.v1');
-        localStorage.removeItem(SETTINGS_KEY);
-        localStorage.removeItem(LAST_FILE_KEY);
-      } catch (e) { /* ignore */ }
-      EPP.Tutorial.clearCustomLessons();
-      EPP.Tutorial.resetProgress();
-      window.location.reload();
-    });
-  }
 
   function rememberLastFile(name) {
     if (!settings.restoreLastFile) return;
@@ -1450,22 +1533,24 @@
   });
 
   // ------------------------------------------------------------------
-  // Boot (Dev Build 6.1)
+  // Boot (Dev Build 6.1.1)
+  //
+  // Both the settings schema and the tutorial lesson pack are data files that
+  // this file never contains: load them, render from them, then start.
   // ------------------------------------------------------------------
-  applySettings();
-  setMobileView('editor');
-  clearConsole();
-  renderFileList();
-
-  // The tutorial pack is loaded asynchronously — editing tutorial/pack.json
-  // changes the lessons without touching this file.
-  loadTutorialPack().then(function () {
+  loadSettingsSchema().then(function () {
+    renderSettings();
+    applySettings();
+    return loadTutorialPack();
+  }).then(function () {
     updateTutorialSettingsInfo();
-    if (!settings.autoOpenTutorial) return;
-    var visited = tutorialProgress().visited || [];
-    if (!visited.length && tutorial.lessons.length) {
-      openTutorial(tutorialProgress().lastStep || 0);
-      markTutorialVisit();
+    updateDashboard();
+    if (settings.autoOpenTutorial) {
+      var visited = tutorialProgress().visited || [];
+      if (!visited.length && tutorial.lessons.length) {
+        openTutorial(tutorialProgress().lastStep || 0);
+        markTutorialVisit();
+      }
     }
   });
 
@@ -1476,6 +1561,6 @@
     : (files.some(function (f) { return f.name === 'hello.eppl'; }) ? 'hello.eppl' : (files[0] && files[0].name));
   if (initial) openFile(initial);
   else refreshEditor();
-  appendConsole('You are running E++ Dev Build 6.1. Tutorial lessons come from the lesson pack (tutorial/pack.json), not from the IDE code — open Settings to swap, extend or reset it.', 'system');
+  appendConsole('You are running E++ Dev Build 6.1.1. Lessons come from the lesson pack (tutorial/pack.json) and Settings come from the settings schema (settings/schema.json) — change either file and reload.', 'system');
   updateDashboard();
 })();

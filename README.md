@@ -1,15 +1,15 @@
-# E++ and the E++ IDE (Dev Build 6.1)
+# E++ and the E++ IDE (Dev Build 6.1.1)
 
 **E++ looks like English, reads like English, and behaves like code.**
 
-> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 6.1 humanizes the language into something genuinely fun, accessible, and English-like.
+> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 6.1.1 humanizes the language into something genuinely fun, accessible, and English-like.
 
 E++ is a complete programming language implemented from scratch in this
 repository — lexer, parser, AST, interpreter, runtime, library system, Python runner, and
 error system — together with a complete online IDE in which the language
 runs.
 
-## What's New in Dev Build 6.1
+## What's New in Dev Build 6.1.1
 
 1. **The tutorial is no longer hardbaked into the IDE** (the big one):
    - Lesson content lives in the lesson pack `tutorial/pack.json` — the IDE
@@ -27,7 +27,7 @@ runs.
      working on and opens the example in its own `tutorial-<lesson>.eppl[a]`
      file. (Previously it overwrote the open file.)
    - 10 lessons, every example verified to parse *and* run by the test suite.
-2. **Much more in Settings**, grouped into Appearance · Editor · Behaviour ·
+3. **Much more in Settings**, grouped into Appearance · Editor · Behaviour ·
    Tutorial · Data:
    - *Appearance*: theme (dark / light / **match system**), layout density
      (comfortable / compact), console height (compact / normal / tall), editor
@@ -40,12 +40,12 @@ runs.
    - *Tutorial*: lesson-pack source readout, auto-open on first visit, and
      reset of progress/custom lessons.
    - *Data*: restore example files, reset all settings, delete all local data.
-3. **Layout cleanup**: the settings dialog is grouped and scrollable with a
+4. **Layout cleanup**: the settings dialog is grouped and scrollable with a
    title bar and footer, the tutorial is a two-pane dialog (lesson rail +
    lesson), the Libraries and Quick reference panels collapse, the header has
    its file and app actions separated, and the dashboard bar is tidier and can
    be switched off.
-4. **Bug fixed — auto-`.eppl` → `.eppla` rename**: the handler called a function
+5. **Bug fixed — auto-`.eppl` → `.eppla` rename**: the handler called a function
    that did not exist, so the rename failed silently and left the tab and file
    list showing the old name. It now renames in place and keeps the whole UI in
    sync.
@@ -86,11 +86,11 @@ note: Files with libraries must be saved as .eppla
 add library "Math"
 display 1 divided by 2 as fraction
 
-note: Dev Build 6.1 — new conditions
+note: Dev Build 6.1.1 — new conditions
 if 'output' is a positive number then say "Above zero"
 if 'output' is in the range of 1 to 20 then say "In range"
 
-note: Dev Build 6.1 — contains
+note: Dev Build 6.1.1 — contains
 Define greeting as "Hello World"
 if 'greeting' contains "World" then say "Found it!"
 ```
@@ -121,28 +121,51 @@ js/
   standalone-generator.js   Generates self-contained standalone index.html & E++.zip archive
   tutorial-pack.js          GENERATED offline copy of the lesson pack (npm run build:tutorial)
   tutorial.js               Tutorial engine: loads/validates/merges lesson packs, progress
-  ide.js                    IDE app controller, file explorer, settings, tutorial renderer, dashboard
+  settings-schema.js        GENERATED offline copy of the settings schema (npm run build:settings)
+  settings.js               Settings engine: loads/validates the schema, defaults, effects
+  ide.js                    IDE app controller, file explorer, settings renderer, tutorial renderer, dashboard
+settings/schema.json        THE settings schema — edit this to change Settings
 tutorial/pack.json          THE lesson pack — edit this to change the tutorial
-tools/build-tutorial-pack.mjs  Generates js/tutorial-pack.js from tutorial/pack.json
+tools/build-settings-schema.mjs  Generates js/settings-schema.js from settings/schema.json
+tools/build-tutorial-pack.mjs    Generates js/tutorial-pack.js from tutorial/pack.json
 examples/                   Bundled example programs (.eppl and .eppla)
 tests/run-tests.mjs         Test suite for the language core, files, Python, E++.zip, lesson packs
 tests/ide-smoke.mjs         Optional jsdom smoke test for the whole IDE (npm run test:ide)
 ```
 
-## Editing the tutorial
+## Editing the tutorial and the settings
 
-The tutorial is data, not IDE code:
+Both are data, not IDE code:
 
 ```bash
-# 1. Edit the lessons (title, badge, summary, explanation, code)
+# Tutorial: edit the lessons (title, badge, summary, explanation, code)
 $EDITOR tutorial/pack.json
 
-# 2. Refresh the offline copy the IDE falls back to
-npm run build:tutorial
+# Settings: edit the groups and controls (key, type, label, default, effect)
+$EDITOR settings/schema.json
 
-# 3. Reload the IDE (in a browser over the dev server, step 2 is optional:
-#    the IDE fetches tutorial/pack.json directly)
+# Refresh the offline copies the IDE falls back to
+npm run build          # runs build:tutorial + build:settings
+
+# Reload the IDE (over the dev server, the build step is optional: the IDE
+# fetches tutorial/pack.json and settings/schema.json directly)
 ```
+
+Adding a setting is a JSON edit — no IDE code:
+
+```json
+{
+  "key": "wordWrap",
+  "type": "checkbox",
+  "label": "Wrap long lines instead of scrolling sideways",
+  "default": false,
+  "effect": { "kind": "class", "class": "wrap-code", "when": "truthy" }
+}
+```
+
+Effects can be `class`, `class-map`, `css-var` or `theme`; switches that the
+IDE has to act on (auto-save, tab size) are picked up by key, so removing one
+from the schema is enough to remove it from the IDE.
 
 You can also add lessons from inside the IDE (Settings ▸ Tutorial, or the
 lesson-pack buttons in the tutorial dialog) and export the whole set as a
@@ -151,6 +174,7 @@ shareable `epp-tutorial-pack.json`.
 ## Tests
 
 ```bash
-npm test          # language core, file store, E++.zip, lesson pack (97 groups)
-npm run test:ide  # boots the real IDE in jsdom and drives it (needs: npm i --no-save jsdom)
+npm test          # language core, file store, E++.zip, lesson pack, settings schema (104 groups)
+npm run test:ide  # boots the real IDE in jsdom and drives it — 37 checks, incl. adding a
+                  # setting to the served schema and watching the dialog grow (needs jsdom)
 ```

@@ -14,7 +14,7 @@
   --mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --radius: 14px;
-  /* Dev Build 6.1: driven by Settings */
+  /* Dev Build 6.1.1: driven by Settings */
   --code-font-size: 14px;
   --code-line-height: 1.6;
   --tab-size: 2;
@@ -579,7 +579,7 @@ body.hide-help-panel #helpPanel { display: none; }
 }
 
 /* ==================================================================
-   Tutorial dialog (Dev Build 6.1)
+   Tutorial dialog (Dev Build 6.1.1)
    Two panes: the lesson list comes from the lesson pack, the right pane
    renders the selected lesson. Nothing here is hardcoded content.
    ================================================================== */
@@ -671,7 +671,7 @@ body.hide-help-panel #helpPanel { display: none; }
 .tutorial-tools-note code { color: var(--accent); }
 
 /* ==================================================================
-   Settings dialog (Dev Build 6.1) — grouped sections, sticky head/foot
+   Settings dialog (Dev Build 6.1.1) — grouped sections, sticky head/foot
    ================================================================== */
 .settings-dialog {
   border: 1px solid var(--border); background: var(--panel); color: var(--text);
