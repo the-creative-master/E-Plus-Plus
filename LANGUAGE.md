@@ -1,8 +1,8 @@
-# The E++ Language Reference (Dev Build 5)
+# The E++ Language Reference (Dev Build 6)
 
 **E++ looks like English, reads like English, and behaves like code.**
 
-> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 5 humanizes the language into something genuinely fun, accessible, and English-like.
+> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 6 humanizes the language into something genuinely fun, accessible, and English-like.
 
 This document describes the language exactly as implemented in this
 repository (`js/lexer.js`, `js/parser.js`, `js/ast.js`, `js/interpreter.js`,
@@ -146,6 +146,14 @@ end if
 | is a number | `if 'x' is a number then ...` |
 | is not a number | `if 'x' is not a number then ...` |
 | contains | `if 'text' contains "hello" then ...` |
+| is equal to | `if 'x' is equal to "hello" then ...` (case-insensitive) |
+| is not equal to | `if 'x' is not equal to "hello" then ...` (case-insensitive) |
+| is exactly equal to | `if 'x' is exactly equal to "Hello" then ...` (case-sensitive) |
+| is not exactly equal to | `if 'x' is not exactly equal to "Hello" then ...` (case-sensitive) |
+
+**Notes on equality:**
+- `is equal to` is **case-insensitive**: `"hello"` equals `"HELLO"` equals `"Hello"`.
+- `is exactly equal to` is **case-sensitive**: `"hello"` does NOT equal `"Hello"`.
 
 #### Math Logic (requires Math library)
 

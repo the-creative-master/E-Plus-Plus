@@ -722,4 +722,47 @@ console.log('Dev Build 5: Combined features');
   ok('combined: contains inside repeat loop');
 }
 
+// ===== Dev Build 6 Tests =====
+console.log('\n--- Dev Build 6: Exact Equality ---');
+{
+  const { output } = await run(
+    'Define \'name\' as "Hello"\n' +
+    'if \'name\' is exactly equal to "Hello" then say "match" otherwise say "no match"'
+  );
+  assert.deepEqual([...output], ['match']);
+  ok('is exactly equal to: exact case matches');
+}
+{
+  const { output } = await run(
+    'Define \'name\' as "Hello"\n' +
+    'if \'name\' is exactly equal to "hello" then say "match" otherwise say "no match"'
+  );
+  assert.deepEqual([...output], ['no match']);
+  ok('is exactly equal to: different case does not match');
+}
+{
+  const { output } = await run(
+    'Define \'name\' as "Hello"\n' +
+    'if \'name\' is equal to "hello" then say "match" otherwise say "no match"'
+  );
+  assert.deepEqual([...output], ['match']);
+  ok('is equal to: case-insensitive match still works');
+}
+{
+  const { output } = await run(
+    'Define \'name\' as "Hello"\n' +
+    'if \'name\' is not exactly equal to "World" then say "different" otherwise say "same"'
+  );
+  assert.deepEqual([...output], ['different']);
+  ok('is not exactly equal to: works correctly');
+}
+{
+  const { output } = await run(
+    'Define \'name\' as "Hello"\n' +
+    'if \'name\' is not exactly equal to "hello" then say "different" otherwise say "same"'
+  );
+  assert.deepEqual([...output], ['different']);
+  ok('is not exactly equal to: case-sensitive difference detected');
+}
+
 console.log('\nAll ' + passed + ' E++ test groups passed.');

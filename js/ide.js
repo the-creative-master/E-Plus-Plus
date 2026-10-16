@@ -451,6 +451,22 @@
     setSaveStatus('Unsaved changes…', true);
     clearTimeout(saveTimer);
     saveTimer = setTimeout(function () { saveCurrent(false); }, 450);
+    // Dev Build 6: Auto-change to .eppla if library usage detected
+    if (settings.autoEppla && currentName && /\.eppl$/i.test(currentName) && !/\.eppla$/i.test(currentName)) {
+      if (EPP.hasLibraryUsage(editor.value)) {
+        var newName = currentName.replace(/\.eppl$/i, '.eppla');
+        if (!store.exists(newName)) {
+          try {
+            store.deleteFile(currentName);
+            var saved = store.saveFile(newName, editor.value);
+            currentName = saved.name;
+            refreshFileList(currentName);
+            updateDashboard();
+            toast('Auto-changed to .eppla (library detected)');
+          } catch (e) {}
+        }
+      }
+    }
   });
   editor.addEventListener('scroll', syncScroll);
   editor.addEventListener('keyup', updateCursor);
@@ -731,6 +747,60 @@
       $('tutorialDialog').close();
       if (isSmallScreen()) setMobileView('editor');
       toast('Loaded tutorial step into editor. Press ▶ Run to test!');
+    });
+  }
+
+  // Dev Build 6: Settings
+  var SETTINGS_KEY = 'eplusplus.settings.v1';
+  var settings = { theme: 'dark', autoEppla: true };
+  try {
+    var saved = localStorage.getItem(SETTINGS_KEY);
+    if (saved) settings = Object.assign(settings, JSON.parse(saved));
+  } catch (e) {}
+
+  function saveSettings() {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+  }
+
+  function applyTheme(theme) {
+    if (theme === 'light') {
+      document.body.classList.add('light-theme');
+    } else {
+      document.body.classList.remove('light-theme');
+    }
+  }
+  applyTheme(settings.theme);
+
+  var btnSettings = $('btnSettings');
+  if (btnSettings) {
+    btnSettings.addEventListener('click', function () {
+      var dialog = $('settingsDialog');
+      if (!dialog) return;
+      var themeSelect = $('themeSelect');
+      var autoEpplaToggle = $('autoEpplaToggle');
+      if (themeSelect) themeSelect.value = settings.theme;
+      if (autoEpplaToggle) autoEpplaToggle.checked = settings.autoEppla;
+      dialog.showModal();
+    });
+  }
+
+  var settingsClose = $('settingsClose');
+  if (settingsClose) settingsClose.addEventListener('click', function () { $('settingsDialog').close(); });
+
+  var themeSelect = $('themeSelect');
+  if (themeSelect) {
+    themeSelect.addEventListener('change', function () {
+      settings.theme = themeSelect.value;
+      applyTheme(settings.theme);
+      saveSettings();
+    });
+  }
+
+  var autoEpplaToggle = $('autoEpplaToggle');
+  if (autoEpplaToggle) {
+    autoEpplaToggle.addEventListener('change', function () {
+      settings.autoEppla = autoEpplaToggle.checked;
+      saveSettings();
     });
   }
 

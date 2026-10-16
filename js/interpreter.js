@@ -535,6 +535,12 @@
       var rightStr = stringify(await this.evaluate(node.right));
       return leftStr.indexOf(rightStr) !== -1;
     }
+    // Dev Build 6: exactEqual — case-sensitive, strict comparison
+    if (node.operator === 'exactEqual' || node.operator === 'notExactEqual') {
+      var right = await this.evaluate(node.right);
+      var exactCmp = stringify(left) === stringify(right);
+      return node.operator === 'exactEqual' ? exactCmp : !exactCmp;
+    }
     // Dev Build 5: in the range of A to B (Math library)
     if (node.operator === 'inRange' || node.operator === 'notInRange') {
       var val = this.toNumber(left, node, 'range check');
@@ -556,8 +562,17 @@
       cmp = sa < sb ? -1 : sa > sb ? 1 : 0;
     }
     switch (node.operator) {
-      case 'equal': return cmp === 0;
-      case 'notEqual': return cmp !== 0;
+      // Dev Build 6: 'equal' and 'notEqual' are now case-insensitive for strings
+      case 'equal':
+        if (typeof left === 'string' && typeof right === 'string') {
+          return left.toLowerCase() === right.toLowerCase();
+        }
+        return cmp === 0;
+      case 'notEqual':
+        if (typeof left === 'string' && typeof right === 'string') {
+          return left.toLowerCase() !== right.toLowerCase();
+        }
+        return cmp !== 0;
       case 'greater': return cmp > 0;
       case 'greaterOrEqual': return cmp >= 0;
       case 'less': return cmp < 0;

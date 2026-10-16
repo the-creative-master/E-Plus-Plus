@@ -898,6 +898,12 @@
       return EPP.AST.Condition(negated ? 'notNumber' : 'number', left, null, t);
     }
 
+    if (this.matchWord('exactly')) {
+      this.expectWord('equal', 'in "is exactly equal to".');
+      this.expectWord('to', 'in "is exactly equal to".');
+      var exreq = this.parseExpression();
+      return EPP.AST.Condition(negated ? 'notExactEqual' : 'exactEqual', left, exreq, t);
+    }
     if (this.matchWord('equal')) {
       this.expectWord('to', 'in "is equal to".');
       var req = this.parseExpression();
