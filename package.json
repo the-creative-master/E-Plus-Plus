@@ -1,14 +1,15 @@
 {
   "name": "e-plus-plus",
-  "version": "6.1.1",
-  "description": "E++ Dev Build 6.1.1 — a programming language that looks like English, reads like English, and behaves like code — plus its complete online IDE for .eppl and .eppla files.",
+  "version": "6.1.2",
+  "description": "E++ Dev Build 6.1.2 — a programming language that looks like English, reads like English, and behaves like code — plus its complete online IDE for .eppl and .eppla files.",
   "private": true,
   "type": "commonjs",
   "scripts": {
     "start": "python3 -m http.server 8000",
     "build:tutorial": "node tools/build-tutorial-pack.mjs",
     "build:settings": "node tools/build-settings-schema.mjs",
-    "build": "node tools/build-tutorial-pack.mjs && node tools/build-settings-schema.mjs",
+    "build:ui": "node tools/build-ui-shell.mjs",
+    "build": "npm run build:tutorial && npm run build:settings && npm run build:ui",
     "test": "npm run build && node tests/run-tests.mjs",
     "test:ide": "node tests/ide-smoke.mjs"
   },

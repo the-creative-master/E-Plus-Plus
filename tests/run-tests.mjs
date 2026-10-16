@@ -24,7 +24,7 @@ context.globalThis = context;
 for (const file of [
   'errors.js', 'lexer.js', 'ast.js', 'libraries.js', 'parser.js',
   'python-runner.js', 'interpreter.js', 'files.js', 'highlight.js', 'standalone-generator.js',
-  'tutorial-pack.js', 'tutorial.js', 'settings-schema.js', 'settings.js'
+  'tutorial-pack.js', 'tutorial.js', 'settings-schema.js', 'settings.js', 'ui-shell.js', 'shell.js'
 ]) {
   vm.runInContext(readFileSync(join(root, 'js', file), 'utf8'), context, { filename: file });
 }
@@ -865,7 +865,8 @@ console.log('\n--- Dev Build 6.1.1: External Tutorial Lesson Pack ---');
   assert.ok(html.includes('js/tutorial.js'), 'the IDE loads the tutorial engine');
   assert.ok(html.includes('js/tutorial-pack.js'), 'the IDE loads the offline lesson pack fallback');
   assert.ok(html.includes('js/settings.js') && html.includes('js/settings-schema.js'), 'the IDE loads the settings engine and schema');
-  assert.ok(html.includes('Dev Build 6.1.1'), 'the IDE is labelled Dev Build 6.1.1');
+  const manifest = JSON.parse(readFileSync(join(root, 'ui', 'manifest.json'), 'utf8'));
+  assert.ok(/Dev Build 6\.1\.2/.test(manifest.document.title), 'the build label is part of the manifest');
   ok('index.html wires the lesson pack, the settings engine and the build label');
 }
 
@@ -977,9 +978,11 @@ console.log('\n--- Dev Build 6.1.1: Data-Driven Settings ---');
   const ideSource = readFileSync(join(root, 'js', 'ide.js'), 'utf8');
   const schema = JSON.parse(readFileSync(join(root, 'settings', 'schema.json'), 'utf8'));
 
+  const manifest = JSON.parse(readFileSync(join(root, 'ui', 'manifest.json'), 'utf8'));
   assert.ok(!/data-setting=/.test(html), 'index.html must not hardbake settings controls');
-  assert.ok(html.includes('id="settingsGroups"'), 'the dialog exposes an empty host to render into');
-  assert.ok(/<div class="settings-body" id="settingsGroups"><\/div>/.test(html), 'that host ships empty');
+  assert.ok(!html.includes('settingsGroups'), 'index.html must not hold the settings host either');
+  assert.equal(manifest.dialogs.settings.groupsId, 'settingsGroups', 'the shell creates the empty settings host');
+  assert.ok(!('controls' in (manifest.dialogs.settings || {})), 'the manifest does not list settings controls');
 
   for (const group of schema.groups) {
     assert.ok(!html.includes('>' + group.title + '<'), `the group title "${group.title}" must not live in index.html`);
@@ -999,6 +1002,91 @@ console.log('\n--- Dev Build 6.1.1: Data-Driven Settings ---');
   assert.ok(!/settingsResetTutorial|settingsRestoreExamples|settingsWipe/.test(ideSource),
     'action buttons are wired by their schema-declared action, not by hardcoded ids');
   ok('no settings markup or labels are hardbaked in index.html or js/ide.js');
+}
+
+
+// ===== Dev Build 6.1.2: the interface itself is data =====
+console.log('\n--- Dev Build 6.1.2: Data-Driven Interface ---');
+{
+  const manifestPath = join(root, 'ui', 'manifest.json');
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  assert.equal(manifest.format, 'eplusplus-ui-manifest');
+  assert.equal(EPP.Shell.validate(manifest).length, 0, 'the shipped manifest is valid');
+  assert.ok(manifest.version, 'the manifest is versioned');
+  ok('ui/manifest.json is a valid UI manifest');
+
+  const html = readFileSync(join(root, 'index.html'), 'utf8');
+  assert.ok(!/<(button|header|aside|footer|dialog|textarea)\b/.test(html), 'index.html must hold no interface markup');
+  assert.ok(!/class="/.test(html), 'index.html must hold no styled elements');
+  assert.ok(/<div id="appRoot"><\/div>/.test(html), 'index.html ships an empty appRoot host');
+  assert.ok(html.includes('js/shell.js') && html.includes('js/ui-shell.js'), 'the IDE loads the shell engine and the offline manifest');
+  ok('index.html is an entry point: an empty host plus scripts');
+
+  // No interface text may live in the markup or in the shell engine.
+  const engine = readFileSync(join(root, 'js', 'shell.js'), 'utf8');
+  const labels = new Set();
+  (function collect(node, key) {
+    if (Array.isArray(node)) { node.forEach((child) => collect(child, key)); return; }
+    if (!node || typeof node !== 'object') return;
+    Object.entries(node).forEach(([name, value]) => {
+      if (['label', 'text', 'title', 'placeholder', 'hint', 'tagline', 'note', 'code'].includes(name) && typeof value === 'string') labels.add(value);
+      else collect(value, name);
+    });
+  })(manifest, '');
+  const uiOnly = ['Files', 'Console', 'Quick reference', 'Export example', 'Restore example files'];
+  for (const label of labels) {
+    if (label.length < 3 || /^[{}]/.test(label)) continue;
+    assert.ok(!engine.includes("'" + label + "'") && !engine.includes('"' + label + '"'),
+      `the label "${label}" must come from the manifest, not js/shell.js`);
+  }
+  for (const word of uiOnly) {
+    assert.ok(!html.includes(word), `index.html must not contain the interface text "${word}"`);
+  }
+  ok('interface labels live in the manifest only, never in index.html or js/shell.js');
+}
+
+{
+  const manifest = JSON.parse(readFileSync(join(root, 'ui', 'manifest.json'), 'utf8'));
+  const broken = EPP.Shell.parseManifest('{"format":"eplusplus-ui-manifest","document":{}}');
+  assert.equal(broken.ok, false);
+  assert.match(broken.error, /missing its "topbar" section/);
+  const notJson = EPP.Shell.parseManifest('nope');
+  assert.equal(notJson.ok, false);
+  assert.match(notJson.error, /not valid JSON/);
+  ok('broken UI manifests are rejected with a readable English error');
+
+  const loaded = await EPP.Shell.boot({ document: undefined, loadRemote: false });
+  assert.ok(loaded.manifest, 'the shell boots from the bundled manifest');
+  assert.match(loaded.source, /bundled manifest/);
+  ok('EPP.Shell.boot() uses the generated manifest when there is no server');
+}
+
+{
+  // Every id js/ide.js looks up must be created by the manifest (or by the
+  // settings schema), otherwise a control would silently be missing.
+  const manifest = JSON.parse(readFileSync(join(root, 'ui', 'manifest.json'), 'utf8'));
+  const schema = JSON.parse(readFileSync(join(root, 'settings', 'schema.json'), 'utf8'));
+  const ids = new Set();
+  (function walk(node) {
+    if (Array.isArray(node)) { node.forEach(walk); return; }
+    if (!node || typeof node !== 'object') return;
+    Object.entries(node).forEach(([key, value]) => {
+      if ((key === 'id' || /Id$/.test(key)) && typeof value === 'string' && value) ids.add(value);
+      else walk(value);
+    });
+  })(manifest);
+  for (const group of schema.groups) {
+    for (const control of group.controls) {
+      if (control.id) ids.add(control.id);
+      if (control.descriptionId) ids.add(control.descriptionId);
+    }
+  }
+  const controller = readFileSync(join(root, 'js', 'ide.js'), 'utf8');
+  const lookups = new Set([...controller.matchAll(/\$\('([^']+)'\)/g)].map((m) => m[1]));
+  const missing = [...lookups].filter((id) => !ids.has(id));
+  assert.deepEqual(missing, [], 'the manifest must create every element the IDE looks up');
+  assert.ok(lookups.size > 60, 'the IDE really does look up its controls by id');
+  ok(`all ${lookups.size} element ids the IDE needs are created from data`);
 }
 
 

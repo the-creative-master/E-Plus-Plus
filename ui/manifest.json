@@ -1,0 +1,219 @@
+{
+  "format": "eplusplus-ui-manifest",
+  "version": "6.1.2",
+  "name": "E++ IDE chrome",
+  "description": "The E++ IDE interface as data. index.html ships an empty <div id=\"appRoot\"></div> and js/shell.js builds the interface from this manifest, so every label, button, panel and hint below can be changed without touching index.html or the IDE's JavaScript. ids must stay as they are — js/ide.js finds its controls by id.",
+  "document": {
+    "title": "E++ IDE (Dev Build 6.1.2) — Programs that read like English",
+    "description": "The official online IDE for E++ Dev Build 6.1.2, the programming language that looks like English, reads like English, and behaves like code. Pure .eppl files, library-powered .eppla files, and a tutorial loaded from an editable lesson pack.",
+    "bodyAttributes": { "data-mobile-view": "editor" }
+  },
+  "topbar": {
+    "brand": {
+      "logo": { "main": "E", "accent": "++" },
+      "title": "E++ IDE",
+      "badge": { "text": "Dev Build 6.1.2", "title": "E++ Dev Build 6.1.2" },
+      "tagline": "Based on WeeklyHow's AI video · Looks like English. Reads like English. Behaves like code."
+    },
+    "status": { "id": "saveStatus", "text": "Saved", "role": "status" },
+    "actionGroups": [
+      {
+        "className": "action-group file-actions",
+        "buttons": [
+          { "id": "btnSave", "label": "💾 Save", "title": "Save (Ctrl+S)" },
+          { "id": "btnExport", "label": "⤓ Export", "title": "Download this file (.eppl or .eppla)", "ariaLabel": "Export file" },
+          { "id": "btnImport", "label": "⤒ Import", "title": "Open a .eppl or .eppla file", "ariaLabel": "Import file" },
+          { "id": "btnZip", "label": "📦 E++.zip", "className": "btn btn-zip", "title": "Download the standalone E++ runtime as E++.zip" },
+          { "divider": true },
+          { "id": "btnSettings", "label": "⚙️ Settings", "title": "Settings" },
+          { "id": "btnTutorial", "label": "🎓 Tutorial", "className": "btn btn-tutorial", "title": "Open the guided tutorial (loaded from the lesson pack)" }
+        ],
+        "inputs": [
+          { "id": "importInput", "type": "file", "accept": ".eppl,.eppla", "multiple": true, "hidden": true }
+        ]
+      },
+      {
+        "className": "action-group run-actions",
+        "buttons": [
+          { "id": "btnStop", "label": "■ Stop", "className": "btn btn-danger", "disabled": true },
+          { "id": "btnRun", "label": "▶ Run", "className": "btn btn-run", "title": "Run (Ctrl+Enter)" }
+        ]
+      }
+    ]
+  },
+  "dashboard": {
+    "id": "dashBanner",
+    "ariaLabel": "Project dashboard",
+    "stats": [
+      { "label": "Active file", "id": "dashFile", "value": "untitled.eppl" },
+      { "label": "Type", "id": "dashType", "value": ".eppl (Pure)", "pill": "badge-eppl" },
+      { "label": "Libraries", "id": "dashLibs", "value": "None" },
+      { "label": "Lines", "id": "dashLines", "value": "0" }
+    ],
+    "badge": { "text": "Dev Build 6.1.2 • Project Humanizer", "className": "badge-version" }
+  },
+  "mobileNav": {
+    "ariaLabel": "IDE panels",
+    "buttons": [
+      { "view": "files", "icon": "▤", "label": "Files", "controls": "sidebar", "badgeId": "fileCountBadge", "badgeText": "0" },
+      { "view": "editor", "icon": "</>", "label": "Code", "controls": "editorCard", "active": true },
+      { "view": "console", "icon": "›_", "label": "Console", "controls": "consoleCard", "badgeId": "consoleBadge", "badgeText": "•", "badgeAlert": true, "badgeLabel": "New console output" }
+    ]
+  },
+  "sidebar": {
+    "id": "sidebar",
+    "ariaLabel": "File explorer",
+    "files": {
+      "title": "Files",
+      "subtitle": "(.eppl / .eppla)",
+      "newButton": { "id": "btnNew", "label": "+ New" },
+      "search": { "id": "fileSearch", "placeholder": "Search .eppl & .eppla files…", "ariaLabel": "Search files" },
+      "listId": "fileList",
+      "emptyId": "noFiles",
+      "empty": "No files yet.",
+      "emptyHint": "Create one with “New”.",
+      "restoreButton": { "id": "btnRestoreExamples", "label": "Restore example files" }
+    },
+    "sections": [
+      {
+        "id": "librariesPanel",
+        "title": "Libraries",
+        "subtitle": "(.eppla only)",
+        "open": true,
+        "note": "Humanizer syntax:",
+        "noteCode": "add library \"Math\"",
+        "hostId": "libraryList"
+      },
+      {
+        "id": "helpPanel",
+        "title": "Quick reference",
+        "subtitle": "Dev Build 6.1.2",
+        "open": true,
+        "codeId": "quickReference",
+        "code": "note: Pure .eppl files (no libraries)\nDefine name as WeeklyHow.\nsay \"Hello \" plus 'name'.\nask \"Age?\" and save answer as age\nif 'age' is equal to 11 then say \"Hi\"\n\nnote: .eppla files (with libraries)\nadd library \"Math\"\ndisplay 1 divided by 2 as fraction"
+      }
+    ]
+  },
+  "workspace": {
+    "id": "workspace",
+    "editor": {
+      "id": "editorCard",
+      "tabId": "currentTab",
+      "fileNameId": "currentFileName",
+      "fileName": "untitled.eppl",
+      "actions": [
+        { "id": "btnRename", "label": "Rename" },
+        { "id": "btnDelete", "label": "Delete", "className": "btn btn-small btn-danger-outline" }
+      ],
+      "wrapId": "editorWrap",
+      "lineNumberId": "lineNumberInner",
+      "highlightId": "highlightCode",
+      "textareaId": "editor",
+      "placeholder": "Write E++ here…",
+      "ariaLabel": "E++ code editor"
+    },
+    "statusbar": [
+      { "id": "statusFile", "text": "No file open", "optional": true },
+      { "separator": true, "optional": true },
+      { "id": "statusCursor", "text": "Line 1, Column 1" },
+      { "separator": true, "linesItem": true },
+      { "id": "statusLines", "text": "0 lines", "linesItem": true },
+      { "spacer": true },
+      { "id": "statusLibraries", "text": "Libraries: none loaded", "optional": true },
+      { "separator": true, "optional": true },
+      { "id": "statusRun", "text": "Ready", "className": "status-run" }
+    ],
+    "console": {
+      "id": "consoleCard",
+      "title": "Console",
+      "hintId": "consoleHint",
+      "hint": "Output and errors appear here.",
+      "clearButton": { "id": "btnClearConsole", "label": "Clear" },
+      "outputId": "consoleOutput",
+      "formId": "consoleInputForm",
+      "promptId": "consoleInputPrompt",
+      "inputId": "consoleInput",
+      "inputLabel": "Your answer",
+      "submitLabel": "Answer"
+    },
+    "drawing": {
+      "id": "drawCard",
+      "title": "Drawing",
+      "hint": "Sprites appear here when a program uses the Draw library. (0, 0) is the centre; up is negative.",
+      "canvasId": "drawCanvas",
+      "fallback": "Your browser does not support drawing.",
+      "width": 720,
+      "height": 360
+    }
+  },
+  "footer": {
+    "left": { "text": "E++ Dev Build 6.1.2", "rest": " · Based on WeeklyHow's AI programming language video · ", "codes": [".eppl", ".eppla"], "codesJoin": " without libraries, ", "codesTail": " with libraries." },
+    "shortcuts": { "label": "Shortcuts:", "keys": ["Ctrl", "Enter"], "between": " Run · ", "middleKeys": ["Ctrl", "S"], "tail": " Save" }
+  },
+  "dialogs": {
+    "tutorial": {
+      "id": "tutorialDialog",
+      "badgeId": "tutBadge",
+      "badge": "Basics",
+      "titleId": "tutTitle",
+      "title": "E++ Guided Tutorial",
+      "closeId": "tutClose",
+      "closeLabel": "Close tutorial",
+      "sourceId": "tutSource",
+      "source": "Lesson pack: loading…",
+      "lessonListId": "tutLessonList",
+      "lessonListLabel": "Lessons",
+      "summaryId": "tutSummary",
+      "explanationId": "tutExplanation",
+      "codeBoxTitle": "Example code",
+      "tryButton": { "id": "tutTry", "label": "▶ Try in editor" },
+      "codeId": "tutCode",
+      "stepId": "tutStepCount",
+      "stepText": "Lesson 1 of 1",
+      "nav": [
+        { "id": "tutPrev", "label": "← Previous" },
+        { "id": "tutNext", "label": "Next →", "className": "btn btn-small btn-accent" },
+        { "id": "tutResetPack", "label": "↺ Reset", "title": "Clear your own lessons and tutorial progress" }
+      ],
+      "tools": {
+        "label": "Lesson pack",
+        "buttons": [
+          { "id": "tutSaveLesson", "label": "★ Save editor file as lesson", "title": "Save the code in the editor as your own tutorial lesson" },
+          { "id": "tutExportPack", "label": "⤓ Export pack", "title": "Download the active lesson pack as JSON" },
+          { "id": "tutImportPack", "label": "⤒ Import pack", "title": "Import lessons from a lesson pack JSON file" }
+        ],
+        "input": { "id": "tutPackInput", "type": "file", "accept": ".json,application/json" },
+        "notePrefix": "Packs live in ",
+        "noteCode": "tutorial/pack.json",
+        "noteSuffix": " — edit that file and reload to change the lessons."
+      }
+    },
+    "settings": {
+      "id": "settingsDialog",
+      "titleId": "settingsTitle",
+      "title": "Settings",
+      "subtitleId": "settingsSub",
+      "subtitle": "Loading the settings schema…",
+      "closeId": "settingsClose",
+      "closeLabel": "Close settings",
+      "groupsId": "settingsGroups",
+      "noteId": "settingsSchemaNote",
+      "note": "schema: settings/schema.json",
+      "doneButton": { "id": "settingsDone", "label": "Done" }
+    },
+    "file": {
+      "id": "fileDialog",
+      "formId": "fileDialogForm",
+      "titleId": "fileDialogTitle",
+      "title": "New File",
+      "labelId": "fileDialogLabel",
+      "label": "File name (.eppl for pure code, .eppla for libraries)",
+      "inputId": "fileDialogInput",
+      "placeholder": "my-program.eppl",
+      "errorId": "fileDialogError",
+      "cancelButton": { "id": "fileDialogCancel", "label": "Cancel", "className": "btn" },
+      "confirmButton": { "id": "fileDialogConfirm", "label": "Create", "className": "btn btn-accent" }
+    }
+  },
+  "toast": { "id": "toast", "role": "status" }
+}

@@ -1,16 +1,34 @@
-# E++ and the E++ IDE (Dev Build 6.1.1)
+# E++ and the E++ IDE (Dev Build 6.1.2)
 
 **E++ looks like English, reads like English, and behaves like code.**
 
-> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 6.1.1 humanizes the language into something genuinely fun, accessible, and English-like.
+> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 6.1.2 humanizes the language into something genuinely fun, accessible, and English-like.
 
 E++ is a complete programming language implemented from scratch in this
 repository — lexer, parser, AST, interpreter, runtime, library system, Python runner, and
 error system — together with a complete online IDE in which the language
 runs.
 
-## What's New in Dev Build 6.1.1
+## What's New in Dev Build 6.1.2
 
+1. **The interface is no longer hardbaked either** — the last piece of the same
+   problem:
+   - `index.html` is now an entry point: an empty `<div id="appRoot"></div>` and
+     the script tags. It contains **no** buttons, panels, labels or styling
+     hooks at all.
+   - `ui/manifest.json` describes the whole chrome — top bar and its buttons,
+     dashboard, panel switcher, sidebar (files, Libraries, Quick reference),
+     editor, console, drawing, status bar, footer and all three dialogs. The IDE
+     fetches it over http(s); `js/ui-shell.js` is the generated offline fallback
+     (`npm run build:ui`).
+   - `js/shell.js` builds the interface from that data with `createElement` /
+     `textContent` only, so a manifest can never inject markup.
+   - The build **and** the test suite check the manifest against the ids
+     `js/ide.js` looks up (80 of them), so a renamed control is a caught error,
+     not a dead button.
+   - Editing `ui/manifest.json` and reloading applies the change with no code
+     and no rebuild.
+2. **Settings are no longer hardbaked** (from 6.1.1):
 1. **The tutorial is no longer hardbaked into the IDE** (the big one):
    - Lesson content lives in the lesson pack `tutorial/pack.json` — the IDE
      only renders it. Edit the file and reload: the tutorial changes, no IDE
@@ -27,7 +45,7 @@ runs.
      working on and opens the example in its own `tutorial-<lesson>.eppl[a]`
      file. (Previously it overwrote the open file.)
    - 10 lessons, every example verified to parse *and* run by the test suite.
-3. **Much more in Settings**, grouped into Appearance · Editor · Behaviour ·
+4. **Much more in Settings**, grouped into Appearance · Editor · Behaviour ·
    Tutorial · Data:
    - *Appearance*: theme (dark / light / **match system**), layout density
      (comfortable / compact), console height (compact / normal / tall), editor
@@ -40,12 +58,12 @@ runs.
    - *Tutorial*: lesson-pack source readout, auto-open on first visit, and
      reset of progress/custom lessons.
    - *Data*: restore example files, reset all settings, delete all local data.
-4. **Layout cleanup**: the settings dialog is grouped and scrollable with a
+5. **Layout cleanup**: the settings dialog is grouped and scrollable with a
    title bar and footer, the tutorial is a two-pane dialog (lesson rail +
    lesson), the Libraries and Quick reference panels collapse, the header has
    its file and app actions separated, and the dashboard bar is tidier and can
    be switched off.
-5. **Bug fixed — auto-`.eppl` → `.eppla` rename**: the handler called a function
+6. **Bug fixed — auto-`.eppl` → `.eppla` rename**: the handler called a function
    that did not exist, so the rename failed silently and left the tab and file
    list showing the old name. It now renames in place and keeps the whole UI in
    sync.
@@ -106,7 +124,8 @@ if 'greeting' contains "World" then say "Found it!"
 ## Project Structure
 
 ```
-index.html                  The IDE (markup & dashboard)
+index.html                  The IDE entry point (empty #appRoot + scripts)
+ui/manifest.json            THE interface: every label, button, panel and dialog
 css/ide.css                 The IDE (styles)
 js/
   errors.js                 EppError + LexError / ParseError / RuntimeError / LibraryError / FileError
@@ -122,34 +141,39 @@ js/
   tutorial-pack.js          GENERATED offline copy of the lesson pack (npm run build:tutorial)
   tutorial.js               Tutorial engine: loads/validates/merges lesson packs, progress
   settings-schema.js        GENERATED offline copy of the settings schema (npm run build:settings)
+  shell.js                  Shell engine: builds the interface from the UI manifest
+  ui-shell.js               GENERATED offline copy of the UI manifest (npm run build:ui)
   settings.js               Settings engine: loads/validates the schema, defaults, effects
   ide.js                    IDE app controller, file explorer, settings renderer, tutorial renderer, dashboard
 settings/schema.json        THE settings schema — edit this to change Settings
 tutorial/pack.json          THE lesson pack — edit this to change the tutorial
 tools/build-settings-schema.mjs  Generates js/settings-schema.js from settings/schema.json
+tools/build-ui-shell.mjs         Generates js/ui-shell.js from ui/manifest.json (and checks the ids)
 tools/build-tutorial-pack.mjs    Generates js/tutorial-pack.js from tutorial/pack.json
 examples/                   Bundled example programs (.eppl and .eppla)
 tests/run-tests.mjs         Test suite for the language core, files, Python, E++.zip, lesson packs
 tests/ide-smoke.mjs         Optional jsdom smoke test for the whole IDE (npm run test:ide)
 ```
 
-## Editing the tutorial and the settings
+## Editing the IDE without touching its code
 
-Both are data, not IDE code:
+Everything the IDE shows comes from one of three data files:
+
+| What you want to change | Edit this | Offline copy |
+| --- | --- | --- |
+| The interface (buttons, panels, labels, dialogs, hints) | `ui/manifest.json` | `js/ui-shell.js` |
+| Settings (groups, controls, defaults, effects) | `settings/schema.json` | `js/settings-schema.js` |
+| Tutorial lessons | `tutorial/pack.json` | `js/tutorial-pack.js` |
 
 ```bash
-# Tutorial: edit the lessons (title, badge, summary, explanation, code)
-$EDITOR tutorial/pack.json
-
-# Settings: edit the groups and controls (key, type, label, default, effect)
-$EDITOR settings/schema.json
-
-# Refresh the offline copies the IDE falls back to
-npm run build          # runs build:tutorial + build:settings
-
-# Reload the IDE (over the dev server, the build step is optional: the IDE
-# fetches tutorial/pack.json and settings/schema.json directly)
+# Refresh the generated offline copies (used on file:// and without a server)
+npm run build          # build:ui + build:settings + build:tutorial
 ```
+
+Over the dev server the build step is optional: the IDE fetches the three JSON
+files directly. Change a label in `ui/manifest.json`, reload, and it is there.
+(The shell renders the bundled copy first, notices the served manifest differs,
+and reloads once so the edited interface is used.)
 
 Adding a setting is a JSON edit — no IDE code:
 
@@ -174,7 +198,9 @@ shareable `epp-tutorial-pack.json`.
 ## Tests
 
 ```bash
-npm test          # language core, file store, E++.zip, lesson pack, settings schema (104 groups)
-npm run test:ide  # boots the real IDE in jsdom and drives it — 37 checks, incl. adding a
-                  # setting to the served schema and watching the dialog grow (needs jsdom)
+npm test          # language core, file store, E++.zip, lesson pack, settings schema,
+                  # UI manifest and the id contract (110 groups)
+npm run test:ide  # boots the real IDE in jsdom and drives it — 47 checks, incl. adding a
+                  # setting to the served schema and a label to the served manifest to
+                  # watch the interface change with no code (needs jsdom)
 ```

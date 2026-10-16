@@ -5,281 +5,44 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<title>E++ IDE (Dev Build 6.1.1) — Programs that read like English</title>
-<meta name="description" content="The official online IDE for E++ Dev Build 6.1.1, the programming language that looks like English, reads like English, and behaves like code. Pure .eppl files, library-powered .eppla files, and a tutorial loaded from an editable lesson pack.">
-<link rel="stylesheet" href="css/ide.css?v=12">
+<title>E++ IDE</title>
+<meta name="description" content="The official online IDE for E++, the programming language that looks like English, reads like English, and behaves like code.">
+<link rel="stylesheet" href="css/ide.css?v=13">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>E</text></svg>">
 </head>
-<body data-mobile-view="editor">
+<body>
 
-<header class="topbar">
-  <div class="brand">
-    <div class="logo" aria-hidden="true">E<span>++</span></div>
-    <div class="brand-text">
-      <h1>E++ IDE <span class="build-badge" title="E++ Dev Build 6.1.1">Dev Build 6.1.1</span></h1>
-      <p>Based on WeeklyHow's AI video · Looks like English. Reads like English. Behaves like code.</p>
-    </div>
-  </div>
-  <div class="top-actions">
-    <span id="saveStatus" class="save-status" role="status">Saved</span>
-    <div class="action-group file-actions">
-      <button id="btnSave" class="btn" type="button" title="Save (Ctrl+S)">💾 Save</button>
-      <button id="btnExport" class="btn" type="button" title="Download this file (.eppl or .eppla)" aria-label="Export file">⤓ Export</button>
-      <button id="btnImport" class="btn" type="button" title="Open a .eppl or .eppla file" aria-label="Import file">⤒ Import</button>
-      <button id="btnZip" class="btn btn-zip" type="button" title="Download the standalone E++ runtime as E++.zip">📦 E++.zip</button>
-      <span class="action-divider" aria-hidden="true"></span>
-      <button id="btnSettings" class="btn" type="button" title="Settings">⚙️ Settings</button>
-      <button id="btnTutorial" class="btn btn-tutorial" type="button" title="Open the guided tutorial (loaded from the lesson pack)">🎓 Tutorial</button>
-      <input id="importInput" type="file" accept=".eppl,.eppla" multiple hidden>
-    </div>
-    <div class="action-group run-actions">
-      <button id="btnStop" class="btn btn-danger" type="button" disabled>■ Stop</button>
-      <button id="btnRun" class="btn btn-run" type="button" title="Run (Ctrl+Enter)">▶ Run</button>
-    </div>
-  </div>
-</header>
+<!--
+  The E++ IDE has no hardbaked interface.
 
-<!-- Dashboard: live stats (toggle it in Settings ▸ Appearance) -->
-<div class="dash-banner" id="dashBanner" aria-label="Project dashboard">
-  <div class="dash-stat">
-    <span class="dash-label">Active file</span>
-    <span id="dashFile" class="dash-val">untitled.eppl</span>
-  </div>
-  <div class="dash-stat">
-    <span class="dash-label">Type</span>
-    <span id="dashType" class="dash-badge-pill badge-eppl">.eppl (Pure)</span>
-  </div>
-  <div class="dash-stat">
-    <span class="dash-label">Libraries</span>
-    <span id="dashLibs" class="dash-val">None</span>
-  </div>
-  <div class="dash-stat">
-    <span class="dash-label">Lines</span>
-    <span id="dashLines" class="dash-val">0</span>
-  </div>
-  <div class="dash-stat dash-stat-build">
-    <span class="dash-badge-pill badge-version">Dev Build 6.1.1 • Project Humanizer</span>
-  </div>
-</div>
+  * The chrome (top bar, dashboard, sidebar, editor, console, drawing, status
+    bar, footer, dialogs) is built by js/shell.js from the UI manifest:
+    ui/manifest.json over http(s), js/ui-shell.js offline.
+  * Settings are built from the settings schema: settings/schema.json
+    (js/settings-schema.js offline) — see js/settings.js.
+  * Tutorial lessons come from the lesson pack: tutorial/pack.json
+    (js/tutorial-pack.js offline) — see js/tutorial.js.
 
-<nav class="mobile-view-nav" aria-label="IDE panels">
-  <button class="mobile-view-btn" type="button" data-mobile-view="files" aria-pressed="false" aria-controls="sidebar">
-    <span class="mobile-view-icon" aria-hidden="true">▤</span><span>Files</span>
-    <span id="fileCountBadge" class="mobile-badge" hidden>0</span>
-  </button>
-  <button class="mobile-view-btn active" type="button" data-mobile-view="editor" aria-pressed="true" aria-controls="editorCard">
-    <span class="mobile-view-icon" aria-hidden="true">&lt;/&gt;</span><span>Code</span>
-  </button>
-  <button class="mobile-view-btn" type="button" data-mobile-view="console" aria-pressed="false" aria-controls="consoleCard">
-    <span class="mobile-view-icon" aria-hidden="true">›_</span><span>Console</span>
-    <span id="consoleBadge" class="mobile-badge mobile-badge-alert" hidden aria-label="New console output">•</span>
-  </button>
-</nav>
+  So this file is only the entry point: a host element and the scripts.
+-->
+<div id="appRoot"></div>
 
-<main class="layout">
-  <!-- ============ File explorer ============ -->
-  <aside class="sidebar" id="sidebar" aria-label="File explorer">
-    <div class="sidebar-head">
-      <h2>Files <span class="head-sub">(.eppl / .eppla)</span></h2>
-      <button id="btnNew" class="btn btn-small btn-accent" type="button">+ New</button>
-    </div>
-    <input id="fileSearch" class="file-search" type="search" placeholder="Search .eppl &amp; .eppla files…" aria-label="Search files">
-    <ul id="fileList" class="file-list"></ul>
-    <p id="noFiles" class="no-files" hidden>No files yet.<br>Create one with “New”.</p>
-
-    <div class="sidebar-actions">
-      <button id="btnRestoreExamples" class="btn btn-small" type="button">Restore example files</button>
-    </div>
-
-    <details class="side-section" id="librariesPanel" open>
-      <summary>Libraries <span class="head-sub">(.eppla only)</span></summary>
-      <p class="panel-note">Humanizer syntax:<br><code>add library "Math"</code></p>
-      <div id="libraryList"></div>
-    </details>
-
-    <details class="side-section" id="helpPanel" open>
-      <summary>Quick reference <span class="head-sub">Dev Build 6.1.1</span></summary>
-      <pre>note: Pure .eppl files (no libraries)
-Define name as WeeklyHow.
-say "Hello " plus 'name'.
-ask "Age?" and save answer as age
-if 'age' is equal to 11 then say "Hi"
-
-note: .eppla files (with libraries)
-add library "Math"
-display 1 divided by 2 as fraction</pre>
-    </details>
-  </aside>
-
-  <!-- ============ Editor + console ============ -->
-  <section class="workspace" id="workspace">
-    <div class="editor-card" id="editorCard">
-      <div class="editor-head">
-        <div class="tab" id="currentTab">
-          <span class="tab-dot" aria-hidden="true"></span>
-          <span id="currentFileName">untitled.eppl</span>
-        </div>
-        <div class="editor-head-actions">
-          <button id="btnRename" class="btn btn-small" type="button">Rename</button>
-          <button id="btnDelete" class="btn btn-small btn-danger-outline" type="button">Delete</button>
-        </div>
-      </div>
-
-      <div class="editor-wrap" id="editorWrap">
-        <div class="line-numbers" aria-hidden="true"><div id="lineNumberInner">1</div></div>
-        <div class="code-area">
-          <pre class="highlight-layer" aria-hidden="true"><code id="highlightCode"></code></pre>
-          <textarea id="editor" aria-label="E++ code editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="Write E++ here…"></textarea>
-        </div>
-      </div>
-
-      <div class="statusbar">
-        <span id="statusFile" class="status-optional">No file open</span>
-        <span class="status-sep status-optional">·</span>
-        <span id="statusCursor">Line 1, Column 1</span>
-        <span class="status-sep status-lines-item">·</span>
-        <span id="statusLines" class="status-lines-item">0 lines</span>
-        <span class="status-spacer"></span>
-        <span id="statusLibraries" class="status-optional">Libraries: none loaded</span>
-        <span class="status-sep status-optional">·</span>
-        <span id="statusRun" class="status-run">Ready</span>
-      </div>
-    </div>
-
-    <div class="console-card" id="consoleCard">
-      <div class="console-head">
-        <h2>Console</h2>
-        <span id="consoleHint" class="console-hint">Output and errors appear here.</span>
-        <button id="btnClearConsole" class="btn btn-small" type="button">Clear</button>
-      </div>
-      <div id="consoleOutput" class="console-output" aria-live="polite"></div>
-      <form id="consoleInputForm" class="console-input" hidden>
-        <span class="console-input-prompt" id="consoleInputPrompt"></span>
-        <input id="consoleInput" type="text" autocomplete="off" aria-label="Your answer">
-        <button class="btn btn-small btn-accent" type="submit">Answer</button>
-      </form>
-    </div>
-
-    <div class="draw-card" id="drawCard" hidden>
-      <div class="console-head">
-        <h2>Drawing</h2>
-        <span class="console-hint">Sprites appear here when a program uses the Draw library. (0, 0) is the centre; up is negative.</span>
-      </div>
-      <canvas id="drawCanvas" width="720" height="360">Your browser does not support drawing.</canvas>
-    </div>
-  </section>
-</main>
-
-<footer class="footer">
-  <span><strong>E++ Dev Build 6.1.1</strong> · Based on WeeklyHow's AI programming language video · <code>.eppl</code> without libraries, <code>.eppla</code> with libraries.</span>
-  <span>Shortcuts: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run · <kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span>
-</footer>
-
-<!-- ============================================================
-     Tutorial dialog (Dev Build 6.1.1)
-     Lessons are rendered from the external lesson pack — see
-     tutorial/pack.json and js/tutorial.js. Nothing here is hardcoded.
-     ============================================================ -->
-<dialog id="tutorialDialog" class="tutorial-dialog">
-  <div class="tutorial-head">
-    <div class="tutorial-title-wrap">
-      <span id="tutBadge" class="tutorial-badge">Basics</span>
-      <h2 id="tutTitle">E++ Guided Tutorial</h2>
-    </div>
-    <button id="tutClose" class="btn-close" type="button" aria-label="Close tutorial">&times;</button>
-  </div>
-
-  <p id="tutSource" class="tutorial-source">Lesson pack: loading…</p>
-
-  <div class="tutorial-main">
-    <nav class="tutorial-lessons" id="tutLessonList" aria-label="Lessons"></nav>
-
-    <div class="tutorial-body">
-      <p id="tutSummary" class="tutorial-summary"></p>
-      <p id="tutExplanation" class="tutorial-explanation"></p>
-      <div class="tutorial-code-box">
-        <div class="code-box-header">
-          <span>Example code</span>
-          <button id="tutTry" class="btn btn-small btn-accent" type="button">▶ Try in editor</button>
-        </div>
-        <pre id="tutCode" class="tutorial-code"></pre>
-      </div>
-    </div>
-  </div>
-
-  <div class="tutorial-foot">
-    <span id="tutStepCount" class="tutorial-steps">Lesson 1 of 1</span>
-    <div class="tutorial-nav-buttons">
-      <button id="tutPrev" class="btn btn-small" type="button">← Previous</button>
-      <button id="tutNext" class="btn btn-small btn-accent" type="button">Next →</button>
-      <button id="tutResetPack" class="btn btn-small" type="button" title="Clear your own lessons and tutorial progress">↺ Reset</button>
-    </div>
-  </div>
-
-  <div class="tutorial-tools">
-    <span class="tutorial-tools-label">Lesson pack</span>
-    <button id="tutSaveLesson" class="btn btn-small" type="button" title="Save the code in the editor as your own tutorial lesson">★ Save editor file as lesson</button>
-    <button id="tutExportPack" class="btn btn-small" type="button" title="Download the active lesson pack as JSON">⤓ Export pack</button>
-    <button id="tutImportPack" class="btn btn-small" type="button" title="Import lessons from a lesson pack JSON file">⤒ Import pack</button>
-    <input id="tutPackInput" type="file" accept=".json,application/json" hidden>
-    <span class="tutorial-tools-note">Packs live in <code>tutorial/pack.json</code> — edit that file and reload to change the lessons.</span>
-  </div>
-</dialog>
-
-<!-- ============================================================
-     Settings dialog (Dev Build 6.1.1)
-     The groups, controls and defaults are NOT hardbaked here: they are
-     rendered from the settings schema — see settings/schema.json and
-     js/settings.js. Add a setting to that JSON file and it appears here.
-     ============================================================ -->
-<dialog id="settingsDialog" class="settings-dialog">
-  <div class="settings-head">
-    <div>
-      <h2 id="settingsTitle">Settings</h2>
-      <p class="settings-sub" id="settingsSub">Loading the settings schema…</p>
-    </div>
-    <button id="settingsClose" class="btn-close" type="button" aria-label="Close settings">&times;</button>
-  </div>
-
-  <!-- Filled in from the settings schema by js/ide.js (renderSettings). -->
-  <div class="settings-body" id="settingsGroups"></div>
-
-  <div class="settings-foot">
-    <span class="settings-note" id="settingsSchemaNote">schema: settings/schema.json</span>
-    <button id="settingsDone" class="btn btn-small btn-accent" type="button">Done</button>
-  </div>
-</dialog>
-
-<!-- File creation / rename dialog -->
-<dialog id="fileDialog" class="file-dialog">
-  <form method="dialog" id="fileDialogForm">
-    <h2 id="fileDialogTitle">New File</h2>
-    <label for="fileDialogInput" id="fileDialogLabel">File name (.eppl for pure code, .eppla for libraries)</label>
-    <input id="fileDialogInput" type="text" placeholder="my-program.eppl" autocomplete="off">
-    <p id="fileDialogError" class="dialog-error" role="alert"></p>
-    <div class="dialog-actions">
-      <button id="fileDialogCancel" class="btn" type="button">Cancel</button>
-      <button id="fileDialogConfirm" class="btn btn-accent" type="submit">Create</button>
-    </div>
-  </form>
-</dialog>
-
-<div id="toast" class="toast" role="status" hidden></div>
-
-<script src="js/errors.js?v=12"></script>
-<script src="js/lexer.js?v=12"></script>
-<script src="js/ast.js?v=12"></script>
-<script src="js/libraries.js?v=12"></script>
-<script src="js/parser.js?v=12"></script>
-<script src="js/python-runner.js?v=12"></script>
-<script src="js/interpreter.js?v=12"></script>
-<script src="js/files.js?v=12"></script>
-<script src="js/highlight.js?v=12"></script>
-<script src="js/standalone-generator.js?v=12"></script>
-<script src="js/settings-schema.js?v=12"></script>
-<script src="js/settings.js?v=12"></script>
-<script src="js/tutorial-pack.js?v=12"></script>
-<script src="js/tutorial.js?v=12"></script>
-<script src="js/ide.js?v=12"></script>
+<script src="js/errors.js?v=13"></script>
+<script src="js/lexer.js?v=13"></script>
+<script src="js/ast.js?v=13"></script>
+<script src="js/libraries.js?v=13"></script>
+<script src="js/parser.js?v=13"></script>
+<script src="js/python-runner.js?v=13"></script>
+<script src="js/interpreter.js?v=13"></script>
+<script src="js/files.js?v=13"></script>
+<script src="js/highlight.js?v=13"></script>
+<script src="js/standalone-generator.js?v=13"></script>
+<script src="js/tutorial-pack.js?v=13"></script>
+<script src="js/tutorial.js?v=13"></script>
+<script src="js/settings-schema.js?v=13"></script>
+<script src="js/settings.js?v=13"></script>
+<script src="js/ui-shell.js?v=13"></script>
+<script src="js/shell.js?v=13"></script>
+<script src="js/ide.js?v=13"></script>
 </body>
 </html>

@@ -199,6 +199,10 @@
 
   // ------------------------------------------------------------------
   // DOM
+  //
+  // index.html ships an empty #appRoot: the interface is built from the UI
+  // manifest (ui/manifest.json, see js/shell.js) before this file runs, so
+  // every id below comes from that data.
   // ------------------------------------------------------------------
   function $(id) { return document.getElementById(id); }
   var editor = $('editor');

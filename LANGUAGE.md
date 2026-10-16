@@ -1,8 +1,8 @@
-# The E++ Language Reference (Dev Build 6.1.1)
+# The E++ Language Reference (Dev Build 6.1.2)
 
 **E++ looks like English, reads like English, and behaves like code.**
 
-> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 6.1.1 humanizes the language into something genuinely fun, accessible, and English-like.
+> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 6.1.2 humanizes the language into something genuinely fun, accessible, and English-like.
 
 This document describes the language exactly as implemented in this
 repository (`js/lexer.js`, `js/parser.js`, `js/ast.js`, `js/interpreter.js`,
@@ -417,4 +417,38 @@ names, labels or defaults.
 
 ```bash
 npm run build:settings   # refresh js/settings-schema.js after editing the schema
+```
+
+### The UI manifest
+
+The IDE's interface is data as well. `index.html` ships an empty
+`<div id="appRoot"></div>`; `js/shell.js` builds the chrome from
+`ui/manifest.json`, so every label, button, panel, hint and placeholder can be
+changed there.
+
+```json
+{
+  "format": "eplusplus-ui-manifest",
+  "version": "6.1.2",
+  "document": { "title": "E++ IDE — Programs that read like English" },
+  "topbar": {
+    "brand": { "logo": { "main": "E", "accent": "++" }, "title": "E++ IDE", "badge": { "text": "Dev Build 6.1.2" } },
+    "actionGroups": [
+      { "className": "action-group file-actions",
+        "buttons": [ { "id": "btnSave", "label": "💾 Save", "title": "Save (Ctrl+S)" } ] }
+    ]
+  },
+  "sidebar": { "files": { "title": "Files", "listId": "fileList" } },
+  "workspace": { "console": { "title": "Console", "outputId": "consoleOutput" } }
+}
+```
+
+- Ids (`id`, `titleId`, `hostId`, `…Id`) are the contract with `js/ide.js`: the
+  build tool and the test suite check that the manifest creates every element
+  the controller looks up.
+- Elements are created with `createElement` and `textContent` only, so no
+  manifest, lesson pack or schema can inject markup.
+
+```bash
+npm run build:ui   # refresh js/ui-shell.js after editing the manifest
 ```

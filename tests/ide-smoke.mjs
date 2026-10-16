@@ -47,6 +47,7 @@ const MIME = {
 // it — that is how the test proves Settings is data-driven without editing the
 // real schema file.
 let injectSchemaControl = false;
+let injectManifestLabel = false;
 
 const server = createServer(async (req, res) => {
   const path = normalize(decodeURIComponent(new URL(req.url, 'http://localhost').pathname)).replace(/^\/+/, '');
@@ -54,6 +55,12 @@ const server = createServer(async (req, res) => {
   if (!file.startsWith(root) || !existsSync(file)) { res.writeHead(404); res.end('not found'); return; }
   try {
     let body = await readFile(file);
+    if (injectManifestLabel && (path === 'ui/manifest.json')) {
+      const ui = JSON.parse(String(body));
+      const group = ui.topbar.actionGroups.find((g) => g.buttons.some((b) => b.id === 'btnRun'));
+      group.buttons.find((b) => b.id === 'btnRun').label = '▶ Run (from the manifest)';
+      body = Buffer.from(JSON.stringify(ui));
+    }
     if (injectSchemaControl && (path === 'settings/schema.json')) {
       const schema = JSON.parse(String(body));
       schema.groups[0].controls.push({
@@ -155,8 +162,9 @@ check('the settings schema is loaded from settings/schema.json',
   doc.getElementById('settingsSchemaNote').textContent);
 check('groups are rendered from the schema, not the markup', schemaGroupCards.length === 5, String(schemaGroupCards.length));
 check('every schema control is rendered', schemaControls.length === 18, String(schemaControls.length));
-check('the dialog markup ships empty (no hardbaked controls in index.html)',
-  (await readFile(new URL('../index.html', import.meta.url), 'utf8')).includes('id="settingsGroups"></div>'));
+check('the settings host comes from the shell, not from index.html',
+  doc.querySelector('.settings-body') !== null &&
+  !(await readFile(new URL('../index.html', import.meta.url), 'utf8')).includes('settingsGroups'));
 
 const themeSelect = doc.getElementById('setting-theme');
 themeSelect.value = 'light';
@@ -242,6 +250,64 @@ check('the tab shows the new .eppla name',
   doc.getElementById('currentFileName').textContent === doc.getElementById('statusFile').textContent.replace(' (.eppla)', ''));
 
 check('still no page errors at the end', errors.length === 0, errors.join(' | '));
+
+console.log('The IDE interface is data too');
+{
+  const html = await readFile(join(root, 'index.html'), 'utf8');
+  const manifest = JSON.parse(await readFile(join(root, 'ui', 'manifest.json'), 'utf8'));
+  check('index.html contains no interface markup at all',
+    !/<(button|header|aside|dialog|footer|textarea)\b/.test(html) && !/class="/.test(html),
+    html.slice(0, 200));
+  check('index.html ships an empty appRoot host', /<div id="appRoot"><\/div>/.test(html));
+
+  // The rendered top bar must match the manifest, label for label.
+  const renderedTopbar = [...doc.querySelectorAll('.file-actions .btn')].map((b) => b.textContent.trim());
+  const manifestTopbar = manifest.topbar.actionGroups[0].buttons.filter((b) => !b.divider).map((b) => b.label);
+  check('the top bar is rendered from the manifest',
+    JSON.stringify(renderedTopbar) === JSON.stringify(manifestTopbar),
+    JSON.stringify(renderedTopbar));
+  const renderedNav = [...doc.querySelectorAll('.mobile-view-btn > span:not([class])')].map((s2) => s2.textContent.trim());
+  const manifestNav = manifest.mobileNav.buttons.map((b) => b.label);
+  check('the panel switcher is rendered from the manifest', JSON.stringify(renderedNav) === JSON.stringify(manifestNav),
+    JSON.stringify(renderedNav));
+  check('the quick reference comes from the manifest',
+    doc.getElementById('quickReference').textContent === manifest.sidebar.sections[1].code);
+  check('the document title comes from the manifest',
+    doc.title === manifest.document.title, doc.title);
+
+  // Prove it: the renderer turns manifest data into the interface, and a
+  // manifest that differs from the bundled copy triggers a one-time reload so
+  // an edited manifest takes effect without any code change.
+  injectManifestLabel = true;
+  const third = await bootIde();
+  const thirdDoc = third.window.document;
+  const changed = JSON.parse(JSON.stringify(manifest));
+  changed.topbar.actionGroups.find((g) => g.buttons.some((b) => b.id === 'btnRun')).buttons
+    .find((b) => b.id === 'btnRun').label = '▶ Run (from the manifest)';
+  third.window.EPP.Shell.render(changed, thirdDoc);
+  check('a label changed in the manifest reaches the interface with no code change',
+    thirdDoc.getElementById('btnRun').textContent.trim() === '▶ Run (from the manifest)',
+    thirdDoc.getElementById('btnRun').textContent.trim());
+  const firstBoot = await third.window.EPP.Shell.lastBoot;
+  check('a served manifest that differs from the bundled copy asks for a reload',
+    !!firstBoot && firstBoot.reloaded === true &&
+    !!third.window.sessionStorage.getItem('eplusplus.ui.reloaded'),
+    JSON.stringify({ reloaded: firstBoot && firstBoot.reloaded }));
+
+  const reloads = [];
+  third.window.EPP.Shell.reload = () => reloads.push(1);
+  third.window.localStorage.clear();
+  third.window.sessionStorage.clear();
+  const booted = await third.window.EPP.Shell.boot();
+  check('the reload path is used once, then the served manifest wins',
+    reloads.length === 1 && booted.reloaded === true && booted.source === 'ui/manifest.json',
+    JSON.stringify({ reloads: reloads.length, booted: booted.source, reloaded: booted.reloaded }));
+
+  check('the real manifest file was not modified',
+    JSON.stringify(JSON.parse(await readFile(join(root, 'ui', 'manifest.json'), 'utf8'))) === JSON.stringify(manifest));
+  third.window.close();
+  injectManifestLabel = false;
+}
 
 console.log('Settings really are data (no code change needed)');
 {
