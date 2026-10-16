@@ -1,0 +1,15 @@
+<section class="panel settings-panel">
+  <h1>{{t:settings.title}}</h1>
+  <p class="hint">{{subtitle}}</p>
+  <form method="post" action="/settings">
+{{groups}}
+    <div class="row-actions">
+      <button type="submit" class="primary">{{t:ui.save}}</button>
+      <a class="button" href="/">{{t:ui.done}}</a>
+    </div>
+  </form>
+  <form method="post" action="/settings/reset" class="row-actions">
+    <button type="submit" class="link">{{t:settings.reset}}</button>
+  </form>
+  <p class="hint">{{schemaNote}} · {{source}}</p>
+</section>

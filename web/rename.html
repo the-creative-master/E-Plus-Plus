@@ -1,0 +1,10 @@
+<section class="panel narrow">
+  <h1>{{t:files.rename}}</h1>
+  <form method="post" action="/rename">
+    <input type="hidden" name="file" value="{{file}}">
+    <label for="to">{{t:files.renameLabel}}</label>
+    <input id="to" name="to" value="{{file}}" required>
+    <button type="submit" class="primary">{{t:ui.rename}}</button>
+    <a class="button" href="/open?file={{url}}">{{t:ui.cancel}}</a>
+  </form>
+</section>

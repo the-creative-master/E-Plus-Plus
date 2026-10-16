@@ -1,0 +1,13 @@
+add library "Draw"
+add library "Math"
+
+define scout as drawing sprite
+
+repeat 6 times
+  'scout' move right "40 px"
+  'scout' move up "25 px"
+  'scout' move left "15 px"
+end repeat
+
+say "'scout' ended " plus absolute value of 70 plus " pixels from where it started."
+say "The dashboard above the console draws the same thing."

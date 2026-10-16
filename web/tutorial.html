@@ -1,0 +1,56 @@
+<div class="columns">
+  <aside class="panel lessons-panel">
+    <h2>{{t:ui.tutorial}}</h2>
+    <p class="hint">{{t:tutorial.count}} · {{pack}}</p>
+    <ol class="lesson-list">
+{{lessons}}
+    </ol>
+    <div class="panel-actions">
+      <a class="button" href="/tutorial/export">{{t:ui.exportPack}}</a>
+    </div>
+  </aside>
+
+  <section class="panel lesson-panel">
+    <p class="step">{{step}} <span class="badge">{{badge}}</span></p>
+    <h2>{{title}}</h2>
+    <p class="summary">{{summary}}</p>
+    <p class="explanation">{{explanation}}</p>
+    <pre class="highlight">{{highlight}}</pre>
+    <form method="post" action="/tutorial/open" class="row-actions">
+      <input type="hidden" name="lesson" value="{{id}}">
+      <button type="submit" class="primary">{{t:tutorial.try}}</button>
+    </form>
+    {{removeForm}}
+  </section>
+</div>
+
+<div class="columns two">
+  <section class="panel">
+    <h2>{{t:tutorial.saveAsLesson}}</h2>
+    <form method="post" action="/tutorial/save">
+      <input type="hidden" name="lesson" value="{{id}}">
+      <label for="title">{{t:tutorial.titleField}}</label>
+      <input id="title" name="title" value="{{title}}" required>
+      <label for="badge">{{t:tutorial.badgeField}}</label>
+      <input id="badge" name="badge" value="{{badge}}">
+      <label for="summary">{{t:tutorial.summaryField}}</label>
+      <input id="summary" name="summary" value="{{summary}}">
+      <label for="explanation">{{t:tutorial.explanationField}}</label>
+      <textarea id="explanation" name="explanation" rows="3">{{explanation}}</textarea>
+      <label for="lesson-code">{{t:ui.code}}</label>
+      <textarea id="lesson-code" name="code" rows="10" spellcheck="false">{{code}}</textarea>
+      <div class="row-actions"><button type="submit" class="primary">{{t:ui.save}}</button></div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>{{t:ui.importPack}}</h2>
+    <p class="hint">{{t:ui.importHint}}</p>
+    <form method="post" action="/tutorial/import">
+      <label class="visually-hidden" for="pack">{{t:ui.importPack}}</label>
+      <textarea id="pack" name="pack" rows="10" spellcheck="false" placeholder="{ &quot;lessons&quot;: [ … ] }"></textarea>
+      <div class="row-actions"><button type="submit">{{t:ui.importPack}}</button></div>
+    </form>
+    <p class="hint">{{t:tutorial.importNote}}</p>
+  </section>
+</div>

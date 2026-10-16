@@ -1,0 +1,20 @@
+add library "Random"
+
+define secret as 0
+set secret to random number between 1 and 20
+
+define guess as 0
+define tries as 0
+
+while 'guess' is not exactly equal to 'secret' do
+  increase tries by 1
+  set guess to random number between 1 and 20
+
+  if 'guess' is greater than 'secret' then
+    say "Too high: " plus 'guess'
+  otherwise if 'guess' is less than 'secret' then
+    say "Too low: " plus 'guess'
+  end if
+end while
+
+say "Found " plus 'secret' plus " after " plus 'tries' plus " tries."

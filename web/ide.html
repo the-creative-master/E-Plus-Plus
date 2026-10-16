@@ -1,0 +1,83 @@
+<section class="bar{{dashboardHidden}}" id="status">
+  <span class="chip" id="status-file">{{currentName}}</span>
+  <span class="chip ghost" id="status-count">{{statusCount}}</span>
+  <span class="chip ghost" id="status-run">{{t:ui.saved}}</span>
+  <span class="spacer"></span>
+  <span class="chip ghost" id="status-build">{{build}}</span>
+</section>
+
+<div class="grid-main">
+  <aside class="panel files-panel" id="files-panel">
+    <h2>{{t:ui.files}}</h2>
+    <label class="visually-hidden" for="filter">{{t:ui.search}}</label>
+    <input id="filter" type="search" placeholder="{{t:ui.searchPlaceholder}}" autocomplete="off">
+    <ul class="file-list" id="file-list">
+{{files}}
+    </ul>
+    <div class="panel-actions">
+      <button type="button" class="button" id="new-file">{{t:ui.new}}</button>
+      <button type="button" class="link" id="restore-examples">{{t:ui.restore}}</button>
+    </div>
+  </aside>
+
+  <section class="panel editor-panel">
+    <h2>
+      <span id="editor-title">{{currentName}}</span>
+      <span class="muted" id="editor-state"></span>
+    </h2>
+    <form method="post" action="/run" id="editor-form" data-file="{{currentRaw}}">
+      <input type="hidden" name="file" id="field-file" value="{{currentRaw}}">
+      <div class="editor {{codeViewClass}}" id="editor">
+        <pre class="highlight" id="highlight" aria-hidden="true">{{highlight}}</pre>
+        <textarea id="code" name="code" spellcheck="false" autocomplete="off" aria-label="{{t:ui.code}}">{{code}}</textarea>
+      </div>
+      <details class="answers" id="answers-box" open>
+        <summary>{{t:ui.answers}}</summary>
+        <p class="hint">{{t:ui.answersHint}}</p>
+        <textarea id="answers" name="answers" rows="3" spellcheck="false">{{answers}}</textarea>
+      </details>
+      <div class="toolbar">
+        <button type="submit" class="primary" id="run-button">{{t:ui.run}}</button>
+        <button type="button" class="button" id="save-button">{{t:ui.save}}</button>
+        <a class="button" id="download-link" href="/download?file={{currentUrl}}">{{t:ui.download}}</a>
+        <button type="button" class="button" id="rename-button">{{t:ui.rename}}</button>
+        <button type="button" class="button danger" id="delete-button">{{t:ui.delete}}</button>
+        <span class="keys">{{t:ui.shortcutHint}}</span>
+      </div>
+    </form>
+  </section>
+
+  <aside class="panel console-panel">
+    <h2>{{t:ui.console}}</h2>
+    <div class="sprite-grid" id="sprite-grid">{{spriteGrid}}</div>
+    <div class="console" id="console" data-empty="{{t:console.empty}}">{{console}}</div>
+    <p class="hint" id="extension-note">{{extensionNote}}</p>
+  </aside>
+</div>
+
+<div class="grid-two">
+  <aside class="panel libraries-panel{{librariesHidden}}" id="libraries-panel">
+    <h2>{{t:ui.libraries}}</h2>
+    <div class="cards" id="library-cards">
+{{libraryCards}}
+    </div>
+  </aside>
+
+  <aside class="panel reference-panel{{referenceHidden}}">
+    <h2>{{t:ui.reference}}</h2>
+    <pre class="reference">{{reference}}</pre>
+  </aside>
+</div>
+
+<dialog id="prompt-dialog" class="dialog">
+  <form method="dialog" id="prompt-form">
+    <h2 id="prompt-title"></h2>
+    <label for="prompt-input" id="prompt-label"></label>
+    <input id="prompt-input" autocomplete="off">
+    <p class="hint" id="prompt-hint"></p>
+    <div class="toolbar">
+      <button type="submit" value="ok" class="primary" id="prompt-ok"></button>
+      <button type="submit" value="cancel" class="button" id="prompt-cancel"></button>
+    </div>
+  </form>
+</dialog>

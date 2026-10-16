@@ -1,0 +1,18 @@
+# Tooling
+node_modules/
+node_modules
+npm-debug.log*
+
+# Local editor / OS noise
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Scratch output from the build tools
+/tmp-*
+
+# Compiler output and the folder the IDE writes programs into
+build/
+workspace/

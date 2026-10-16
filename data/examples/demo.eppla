@@ -1,0 +1,103 @@
+note: A tour of E++, one piece at a time. Run it, then change a line and run again.
+note: This file loads libraries, which is what the .eppla ending is for.
+
+add library "Math"
+add library "Text"
+add library "Random"
+add library "Draw"
+add library "Image"
+add library "Python"
+
+note: --- names and values -------------------------------------------------
+
+define player as "Nova"
+define lives as 3
+define distance as 120
+
+say "Player: " plus 'player'
+say "Start: " plus 'lives' plus " lives at " plus 'distance' plus " m"
+
+increase distance by 40
+decrease lives by 1
+say "After the first hill: " plus 'distance' plus " m, " plus 'lives' plus " lives left"
+
+note: --- choices ----------------------------------------------------------
+
+if 'lives' is greater than 2 then
+  say "Plenty of road left."
+otherwise if 'lives' is exactly equal to 2 then
+  say "Careful now."
+otherwise
+  say "One more mistake ends this."
+end if
+
+note: --- loops ------------------------------------------------------------
+
+repeat 3 times
+  set distance to 'distance' plus 15
+  say "Steady pedalling: " plus 'distance' plus " m"
+end repeat
+
+define steps as 0
+while 'steps' is less than 3 do
+  increase steps by 1
+end while
+say "Walked " plus 'steps' plus " steps."
+
+if 'steps' is in the range of 2 to 5 then
+  say "And that is a sensible number of steps."
+end if
+
+note: loopback ends this round of a loop early: the rest of the block is skipped.
+repeat 4 times
+  increase steps by 1
+  if 'steps' is greater than 5 then
+    say "Round with step " plus 'steps' plus " skips ahead."
+    loopback
+  end if
+  say "Round with step " plus 'steps' plus " runs to the end."
+end repeat
+
+note: --- numbers and words -------------------------------------------------
+
+display 7 divided by 8 as fraction
+display 7 divided by 8 as decimal
+display 15 percent of 240
+say 2 power of 10
+say square root of 625
+say absolute value of -37
+say uppercase of "quiet words"
+say lowercase of "LOUD WORDS"
+say length of "how long is this line"
+say random number between 1 and 6
+
+note: --- sprites ------------------------------------------------------------
+
+define rover as drawing sprite
+'rover' move right "60 px"
+'rover' move down "20 px"
+'rover' move left "10 px"
+say "The dashboard shows where 'rover' ended up."
+
+note: --- pictures -----------------------------------------------------------
+
+note: Pictures are Base64 text. This one is a single green pixel.
+define dot as image "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+check if "dot" exists
+display image
+
+note: --- Python -------------------------------------------------------------
+
+python code
+  total = 0
+  for number in range(1, 5):
+      total += number * number
+  print("Sum of squares:", total)
+  for word in ["hop", "skip", "jump"]:
+      print(word, len(word))
+end python
+
+note: --- that is the whole language ------------------------------------------
+
+wait 1 second
+say "Every word above is in the Quick reference panel. Change something and press Run."
