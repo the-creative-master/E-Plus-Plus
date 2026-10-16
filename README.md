@@ -1,206 +1,128 @@
-# E++ and the E++ IDE (Dev Build 6.1.2)
+# E++
 
-**E++ looks like English, reads like English, and behaves like code.**
+E++ is a programming language that reads like English: `say "Hello."` prints a line,
+`repeat 3 times ... end repeat` goes round three times, and `Define score as 10.` gives a
+name to a value. This repository holds the language, the six libraries that come with it,
+a small Python runner, and the IDE that runs all of it.
 
-> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 6.1.2 humanizes the language into something genuinely fun, accessible, and English-like.
+Dev Build 6.2 is a rewrite. The earlier build was JavaScript in the browser; this one is
+C++ on the machine you run it on. The browser gets HTML and a stylesheet, nothing else —
+no scripts, no framework, no build step for the front end.
 
-E++ is a complete programming language implemented from scratch in this
-repository — lexer, parser, AST, interpreter, runtime, library system, Python runner, and
-error system — together with a complete online IDE in which the language
-runs.
+## Build it
 
-## What's New in Dev Build 6.1.2
+Needs a C++17 compiler and `make`. Nothing else, no dependencies to install.
 
-1. **The interface is no longer hardbaked either** — the last piece of the same
-   problem:
-   - `index.html` is now an entry point: an empty `<div id="appRoot"></div>` and
-     the script tags. It contains **no** buttons, panels, labels or styling
-     hooks at all.
-   - `ui/manifest.json` describes the whole chrome — top bar and its buttons,
-     dashboard, panel switcher, sidebar (files, Libraries, Quick reference),
-     editor, console, drawing, status bar, footer and all three dialogs. The IDE
-     fetches it over http(s); `js/ui-shell.js` is the generated offline fallback
-     (`npm run build:ui`).
-   - `js/shell.js` builds the interface from that data with `createElement` /
-     `textContent` only, so a manifest can never inject markup.
-   - The build **and** the test suite check the manifest against the ids
-     `js/ide.js` looks up (80 of them), so a renamed control is a caught error,
-     not a dead button.
-   - Editing `ui/manifest.json` and reloading applies the change with no code
-     and no rebuild.
-2. **Settings are no longer hardbaked** (from 6.1.1):
-1. **The tutorial is no longer hardbaked into the IDE** (the big one):
-   - Lesson content lives in the lesson pack `tutorial/pack.json` — the IDE
-     only renders it. Edit the file and reload: the tutorial changes, no IDE
-     code touched.
-   - Over http(s) the pack is fetched at runtime; `js/tutorial-pack.js` is a
-     generated offline fallback (`npm run build:tutorial`), and both are
-     validated before use, with readable English errors for broken packs.
-   - **Your own lessons**: “★ Save editor file as lesson”, “⤓ Export pack”,
-     “⤒ Import pack”, “↺ Reset”, stored in your browser alongside the official
-     lessons.
-   - **Progress tracking**: visited lessons are ticked in the lesson rail and
-     the pack remembers where you stopped.
-   - **“Try in editor” can no longer eat your code**: it saves the file you were
-     working on and opens the example in its own `tutorial-<lesson>.eppl[a]`
-     file. (Previously it overwrote the open file.)
-   - 10 lessons, every example verified to parse *and* run by the test suite.
-4. **Much more in Settings**, grouped into Appearance · Editor · Behaviour ·
-   Tutorial · Data:
-   - *Appearance*: theme (dark / light / **match system**), layout density
-     (comfortable / compact), console height (compact / normal / tall), editor
-     font size, and toggles for the dashboard bar, line numbers, Libraries panel
-     and Quick reference panel.
-   - *Editor*: tab size (2/4/8) and spaces-vs-tab, word wrap, auto-save on/off
-     and auto-save delay.
-   - *Behaviour*: auto-`.eppla` rename, clear console before running, confirm
-     before deleting, re-open the last file on start.
-   - *Tutorial*: lesson-pack source readout, auto-open on first visit, and
-     reset of progress/custom lessons.
-   - *Data*: restore example files, reset all settings, delete all local data.
-5. **Layout cleanup**: the settings dialog is grouped and scrollable with a
-   title bar and footer, the tutorial is a two-pane dialog (lesson rail +
-   lesson), the Libraries and Quick reference panels collapse, the header has
-   its file and app actions separated, and the dashboard bar is tidier and can
-   be switched off.
-6. **Bug fixed — auto-`.eppl` → `.eppla` rename**: the handler called a function
-   that did not exist, so the rename failed silently and left the tab and file
-   list showing the old name. It now renames in place and keeps the whole UI in
-   sync.
+```sh
+make                # builds build/epp
+make test           # engine tests, then the server walked through with curl
+./build/epp serve   # the IDE, at http://localhost:8000
+```
 
-Everything from the earlier builds still works: `contains`,
-`is a positive number`, `is in the range of A to B`, quoted variables,
-`repeat N times`, the Image library, `is exactly equal to`, and the `.eppl` /
-`.eppla` split.
+The command line has a few other uses:
 
-## What's in the IDE
+```sh
+./build/epp run workspace/demo.eppla         # run a program
+./build/epp check workspace/demo.eppla       # parse it without running
+./build/epp run program.eppla --answers "Sam,14"
+./build/epp libraries                        # the six libraries and their words
+./build/epp serve --port 9000 --workspace /tmp/scratch
+```
 
-- **Code editor** — textarea-based editor with live, lexer-driven syntax
-  highlighting, line numbers, tab support and cursor position tracking.
-- **Run / Stop** — `Ctrl+Enter` runs the open file; long programs
-  and `wait` statements can be stopped at any time. `Ctrl+S` saves.
-- **Console** — program output, loaded-library notices, interactive input
-  for `ask`, and friendly handcrafted errors with line/column and hints.
-- **File explorer** — create, open, rename, delete (directly from list) and search `.eppl` / `.eppla` files.
-  Files are stored locally in the browser (`localStorage`) and auto-save as you type.
-- **Import / Export** — download the current file as `.eppl` or `.eppla` without `.txt` being appended.
-- **E++.zip** — download the standalone E++ engine.
-- **Tutorial** — 10 interactive lessons that load from the editable lesson pack
-  (`tutorial/pack.json`), with your own lessons, import/export, progress ticks,
-  and non-destructive "Try in editor".
-- **Bundled examples** — `hello.eppl`, `calculator.eppl`, `countdown.eppl`, `quiz.eppl`, `score-tracker.eppl`, `math.eppla`, `guessing-game.eppla`, `text-tools.eppla`, `python.eppla`, `drawing.eppla`.
+## What is where
 
-## The E++ Language in 60 Seconds
+| Path | What it holds |
+| --- | --- |
+| `src/` | The whole program: lexer, parser, interpreter, libraries, Python runner, JSON reader, file store, HTTP server, command line |
+| `web/` | The HTML the server fills in, plus `style.css` |
+| `data/` | Everything the pages say and everything they offer: the words, the settings schema, the lessons, the example programs |
+| `tests/` | The engine tests, an end-to-end pass through the server, and the checks on the house rules |
+| `workspace/` | Made on first run: your programs, your settings and any lessons you add |
+| `build/` | Compiler output |
+
+## Programs live in files
+
+An E++ file ends in `.eppl` or `.eppla`. A `.eppl` file is a program that needs nothing
+extra, and that is the only difference between the two: add a library and the file is
+saved as `.eppla`. The IDE does that rename for you the moment a library line appears.
 
 ```eppl
-note: Statements end with a period or a newline.
-Define name as WeeklyHow.
-say "Hello " plus 'name' plus "!"
+note: lines after "note:" are ignored
+Define who as "world".
+say "Hello, " plus 'who' plus "!"
+```
 
-ask "What is 5 plus 6?" and save answer as output
-if 'output' is equal to 11 then say "Correct!" otherwise say "Wrong!"
-
-note: Files with libraries must be saved as .eppla
+```eppla
 add library "Math"
-display 1 divided by 2 as fraction
-
-note: Dev Build 6.1.1 — new conditions
-if 'output' is a positive number then say "Above zero"
-if 'output' is in the range of 1 to 20 then say "In range"
-
-note: Dev Build 6.1.1 — contains
-Define greeting as "Hello World"
-if 'greeting' contains "World" then say "Found it!"
+display 7 divided by 8 as fraction
+say square root of 225
 ```
 
-- `"text in double quotes"` is printed literally.
-- `'name'` in single quotes means "the variable called name". Bare variable names are errors.
-- Bare words and numbers are maths or keywords: `say 1 plus 1` → `2`, while
-  `say "1 plus 1"` prints the text.
-- Change variables with `Set count to 'count' plus 1.` or `Set 'count' to 'count' plus 1.`.
-- Loop with `repeat 3 times ... end repeat` or `loopback to if`.
-- Check substrings with `contains`, positive/negative with `is a positive number`, ranges with `is in the range of A to B`.
+## The libraries
 
-## Project Structure
+| Library | Its words |
+| --- | --- |
+| Math | divided by, as fraction, as decimal, percent of, power of, square root of, is a positive / negative number, is in the range of A to B |
+| Text | uppercase of, lowercase of, length of |
+| Random | random number between A and B |
+| Image | define ... as image, display image, check if ... exists |
+| Draw | define ... as drawing sprite, move up / down / left / right |
+| Python | python code ... end python |
+
+A library word used too early is an error that names the library and the line to add:
 
 ```
-index.html                  The IDE entry point (empty #appRoot + scripts)
-ui/manifest.json            THE interface: every label, button, panel and dialog
-css/ide.css                 The IDE (styles)
-js/
-  errors.js                 EppError + LexError / ParseError / RuntimeError / LibraryError / FileError
-  lexer.js                  Generic tokenizer (pure JavaScript)
-  ast.js                    AST node definitions + tree walker
-  libraries.js              Library registry (Math, Text, Random, Python, Draw, Image)
-  parser.js                 Parser with Humanizer syntax (add library, comma Python blocks, .eppl vs .eppla)
-  python-runner.js          Pure JS Python lexer & interpreter (native Python error codes, no Pyodide)
-  interpreter.js            Interpreter & execution engine
-  files.js                  .eppl (pure) and .eppla (libraries) file store with octet-stream export
-  highlight.js              Syntax highlighting built on the real lexer
-  standalone-generator.js   Generates self-contained standalone index.html & E++.zip archive
-  tutorial-pack.js          GENERATED offline copy of the lesson pack (npm run build:tutorial)
-  tutorial.js               Tutorial engine: loads/validates/merges lesson packs, progress
-  settings-schema.js        GENERATED offline copy of the settings schema (npm run build:settings)
-  shell.js                  Shell engine: builds the interface from the UI manifest
-  ui-shell.js               GENERATED offline copy of the UI manifest (npm run build:ui)
-  settings.js               Settings engine: loads/validates the schema, defaults, effects
-  ide.js                    IDE app controller, file explorer, settings renderer, tutorial renderer, dashboard
-settings/schema.json        THE settings schema — edit this to change Settings
-tutorial/pack.json          THE lesson pack — edit this to change the tutorial
-tools/build-settings-schema.mjs  Generates js/settings-schema.js from settings/schema.json
-tools/build-ui-shell.mjs         Generates js/ui-shell.js from ui/manifest.json (and checks the ids)
-tools/build-tutorial-pack.mjs    Generates js/tutorial-pack.js from tutorial/pack.json
-examples/                   Bundled example programs (.eppl and .eppla)
-tests/run-tests.mjs         Test suite for the language core, files, Python, E++.zip, lesson packs
-tests/ide-smoke.mjs         Optional jsdom smoke test for the whole IDE (npm run test:ide)
+LibraryError (line 4, column 9): "square root of" belongs to the Math library, which has not been added yet.
+  Add this line above it: add library "Math"
 ```
 
-## Editing the IDE without touching its code
+## Python, when you want it
 
-Everything the IDE shows comes from one of three data files:
+`python code` opens a block that runs as Python until `end python`, with `print` writing to
+the same console as `say`:
 
-| What you want to change | Edit this | Offline copy |
-| --- | --- | --- |
-| The interface (buttons, panels, labels, dialogs, hints) | `ui/manifest.json` | `js/ui-shell.js` |
-| Settings (groups, controls, defaults, effects) | `settings/schema.json` | `js/settings-schema.js` |
-| Tutorial lessons | `tutorial/pack.json` | `js/tutorial-pack.js` |
+```eppla
+add library "Python"
 
-```bash
-# Refresh the generated offline copies (used on file:// and without a server)
-npm run build          # build:ui + build:settings + build:tutorial
+python code
+  total = 0
+  for number in range(1, 6):
+      total += number
+  print("Total:", total)
+end python
 ```
 
-Over the dev server the build step is optional: the IDE fetches the three JSON
-files directly. Change a label in `ui/manifest.json`, reload, and it is there.
-(The shell renders the bundled copy first, notices the served manifest differs,
-and reloads once so the edited interface is used.)
+It is a small runner, not CPython: printing, assignment and `+=`/`-=`, `if`/`elif`/`else`,
+`for` over `range()` or a list, `while`, `break`, `continue`, `pass`, lists, and
+`range`/`len`/`int`/`float`/`str`/`abs`/`round`/`sum`. Python errors keep their Python
+names, so `NameError`, `ZeroDivisionError` and `IndentationError` read as usual.
 
-Adding a setting is a JSON edit — no IDE code:
+## Settings, lessons and the rest
 
-```json
-{
-  "key": "wordWrap",
-  "type": "checkbox",
-  "label": "Wrap long lines instead of scrolling sideways",
-  "default": false,
-  "effect": { "kind": "class", "class": "wrap-code", "when": "truthy" }
-}
-```
+Nothing in the IDE is written into its markup. Labels, options, defaults, lessons and the
+quick reference live in `data/`, the server reads them as it builds each page, and the
+checks in `tests/no_refs.sh` fail the build if wording creeps back into `web/`.
 
-Effects can be `class`, `class-map`, `css-var` or `theme`; switches that the
-IDE has to act on (auto-save, tab size) are picked up by key, so removing one
-from the schema is enough to remove it from the IDE.
+- `data/messages.json` — every label and message the IDE can show
+- `data/settings.json` — the settings schema, its defaults and its groups; saved values go to `workspace/.settings.json`
+- `data/tutorial.json` — the eight lessons
+- `data/examples/` — the programs copied into `workspace/` on first run
+- `workspace/.lessons.json` — lessons you add or import
 
-You can also add lessons from inside the IDE (Settings ▸ Tutorial, or the
-lesson-pack buttons in the tutorial dialog) and export the whole set as a
-shareable `epp-tutorial-pack.json`.
+Wipe `workspace/` to start over; press *Restore examples* to bring the example programs back.
 
 ## Tests
 
-```bash
-npm test          # language core, file store, E++.zip, lesson pack, settings schema,
-                  # UI manifest and the id contract (110 groups)
-npm run test:ide  # boots the real IDE in jsdom and drives it — 47 checks, incl. adding a
-                  # setting to the served schema and a label to the served manifest to
-                  # watch the interface change with no code (needs jsdom)
+```sh
+make test                 # everything
+./build/engine_test       # 175 checks over the language, libraries, Python, JSON, store
+tests/http_smoke.sh       # 43 checks against a running server
+tests/no_refs.sh          # no javascript, no hardbaked wording, one explanation of the endings
 ```
+
+## Credit
+
+E++ grew out of a video by WeeklyHow, who built a first version of the language with an AI
+assistant. This build keeps the idea — an English-like language with real errors — and
+rewrites the whole thing: new grammar, new libraries, a Python runner, and an interpreter
+in C++.

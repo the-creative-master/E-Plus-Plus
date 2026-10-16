@@ -11,3 +11,7 @@ Thumbs.db
 
 # Scratch output from the build tools
 /tmp-*
+
+# Compiler output and the folder the IDE writes programs into
+build/
+workspace/

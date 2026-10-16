@@ -1,0 +1,13 @@
+add library "Math"
+add library "Text"
+
+define width as 12
+define height as 9
+
+say "Area: " plus 'width' times 'height'
+display 'width' divided by 2 as decimal
+display 'width' divided by 'height' as fraction
+display 45 percent of 80
+say "The square of the width is " plus 'width' power of 2
+say "The diagonal is about " plus square root of ('width' times 'width' plus 'height' times 'height')
+say "Letters counted: " plus length of "the quick brown fox jumps over the lazy dog"

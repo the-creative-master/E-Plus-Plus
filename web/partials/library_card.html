@@ -1,0 +1,10 @@
+      <article class="card">
+        <h3>{{name}} <span class="state">{{state}}</span></h3>
+        <p>{{description}}</p>
+        <p class="words">{{words}}</p>
+        <form method="post" action="/insert-library">
+          <input type="hidden" name="library" value="{{name}}">
+          <input type="hidden" name="file" value="{{file}}">
+          <button type="submit" class="link">{{t:ui.insert}}</button>
+        </form>
+      </article>

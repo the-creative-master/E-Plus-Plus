@@ -1,0 +1,74 @@
+<section class="dashboard{{dashboardHidden}}">
+  <span class="item"><strong>{{fileCount}}</strong> {{t:ui.files}}</span>
+  <span class="item">{{currentName}}</span>
+  <span class="item">{{t:ui.build}}: {{t:build}}</span>
+</section>
+
+<div class="columns">
+  <aside class="panel files-panel">
+    <h2>{{t:ui.files}}</h2>
+    <form class="search" method="get" action="/">
+      <label class="visually-hidden" for="search">{{t:ui.search}}</label>
+      <input id="search" type="search" name="q" value="{{search}}" placeholder="{{t:ui.searchPlaceholder}}">
+      <button type="submit">{{t:ui.search}}</button>
+    </form>
+    <ul class="file-list">
+{{files}}
+    </ul>
+    <div class="panel-actions">
+      <a class="button" href="/new">{{t:ui.new}}</a>
+      <form method="post" action="/restore-examples"><button type="submit" class="link">{{t:ui.restore}}</button></form>
+    </div>
+  </aside>
+
+  <section class="panel editor-panel">
+    <h2>{{currentName}} <span class="muted">{{t:ui.code}}</span></h2>
+    <form method="post" action="/run">
+      <input type="hidden" name="file" value="{{currentRaw}}">
+      <label class="visually-hidden" for="code">{{t:ui.code}}</label>
+      <textarea id="code" name="code" spellcheck="false">{{code}}</textarea>
+      <div class="answers">
+        <label for="answers">{{t:ui.answers}}</label>
+        <textarea id="answers" name="answers" rows="3" spellcheck="false">{{answers}}</textarea>
+        <p class="hint">{{t:ui.answersHint}}</p>
+      </div>
+      <div class="row-actions">
+        <button type="submit" class="primary">{{t:ui.run}}</button>
+      </div>
+    </form>
+    <form method="post" action="/save" class="save-form">
+      <input type="hidden" name="file" value="{{currentRaw}}">
+      <input type="hidden" name="answers" value="{{answers}}">
+      <input type="hidden" name="code" value="{{code}}">
+      <div class="row-actions">
+        <button type="submit">{{t:ui.save}}</button>
+        <a class="button" href="/download?file={{currentUrl}}">{{t:ui.download}}</a>
+        <a class="button" href="/rename?file={{currentUrl}}">{{t:ui.rename}}</a>
+        <a class="button danger" href="/delete?file={{currentUrl}}">{{t:ui.delete}}</a>
+      </div>
+    </form>
+  </section>
+
+  <aside class="panel console-panel">
+    <h2>{{t:ui.console}}</h2>
+    {{spriteGrid}}
+    <div class="console">
+{{console}}
+    </div>
+    <p class="hint">{{extensionNote}}</p>
+  </aside>
+</div>
+
+<div class="columns two">
+  <aside class="panel libraries-panel{{librariesHidden}}">
+    <h2>{{t:ui.libraries}}</h2>
+    <div class="cards">
+{{libraryCards}}
+    </div>
+  </aside>
+
+  <aside class="panel reference-panel{{referenceHidden}}">
+    <h2>{{t:ui.reference}}</h2>
+    <pre class="reference">{{reference}}</pre>
+  </aside>
+</div>

@@ -1,0 +1,9 @@
+note: Counting down with repeat, and changing a value with set.
+define count as 3
+
+repeat 3 times
+  say 'count'
+  set count to 'count' minus 1
+end repeat
+
+say "Blast off!"

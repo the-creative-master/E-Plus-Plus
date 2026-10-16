@@ -1,0 +1,4 @@
+note: The shortest useful program: give a name to a value, then print it.
+Define who as "world".
+say "Hello, " plus 'who' plus "!"
+say "Change the name, press Run, and the greeting follows."

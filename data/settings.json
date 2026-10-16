@@ -1,0 +1,94 @@
+{
+  "format": "eplusplus-settings",
+  "version": "6.2",
+  "source": "data/settings.json",
+  "defaults": {
+    "theme": "dark",
+    "density": "comfortable",
+    "fontSize": "14",
+    "consoleLines": "400",
+    "showDashboard": "true",
+    "showLibraries": "true",
+    "showReference": "true",
+    "highlightCode": "true",
+    "confirmDelete": "true",
+    "autoOpenTutorial": "true",
+    "defaultAnswers": ""
+  },
+  "groups": [
+    {
+      "title": "Appearance",
+      "controls": [
+        {
+          "key": "theme",
+          "type": "select",
+          "label": "Theme",
+          "default": "dark",
+          "options": [
+            { "value": "dark", "label": "Dark" },
+            { "value": "light", "label": "Light" }
+          ]
+        },
+        {
+          "key": "density",
+          "type": "select",
+          "label": "Layout density",
+          "default": "comfortable",
+          "options": [
+            { "value": "comfortable", "label": "Comfortable" },
+            { "value": "compact", "label": "Compact" }
+          ],
+          "description": "Compact trims the spacing so more code fits on the page."
+        },
+        {
+          "key": "fontSize",
+          "type": "select",
+          "label": "Code size",
+          "default": "14",
+          "options": [
+            { "value": "12", "label": "12 px" },
+            { "value": "13", "label": "13 px" },
+            { "value": "14", "label": "14 px" },
+            { "value": "16", "label": "16 px" },
+            { "value": "18", "label": "18 px" }
+          ]
+        },
+        { "key": "showDashboard", "type": "checkbox", "label": "Show the dashboard bar", "default": "true" },
+        { "key": "showLibraries", "type": "checkbox", "label": "Show the Libraries panel", "default": "true" },
+        { "key": "showReference", "type": "checkbox", "label": "Show the Quick reference panel", "default": "true" }
+      ]
+    },
+    {
+      "title": "Running programs",
+      "controls": [
+        { "key": "highlightCode", "type": "checkbox", "label": "Show the coloured code view", "default": "true",
+          "description": "The server colours the code with the same lexer it runs, above the editor." },
+        {
+          "key": "consoleLines",
+          "type": "select",
+          "label": "Console lines kept",
+          "default": "400",
+          "options": [
+            { "value": "100", "label": "100" },
+            { "value": "400", "label": "400" },
+            { "value": "2000", "label": "2000" }
+          ]
+        },
+        {
+          "key": "defaultAnswers",
+          "type": "text",
+          "label": "Answers filled in by default",
+          "default": "",
+          "description": "One answer per line. Used for ask; the box above the console overrides it for one run."
+        }
+      ]
+    },
+    {
+      "title": "Files and lessons",
+      "controls": [
+        { "key": "confirmDelete", "type": "checkbox", "label": "Ask before deleting a file", "default": "true" },
+        { "key": "autoOpenTutorial", "type": "checkbox", "label": "Open the tutorial on a first visit", "default": "true" }
+      ]
+    }
+  ]
+}

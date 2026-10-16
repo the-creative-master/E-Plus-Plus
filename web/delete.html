@@ -1,0 +1,9 @@
+<section class="panel narrow">
+  <h1>{{t:files.delete}}</h1>
+  <p class="hint">{{t:ui.confirmDelete}}: <strong>{{file}}</strong></p>
+  <form method="post" action="/delete">
+    <input type="hidden" name="file" value="{{file}}">
+    <button type="submit" class="danger">{{t:ui.delete}}</button>
+    <a class="button" href="/open?file={{url}}">{{t:ui.cancel}}</a>
+  </form>
+</section>

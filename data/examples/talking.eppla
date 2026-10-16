@@ -1,0 +1,12 @@
+add library "Text"
+
+ask "What should I call you?" and save answer as person
+ask "Where are you writing from?" and save answer as place
+
+say uppercase of 'person' plus " in " plus 'place'
+say "Your name is " plus length of 'person' plus " characters long."
+ask "How many times should I say hello?" and save answer as rounds
+
+repeat 'rounds' times
+  say "Hello, " plus 'person' plus "!"
+end repeat

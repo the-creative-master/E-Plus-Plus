@@ -1,0 +1,74 @@
+[
+  {
+    "id": "saying-things",
+    "title": "Saying things",
+    "badge": "Start here",
+    "summary": "Print a line, then print one built out of a variable.",
+    "explanation": "say prints whatever follows it. Text in double quotes is printed as written. A name in single quotes is looked up first, so 'who' below prints Ada, not the word who.",
+    "code": "note: line one of every E++ program\nDefine who as \"Ada\".\nsay \"Hello, world!\"\nsay \"Hello, \" plus 'who' plus \".\"\n",
+    "custom": false
+  },
+  {
+    "id": "variables",
+    "title": "Names and values",
+    "badge": "Basics",
+    "summary": "Store a value, change it, do arithmetic on it.",
+    "explanation": "Define gives a name to a starting value. Set replaces it later. Increase and decrease add and take away. Numbers do not need quotes; words do.",
+    "code": "Define score as 10.\nIncrease score by 5.\nDecrease score by 2.\nsay \"Score: \" plus 'score'\nSet score to 'score' times 2\nsay \"Doubled: \" plus 'score'\n",
+    "custom": false
+  },
+  {
+    "id": "asking",
+    "title": "Asking questions",
+    "badge": "Basics",
+    "summary": "Read an answer from the person using the program.",
+    "explanation": "ask prints a question and waits. The answer is stored under the name you give and can be used like any other value. In the IDE the answer comes from the Answers box, so a program can be run the same way twice.",
+    "code": "ask \"What is your name?\" and save answer as name\nsay \"Nice to meet you, \" plus 'name' plus \".\"\nask \"How old are you?\" and save answer as age\nif 'age' is greater than 12 then\n  say \"That is old enough for the next lesson.\"\notherwise\n  say \"Still plenty of time.\"\nend if\n",
+    "custom": false
+  },
+  {
+    "id": "decisions",
+    "title": "Making decisions",
+    "badge": "Control",
+    "summary": "Compare values and pick a path through the program.",
+    "explanation": "An if line reads as a sentence: 'x' is greater than 5. Otherwise handles everything else, and otherwise if adds another test. End if closes the block. Indentation is only for people; E++ uses the end line.",
+    "code": "Define temperature as 31.\n\nif 'temperature' is greater than 30 then\n  say \"It is a hot one.\"\notherwise if 'temperature' is greater than 20 then\n  say \"Pleasant.\"\notherwise\n  say \"Bring a jacket.\"\nend if\n",
+    "custom": false
+  },
+  {
+    "id": "repeating",
+    "title": "Doing it again",
+    "badge": "Control",
+    "summary": "Counted loops, conditional loops, and how to leave them.",
+    "explanation": "repeat ... times runs a block a fixed number of times; the block ends at end repeat. while ... do keeps going while the test holds true. loopback ends the round it is in early and starts the next one, which is handy when the rest of the round no longer matters.",
+    "code": "repeat 3 times\n  say \"Round\"\nend repeat\n\ndefine left as 4\nwhile 'left' is greater than 0 do\n  say \"Left: \" plus 'left'\n  decrease left by 1\nend while\n\ndefine step as 0\nrepeat 5 times\n  increase step by 1\n  if 'step' is exactly equal to 3 then\n    say \"Round three skips the rest of itself.\"\n    loopback\n  end if\n  say \"Round \" plus 'step'\nend repeat\n",
+    "custom": false
+  },
+  {
+    "id": "libraries",
+    "title": "Libraries",
+    "badge": "Extra words",
+    "summary": "Math, Text, Random, Image, Draw and Python, one line at a time.",
+    "explanation": "A library is a set of extra words. The line add library \"Math\" turns on the Math words for the rest of the file, and every library is switched on the same way. A file that loads libraries is saved with .eppla at the end; save this lesson that way and try it.",
+    "code": "add library \"Math\"\nadd library \"Text\"\nadd library \"Random\"\n\nsay square root of 225\ndisplay 7 divided by 8 as fraction\ndisplay 15 percent of 240\nsay uppercase of \"quiet words\"\nsay random number between 1 and 6\n",
+    "custom": false
+  },
+  {
+    "id": "drawing",
+    "title": "Sprites and pictures",
+    "badge": "Draw",
+    "summary": "Move something around, and show an image of a real thing.",
+    "explanation": "A sprite is a name with a position. Move right, left, up and down change that position by the number of pixels you write, and the dashboard draws the result so you can see it. Pictures work the other way round: a picture is Base64 text from a file, and display image sends it to the console.",
+    "code": "add library \"Draw\"\nadd library \"Image\"\n\ndefine rover as drawing sprite\nrepeat 4 times\n  'rover' move right \"50 px\"\n  'rover' move down \"20 px\"\nend repeat\nsay \"Look at the dashboard to see where 'rover' went.\"\n\nnote: one green pixel, written as Base64\ndefine dot as image \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==\"\ncheck if \"dot\" exists\ndisplay image\n",
+    "custom": false
+  },
+  {
+    "id": "python",
+    "title": "Python, when you want it",
+    "badge": "Python",
+    "summary": "Drop into Python for a block, then come back to E++.",
+    "explanation": "python code opens a block that runs as Python until end python, and print writes to the same console as say. What is inside the block is Python: indentation matters, and so do the brackets. The supported pieces are printing, if and elif, for, while, lists, and the usual number and text functions.",
+    "code": "add library \"Python\"\n\npython code\n  total = 0\n  for number in range(1, 6):\n      total += number\n  print(\"Total:\", total)\n  for name in [\"Ada\", \"Grace\", \"Alan\"]:\n      print(name, len(name))\nend python\n\nsay \"Back in E++.\"\n",
+    "custom": false
+  }
+]
