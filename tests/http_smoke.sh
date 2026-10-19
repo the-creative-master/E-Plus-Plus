@@ -138,6 +138,17 @@ body=$(get /)
 check_has "the file list shows the new file" "$body" "dice.eppla"
 check_has "the status page counts the same files as the disk" "$(get /api/status)" "\"files\": $(ls "$WORK" | grep -cE '\.eppla?$')"
 
+body=$(get "/api/file?name=dice.eppla")
+check_has "a GET can name the file it wants" "$body" '"name": "dice.eppla"'
+check_has "and gets that file's code back" "$body" "random number between"
+all_rows=$(get /api/files | grep -o 'file-open' | wc -l | tr -d ' ')
+one_row=$(get "/api/files?q=dice" | grep -o 'file-open' | wc -l | tr -d ' ')
+if [ "$one_row" -gt 0 ] && [ "$one_row" -lt "$all_rows" ]; then
+  ok "a GET can filter the file list"
+else
+  bad "the filtered list has $one_row of $all_rows rows"
+fi
+
 echo
 echo "lessons"
 body=$(post_page -d "lesson=python" "http://127.0.0.1:$PORT/tutorial/open")

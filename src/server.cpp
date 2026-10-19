@@ -987,8 +987,15 @@ Response App::api(const std::string& route, const Request& request) {
     std::string error;
     Json payload = jsonParse(request.body, &error);
     auto value = [&](const char* key) {
+        // A form field beats a JSON body, and a body beats the query string, so
+        // a POST is explicit. A GET has no body, and without the query fallback
+        // /api/file?name=... quietly answers about whichever file is first.
         std::string fromForm = field(key);
-        return fromForm.empty() ? payload.at(key).string() : fromForm;
+        if (!fromForm.empty()) return fromForm;
+        std::string fromBody = payload.at(key).string();
+        if (!fromBody.empty()) return fromBody;
+        auto found = request.query.find(key);
+        return found == request.query.end() ? std::string() : found->second;
     };
     auto answers = [&]() {
         std::vector<std::string> list;
