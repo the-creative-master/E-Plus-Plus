@@ -1,0 +1,13 @@
+note [09_random_library.epp: Demonstrating the Random library]
+
+add the "Random" library
+
+note [Define a random number variable:]
+define 'Random number' as a random number between 1 and 100
+say "Here is a random number between 1 and 100! It is ", 'Random number'
+
+note [Inline it's a random number expression:]
+say "Heres your random number!", it's a random number between 1 and 100
+
+note [Say the number between 1 and 5:]
+say "Rolling a 5-sided dice: ", the number between 1 and 5

@@ -1,0 +1,13 @@
+note [System Library Demonstration in E++ (.enppl)]
+add the "System" library
+
+note [1. Inspecting Platform and OS]
+say "Operating System:", the os
+say "Architecture Platform:", the platform
+
+note [2. Executing shell commands and capturing stdout]
+run system command "whoami" and save the output as 'User'
+say "Running as system user:", 'User'
+
+run system command "uname -r" and save the output as 'Kernel'
+say "Operating system kernel:", 'Kernel'

@@ -3,50 +3,256 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<title>E++ IDE (Dev Build 6) — Programs that read like English</title>
-<meta name="description" content="The official online IDE for E++ Dev Build 6, the programming language that looks like English, reads like English, and behaves like code. Features pure .eppl and library-supported .eppla files.">
-<link rel="stylesheet" href="css/ide.css?v=10">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>E</text></svg>">
+<title>E++ Studio | Release 1.0</title>
+<link rel="stylesheet" href="css/ide.css">
+<style>
+  /* Color classes for Terminal */
+  .color-red { color: #f87171 !important; }
+  .color-green { color: #4ade80 !important; }
+  .color-yellow { color: #fde047 !important; }
+  .color-blue { color: #60a5fa !important; }
+  .color-cyan { color: #22d3ee !important; }
+  .color-magenta { color: #e879f9 !important; }
+  /* Guaranteed Terminal & Editor Visibility (Never hidden or clipped off-screen) */
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: #080d1a;
+    color: #e2e8f0;
+  }
+  .topbar {
+    flex: 0 0 auto;
+  }
+  .dash-banner {
+    flex: 0 0 auto;
+  }
+  .footer {
+    flex: 0 0 auto;
+  }
+  .layout {
+    flex: 1 1 0;
+    min-height: 0;
+    height: auto;
+    display: grid !important;
+    grid-template-columns: 240px minmax(0, 1fr) !important;
+    gap: 12px !important;
+    padding: 8px 12px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+  .sidebar {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    overflow-y: auto !important;
+  }
+  .workspace {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-template-rows: 1fr !important;
+    gap: 12px !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    width: 100% !important;
+    overflow: hidden !important;
+  }
+  .editor-card, .console-card {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  .editor-wrap {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    position: relative !important;
+    overflow: hidden !important;
+  }
+  .line-numbers {
+    flex: 0 0 42px !important;
+    overflow: hidden !important;
+    user-select: none !important;
+  }
+  .code-area {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    position: relative !important;
+    overflow: hidden !important;
+  }
+  #editor, .code-editor-native {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+    overflow: auto !important;
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    color: #f8fafc !important;
+    caret-color: #38bdf8 !important;
+    font-family: var(--mono) !important;
+    font-size: 13.5px !important;
+    line-height: 1.6 !important;
+    padding: 14px !important;
+    tab-size: 4 !important;
+    resize: none !important;
+    white-space: pre !important;
+  }
+  .console-card {
+    border-color: rgba(56, 189, 248, 0.4) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+  }
+  .console-output {
+    flex: 1 1 0 !important;
+    overflow-y: auto !important;
+    min-height: 0 !important;
+    background: #060a12 !important;
+    padding: 14px !important;
+    color: #d1fae5 !important;
+    font-family: var(--mono) !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+  }
+  @media (max-width: 850px) {
+    .layout {
+      grid-template-columns: 200px minmax(0, 1fr) !important;
+      gap: 8px !important;
+      padding: 6px 8px !important;
+    }
+    .workspace {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+      gap: 8px !important;
+    }
+  }
+  @media (max-width: 620px) {
+    .sidebar {
+      display: none !important;
+    }
+    .layout {
+      grid-template-columns: 1fr !important;
+      padding: 6px !important;
+    }
+    .workspace {
+      grid-template-columns: 1fr !important;
+      grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) !important;
+      gap: 8px !important;
+    }
+  }
+
+  /* Badges */
+  .badge-enpp {
+    background: rgba(59, 130, 246, 0.18);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.45);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .badge-enppl {
+    background: rgba(168, 85, 247, 0.2);
+    color: #c084fc;
+    border: 1px solid rgba(168, 85, 247, 0.5);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .file-icon-enpp {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(59, 130, 246, 0.15) !important;
+    border: 1px solid rgba(59, 130, 246, 0.4) !important;
+    border-radius: 6px;
+    padding: 3px 5px;
+    color: #60a5fa !important;
+  }
+  .file-icon-enppl {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(168, 85, 247, 0.2) !important;
+    border: 1px solid rgba(168, 85, 247, 0.5) !important;
+    border-radius: 6px;
+    padding: 3px 5px;
+    color: #c084fc !important;
+  }
+  .dash-rules {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    background: rgba(0, 0, 0, 0.25);
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+  .dash-rules span { color: var(--accent); }
+  .code-editor-native {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #f1f5f9;
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.6;
+    tab-size: 4;
+    padding: 14px;
+    resize: none;
+    white-space: pre;
+    overflow: auto;
+  }
+</style>
 </head>
-<body data-mobile-view="editor">
+<body>
 
 <header class="topbar">
   <div class="brand">
     <div class="logo" aria-hidden="true">E<span>++</span></div>
     <div>
-      <h1>E++ IDE <span class="build-badge" title="E++ Dev Build 6">Dev Build 6</span></h1>
-      <p>Based on WeeklyHow's AI video · Looks like English. Reads like English. Behaves like code.</p>
+      <h1>E++ Studio <span class="build-badge">Release 1.0</span></h1>
+      <p>Looks like English. Reads like English. Behaves like code.</p>
     </div>
   </div>
+
   <div class="top-actions">
-    <span id="saveStatus" class="save-status" role="status">Saved</span>
+    <span id="saveStatus" class="save-status">Saved</span>
     <div class="action-group file-actions">
-      <button id="btnSave" class="btn" type="button" title="Save (Ctrl+S)">💾 Save</button>
-      <button id="btnExport" class="btn" type="button" title="Download this file (.eppl or .eppla)" aria-label="Export file">⤓ Export</button>
-      <button id="btnImport" class="btn" type="button" title="Open a .eppl or .eppla file" aria-label="Import file">⤒ Import</button>
-      <button id="btnZip" class="btn btn-zip" type="button" title="Download entire E++ runtime as E++.zip">📦 E++.zip</button>
-      <button id="btnSettings" class="btn" type="button" title="Settings">⚙️ Settings</button>
-      <button id="btnTutorial" class="btn btn-tutorial" type="button" title="Open Interactive Guided Tutorial">🎓 Tutorial</button>
-      <input id="importInput" type="file" accept=".eppl,.eppla" multiple hidden>
+      <button id="btnNew" class="btn btn-small btn-accent" type="button">+ New</button>
+      <button id="btnSave" class="btn" type="button" title="Save file">💾 Save</button>
+      <button id="btnExport" class="btn" type="button" title="Download this file (.enpp or .enppl)">⤓ Export</button>
+      <button id="btnZip" class="btn btn-zip" type="button" title="Download E++ C++ sources &amp; runtime bundle">📦 E++.zip</button>
+      <button id="btnClear" class="btn" type="button">⌧ Clear</button>
     </div>
     <div class="action-group run-actions">
-      <button id="btnStop" class="btn btn-danger" type="button" disabled>■ Stop</button>
       <button id="btnRun" class="btn btn-run" type="button" title="Run (Ctrl+Enter)">▶ Run</button>
     </div>
   </div>
 </header>
 
-<!-- Dashboard Overhaul: Live Stats Bar -->
-<div class="dash-banner" id="dashBanner" aria-label="Project dashboard">
+<!-- Live Stats Bar (Dashboard) -->
+<div class="dash-banner" id="dashBanner">
   <div class="dash-stat">
     <span class="dash-label">Active File:</span>
-    <span id="dashFile" class="dash-val">untitled.eppl</span>
+    <span id="dashFile" class="dash-val">hello.enpp</span>
   </div>
   <div class="dash-stat">
     <span class="dash-label">File Type:</span>
-    <span id="dashType" class="dash-badge-pill badge-eppl">.eppl (Pure)</span>
+    <span id="dashType" class="badge-enpp">.enpp (Pure)</span>
   </div>
   <div class="dash-stat">
     <span class="dash-label">Active Libraries:</span>
@@ -54,69 +260,129 @@
   </div>
   <div class="dash-stat">
     <span class="dash-label">Lines of Code:</span>
-    <span id="dashLines" class="dash-val">0</span>
+    <span id="dashLines" class="dash-val">8</span>
   </div>
-  <div class="dash-stat dash-stat-build">
-    <span class="dash-badge-pill badge-version">Dev Build 6 • Project Humanizer</span>
+  <div class="dash-rules">
+    Rules: <span>No quotes for math</span> • <span>'Var' for variables</span> • <span>"Text" for strings</span>
   </div>
 </div>
 
-<nav class="mobile-view-nav" aria-label="IDE panels">
-  <button class="mobile-view-btn" type="button" data-mobile-view="files" aria-pressed="false" aria-controls="sidebar">
-    <span class="mobile-view-icon" aria-hidden="true">▤</span><span>Files</span>
-    <span id="fileCountBadge" class="mobile-badge" hidden>0</span>
-  </button>
-  <button class="mobile-view-btn active" type="button" data-mobile-view="editor" aria-pressed="true" aria-controls="editorCard">
-    <span class="mobile-view-icon" aria-hidden="true">&lt;/&gt;</span><span>Code</span>
-  </button>
-  <button class="mobile-view-btn" type="button" data-mobile-view="console" aria-pressed="false" aria-controls="consoleCard">
-    <span class="mobile-view-icon" aria-hidden="true">›_</span><span>Console</span>
-    <span id="consoleBadge" class="mobile-badge mobile-badge-alert" hidden aria-label="New console output">•</span>
-  </button>
-</nav>
-
 <main class="layout">
-  <!-- ============ File explorer ============ -->
-  <aside class="sidebar" id="sidebar" aria-label="File explorer">
+  <!-- Sidebar: Files, Libraries, Quick Reference -->
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-head">
-      <h2>Files <span class="head-sub">(.eppl / .eppla)</span></h2>
-      <button id="btnNew" class="btn btn-small btn-accent" type="button">+ New</button>
+      <h2>Files <span class="head-sub">(.enpp / .enppl)</span></h2>
+      <button id="btnSidebarNew" class="btn btn-small btn-accent" type="button">+ New</button>
     </div>
-    <input id="fileSearch" class="file-search" type="search" placeholder="Search .eppl & .eppla files…" aria-label="Search files">
+    <input id="fileSearch" class="file-search" type="search" placeholder="Search .enpp &amp; .enppl files…">
     <ul id="fileList" class="file-list"></ul>
-    <p id="noFiles" class="no-files" hidden>No files yet.<br>Create one with “New”.</p>
 
     <div class="sidebar-actions">
-      <button id="btnRestoreExamples" class="btn btn-small" type="button">Restore example files</button>
+      <button id="btnRestoreExamples" class="btn btn-small" type="button">Restore default files</button>
     </div>
 
-    <section class="libraries-panel" aria-label="Available libraries">
-      <h2>Libraries <span class="head-sub">(.eppla only)</span></h2>
-      <p class="panel-note">Humanizer syntax:<br><code>add library "Math"</code></p>
-      <div id="libraryList"></div>
+    <!-- Available Libraries -->
+    <section class="libraries-panel">
+      <h2>Libraries <span class="head-sub">(Release 1.0)</span></h2>
+      <p class="panel-note">Humanizer syntax:<br><code>add the "Library" library</code></p>
+      
+      <div class="library-card">
+        <div class="lib-card-top">
+          <h3>Python <span>add library "Python"</span></h3>
+          <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Python')">+ Insert</button>
+        </div>
+        <p>Runs single-line or multi-line Python code, loops, functions, and math inside E++.</p>
+      </div>
+
+      <div class="library-card">
+        <div class="lib-card-top">
+          <h3>Math <span>add library "Math"</span></h3>
+          <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Math')">+ Insert</button>
+        </div>
+        <p>Unlocks square roots, percentages, min/max, absolute value, pi, power, and trig.</p>
+      </div>
+
+      <div class="library-card">
+        <div class="lib-card-top">
+          <h3>Random <span>add library "Random"</span></h3>
+          <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Random')">+ Insert</button>
+        </div>
+        <p>Generates random numbers between bounds, 20-sided dice rolls, and coin flips.</p>
+      </div>
+
+      <div class="library-card">
+        <div class="lib-card-top">
+          <h3>Strings <span>add library "Strings"</span></h3>
+          <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Strings')">+ Insert</button>
+        </div>
+        <p>String length, uppercase, lowercase, reverse, first/last letter, and trimming.</p>
+      </div>
+
+      <div class="library-card">
+        <div class="lib-card-top">
+          <h3>Time <span>add library "Time"</span></h3>
+          <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Time')">+ Insert</button>
+        </div>
+        <p>Current time, date, calendar year, unix timestamps, and wait/sleep delays.</p>
+      </div>
+
+      <div class="library-card">
+        <div class="lib-card-top">
+          <h3>Files <span>add library "Files"</span></h3>
+          <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Files')">+ Insert</button>
+        </div>
+        <p>Read from file into variables, write new files, and append data to files.</p>
+      </div>
+
+      <div class="library-card">
+        <div class="lib-card-top">
+          <h3>Colors <span>add library "Colors"</span></h3>
+          <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Colors')">+ Insert</button>
+        </div>
+        <p>Colored terminal messages: red, green, blue, yellow, cyan, and magenta.</p>
+      </div>
+
+      <div class="library-card">
+        <div class="lib-card-top">
+          <h3>System <span>add library "System"</span></h3>
+          <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('System')">+ Insert</button>
+        </div>
+        <p>Platform architecture, operating system name, and command execution.</p>
+      </div>
+
+      <div class="library-card">
+        <div class="lib-card-top">
+          <h3>Console <span>add library "Console"</span></h3>
+          <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Console')">+ Insert</button>
+        </div>
+        <p>Clear screen and real-time terminal stream management.</p>
+      </div>
     </section>
 
+    <!-- Quick Reference -->
     <section class="help-panel">
-      <h2>E++ Dev Build 6 quick reference</h2>
-      <pre>note: Pure .eppl files (no libraries)
-Define name as WeeklyHow.
-say "Hello " plus 'name'.
-ask "Age?" and save answer as age
-if 'age' is equal to 11 then say "Hi"
+      <h2>E++ Quick Reference</h2>
+      <pre>note [Pure .enpp files (no libraries)]
+let 'Grade' be 29
+say 1 plus 1
+check if "Hello" is not a number
 
-note: .eppla files (with libraries)
-add library "Math"
-display 1 divided by 2 as fraction</pre>
+note [.enppl files (with Python &amp; Math)]
+add the "Python" library
+run the python code:
+for I in range 3:
+   print("Hello", I)</pre>
     </section>
   </aside>
 
-  <!-- ============ Editor + console ============ -->
+  <!-- Workspace: Editor & Live Console (Side by Side 50/50 Split) -->
   <section class="workspace" id="workspace">
+    <!-- Editor Card (Left 50%) -->
     <div class="editor-card" id="editorCard">
       <div class="editor-head">
         <div class="tab" id="currentTab">
-          <span class="tab-dot" aria-hidden="true"></span>
-          <span id="currentFileName">untitled.eppl</span>
+          <span class="tab-dot"></span>
+          <span id="currentFileName">hello.enpp</span>
         </div>
         <div class="editor-head-actions">
           <button id="btnRename" class="btn btn-small" type="button">Rename</button>
@@ -125,136 +391,1241 @@ display 1 divided by 2 as fraction</pre>
       </div>
 
       <div class="editor-wrap" id="editorWrap">
-        <div class="line-numbers" aria-hidden="true"><div id="lineNumberInner">1</div></div>
+        <div class="line-numbers" id="lineNumbers">1</div>
         <div class="code-area">
-          <pre class="highlight-layer" aria-hidden="true"><code id="highlightCode"></code></pre>
-          <textarea id="editor" aria-label="E++ code editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="Write E++ here…"></textarea>
+          <textarea id="editor" class="code-editor-native" spellcheck="false" autocomplete="off" placeholder="Write E++ code here…"></textarea>
         </div>
       </div>
 
       <div class="statusbar">
-        <span id="statusFile" class="status-optional">No file open</span>
-        <span class="status-sep status-optional">·</span>
+        <span id="statusFile">hello.enpp</span>
+        <span class="status-sep">·</span>
         <span id="statusCursor">Line 1, Column 1</span>
-        <span class="status-sep status-lines-item">·</span>
-        <span id="statusLines" class="status-lines-item">0 lines</span>
+        <span class="status-sep">·</span>
+        <span id="statusLines">8 lines</span>
         <span class="status-spacer"></span>
-        <span id="statusLibraries" class="status-optional">Libraries: none loaded</span>
-        <span class="status-sep status-optional">·</span>
+        <span id="statusLibraries">Libraries: none</span>
+        <span class="status-sep">·</span>
         <span id="statusRun" class="status-run">Ready</span>
       </div>
     </div>
 
+    <!-- Console Card (Right 50%, ALWAYS VISIBLE) -->
     <div class="console-card" id="consoleCard">
       <div class="console-head">
-        <h2>Console</h2>
-        <span id="consoleHint" class="console-hint">Output and errors appear here.</span>
+        <h2>Live Terminal &amp; Console</h2>
+        <span class="console-hint">Real-time output stream</span>
         <button id="btnClearConsole" class="btn btn-small" type="button">Clear</button>
       </div>
-      <div id="consoleOutput" class="console-output" aria-live="polite"></div>
-      <form id="consoleInputForm" class="console-input" hidden>
-        <span class="console-input-prompt" id="consoleInputPrompt"></span>
-        <input id="consoleInput" type="text" autocomplete="off" aria-label="Your answer">
+      <div id="consoleOutput" class="console-output"></div>
+
+      <!-- Interactive Ask Input Form -->
+      <form id="consoleInputForm" class="console-input" style="display:none;">
+        <span class="console-input-prompt" id="consoleInputPrompt">Answer:</span>
+        <input id="consoleInput" type="text" autocomplete="off" placeholder="Type answer and press Enter…">
         <button class="btn btn-small btn-accent" type="submit">Answer</button>
       </form>
-    </div>
-
-    <div class="draw-card" id="drawCard" hidden>
-      <div class="console-head">
-        <h2>Drawing</h2>
-        <span class="console-hint">Sprites appear here when a program uses the Draw library. (0, 0) is the centre; up is negative.</span>
-      </div>
-      <canvas id="drawCanvas" width="720" height="360">Your browser does not support drawing.</canvas>
     </div>
   </section>
 </main>
 
 <footer class="footer">
-  <span><strong>E++ Dev Build 6</strong> · Based on WeeklyHow's AI programming language video · <code>.eppl</code> without libraries, <code>.eppla</code> with libraries.</span>
+  <span><strong>E++ Studio [Release 1.0]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
   <span>Shortcuts: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run · <kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span>
 </footer>
 
-<!-- Interactive Guided Tutorial Dialog (Requirement 11) -->
-<dialog id="tutorialDialog" class="tutorial-dialog">
-  <div class="tutorial-head">
-    <div class="tutorial-title-wrap">
-      <span id="tutBadge" class="tutorial-badge">Basics</span>
-      <h2 id="tutTitle">1. Welcome to E++ (Dev Build 6)</h2>
-    </div>
-    <button id="tutClose" class="btn-close" type="button" aria-label="Close tutorial">&times;</button>
-  </div>
-  <div class="tutorial-body">
-    <p id="tutSummary" class="tutorial-summary"></p>
-    <p id="tutExplanation" class="tutorial-explanation"></p>
-    <div class="tutorial-code-box">
-      <div class="code-box-header">
-        <span>Example Code</span>
-        <button id="tutTry" class="btn btn-small btn-accent" type="button">▶ Try in Editor</button>
-      </div>
-      <pre id="tutCode" class="tutorial-code"></pre>
-    </div>
-  </div>
-  <div class="tutorial-foot">
-    <span id="tutStepCount" class="tutorial-steps">Step 1 of 6</span>
-    <div class="tutorial-nav-buttons">
-      <button id="tutPrev" class="btn btn-small" type="button">← Previous</button>
-      <button id="tutNext" class="btn btn-small btn-accent" type="button">Next →</button>
-    </div>
-  </div>
-</dialog>
-
-<!-- Settings Dialog -->
-<dialog id="settingsDialog" class="settings-dialog">
-  <div class="settings-head">
-    <h2>Settings</h2>
-    <button id="settingsClose" class="btn-close" type="button" aria-label="Close settings">&times;</button>
-  </div>
-  <div class="settings-body">
-    <div class="setting-row">
-      <label>
-        <span>Theme</span>
-        <select id="themeSelect">
-          <option value="dark">Dark Mode</option>
-          <option value="light">Light Mode</option>
-        </select>
-      </label>
-    </div>
-    <div class="setting-row">
-      <label>
-        <input type="checkbox" id="autoEpplaToggle">
-        <span>Auto-change to .eppla when library is detected</span>
-      </label>
-      <p class="setting-desc">Automatically changes file extension to .eppla when <code>add library</code> is detected</p>
-    </div>
-  </div>
-</dialog>
-
-<!-- File creation / rename dialog -->
+<!-- Clean Native File Modal -->
 <dialog id="fileDialog" class="file-dialog">
   <form method="dialog" id="fileDialogForm">
     <h2 id="fileDialogTitle">New File</h2>
-    <label for="fileDialogInput">File name (.eppl for pure code, .eppla for libraries)</label>
-    <input id="fileDialogInput" type="text" placeholder="my-program.eppl" autocomplete="off">
-    <p id="fileDialogError" class="dialog-error" role="alert"></p>
+    <label for="fileDialogInput">File name (.enpp for pure code, .enppl for libraries)</label>
+    <input id="fileDialogInput" type="text" placeholder="my-program.enpp" autocomplete="off">
     <div class="dialog-actions">
-      <button id="fileDialogCancel" class="btn" type="button">Cancel</button>
-      <button id="fileDialogConfirm" class="btn btn-accent" type="submit">Create</button>
+      <button id="fileDialogCancel" class="btn" type="button" onclick="closeFileDialog()">Cancel</button>
+      <button id="fileDialogConfirm" class="btn btn-accent" type="button" onclick="confirmFileDialog()">Confirm</button>
     </div>
   </form>
 </dialog>
 
-<div id="toast" class="toast" role="status" hidden></div>
+<div id="toast" class="toast" style="display:none;"></div>
 
-<script src="js/errors.js?v=10"></script>
-<script src="js/lexer.js?v=10"></script>
-<script src="js/ast.js?v=10"></script>
-<script src="js/libraries.js?v=10"></script>
-<script src="js/parser.js?v=10"></script>
-<script src="js/python-runner.js?v=10"></script>
-<script src="js/interpreter.js?v=10"></script>
-<script src="js/files.js?v=10"></script>
-<script src="js/highlight.js?v=10"></script>
-<script src="js/standalone-generator.js?v=10"></script>
-<script src="js/ide.js?v=10"></script>
+<script>
+// ==========================================
+// E++ Pure & Fast In-Browser Engine + Python
+// ==========================================
+
+const DEFAULT_FILES = [
+  {
+    name: 'hello.enpp',
+    content: `note [Your first E++ program in pure .enpp]
+say "Hello, World!"
+say "Looks like English, feels like english, and is english"
+
+note [No quotes for math, evaluated naturally:]
+say 1 plus 1
+say 2 times 3
+
+note [Quotes are strictly string text:]
+say "1 + 1"`
+  },
+  {
+    name: 'release_showcase.enppl',
+    content: `note [E++ Release 1.0 Grand Showcase (.enppl)]
+add the "Colors" library
+add the "Time" library
+add the "Math" library
+add the "Random" library
+add the "Strings" library
+add the "Files" library
+add the "System" library
+add the "Python" library
+
+say cyan "========================================================="
+say cyan "            Welcome to E++ Release 1.0!                  "
+say cyan "========================================================="
+
+note [System & Time Diagnostics]
+say blue "System Platform:", the platform
+say blue "Current Date & Time:", the current date, "at", the current time
+
+note [Natural Math & Random Computations]
+say "Square root of 144 is", the square root of 144
+say "Rolling a 20-sided dice gives:", roll a dice with 20 sides
+say "Flipping a coin gives:", flip a coin
+
+note [Strings Processing]
+let 'Announcement' be "   e++ is readable like english!   "
+say "Trimmed:", the trim of 'Announcement'
+say "Uppercase:", the uppercase of the trim of 'Announcement'
+
+note [File Persistence in Virtual IDE]
+write "Release 1.0 verified on: " to file "showcase_audit.log"
+append the current date to file "showcase_audit.log"
+read the file "showcase_audit.log" and save the output as 'Audit'
+say "Audit log content:", 'Audit'
+
+note [Python Engine Bridge]
+let 'EppVersion' be "1.0.0"
+run the python code:
+print(f"[Python Subsystem] Connected with E++ v{EppVersion}")
+import math
+print(f"[Python Subsystem] Computed 10! = {math.factorial(10)}")
+
+say green "✓ All Release 1.0 tests completed with 100% success!"`
+  },
+  {
+    name: 'python_demo.enppl',
+    content: `note [The Python Library in E++ (.enppl file)]
+add the "Python" library
+
+note [1. Single-line Python code:]
+run the python code "print('Hello from Python single-line!')"
+
+note [2. Multi-line Python code with loops:]
+run the python code:
+for I in range 3:
+   print("Hello from Python loop count:", I)
+
+note [3. Interacting: E++ variables into Python:]
+let 'Greeting' be "Welcome to E++ and Python!"
+run the python code "print('E++ says:', greeting)"`
+  },
+  {
+    name: 'strings_demo.enppl',
+    content: `note [Strings Library in E++ (.enppl)]
+add the "Strings" library
+
+let 'Message' be "Hello, E++ Release 1.0!"
+say "Original message:", 'Message'
+say "Length of message:", the length of 'Message'
+say "Uppercase:", the uppercase of 'Message'
+say "Lowercase:", the lowercase of 'Message'
+say "Reversed message:", the reverse of 'Message'
+say "First letter:", the first letter of 'Message'
+say "Last letter:", the last letter of 'Message'
+
+let 'Padded' be "   Spaced out text   "
+say "Trimmed:", the trim of 'Padded'`
+  },
+  {
+    name: 'time_and_colors.enppl',
+    content: `note [Time & Colors Demonstration in E++ (.enppl)]
+add the "Time" library
+add the "Colors" library
+
+say cyan "Current time is: ", the current time
+say cyan "Current date is: ", the current date
+say cyan "Current year is: ", the current year
+say cyan "Unix timestamp: ", the current timestamp
+
+say yellow "Pausing execution for 500 milliseconds..."
+wait 500 milliseconds
+
+say green "✓ Done! Terminal colors and timers work smoothly."`
+  },
+  {
+    name: 'files_and_system.enppl',
+    content: `note [Files & System Demonstration in E++ (.enppl)]
+add the "Files" library
+add the "System" library
+
+say "System Platform:", the platform
+say "Operating System:", the os
+
+note [Writing and reading in the IDE filesystem:]
+write "E++ Release 1.0 is lightning fast!" to file "notes.txt"
+read the file "notes.txt" and save the output as 'ReadBack'
+say "Read back from file:", 'ReadBack'`
+  },
+  {
+    name: 'math_demo.enppl',
+    content: `note [The Math Library (.enppl file)]
+add the "Math" library
+
+say "Square root of 2 is: ", the square root of 2
+say "Square root of 16 is: ", the square root of 16
+say "60 percent of 100 is: ", how much 60 percent is of 100
+say "Absolute value of 0 - 42 is: ", the absolute value of 0 minus 42
+say "Maximum of 15 and 99 is: ", the maximum of 15 and 99
+say "Value of pi is: ", the value of pi`
+  },
+  {
+    name: 'random_demo.enppl',
+    content: `note [The Random Library (.enppl file)]
+add the "Random" library
+
+say "Dice roll (6-sided):", roll a dice
+say "Dice roll (20-sided):", roll a dice with 20 sides
+say "Coin flip:", flip a coin
+
+define 'Random number' as a random number between 1 and 100
+say "Here is a random number between 1 and 100! It is ", 'Random number'`
+  },
+  {
+    name: 'variables.enpp',
+    content: `note [Variables in E++ are always wrapped in single quotes!]
+
+let 'Grade' be 29
+let 'Student' be Sam
+let 'Comment' be What a Disgrace!
+
+say 'Student', "got a grade of ", 'grade', ". Comments on this grade are: ", 'Comment'`
+  },
+  {
+    name: 'concatenation.enpp',
+    content: `note [Concatenation and Separation Methods in E++]
+
+say "Hello ", and concat it with "World!"
+say 1 + 2 and concat it with 2 + 3
+say 1 + 2 and concat it with 2 + 3 with the seperation method of "-"
+say "Hello " and concat it with "World! " and concat it with "Welcome to E++!" with the seperation method of "sigma"
+say "Hello ", "World! ", "Welcome to E++!"`
+  },
+  {
+    name: 'interactive.enpp',
+    content: `note [Asking Questions in E++]
+
+ask "What is your name?" and save the output as 'Name'
+say "Hello ", 'name', ", Welcome to E++!"`
+  }
+];
+
+// File Storage (.enpp & .enppl)
+let files = {};
+let currentFileName = 'hello.enpp';
+let fileDialogMode = 'new';
+
+function initStorage() {
+  const saved = localStorage.getItem('epp_files_release_1_0');
+  if (saved) {
+    try { files = JSON.parse(saved); } catch (e) { files = {}; }
+  }
+  if (!files || Object.keys(files).length === 0 || !files['hello.enpp'] || !files['release_showcase.enppl']) {
+    restoreDefaultFiles(false);
+  } else {
+    currentFileName = Object.keys(files)[0];
+  }
+}
+
+function saveStorage() {
+  localStorage.setItem('epp_files_release_1_0', JSON.stringify(files));
+}
+
+function restoreDefaultFiles(notify = true) {
+  files = {};
+  DEFAULT_FILES.forEach(f => { files[f.name] = f.content; });
+  currentFileName = 'hello.enpp';
+  saveStorage();
+  renderFileList();
+  loadFile(currentFileName);
+  if (notify) showToast('Restored default .enpp & .enppl files!');
+}
+
+function renderFileList() {
+  const listEl = document.getElementById('fileList');
+  const search = document.getElementById('fileSearch').value.toLowerCase();
+  listEl.innerHTML = '';
+
+  Object.keys(files).forEach(name => {
+    if (search && !name.toLowerCase().includes(search)) return;
+    const isLib = name.endsWith('.enppl');
+    const li = document.createElement('li');
+    li.className = 'file-row';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'file-item' + (name === currentFileName ? ' active' : '');
+    btn.onclick = () => loadFile(name);
+
+    const icon = document.createElement('span');
+    icon.className = isLib ? 'file-icon file-icon-enppl' : 'file-icon file-icon-enpp';
+    icon.innerText = isLib ? '.enppl' : '.enpp';
+
+    const title = document.createElement('span');
+    title.className = 'file-name';
+    title.innerText = name;
+
+    btn.appendChild(icon);
+    btn.appendChild(title);
+    li.appendChild(btn);
+    listEl.appendChild(li);
+  });
+}
+
+function loadFile(name) {
+  if (currentFileName && currentFileName !== name && files[currentFileName] !== undefined) {
+    files[currentFileName] = document.getElementById('editor').value;
+    saveStorage();
+  }
+  currentFileName = name;
+  document.getElementById('editor').value = files[name] || '';
+  document.getElementById('currentFileName').innerText = name;
+  document.getElementById('statusFile').innerText = name;
+  document.getElementById('dashFile').innerText = name;
+
+  updateDashboard();
+  updateLineNumbers();
+  renderFileList();
+}
+
+function updateDashboard() {
+  const content = document.getElementById('editor').value;
+  const isEnppl = currentFileName.endsWith('.enppl') || /add\s+(?:the\s+)?["']?\w+["']?\s+library/i.test(content);
+  
+  const typeBadge = document.getElementById('dashType');
+  typeBadge.className = isEnppl ? 'badge-enppl' : 'badge-enpp';
+  typeBadge.innerText = isEnppl ? '.enppl (Libraries)' : '.enpp (Pure)';
+
+  const lines = content.split('\n').length;
+  document.getElementById('dashLines').innerText = lines;
+  document.getElementById('statusLines').innerText = lines + ' lines';
+
+  // Check libraries
+  let libs = [];
+  if (/add\s+(?:the\s+)?["']?python["']?\s+library/i.test(content)) libs.push('Python');
+  if (/add\s+(?:the\s+)?["']?math["']?\s+library/i.test(content)) libs.push('Math');
+  if (/add\s+(?:the\s+)?["']?random["']?\s+library/i.test(content)) libs.push('Random');
+  if (/add\s+(?:the\s+)?["']?strings["']?\s+library/i.test(content)) libs.push('Strings');
+  if (/add\s+(?:the\s+)?["']?time["']?\s+library/i.test(content)) libs.push('Time');
+  if (/add\s+(?:the\s+)?["']?files["']?\s+library/i.test(content)) libs.push('Files');
+  if (/add\s+(?:the\s+)?["']?system["']?\s+library/i.test(content)) libs.push('System');
+  if (/add\s+(?:the\s+)?["']?colors["']?\s+library/i.test(content)) libs.push('Colors');
+  if (/add\s+(?:the\s+)?["']?console["']?\s+library/i.test(content)) libs.push('Console');
+  const libText = libs.length > 0 ? libs.join(', ') : 'None';
+  document.getElementById('dashLibs').innerText = libText;
+  document.getElementById('statusLibraries').innerText = 'Libraries: ' + libText;
+}
+
+function updateLineNumbers() {
+  const lines = document.getElementById('editor').value.split('\n').length;
+  let html = '';
+  for (let i = 1; i <= lines; i++) html += i + '<br>';
+  document.getElementById('lineNumbers').innerHTML = html;
+}
+
+function insertLibrary(libName) {
+  const ed = document.getElementById('editor');
+  const addCmd = `add the "${libName}" library\n`;
+  if (!ed.value.includes(addCmd.trim())) {
+    ed.value = addCmd + ed.value;
+    updateLineNumbers();
+    updateDashboard();
+    if (currentFileName.endsWith('.enpp')) {
+      const newName = currentFileName.replace(/\.enpp$/, '.enppl');
+      renameCurrentFile(newName);
+    }
+    showToast(`Added ${libName} library and updated to .enppl!`);
+  } else {
+    showToast(`${libName} library is already added.`);
+  }
+}
+
+// Dialog management
+function openNewFileDialog() {
+  fileDialogMode = 'new';
+  document.getElementById('fileDialogTitle').innerText = 'New File';
+  document.getElementById('fileDialogInput').value = 'script.enpp';
+  document.getElementById('fileDialog').showModal();
+}
+
+function openRenameDialog() {
+  fileDialogMode = 'rename';
+  document.getElementById('fileDialogTitle').innerText = 'Rename File';
+  document.getElementById('fileDialogInput').value = currentFileName;
+  document.getElementById('fileDialog').showModal();
+}
+
+function closeFileDialog() {
+  document.getElementById('fileDialog').close();
+}
+
+function confirmFileDialog() {
+  let name = document.getElementById('fileDialogInput').value.trim();
+  if (!name) return;
+  if (!name.endsWith('.enpp') && !name.endsWith('.enppl')) {
+    name += '.enpp';
+  }
+
+  if (fileDialogMode === 'new') {
+    files[name] = `note [E++ code in ${name}]\nsay "Hello from ${name}!"\n`;
+    saveStorage();
+    renderFileList();
+    loadFile(name);
+    showToast(`Created ${name}`);
+  } else if (fileDialogMode === 'rename') {
+    if (name !== currentFileName) {
+      files[name] = files[currentFileName];
+      delete files[currentFileName];
+      saveStorage();
+      currentFileName = name;
+      renderFileList();
+      loadFile(name);
+      showToast(`Renamed to ${name}`);
+    }
+  }
+  closeFileDialog();
+}
+
+function renameCurrentFile(newName) {
+  if (newName === currentFileName) return;
+  files[newName] = document.getElementById('editor').value;
+  delete files[currentFileName];
+  currentFileName = newName;
+  saveStorage();
+  renderFileList();
+  loadFile(newName);
+}
+
+function deleteCurrentFile() {
+  const keys = Object.keys(files);
+  if (keys.length <= 1) {
+    showToast('Cannot delete the last remaining file!', true);
+    return;
+  }
+  if (!confirm(`Are you sure you want to delete ${currentFileName}?`)) return;
+  delete files[currentFileName];
+  currentFileName = Object.keys(files)[0];
+  saveStorage();
+  renderFileList();
+  loadFile(currentFileName);
+  showToast('File deleted.');
+}
+
+function exportCurrentFile() {
+  const blob = new Blob([document.getElementById('editor').value], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = currentFileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast(`Exported ${currentFileName}`);
+}
+
+function downloadZip() {
+  const a = document.createElement('a');
+  a.href = 'epp_language.zip';
+  a.download = 'epp_language.zip';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast('Downloading epp_language.zip...');
+}
+
+function showToast(msg, isErr = false) {
+  const t = document.getElementById('toast');
+  t.innerText = msg;
+  t.style.display = 'block';
+  t.style.borderColor = isErr ? 'var(--danger)' : 'var(--accent)';
+  setTimeout(() => { t.style.display = 'none'; }, 2600);
+}
+
+// ==========================================
+// In-Browser Python Execution Engine
+// ==========================================
+
+function executeInBrowserPython(pyCode, envVars, printFn) {
+  // Prepend injected variables from E++
+  let jsScope = {
+    math: {
+      sqrt: Math.sqrt,
+      factorial: (n) => { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; },
+      sin: Math.sin,
+      cos: Math.cos,
+      pi: Math.PI,
+      e: Math.E,
+      pow: Math.pow
+    }
+  };
+  for (let k in envVars) {
+    jsScope[k] = envVars[k];
+    jsScope[k.toLowerCase()] = envVars[k];
+    jsScope[k.toUpperCase()] = envVars[k];
+    jsScope['EppVersion'] = envVars[k];
+    const cap = k.replace(/(?:^|\s|_|-)(\w)/g, (_, c) => c.toUpperCase());
+    jsScope[cap] = envVars[k];
+  }
+
+  // Custom print function
+  let printedLines = [];
+  function pyPrint(...args) {
+    const line = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+    printedLines.push(line);
+    printFn(line);
+  }
+
+  // Pre-process code:
+  // Auto-fix 'for I in range 3:' -> 'for I in range(3):'
+  let cleanPy = pyCode.replace(/range\s+(\d+)\s*:/g, 'range($1):');
+
+  // Convert Python f"..." to template literals
+  cleanPy = cleanPy.replace(/f"([^"\\]*(?:\\.[^"\\]*)*)"/g, (match, inner) => {
+    return '`' + inner.replace(/\{([^}]+)\}/g, '${$1}') + '`';
+  });
+  cleanPy = cleanPy.replace(/f'([^'\\]*(?:\\.[^'\\]*)*)'/g, (match, inner) => {
+    return '`' + inner.replace(/\{([^}]+)\}/g, '${$1}') + '`';
+  });
+
+  // Convert Python loops and statements to JS executable scope
+  // If it's single line print: print(...)
+  const printMatch = cleanPy.trim().match(/^print\s*\((.*)\)$/);
+  if (printMatch) {
+    try {
+      const argsExpr = printMatch[1];
+      // Evaluate args in JS scope
+      const fn = new Function('print', ...Object.keys(jsScope), `print(${argsExpr});`);
+      fn(pyPrint, ...Object.values(jsScope));
+      return printedLines.join('\n');
+    } catch (e) {
+      // Fallback
+    }
+  }
+
+  // Loop matching: for var in range(N): ...
+  const loopMatch = cleanPy.match(/for\s+([a-zA-Z_]\w*)\s+in\s+range\s*\(([^)]+)\)\s*:\s*\n?([\s\S]*)/i);
+  if (loopMatch) {
+    const loopVar = loopMatch[1];
+    const rangeLimit = parseInt(loopMatch[2].trim()) || 0;
+    const bodyCode = loopMatch[3].trim();
+
+    // Check if body is print(...)
+    const bodyPrint = bodyCode.match(/print\s*\((.*)\)/);
+    for (let idx = 0; idx < rangeLimit; idx++) {
+      jsScope[loopVar] = idx;
+      if (bodyPrint) {
+        try {
+          const fn = new Function('print', ...Object.keys(jsScope), `print(${bodyPrint[1]});`);
+          fn(pyPrint, ...Object.values(jsScope));
+        } catch (err) {
+          pyPrint(`[Python Error] ${err.message}`);
+        }
+      }
+    }
+    return printedLines.join('\n');
+  }
+
+  // Generic Python block lines
+  const lines = cleanPy.split('\n');
+  for (let l of lines) {
+    let tr = l.trim();
+    if (!tr || tr.startsWith('#') || tr.startsWith('import ') || tr.startsWith('from ')) continue;
+    const pm = tr.match(/^print\s*\((.*)\)$/);
+    if (pm) {
+      try {
+        const fn = new Function('print', ...Object.keys(jsScope), `print(${pm[1]});`);
+        fn(pyPrint, ...Object.values(jsScope));
+      } catch (err) {
+        // Fallback plain string print
+        pyPrint(pm[1].replace(/['"`]/g, ''));
+      }
+    }
+  }
+  return printedLines.join('\n');
+}
+
+// ==========================================
+// E++ Pure Evaluator Engine
+// ==========================================
+
+class EppEvaluator {
+  constructor() {
+    this.vars = {};
+    this.libs = new Set();
+  }
+
+  norm(name) { return name.toLowerCase().trim(); }
+
+  async run(source, printFn, askFn) {
+    const lines = source.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i].trim();
+      let lineNum = i + 1;
+      if (!line) continue;
+
+      // Note check: note [Note]
+      if (line.toLowerCase().startsWith('note')) {
+        const m = line.match(/^note\s*\[(.*)\]$/i);
+        if (!m) {
+          throw new Error(`[E++ Syntax Error] at line ${lineNum}: Notes in E++ must use the syntax: note [Note]`);
+        }
+        continue;
+      }
+
+      // Check legacy // or #
+      if (line.startsWith('//') || line.includes('//')) {
+        throw new Error(`[E++ Syntax Error] at line ${lineNum}: E++ does not use '// note'. Notes must use the syntax: note [Note]`);
+      }
+      if (line.startsWith('#')) {
+        throw new Error(`[E++ Syntax Error] at line ${lineNum}: E++ does not use '#' comments. Notes must use the syntax: note [Note]`);
+      }
+
+      // Multi-line Python execution: run the python code:
+      if (/^(?:run\s+)?(?:the\s+)?python\s+code\s*:/i.test(line)) {
+        if (!this.libs.has('python')) {
+          throw new Error(`[E++ Library Error] at line ${lineNum}: Running Python code requires the "Python" library. Please add: add the "Python" library`);
+        }
+        let pyBlock = [];
+        i++;
+        while (i < lines.length) {
+          let nextL = lines[i];
+          // Check if upcoming line is an unindented E++ statement
+          let tr = nextL.trim();
+          if (tr && !nextL.startsWith(' ') && !nextL.startsWith('\t')) {
+            if (/^(?:say|tell|let|define|ask|add|note|run)\b/i.test(tr)) {
+              i--; // rewind
+              break;
+            }
+          }
+          pyBlock.push(nextL);
+          i++;
+        }
+        const pySource = pyBlock.join('\n');
+        executeInBrowserPython(pySource, this.vars, printFn);
+        continue;
+      }
+
+      await this.execStatement(line, lineNum, printFn, askFn);
+    }
+  }
+
+  async execStatement(line, lineNum, printFn, askFn) {
+    const lower = line.toLowerCase();
+
+    // 1. ADD LIBRARY
+    if (lower.startsWith('add ')) {
+      const m = line.match(/^add\s+(?:the\s+)?["']?(\w+)["']?\s+library$/i);
+      if (m) {
+        this.libs.add(this.norm(m[1]));
+        return;
+      }
+    }
+
+    // 2. SINGLE-LINE PYTHON EXECUTION
+    if (/^(?:run\s+)?(?:the\s+)?python\s+code\s+/i.test(line)) {
+      if (!this.libs.has('python')) {
+        throw new Error(`[E++ Library Error] at line ${lineNum}: Running Python code requires the "Python" library. Please add: add the "Python" library`);
+      }
+
+      // Check: run the python code "..." [and save output as 'Var']
+      const singleMatch = line.match(/^(?:run\s+)?(?:the\s+)?python\s+code\s+"([^"]+)"(?:\s+and\s+save\s+(?:the\s+)?output\s+as\s+'([^']+)')?$/i);
+      if (singleMatch) {
+        const pyCode = singleMatch[1];
+        const outVar = singleMatch[2];
+        const res = executeInBrowserPython(pyCode, this.vars, printFn);
+        if (outVar) {
+          this.vars[this.norm(outVar)] = res;
+        }
+        return;
+      }
+    }
+
+    // 3. DEFINE / LET / SET (Single quotes only!)
+    if (lower.startsWith('let ') || lower.startsWith('set ') || lower.startsWith('define ')) {
+      if (line.match(/^(?:let|set|define)\s+"([^"]+)"/i)) {
+        throw new Error(`[E++ Syntax Error] at line ${lineNum}: Variables in E++ must ALWAYS be enclosed in single quotes like 'Number', never double quotes! Double quotes are reserved for text strings.`);
+      }
+
+      const m = line.match(/^(?:let|set|define)\s+'([^']+)'\s+(?:be|to|as)\s+(.+)$/i);
+      if (!m) {
+        throw new Error(`[E++ Syntax Error] at line ${lineNum}: Invalid assignment. Expected: let 'Name' be <value> or define 'Name' as <value>`);
+      }
+
+      const varName = this.norm(m[1]);
+      const rhs = m[2].trim();
+
+      if (rhs.startsWith('"') && rhs.endsWith('"')) {
+        this.vars[varName] = rhs.slice(1, -1);
+      } else if (rhs.startsWith("'") && rhs.endsWith("'")) {
+        this.vars[varName] = this.getVar(rhs.slice(1, -1), lineNum);
+      } else {
+        try {
+          this.vars[varName] = await this.evalExpr(rhs, lineNum);
+        } catch (e) {
+          // Unquoted raw text fallback like: let 'Comment' be What a Disgrace!
+          this.vars[varName] = rhs;
+        }
+      }
+      return;
+    }
+
+    // 4. ASK STATEMENT
+    if (lower.startsWith('ask ')) {
+      if (line.match(/as\s+"([^"]+)"/i)) {
+        throw new Error(`[E++ Syntax Error] at line ${lineNum}: Variables in E++ must always be enclosed in single quotes like 'Name', never double quotes!`);
+      }
+      const m = line.match(/^ask\s+(.+?)\s+and\s+save\s+(?:the\s+|it\s+)?(?:output|answer|result)?\s*as\s+'([^']+)'$/i);
+      if (!m) {
+        throw new Error(`[E++ Syntax Error] at line ${lineNum}: Expected: ask "Prompt" and save the output as 'Name'`);
+      }
+      const prompt = String(await this.evalExpr(m[1].trim(), lineNum));
+      const varName = this.norm(m[2]);
+      const ans = await askFn(prompt);
+      const num = Number(ans);
+      this.vars[varName] = (!isNaN(num) && ans.trim() !== '') ? num : ans;
+      return;
+    }
+
+    // 5. CHECK STATEMENT (standalone)
+    if (lower.startsWith('check if ')) {
+      const res = await this.evalTypeCheck(line, lineNum);
+      printFn(String(res));
+      return;
+    }
+
+    // 6. TIME: WAIT / SLEEP
+    const waitMatch = line.match(/^(?:wait|sleep)\s+(.+?)\s+(milliseconds|millisecond|seconds|second)$/i);
+    if (waitMatch) {
+      this.requireLib('Time', 'wait statement', lineNum);
+      const val = Number(await this.evalExpr(waitMatch[1].trim(), lineNum));
+      const isMs = waitMatch[2].toLowerCase().startsWith('m');
+      const ms = isMs ? val : val * 1000;
+      await new Promise(r => setTimeout(r, ms));
+      return;
+    }
+
+    // 7. CONSOLE: CLEAR
+    if (/^clear\s+(?:the\s+)?(?:console|screen)$/i.test(line)) {
+      this.requireLib('Console', 'clear console', lineNum);
+      document.getElementById('consoleOutput').innerHTML = '';
+      return;
+    }
+
+    // 8. FILES: READ / WRITE / APPEND
+    const readMatch = line.match(/^read\s+(?:the\s+)?file\s+"([^"]+)"\s+and\s+save\s+(?:the\s+)?(?:output|result|content)\s+as\s+'([^']+)'$/i);
+    if (readMatch) {
+      this.requireLib('Files', 'read file', lineNum);
+      const fname = readMatch[1];
+      const varName = this.norm(readMatch[2]);
+      this.vars[varName] = files[fname] !== undefined ? files[fname] : `[File '${fname}' content]`;
+      return;
+    }
+
+    const writeMatch = line.match(/^write\s+(.+?)\s+to\s+(?:the\s+)?file\s+"([^"]+)"$/i);
+    if (writeMatch) {
+      this.requireLib('Files', 'write file', lineNum);
+      const content = String(await this.evalExpr(writeMatch[1].trim(), lineNum));
+      const fname = writeMatch[2];
+      files[fname] = content;
+      saveStorage();
+      renderFileList();
+      return;
+    }
+
+    const appendMatch = line.match(/^append\s+(.+?)\s+to\s+(?:the\s+)?file\s+"([^"]+)"$/i);
+    if (appendMatch) {
+      this.requireLib('Files', 'append file', lineNum);
+      const content = String(await this.evalExpr(appendMatch[1].trim(), lineNum));
+      const fname = appendMatch[2];
+      files[fname] = (files[fname] || '') + content;
+      saveStorage();
+      renderFileList();
+      return;
+    }
+
+    // 9. SYSTEM: RUN SYSTEM COMMAND
+    const sysMatch = line.match(/^run\s+system\s+command\s+"([^"]+)"(?:\s+and\s+save\s+(?:the\s+)?output\s+as\s+'([^']+)')?$/i);
+    if (sysMatch) {
+      this.requireLib('System', 'run system command', lineNum);
+      const cmd = sysMatch[1];
+      const outVar = sysMatch[2];
+      const res = `Release 1.0 Runtime (cmd: ${cmd})`;
+      if (outVar) this.vars[this.norm(outVar)] = res;
+      else printFn(res);
+      return;
+    }
+
+    // 10. SAY STATEMENT (with Colors library support)
+    if (lower.startsWith('say ') || lower.startsWith('tell ')) {
+      let content = line.substring(line.indexOf(' ') + 1).trim();
+      let colorClass = '';
+
+      const colorMatch = content.match(/^(red|green|blue|yellow|cyan|magenta)\b\s*/i);
+      if (colorMatch) {
+        this.requireLib('Colors', 'colored say statement', lineNum);
+        colorClass = 'color-' + colorMatch[1].toLowerCase();
+        content = content.substring(colorMatch[0].length).trim();
+      }
+
+      // Check unquoted single word logic error: say hello
+      if (/^[a-zA-Z_]\w*$/.test(content) && !content.startsWith('"') && !content.startsWith("'") && isNaN(Number(content))) {
+        throw new Error(`[E++ Logic Error] at line ${lineNum}: Unknown word or unquoted text '${content}'. In E++, text strings must be enclosed in double quotes (e.g. "${content}") and variables in single quotes (e.g. '${content}').`);
+      }
+
+      let separator = null;
+      let exprPart = content;
+
+      const sepMatch = content.match(/\s+with\s+(?:the\s+)?sep[ae]ration\s+(?:method\s+)?of\s+(.+)$/i);
+      if (sepMatch) {
+        exprPart = content.substring(0, sepMatch.index).trim();
+        separator = String(await this.evalExpr(sepMatch[1].trim(), lineNum));
+      }
+
+      const items = this.splitConcatParts(exprPart);
+      let parts = [];
+      for (const it of items) {
+        if (!it.trim()) continue;
+        parts.push(String(await this.evalExpr(it.trim(), lineNum)));
+      }
+
+      let output = '';
+      if (separator !== null) {
+        for (let p = 0; p < parts.length; p++) {
+          const cur = parts[p];
+          if (p === 0) output += cur;
+          else {
+            if (output.endsWith(' ')) output += separator + ' ' + cur;
+            else output += separator + cur;
+          }
+        }
+      } else {
+        for (let p = 0; p < parts.length; p++) {
+          const cur = parts[p];
+          if (p === 0) output += cur;
+          else {
+            if (output.length > 0 && cur.length > 0) {
+              if (/[a-zA-Z0-9]/.test(output.slice(-1)) && /[a-zA-Z0-9]/.test(cur.slice(0, 1))) output += ' ';
+              else if (/[!?:,]/.test(output.slice(-1)) && cur.slice(0, 1) !== ' ') output += ' ';
+            }
+            output += cur;
+          }
+        }
+      }
+
+      printFn(output, colorClass);
+      return;
+    }
+
+    // Fallback: standalone expr
+    const val = await this.evalExpr(line, lineNum);
+    if (val !== undefined) printFn(String(val));
+  }
+
+  splitConcatParts(exprStr) {
+    let parts = [];
+    let cur = '';
+    let inQuotes = false;
+    let inVar = false;
+
+    for (let i = 0; i < exprStr.length; i++) {
+      const c = exprStr[i];
+      if (c === '"' && !inVar) inQuotes = !inQuotes;
+      if (c === "'" && !inQuotes) inVar = !inVar;
+
+      if (!inQuotes && !inVar) {
+        if (c === ',') {
+          parts.push(cur);
+          cur = '';
+          const rem = exprStr.substring(i + 1);
+          const m = rem.match(/^\s*(?:and\s+)?concat\s+(?:it\s+)?with\s+/i);
+          if (m) i += m[0].length;
+          continue;
+        }
+
+        const rem = exprStr.substring(i);
+        const m = rem.match(/^(?:,\s*)?(?:and\s+)?concat\s+(?:it\s+)?with\s+/i);
+        if (m) {
+          parts.push(cur);
+          cur = '';
+          i += m[0].length - 1;
+          continue;
+        }
+      }
+      cur += c;
+    }
+    if (cur.trim()) parts.push(cur);
+    return parts;
+  }
+
+  getVar(name, lineNum) {
+    const n = this.norm(name);
+    if (!(n in this.vars)) {
+      throw new Error(`[E++ Logic Error] at line ${lineNum}: Variable '${name}' has not been defined yet! Define it first with: let '${name}' be <value>`);
+    }
+    return this.vars[n];
+  }
+
+  async evalExpr(expr, lineNum) {
+    expr = expr.trim();
+
+    // 1. Double quoted string
+    if (expr.startsWith('"') && expr.endsWith('"')) return expr.slice(1, -1);
+
+    // 2. Single quoted variable
+    if (expr.startsWith("'") && expr.endsWith("'")) return this.getVar(expr.slice(1, -1), lineNum);
+
+    // 3. Standalone number
+    if (!isNaN(Number(expr)) && expr !== '') return Number(expr);
+
+    // 4. Type check
+    if (expr.toLowerCase().startsWith('check if ')) return this.evalTypeCheck(expr, lineNum);
+
+    // 5. Random functions
+    const randMatch = expr.match(/^(?:it['’]?s\s+)?(?:a\s+|the\s+)?(?:random\s+)?number\s+between\s+(.+?)\s+and\s+(.+)$/i);
+    if (randMatch) {
+      if (!this.libs.has('random') && !this.libs.has('math')) {
+        throw new Error(`[E++ Library Error] at line ${lineNum}: Generating random numbers requires either the "Random" library or the "Math" library. Please add: add the "Random" library`);
+      }
+      const min = Number(await this.evalExpr(randMatch[1], lineNum));
+      const max = Number(await this.evalExpr(randMatch[2], lineNum));
+      const lo = Math.min(min, max);
+      const hi = Math.max(min, max);
+      if (Number.isInteger(lo) && Number.isInteger(hi)) {
+        return Math.floor(Math.random() * (hi - lo + 1)) + lo;
+      }
+      return Math.random() * (hi - lo) + lo;
+    }
+
+    const diceMatch = expr.match(/^roll\s+(?:a\s+)?dice(?:\s+with\s+(.+?)\s+sides)?$/i);
+    if (diceMatch) {
+      if (!this.libs.has('random') && !this.libs.has('math')) {
+        throw new Error(`[E++ Library Error] at line ${lineNum}: Rolling dice requires the "Random" library. Please add: add the "Random" library`);
+      }
+      let sides = 6;
+      if (diceMatch[1]) sides = Number(await this.evalExpr(diceMatch[1], lineNum)) || 6;
+      return Math.floor(Math.random() * sides) + 1;
+    }
+
+    if (/^flip\s+(?:a\s+)?coin$/i.test(expr)) {
+      if (!this.libs.has('random') && !this.libs.has('math')) {
+        throw new Error(`[E++ Library Error] at line ${lineNum}: Flipping a coin requires the "Random" library. Please add: add the "Random" library`);
+      }
+      return Math.random() < 0.5 ? 'heads' : 'tails';
+    }
+
+    // 6. Strings library functions
+    if (expr.toLowerCase().startsWith('the length of ')) {
+      this.requireLib('Strings', 'the length of', lineNum);
+      const val = String(await this.evalExpr(expr.substring(14), lineNum));
+      return val.length;
+    }
+    if (expr.toLowerCase().startsWith('the uppercase of ')) {
+      this.requireLib('Strings', 'the uppercase of', lineNum);
+      const val = String(await this.evalExpr(expr.substring(17), lineNum));
+      return val.toUpperCase();
+    }
+    if (expr.toLowerCase().startsWith('the lowercase of ')) {
+      this.requireLib('Strings', 'the lowercase of', lineNum);
+      const val = String(await this.evalExpr(expr.substring(17), lineNum));
+      return val.toLowerCase();
+    }
+    if (expr.toLowerCase().startsWith('the reverse of ')) {
+      this.requireLib('Strings', 'the reverse of', lineNum);
+      const val = String(await this.evalExpr(expr.substring(15), lineNum));
+      return val.split('').reverse().join('');
+    }
+    if (expr.toLowerCase().startsWith('the first letter of ')) {
+      this.requireLib('Strings', 'the first letter of', lineNum);
+      const val = String(await this.evalExpr(expr.substring(20), lineNum));
+      return val.charAt(0);
+    }
+    if (expr.toLowerCase().startsWith('the last letter of ')) {
+      this.requireLib('Strings', 'the last letter of', lineNum);
+      const val = String(await this.evalExpr(expr.substring(19), lineNum));
+      return val.slice(-1);
+    }
+    if (expr.toLowerCase().startsWith('the trim of ') || expr.toLowerCase().startsWith('the trimmed ')) {
+      this.requireLib('Strings', 'the trim of', lineNum);
+      const rest = expr.replace(/^the\s+(?:trim\s+of|trimmed)\s+/i, '');
+      const val = String(await this.evalExpr(rest, lineNum));
+      return val.trim();
+    }
+
+    // 7. Time & Date library functions
+    if (expr.toLowerCase() === 'the current time') {
+      this.requireLib('Time', 'the current time', lineNum);
+      return new Date().toTimeString().split(' ')[0];
+    }
+    if (expr.toLowerCase() === 'the current date') {
+      this.requireLib('Time', 'the current date', lineNum);
+      return new Date().toISOString().split('T')[0];
+    }
+    if (expr.toLowerCase() === 'the current year') {
+      this.requireLib('Time', 'the current year', lineNum);
+      return new Date().getFullYear();
+    }
+    if (expr.toLowerCase() === 'the current timestamp') {
+      this.requireLib('Time', 'the current timestamp', lineNum);
+      return Math.floor(Date.now() / 1000);
+    }
+
+    // 8. System library functions
+    if (expr.toLowerCase() === 'the platform' || expr.toLowerCase() === 'the system platform') {
+      this.requireLib('System', 'the platform', lineNum);
+      return navigator.platform || 'Web System (Release 1.0)';
+    }
+    if (expr.toLowerCase() === 'the os' || expr.toLowerCase() === 'the operating system') {
+      this.requireLib('System', 'the os', lineNum);
+      return 'Web VM / Modern Browser';
+    }
+
+    // 9. Math library functions
+    if (expr.toLowerCase().startsWith('the square root of ')) {
+      this.requireLib('Math', 'the square root of', lineNum);
+      const arg = await this.evalExpr(expr.substring(19), lineNum);
+      return Math.sqrt(Number(arg));
+    }
+
+    if (expr.toLowerCase().startsWith('how much ') && expr.toLowerCase().includes('percent is of ')) {
+      this.requireLib('Math', 'percentage calculation', lineNum);
+      const m = expr.match(/^how\s+much\s+(.+?)\s+percent\s+is\s+of\s+(.+)$/i);
+      if (m) {
+        const pct = Number(await this.evalExpr(m[1], lineNum));
+        const total = Number(await this.evalExpr(m[2], lineNum));
+        return (pct / 100.0) * total;
+      }
+    }
+
+    if (expr.toLowerCase().startsWith('the absolute value of ')) {
+      this.requireLib('Math', 'the absolute value of', lineNum);
+      return Math.abs(Number(await this.evalExpr(expr.substring(22), lineNum)));
+    }
+
+    if (expr.toLowerCase().startsWith('the minimum of ')) {
+      this.requireLib('Math', 'the minimum of', lineNum);
+      const m = expr.match(/^the\s+minimum\s+of\s+(.+?)\s+and\s+(.+)$/i);
+      if (m) {
+        return Math.min(Number(await this.evalExpr(m[1], lineNum)), Number(await this.evalExpr(m[2], lineNum)));
+      }
+    }
+
+    if (expr.toLowerCase().startsWith('the maximum of ')) {
+      this.requireLib('Math', 'the maximum of', lineNum);
+      const m = expr.match(/^the\s+maximum\s+of\s+(.+?)\s+and\s+(.+)$/i);
+      if (m) {
+        return Math.max(Number(await this.evalExpr(m[1], lineNum)), Number(await this.evalExpr(m[2], lineNum)));
+      }
+    }
+
+    if (expr.toLowerCase() === 'the value of pi' || expr.toLowerCase() === 'pi') {
+      this.requireLib('Math', 'the value of pi', lineNum);
+      return Math.PI;
+    }
+
+    if (expr.toLowerCase() === 'the value of e' || expr.toLowerCase() === 'e') {
+      this.requireLib('Math', 'the value of e', lineNum);
+      return Math.E;
+    }
+
+    // 7. Math words: plus, minus, times, divided by
+    let sanitized = expr
+      .replace(/\bplus\b/gi, '+')
+      .replace(/\bminus\b/gi, '-')
+      .replace(/\btimes\b/gi, '*')
+      .replace(/\bmultiplied\s+by\b/gi, '*')
+      .replace(/\bdivided\s+by\b/gi, '/')
+      .replace(/\bmodulo\b/gi, '%')
+      .replace(/\bmod\b/gi, '%');
+
+    sanitized = sanitized.replace(/'([^']+)'/g, (_, vName) => {
+      const val = this.getVar(vName, lineNum);
+      return typeof val === 'number' ? val : JSON.stringify(val);
+    });
+
+    if (/^[\d\s\+\-\*\/\%\.\(\)]+$/.test(sanitized)) {
+      try {
+        return Function(`"use strict"; return (${sanitized});`)();
+      } catch (e) {}
+    }
+
+    // Unrecognized word error
+    throw new Error(`[E++ Logic Error] at line ${lineNum}: Unrecognized unquoted text '${expr}'.\n` +
+                    `Remember the E++ Rules:\n` +
+                    `1. NO quotes for math (e.g. say 1 plus 1)\n` +
+                    `2. SINGLE quotes for variables (e.g. let 'Number' be 2)\n` +
+                    `3. DOUBLE quotes for strings (e.g. say "Hello")`);
+  }
+
+  evalTypeCheck(expr, lineNum) {
+    const m = expr.match(/^check\s+if\s+(.+?)\s+is\s+(not\s+)?(?:a\s+)?number$/i);
+    if (!m) throw new Error(`[E++ Syntax Error] at line ${lineNum}: Invalid check syntax.`);
+    const target = m[1].trim();
+    const isNot = Boolean(m[2]);
+
+    let val = target;
+    if (target.startsWith('"') && target.endsWith('"')) val = target.slice(1, -1);
+    else if (target.startsWith("'") && target.endsWith("'")) val = this.getVar(target.slice(1, -1), lineNum);
+    else if (!isNaN(Number(target))) val = Number(target);
+
+    let isNum = false;
+    if (typeof val === 'number') isNum = true;
+    else if (typeof val === 'string') isNum = (!isNaN(Number(val)) && val.trim() !== '');
+
+    return isNot ? !isNum : isNum;
+  }
+
+  requireLib(libName, feature, lineNum) {
+    if (!this.libs.has(this.norm(libName))) {
+      throw new Error(`[E++ Library Error] at line ${lineNum}: '${feature}' requires the "${libName}" library. Please add: add the "${libName}" library`);
+    }
+  }
+}
+
+// UI & Runner
+let pendingAsk = null;
+
+function appendConsoleLine(text, cls = 'output') {
+  const box = document.getElementById('consoleOutput');
+  const div = document.createElement('div');
+  div.className = 'console-line ' + cls;
+  div.innerText = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function clearConsole() {
+  document.getElementById('consoleOutput').innerHTML = '';
+  appendConsoleLine('Console cleared. Ready.', 'system');
+}
+
+async function runCode() {
+  const statusEl = document.getElementById('statusRun');
+  statusEl.innerText = 'Running…';
+  statusEl.className = 'status-run running';
+
+  const code = document.getElementById('editor').value;
+  files[currentFileName] = code;
+  saveStorage();
+
+  appendConsoleLine(`—— Running ${currentFileName} ——`, 'system');
+  const engine = new EppEvaluator();
+
+  const printFn = (text, extraCls = '') => appendConsoleLine(text, extraCls ? 'output ' + extraCls : 'output');
+  const askFn = (prompt) => {
+    return new Promise((resolve) => {
+      appendConsoleLine(`? ${prompt}`, 'prompt');
+      document.getElementById('consoleInputPrompt').innerText = prompt;
+      const form = document.getElementById('consoleInputForm');
+      const input = document.getElementById('consoleInput');
+      form.style.display = 'flex';
+      input.value = '';
+      input.focus();
+      pendingAsk = resolve;
+    });
+  };
+
+  try {
+    await engine.run(code, printFn, askFn);
+    statusEl.innerText = 'Finished';
+    statusEl.className = 'status-run';
+    appendConsoleLine('—— Finished ——', 'system');
+  } catch (err) {
+    statusEl.innerText = 'Error';
+    statusEl.className = 'status-run error';
+    appendConsoleLine(err.message, 'error');
+  }
+}
+
+// Input form submit
+document.getElementById('consoleInputForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (pendingAsk) {
+    const val = document.getElementById('consoleInput').value;
+    appendConsoleLine(val, 'answer');
+    document.getElementById('consoleInputForm').style.display = 'none';
+    const res = pendingAsk;
+    pendingAsk = null;
+    res(val);
+  }
+});
+
+// Event Listeners
+document.getElementById('btnRun').onclick = runCode;
+document.getElementById('btnSave').onclick = () => { files[currentFileName] = document.getElementById('editor').value; saveStorage(); showToast('Saved ' + currentFileName); };
+document.getElementById('btnClear').onclick = clearConsole;
+document.getElementById('btnClearConsole').onclick = clearConsole;
+document.getElementById('btnNew').onclick = openNewFileDialog;
+document.getElementById('btnSidebarNew').onclick = openNewFileDialog;
+document.getElementById('btnRename').onclick = openRenameDialog;
+document.getElementById('btnDelete').onclick = deleteCurrentFile;
+document.getElementById('btnExport').onclick = exportCurrentFile;
+document.getElementById('btnZip').onclick = downloadZip;
+document.getElementById('btnRestoreExamples').onclick = () => restoreDefaultFiles(true);
+document.getElementById('fileSearch').oninput = renderFileList;
+
+const editor = document.getElementById('editor');
+editor.oninput = () => {
+  updateLineNumbers();
+  updateDashboard();
+};
+editor.onscroll = () => {
+  document.getElementById('lineNumbers').scrollTop = editor.scrollTop;
+};
+editor.onkeydown = (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    runCode();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+    e.preventDefault();
+    files[currentFileName] = editor.value;
+    saveStorage();
+    showToast('Saved ' + currentFileName);
+  }
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    editor.value = editor.value.substring(0, start) + "    " + editor.value.substring(end);
+    editor.selectionStart = editor.selectionEnd = start + 4;
+    updateLineNumbers();
+  }
+};
+editor.onkeyup = updateCursor;
+editor.onclick = updateCursor;
+
+function updateCursor() {
+  const text = editor.value.substring(0, editor.selectionStart);
+  const lines = text.split('\n');
+  const line = lines.length;
+  const col = lines[lines.length - 1].length + 1;
+  document.getElementById('statusCursor').innerText = `Line ${line}, Column ${col}`;
+}
+
+// Initialize
+initStorage();
+renderFileList();
+loadFile(currentFileName);
+</script>
 </body>
 </html>

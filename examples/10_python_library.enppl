@@ -1,0 +1,15 @@
+note [10_python_library.enppl: The Python Library in E++]
+
+add the "Python" library
+
+note [1. Run single-line Python code:]
+run the python code "print('Hello from Python single line!')"
+
+note [2. Run multi-line Python block:]
+run the python code:
+for I in range 3:
+   print("Hello from Python loop:", I)
+
+note [3. Interacting between E++ and Python:]
+let 'Greeting' be "Welcome to E++ and Python"
+run the python code "print('Uppercase:', greeting.upper())"

@@ -1,0 +1,13 @@
+note [07_control_flow.epp: Conditionals and Repeat loops]
+
+let 'Score' be 95
+
+if 'Score' is greater than 50 then:
+    say "Student passed with flying colors!"
+else:
+    say "Needs improvement."
+end if
+
+repeat 3 times:
+    say "E++ makes programming read like a book!"
+end repeat

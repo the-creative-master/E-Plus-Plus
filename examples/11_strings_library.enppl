@@ -1,0 +1,23 @@
+note [Strings Library Demonstration in E++ (.enppl)]
+add the "Strings" library
+
+note [1. Measuring String Length]
+let 'Message' be "Hello, E++ Release 1.0!"
+say "Original message:", 'Message'
+say "Length of message:", the length of 'Message'
+
+note [2. Uppercase and Lowercase Transforms]
+say "Uppercase:", the uppercase of 'Message'
+say "Lowercase:", the lowercase of 'Message'
+
+note [3. String Reversal]
+say "Reversed message:", the reverse of 'Message'
+
+note [4. First and Last Letters]
+say "First letter:", the first letter of 'Message'
+say "Last letter:", the last letter of 'Message'
+
+note [5. Whitespace Trimming]
+let 'Padded' be "   Spaced out text   "
+say "Before trimming:", 'Padded'
+say "After trimming:", the trim of 'Padded'

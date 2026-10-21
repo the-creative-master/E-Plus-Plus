@@ -1,0 +1,7 @@
+note [03_concatenation.epp: Concatenation and Separation Methods]
+
+say "Hello ", and concat it with "World!"
+say 1 + 2 and concat it with 2 + 3
+say 1 + 2 and concat it with 2 + 3 with the seperation method of "-"
+say "Hello " and concat it with "World! " and concat it with "Welcome to E++!" with the seperation method of "sigma"
+say "Hello ", "World! ", "Welcome to E++!"

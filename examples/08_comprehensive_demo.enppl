@@ -1,0 +1,27 @@
+note [08_comprehensive_demo.epp: Complete demonstration of E++ features]
+
+add the "Math" library
+add the "Random" library
+
+say "=== Welcome to E++ Demonstration ==="
+say "Slogan: Looks like English, feels like english, and is english"
+
+define 'Author' as "The E++ Team"
+define 'Year' as 2026
+say "Created by: ", 'Author', " in year ", 'Year'
+
+say "--- Math in Action ---"
+say "Square root of 2 is: ", the square root of 2
+say "60 percent of 250 is: ", how much 60 percent is of 250
+say "Maximum of 42 and 108 is: ", the maximum of 42 and 108
+
+say "--- Randomness in Action ---"
+define 'Lucky number' as a random number between 1 and 100
+say "Here is a random number between 1 and 100! It is ", 'Lucky number'
+say "Heres your random number!", it's a random number between 1 and 100
+say "Random choice between 1 and 5: ", the number between 1 and 5
+
+say "--- Custom Separator Demo ---"
+say "Alpha", "Beta", "Gamma" with the separation method of " <-> "
+
+say "All systems go!"

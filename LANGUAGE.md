@@ -1,337 +1,195 @@
-# The E++ Language Reference (Dev Build 6)
+# The E++ Language Reference (Release 1.0)
 
-**E++ looks like English, reads like English, and behaves like code.**
+> **"Looks like English, feels like english, and is english"**
 
-> **Origin & Attribution:** This project is based on one of WeeklyHow's videos where he used AI to build a programming language called E++ (and it's very s— you know!). E++ Dev Build 6 humanizes the language into something genuinely fun, accessible, and English-like.
+Welcome to **E++ Release 1.0**, a complete, modern, human-readable programming language designed to read and behave like pure English prose.
 
-This document describes the language exactly as implemented in this
-repository (`js/lexer.js`, `js/parser.js`, `js/ast.js`, `js/interpreter.js`,
-`js/python-runner.js`, `js/libraries.js`, `js/files.js`).
+---
 
-## 1. General rules
+## 1. File Types
 
-- Statements end with a **period** `.` or a **newline**. Both are
-  equivalent; you may mix them freely.
-- `"double quotes"` mark **literal text** (a string).
-- `'single quotes'` mark a **variable reference**.
-- **Bare words** (no quotes) are maths, keywords, or — when they name no
-  variable — literal text.
-- Keywords are case-insensitive: `Define`, `define` and `DEFINE` are the
-  same. Variable names are also matched case-insensitively.
-- `note: anything on this line` is a comment and is ignored. `# ...` and
-  `// ...` comments are also supported.
+- **`.enpp` (Pure E++)**: Used for clean, pure programs without any external libraries.
+- **`.enppl` (E++ Libraries)**: Used for programs that import standard libraries (e.g. `add the "Math" library`, `add the "Python" library`).
 
-## 2. Values
+---
 
-| Written as | Meaning |
-|---|---|
-| `"Hello"` | literal text |
-| `'name'` | the value of the variable `name` |
-| `42`, `3.5` | a number |
-| `WeeklyHow` (bare word) | the variable `WeeklyHow` if one exists; otherwise an English error — bare words must be a variable, a number or a keyword. Exception: on the right-hand side of `Define`/`Set`, bare words are the literal value (`Define name as WeeklyHow.`) |
-| `true` / `yes`, `false` / `no` | booleans |
+## 2. The 3 Golden Rules
 
-## 3. Variables (Dev Build 5: Fixed)
+1. **NO quotes for Math**:
+   - `say 1 plus 1` ➔ Evaluates to `2`
+   - `say 2 times 3` ➔ Evaluates to `6`
+2. **SINGLE quotes for Variables**:
+   - `let 'Grade' be 29`
+   - `let 'Student' be Sam`
+   - *Never use double quotes for variable names! Double quotes are strictly reserved for text strings.*
+3. **DOUBLE quotes for Strings**:
+   - `say "Hello, World!"`
+   - `say "1 + 1"` ➔ Outputs literal text `"1 + 1"`.
 
-```eppl
-Define name as WeeklyHow.
-Define score as 0.
-Define total as 'price' times 'quantity'.
+---
+
+## 3. Notes & Comments
+
+In E++, comments are written using `note` with **square brackets**:
+```text
+note [This is a comment note in E++]
+note [Notes are ignored during execution and document your program]
+```
+> ⚠️ **Syntax rule**: E++ rejects `// note` and `#`. Attempting to use them will produce an informative Syntax Error explaining the `note [Note]` syntax.
+
+---
+
+## 4. The 9 Standard Libraries in Release 1.0
+
+Import any library using the humanizer syntax: `add the "<Name>" library`.
+
+### 1. Python (`"Python"`)
+Bridges the Python 3 runtime into E++ with automatic bi-directional variable injection and output capture:
+```text
+add the "Python" library
+
+note [Single-line Python execution:]
+run the python code "print('Hello from Python!')"
+
+note [Multi-line Python block with loops:]
+run the python code:
+for I in range 3:
+    print("Python iteration:", I)
+
+note [Accessing E++ variables inside Python:]
+let 'Greeting' be "Welcome to E++ and Python!"
+run the python code "print('E++ says:', greeting)"
+
+note [Capturing Python output back into E++:]
+run the python code "import math; print(math.factorial(6))" and save the output as 'Result'
+say "Factorial:", 'Result'
 ```
 
-`Define <name> as <value>.` creates (or replaces) a variable. Names are
-single words. Refer to a variable with single quotes: `say 'name'`.
+### 2. Math (`"Math"`)
+Natural English mathematical calculations:
+```text
+add the "Math" library
 
-**Dev Build 5 changes:**
-- Variables **MUST** be inside single quotes: `'name'`
-- Variables **NOT** in quotes are **ILLEGAL** (an error is shown)
-- **ANY** word inside quotes is a valid variable — the whitelist has been removed
-- Multi-word names, names with numbers, and names with special characters all work: `Define 'my variable' as "hello".`
-
-You can also define variables with quoted names:
-```eppl
-Define 'my score' as 100.
-Define 'player 1' as "Alice".
-say 'my score'
+say the square root of 144
+say the cube root of 27
+say how much 20 percent is of 150
+say the absolute value of 0 minus 42
+say 2 raised to 8
+say the minimum of 15 and 99
+say the maximum of 15 and 99
+say the value of pi
+say the value of e
 ```
 
-Change an existing variable (Dev Build 5: also works with quoted names):
+### 3. Random (`"Random"`)
+Random number generation, dice rolls, and coin flips:
+```text
+add the "Random" library
 
-```eppl
-Set count to 'count' plus 1.
-Set 'count' to 'count' plus 1.    (also valid)
+say a random number between 1 and 100
+say roll a dice
+say roll a dice with 20 sides
+say flip a coin
 ```
 
-### Increasing and decreasing
+### 4. Strings (`"Strings"`)
+Rich string inspection and manipulation:
+```text
+add the "Strings" library
 
-```eppl
-Increase <variable> by <amount>
-Decrease <variable> by <amount>
+let 'Msg' be "Hello, World!"
+say the length of 'Msg'
+say the uppercase of 'Msg'
+say the lowercase of 'Msg'
+say the reverse of 'Msg'
+say the first letter of 'Msg'
+say the last letter of 'Msg'
+
+let 'Spaced' be "   Text with spaces   "
+say the trim of 'Spaced'
 ```
 
-```eppl
-Define score as 10.
-Increase score by 5
-Decrease score by 3
+### 5. Time & Date (`"Time"`)
+System clocks, calendar info, timestamps, and delays:
+```text
+add the "Time" library
+
+say the current time
+say the current date
+say the current year
+say the current timestamp
+
+say "Waiting 500 milliseconds..."
+wait 500 milliseconds
+say "Waiting 1 second..."
+wait 1 second
 ```
 
-The variable may be written as a plain name or as `'name'`; the amount is
-any expression. The variable must already hold a number and the amount must be a number — otherwise you get
-a plain-English `RuntimeError` explaining exactly which part is wrong.
+### 6. Files (`"Files"`)
+Full disk file persistence in the C++ engine (and virtual filesystem in Web Studio):
+```text
+add the "Files" library
 
-## 4. Printing
-
-```eppl
-say <value>
-display <value>      (say, display and show are synonyms)
+write "Release 1.0 verified!" to file "log.txt"
+append "\nSystem operational." to file "log.txt"
+read the file "log.txt" and save the output as 'LogData'
+say 'LogData'
 ```
 
-- `"in quotes"` → printed literally: `say "1 plus 1"` prints `1 plus 1`.
-- `'in single quotes'` → the variable's value.
-- Bare numbers/maths → evaluated: `say 1 plus 1` prints `2`.
-- Concatenation uses `plus`: `say "Hello " plus 'name' plus "!"`.
+### 7. System (`"System"`)
+Platform architecture, operating system, and system shell commands:
+```text
+add the "System" library
 
-## 5. Maths
-
-Available without any library: `plus`, `minus`, `times`, parentheses, and
-unary minus. Precedence: parentheses → `power of` → `times` / `divided by`
-/ `percent of` → `plus` / `minus`.
-
-With `add library "Math"` (§10) you also unlock `divided by`, `power of`,
-`percent of`, `square root of`, `as fraction` and `as decimal`.
-
-## 6. Input
-
-```eppl
-ask "<prompt>" and save answer as <variable>
-ask "<prompt>" and save answer as '<variable>'    (Dev Build 5: quoted names also work)
+say the platform
+say the os
+run system command "whoami" and save the output as 'CurrentUser'
+say "Logged in as:", 'CurrentUser'
 ```
 
-Prints the prompt in the IDE console and waits for the user to type an
-answer, which is stored as text. Typed answers automatically compare
-as numbers when appropriate.
+### 8. Colors (`"Colors"`)
+Terminal colored output streams (ANSI in native CLI, styled spans in Web Studio):
+```text
+add the "Colors" library
 
-## 7. Waiting
-
-```eppl
-wait <seconds>
+say green "✓ Success: Build completed!"
+say blue "ℹ Info: Processing batch..."
+say yellow "⚠ Warning: Check input parameters."
+say red "✗ Error: Connection failed."
+say cyan "✦ Notice: System online."
+say magenta "★ Milestone reached!"
 ```
 
-Pauses for that many seconds (fractions allowed). Waiting can be interrupted with **Stop**.
+### 9. Console (`"Console"`)
+Real-time console stream management:
+```text
+add the "Console" library
 
-## 8. Conditionals
-
-Single-line form:
-
-```eppl
-if <value> is equal to <value> then <statement> otherwise <statement>
+clear the console
 ```
 
-Block form:
+---
 
-```eppl
-if 'score' is greater than 5 then
-  say "High score!"
-otherwise
-  say "Keep going."
+## 5. Control Flow
+
+### If Statements
+```text
+if 10 is greater than 5 then:
+    say "Ten is greater!"
+else:
+    say "Not greater!"
 end if
 ```
 
-### Condition types
-
-#### Core Logic (no library needed)
-
-| Condition | Example |
-|---|---|
-| is a number | `if 'x' is a number then ...` |
-| is not a number | `if 'x' is not a number then ...` |
-| contains | `if 'text' contains "hello" then ...` |
-| is equal to | `if 'x' is equal to "hello" then ...` (case-insensitive) |
-| is not equal to | `if 'x' is not equal to "hello" then ...` (case-insensitive) |
-| is exactly equal to | `if 'x' is exactly equal to "Hello" then ...` (case-sensitive) |
-| is not exactly equal to | `if 'x' is not exactly equal to "Hello" then ...` (case-sensitive) |
-
-**Notes on equality:**
-- `is equal to` is **case-insensitive**: `"hello"` equals `"HELLO"` equals `"Hello"`.
-- `is exactly equal to` is **case-sensitive**: `"hello"` does NOT equal `"Hello"`.
-
-#### Math Logic (requires Math library)
-
-| Condition | Example |
-|---|---|
-| is a positive number | `if 'x' is a positive number then ...` |
-| is not a positive number | `if 'x' is not a positive number then ...` |
-| is a negative number | `if 'x' is a negative number then ...` |
-| is not a negative number | `if 'x' is not a negative number then ...` |
-| is in the range of A to B | `if 'x' is in the range of 1 to 10 then ...` |
-| is not in the range of A to B | `if 'x' is not in the range of 1 to 10 then ...` |
-
-**Notes:**
-- Zero is **neither** positive nor negative.
-- Non-numeric values are "not a positive number" and "not a negative number".
-- Range checks are **inclusive**: `is in the range of 1 to 10` includes both 1 and 10.
-- Range bounds can be written in either order: `1 to 10` and `10 to 1` are equivalent.
-
-### Loopback (Dev Build 4)
-
-```eppl
-loopback to if
-```
-
-`loopback to if` re-evaluates the nearest previous `if`. It only
-triggers when that if's condition is true **at the moment of the
-loopback**.
-
-## 9. Loops
-
-```eppl
-repeat 3 times
-  say 'count'
-  Set count to 'count' minus 1.
+### Loops
+```text
+repeat 3 times:
+    say "Repeating!"
 end repeat
 
-while 'n' is less than 3 do
-  Set n to 'n' plus 1.
+let 'Counter' be 0
+while 'Counter' is less than 3 do:
+    let 'Counter' be 'Counter' plus 1
+    say "Counter is: ", 'Counter'
 end while
-```
-
-`stop` leaves the current loop early.
-
-Dev Build 5: All condition types (contains, positive/negative, range) work inside loops.
-
-## 10. Libraries (.eppla Files Only)
-
-In Dev Build 5, libraries are added with the humanized syntax:
-
-```eppl
-add library "<LibraryName>"
-```
-
-### File Extension Rule (Requirement 5)
-- **`.eppl`** files are strictly for programs **WITHOUT** any libraries.
-- **`.eppla`** files are for programs **WITH** libraries (ANY library).
-- Attempting to add a library inside a `.eppl` file produces a clear error advising the user to rename the file to `.eppla`.
-
-### Math
-Unlocks: `divided by`, `power of`, `as fraction`, `as decimal`, `percent of`, `square root of`, `is a positive number`, `is a negative number`, `is in the range of A to B`.
-
-```eppl
-add library "Math"
-display 1 divided by 2 as fraction   (prints 1/2)
-display 1 divided by 2 as decimal    (prints 0.5)
-
-Define score as 50
-if 'score' is a positive number then say "Above zero"
-if 'score' is in the range of 1 to 100 then say "In range"
-```
-
-### Text
-Unlocks: `uppercase of <value>`, `lowercase of <value>`, `length of <value>`.
-
-```eppl
-add library "Text"
-say uppercase of "hello"
-```
-
-### Random
-Unlocks: `random number between <low> and <high>`.
-
-```eppl
-add library "Random"
-say random number between 1 and 6
-```
-
-### Python & Project Humanizer (Requirements 1, 3, 9)
-Unlocks: `python code`.
-- Python code runs directly in pure JavaScript via our lexer-based Python runner — Pyodide is no longer used!
-- Single line Python:
-  ```eppl
-  add library "Python"
-  python code "print('Hello from Python')"
-  ```
-- Multi-line Python (Project Humanizer comma mode):
-  Humanizer replaces symbols: multi-line Python blocks open with `",` and close with `,"`.
-  ```eppl
-  add library "Python"
-  python code ",for i in range(3):
-      print('Number:', i)
-  ,"
-  ```
-- **Native Python Error Codes (Requirement 3)**:
-  Errors inside Python statements report Python's OWN exact error codes directly:
-  `NameError: name 'missing' is not defined`, `ZeroDivisionError: division by zero`, `SyntaxError: invalid syntax`, `TypeError: unsupported operand type(s)`.
-
-### Draw
-Create drawing sprites and move them on the IDE canvas:
-
-```eppl
-define 'hero' as drawing sprite
-'hero' move right "60"
-'hero' move down "30"
-```
-
-### Image (Dev Build 5: New)
-Define, check, and display images using Base64-encoded data:
-
-```eppl
-add library "Image"
-
-define 'cat' as image "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ..."
-check if 'cat' exists
-display image 'cat'
-```
-
-- `define '<name>' as image "<base64-string>"` — defines an image variable with Base64-encoded image data
-- `check if '<name>' exists` — checks if an image variable has been defined
-- `display image '<name>'` — displays the image in the console (automatically detects PNG/JPEG/GIF/WebP formats)
-
-The Base64 string can be either raw Base64 data or a full data URI (e.g., `"data:image/png;base64,..."`).
-
-## 11. Standalone Runtime: E++.zip (Requirements 6 & 7)
-
-Clicking the **E++.zip** button downloads the entire E++ runtime as a portable, single-file offline IDE inside `E++.zip`:
-- Runs pure `.eppl` code offline anywhere in any browser.
-- Libraries are not supported in `E++.zip` (pure `.eppl` only).
-- **Manual Save Feature**: type `save project as <name>.eppl` into the command bar to save your file directly.
-
-## 12. Grammar Summary
-
-```
-program        := statement*
-statement      := define | set | say | ask | wait | library | add_library
-                | if | repeat | while | stop | note
-                | increase | decrease | python
-                | loopback | sprite-move
-                | check | display-image | define-image
-add_library    := "add" "library" STRING
-library        := "library" STRING ("add"|"load"|"import")
-define         := "Define" name "as" expression
-                | "Define" VARIABLE "as" expression
-                | "define" VARIABLE "as" "drawing" "sprite"
-                | "define" VARIABLE "as" "image" expression            [Image]
-set            := ("Set"|"Change") (name | VARIABLE) "to" expression
-say            := ("say"|"display"|"show") expression
-display-image  := ("display"|"say"|"show") "image" VARIABLE             [Image]
-ask            := "ask" expression "and save answer as" (name | VARIABLE)
-wait           := "wait" expression ["seconds"]
-increase       := "Increase" name "by" expression
-decrease       := "Decrease" name "by" expression
-python         := "python" "code" STRING
-                  (STRING starting with "," or "-" = raw multi-line Python)
-loopback       := "loopback" "to" "if"
-check          := "check" "if" VARIABLE "exists"                                 [Image]
-sprite-move    := VARIABLE "move" ("up"|"down"|"left"|"right") STRING
-if             := "if" condition "then" branch
-                  ("otherwise if" condition "then" branch)*
-                  ["otherwise" branch] ["end if" when block form]
-                  — branches may chain without limit
-condition      := <expression> [comparison <expression>]
-                  comparisons include:
-                    "is equal to", "is greater than", "is less than"
-                    "is a number", "is not a number"
-                    "contains"                                          (core)
-                    "is a positive number", "is a negative number"      [Math]
-                    "is in the range of" A "to" B                       [Math]
-repeat         := "repeat" expression "times" (statement | block "end repeat")
-while          := "while" condition ["do"] (statement | block "end while")
 ```

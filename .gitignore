@@ -1,0 +1,12 @@
+# Build artifacts
+epp
+*.o
+src/*.o
+build/
+
+# Temporary and log files
+*.log
+release_notes.txt
+*.png
+.cache/
+node_modules/

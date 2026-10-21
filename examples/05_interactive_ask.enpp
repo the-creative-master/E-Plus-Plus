@@ -1,0 +1,4 @@
+note [05_interactive_ask.epp: Prompting user for input with ask]
+
+ask "What is your name?" and save the output as 'Name'
+say "Hello ", 'name', "Welcome to E++!"

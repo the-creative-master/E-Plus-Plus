@@ -1,0 +1,12 @@
+note [06_math_library.epp: The Math Library with advanced functions]
+
+add the "Math" library
+
+say the square root of 2
+say the square root of 16
+say how much 60 percent is of 100
+say the absolute value of 0 minus 42
+say the minimum of 15 and 99
+say the maximum of 15 and 99
+say the value of pi
+say the number between 1 and 5

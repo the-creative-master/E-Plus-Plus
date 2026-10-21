@@ -1,0 +1,15 @@
+note [Time & Date Library Demonstration in E++ (.enppl)]
+add the "Time" library
+
+note [1. Reading Clock and Calendar]
+say "Current system time:", the current time
+say "Current system date:", the current date
+say "Current calendar year:", the current year
+say "Unix timestamp:", the current timestamp
+
+note [2. Waiting and Sleeping]
+say "Preparing countdown in 500 milliseconds..."
+wait 500 milliseconds
+say "Pausing for 1 second..."
+wait 1 second
+say "Resumed execution successfully!"

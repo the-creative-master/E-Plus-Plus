@@ -1,0 +1,15 @@
+note [Files Library Demonstration in E++ (.enppl)]
+add the "Files" library
+
+note [1. Writing to a text file]
+write "E++ Release 1.0 is officially released and rock-solid!" to file "release_notes.txt"
+say "File written successfully."
+
+note [2. Appending data to the file]
+append "\nFeaturing 9 rich standard libraries." to file "release_notes.txt"
+say "Data appended successfully."
+
+note [3. Reading the file back into an E++ variable]
+read the file "release_notes.txt" and save the output as 'Notes'
+say "Contents read back from disk:"
+say 'Notes'
