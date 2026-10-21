@@ -189,19 +189,6 @@ int main(int argc, char* argv[]) {
     buffer << file.rdbuf();
     std::string source = buffer.str();
 
-    // Enforce Release 1.1 encryption for .enpp and .enppl
-    bool is_epp_file = (filepath.size() >= 5 && filepath.substr(filepath.size() - 5) == ".enpp") ||
-                       (filepath.size() >= 6 && filepath.substr(filepath.size() - 6) == ".enppl");
-    if (is_epp_file) {
-        if (source.rfind("call ENCRYPTION_KEY", 0) != 0) {
-            print_deterministic_error("E501", "Unencrypted Source File", filepath, 1, 1,
-                "File '" + filepath + "' is unencrypted. In Release 1.1, .enpp and .enppl files are encrypted with a randomized millisecond frame key and must begin with 'call ENCRYPTION_KEY'.",
-                "Encrypt the file using: ./epp --encrypt \"" + filepath + "\" or python3 epp.py --encrypt \"" + filepath + "\"",
-                source);
-            return 1;
-        }
-    }
-
     bool ok = run_code(source, interpreter, filepath);
     return ok ? 0 : 1;
 }

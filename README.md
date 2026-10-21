@@ -1,28 +1,7 @@
 # E++ Programming Language [Release 1.1]
 > **"Looks like English, feels like english, and is english"**
 
-Welcome to **E++ Release 1.1**, a modern, human-readable programming language designed to look, feel, and read like pure English prose. Fast, bug-free, zero bloat, and fully equipped with both native C++ and pure Python runtimes, 9 standard libraries, Release 1.1 frame encryption, deterministic error diagnostics, and a zero-dependency offline Web Studio.
-
----
-
-## 🔒 Release 1.1 Encryption Standard
-
-In Release 1.1, all `.enpp` and `.enppl` files are encrypted using a **randomized millisecond frame key** and 64-bit keystream generator:
-- Header: starts with the exact directive `call ENCRYPTION_KEY`
-- Body: randomized ciphertext gibberish encoded in base64
-- Frame key: millisecond epoch timestamp embedded in the keystream
-- Unencrypted files are rejected with error `[E++ Error E501: Unencrypted Source File]`.
-
-Both engines transparently decrypt files at execution time:
-```bash
-# Encrypt any plain E++ source file:
-./epp --encrypt source.txt -o my_code.enpp
-python3 epp.py --encrypt source.txt -o my_code.enpp
-
-# Decrypt an encrypted E++ file to view plaintext:
-./epp --decrypt my_code.enpp
-python3 epp.py --decrypt my_code.enpp
-```
+Welcome to **E++ Release 1.1**, a modern, human-readable programming language designed to look, feel, and read like pure English prose. Fast, bug-free, zero bloat, and fully equipped with both native C++ and pure Python runtimes, 9 standard libraries, deterministic error diagnostics, and a zero-dependency offline Web Studio.
 
 ---
 
@@ -72,8 +51,6 @@ E++ Release 1.1 features a deterministic error diagnostic engine that provides e
 - `E301`: Library Not Added (attempting to use library features without `add the "<Lib>" library`)
 - `E401`: Golden Rule 1 Violation (math enclosed in quotes)
 - `E402`: Golden Rule 3 Violation (unquoted text word in string context)
-- `E501`: Unencrypted Source File (Release 1.1 plain text rejection)
-- `E502`: Corrupted Encrypted Payload
 - `E601`: Missing Offline Runtime Lexer (Web IDE missing `epp_language.zip`)
 - `E701`: Python Library Prohibited (`turtle` blocked)
 - `E702`: Python Runtime Exception
@@ -179,8 +156,8 @@ say 'Kernel'
 # Compile engine
 make clean && make
 
-# Run encrypted program
-./epp examples/14_randomized_encryption.enpp
+# Run program
+./epp examples/16_release_showcase.enppl
 
 # Run test suite
 make test
@@ -188,11 +165,8 @@ make test
 
 ### Standalone Python Runner
 ```bash
-# Run encrypted program
-python3 epp.py examples/14_randomized_encryption.enpp
-
-# Encrypt a source file
-python3 epp.py --encrypt myfile.txt -o myfile.enpp
+# Run program
+python3 epp.py examples/16_release_showcase.enppl
 ```
 
 ---
@@ -202,6 +176,5 @@ python3 epp.py --encrypt myfile.txt -o myfile.enpp
 Open `index.html` in any modern web browser:
 - True offline runtime requiring `epp_language.zip` (verifies and loads lexer directly via standard `DecompressionStream`).
 - If `epp_language.zip` is missing or deleted, the Web Studio halts and presents deterministic error `E601`.
-- Built-in "🔒 Raw Encrypted" toggle button to inspect Release 1.1 randomized millisecond keystream data.
 - 100% Pyodide-free in-browser Python engine.
-- Instant export of encrypted `.enpp` and `.enppl` files.
+- Instant export of `.enpp` and `.enppl` files.

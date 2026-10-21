@@ -300,7 +300,6 @@
     <div class="action-group file-actions">
       <button id="btnNew" class="btn btn-small btn-accent" type="button">+ New</button>
       <button id="btnSave" class="btn" type="button" title="Save file">💾 Save</button>
-      <button id="btnToggleEncrypted" class="btn" type="button" title="Toggle between decrypted code and raw encrypted call ENCRYPTION_KEY format">🔒 Raw Encrypted</button>
       <button id="btnExport" class="btn" type="button" title="Download this file (.enpp or .enppl)">⤓ Export</button>
       <button id="btnZip" class="btn btn-zip" type="button" title="Download E++ C++ sources &amp; runtime bundle">📦 E++.zip</button>
       <button id="btnClear" class="btn" type="button">⌧ Clear</button>
@@ -904,46 +903,15 @@ function deleteCurrentFile() {
 
 function exportCurrentFile() {
   const content = document.getElementById('editor').value;
-  // Encrypt with Release 1.1 randomized millisecond frame key
-  const encrypted = encryptEpp(content);
-  const blob = new Blob([encrypted], { type: 'text/plain;charset=utf-8' });
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = currentFileName;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  showToast(`Exported ${currentFileName} with Release 1.1 frame encryption!`);
+  showToast(`Exported ${currentFileName}`);
 }
-
-let isRawEncryptedView = false;
-let savedDecryptedContent = '';
-
-function toggleRawEncryptedView() {
-  const ed = document.getElementById('editor');
-  const btn = document.getElementById('btnToggleEncrypted');
-  if (!isRawEncryptedView) {
-    savedDecryptedContent = ed.value;
-    const encrypted = encryptEpp(savedDecryptedContent);
-    ed.value = encrypted;
-    ed.readOnly = true;
-    isRawEncryptedView = true;
-    btn.innerText = '📝 Normal View';
-    btn.classList.add('btn-accent');
-    showToast('Showing raw encrypted format with millisecond frame key');
-  } else {
-    try {
-      ed.value = decryptEpp(ed.value, currentFileName);
-    } catch(e) {
-      ed.value = savedDecryptedContent;
-    }
-    ed.readOnly = false;
-    isRawEncryptedView = false;
-    btn.innerText = '🔒 Raw Encrypted';
-    btn.classList.remove('btn-accent');
-    showToast('Restored decrypted editor view');
-  }
-  updateLineNumbers();
 }
 
 function downloadZip() {
@@ -2471,7 +2439,7 @@ async function runCode() {
   }
 
   let code = document.getElementById('editor').value;
-  if (isRawEncryptedView) {
+  if (code.trim().startsWith("call ENCRYPTION_KEY")) {
     try {
       code = decryptEpp(code, currentFileName);
     } catch (e) {
@@ -2534,7 +2502,6 @@ document.getElementById('consoleInputForm').addEventListener('submit', (e) => {
 // Event Listeners
 document.getElementById('btnRun').onclick = runCode;
 document.getElementById('btnSave').onclick = () => { files[currentFileName] = document.getElementById('editor').value; saveStorage(); showToast('Saved ' + currentFileName); };
-document.getElementById('btnToggleEncrypted').onclick = toggleRawEncryptedView;
 document.getElementById('btnClear').onclick = clearConsole;
 document.getElementById('btnClearConsole').onclick = clearConsole;
 document.getElementById('btnNew').onclick = openNewFileDialog;

@@ -6,16 +6,10 @@ Welcome to **E++ Release 1.1**, a modern, human-readable programming language de
 
 ---
 
-## 1. Release 1.1 File Format & Encryption
+## 1. File Formats
 
-All `.enpp` and `.enppl` files in Release 1.1 are encrypted with a **randomized millisecond frame key**:
-1. First line is always:
-   ```text
-   call ENCRYPTION_KEY
-   ```
-2. Subsequent lines contain the randomized base64-encoded keystream payload.
-3. Every encryption produces unique gibberish ciphertext even for identical plaintext.
-4. Plain-text `.enpp` files trigger `[E++ Error E501: Unencrypted Source File]`.
+- **`.enpp`**: Used for standard E++ programs.
+- **`.enppl`**: Used for programs utilizing standard libraries (e.g. `add the "Math" library`, `add the "Python" library`).
 
 ---
 
@@ -98,8 +92,6 @@ run the python code:
 - `E301`: Library Not Added
 - `E401`: Golden Rule 1 Violation (quoted math)
 - `E402`: Golden Rule 3 Violation (unquoted text word in string context)
-- `E501`: Unencrypted Source File
-- `E502`: Corrupted Encrypted Payload
 - `E601`: Missing Offline Runtime Lexer
 - `E701`: Python Library Prohibited (`turtle` blocked)
 - `E702`: Python Runtime Exception

@@ -158,22 +158,8 @@ class Interpreter:
         return output.strip()
 
     def run_source(self, source: str):
-        # Enforce Release 1.1 encryption requirement for .enpp and .enppl
-        if self.filename.endswith(".enpp") or self.filename.endswith(".enppl"):
-            if not source.strip().startswith("call ENCRYPTION_KEY"):
-                first_line = source.split("\n")[0] if source else ""
-                raise EppDiagnosticError(
-                    code="E501",
-                    name="Unencrypted Source File",
-                    filename=self.filename,
-                    line=1,
-                    col=1,
-                    source_line=first_line,
-                    reason=f"File '{self.filename}' is unencrypted. In Release 1.1, .enpp and .enppl files must be encrypted and begin with 'call ENCRYPTION_KEY'.",
-                    help_msg=f"Encrypt the file using: python3 epp.py --encrypt \"{self.filename}\""
-                )
-            source = decrypt_epp(source, self.filename)
-        elif source.strip().startswith("call ENCRYPTION_KEY"):
+        # Transparent secret decryption if encrypted
+        if source.strip().startswith("call ENCRYPTION_KEY"):
             source = decrypt_epp(source, self.filename)
 
         self.source_lines = source.split("\n")
