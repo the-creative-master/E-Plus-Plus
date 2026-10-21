@@ -86,6 +86,7 @@ enum class TokenType {
     // Control flow
     KW_THEN,
     KW_ELSE,
+    KW_OTHERWISE,
     KW_END,
     KW_REPEAT,
     KW_WHILE,

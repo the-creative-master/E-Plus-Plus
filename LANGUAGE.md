@@ -44,17 +44,19 @@ note [Notes are ignored during execution and document your program]
 Import any library using the humanizer syntax: `add the "<Name>" library`.
 
 ### 1. Python (`"Python"`)
-Bridges the Python 3 runtime into E++ with automatic bi-directional variable injection and output capture:
+Bridges the Python runtime into E++ with automatic bi-directional variable injection and output capture. The engine runs natively (and via the lightweight lexer/interpreter in Web Studio without Pyodide), with full support for Python standard libraries (`math`, `random`, `json`, `re`, `statistics`, `time`, `datetime`, `string`, `sys`, `os`, etc.), while explicitly blocking `turtle`:
 ```text
 add the "Python" library
 
 note [Single-line Python execution:]
 run the python code "print('Hello from Python!')"
 
-note [Multi-line Python block with loops:]
+note [Multi-line Python block with standard libraries:]
 run the python code:
-for I in range 3:
-    print("Python iteration:", I)
+import json, re, statistics
+data = json.loads('{"name": "EPP", "version": 1.0}')
+mean_val = statistics.mean([10, 20, 30])
+print(f"Data name: {data['name']}, mean: {mean_val}")
 
 note [Accessing E++ variables inside Python:]
 let 'Greeting' be "Welcome to E++ and Python!"
@@ -172,11 +174,24 @@ clear the console
 
 ## 5. Control Flow
 
-### If Statements
+### Single-Line If & Otherwise Statements
+E++ supports natural single-line `if ... then` statements. The `otherwise` branch can be attached on the line immediately following the `if`:
+```text
+if 1 plus 1 is equal to 2 then say "Duh, its math"
+
+let 'Answer' be 2
+if 'Answer' is equal to 2 then say "Correct!"
+otherwise say "U dumb?"
+```
+**Important Grammar Rules:**
+- `otherwise` **cannot** be placed on the same line as `if ... then` (e.g. `if 1 is equal to 1 then say "A" otherwise say "B"` is a syntax error).
+- `otherwise` **cannot** appear as a standalone statement without an `if` on the immediately preceding line.
+
+### Multi-Line Block If Statements
 ```text
 if 10 is greater than 5 then:
     say "Ten is greater!"
-else:
+otherwise:
     say "Not greater!"
 end if
 ```

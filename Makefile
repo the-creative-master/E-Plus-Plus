@@ -18,6 +18,10 @@ src/%.o: src/%.cpp
 clean:
 	rm -f $(OBJS) $(TARGET)
 
+zip:
+	rm -f epp_language.zip
+	zip -r epp_language.zip include/ src/ examples/ Makefile CMakeLists.txt README.md LANGUAGE.md index.html css/ -x "*.o" -x "*.DS_Store"
+
 test: $(TARGET)
 	@echo "=== Running E++ Tests ==="
 	@./$(TARGET) -e 'note [Testing notes]'
@@ -28,6 +32,8 @@ test: $(TARGET)
 	@./$(TARGET) -e 'say 6 divided by 2'
 	@./$(TARGET) -e 'check if "Hello" is not a number'
 	@./$(TARGET) -e 'check if "Woohoo!" is a number'
+	@./$(TARGET) -e 'if 1 plus 1 is equal to 2 then say "Duh, its math"'
+	@printf 'let '\''Answer'\'' be 2\nif '\''Answer'\'' is equal to 2 then say "Correct!"\notherwise say "U dumb?"\n' | ./$(TARGET) -e "$$(cat)"
 	@./$(TARGET) -e 'say "Hello ", and concat it with "World!"'
 	@./$(TARGET) -e 'say 1 + 2 and concat it with 2 + 3'
 	@./$(TARGET) -e 'say 1 + 2 and concat it with 2 + 3 with the seperation method of "-"'
@@ -36,4 +42,5 @@ test: $(TARGET)
 	@./$(TARGET) examples/04_variables.enpp
 	@./$(TARGET) examples/06_math_library.enppl
 	@./$(TARGET) examples/09_random_library.enppl
+	@./$(TARGET) examples/16_release_showcase.enppl
 	@echo "=== All Tests Passed! ==="

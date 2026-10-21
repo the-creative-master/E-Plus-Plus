@@ -171,6 +171,23 @@ clear the console
 
 ---
 
+## 🔀 Single-Line If & Otherwise Statements
+
+E++ supports concise inline `if ... then` statements with companion `otherwise` statements:
+```text
+if 1 plus 1 is equal to 2 then say "Duh, its math"
+
+let 'Answer' be 2
+if 'Answer' is equal to 2 then say "Correct!"
+otherwise say "U dumb?"
+```
+Rules:
+- `otherwise` must be placed on the line immediately following the `if` statement.
+- `otherwise` cannot appear on the same line as `if`.
+- `otherwise` cannot appear standalone without a preceding `if`.
+
+---
+
 ## 🛠️ Building & Running
 
 ```bash

@@ -576,6 +576,15 @@ void Interpreter::visitNoteStmt(NoteStmt* /*stmt*/) {
 void Interpreter::visitPythonStmt(PythonStmt* stmt) {
     require_library("Python", "Running Python code", stmt->line, stmt->col);
 
+    // Reject turtle library
+    if (stmt->python_code.find("turtle") != std::string::npos) {
+        if (stmt->python_code.find("import turtle") != std::string::npos ||
+            stmt->python_code.find("from turtle") != std::string::npos ||
+            stmt->python_code.find("turtle.") != std::string::npos) {
+            throw RuntimeError("Python Error: The 'turtle' library is not supported in E++.", stmt->line, stmt->col);
+        }
+    }
+
     // Build python script with injected E++ variables
     std::string script = "";
     for (const auto& pair : variables) {

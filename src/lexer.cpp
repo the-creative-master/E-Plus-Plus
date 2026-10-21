@@ -57,6 +57,7 @@ const std::unordered_map<std::string, TokenType> Lexer::keywords = {
 
     {"then", TokenType::KW_THEN},
     {"else", TokenType::KW_ELSE},
+    {"otherwise", TokenType::KW_OTHERWISE},
     {"end", TokenType::KW_END},
     {"repeat", TokenType::KW_REPEAT},
     {"while", TokenType::KW_WHILE},
@@ -317,6 +318,7 @@ Token Lexer::scan_number() {
 Token Lexer::scan_string() {
     int start_line = line;
     int start_col = col;
+    size_t start_pos = cursor;
     advance(); // Consume opening '"'
     std::string text;
 
@@ -343,7 +345,8 @@ Token Lexer::scan_string() {
         advance(); // Consume closing '"'
     }
 
-    Token tok(TokenType::TOKEN_STRING, "\"" + text + "\"", start_line, start_col);
+    std::string raw_lexeme = src.substr(start_pos, cursor - start_pos);
+    Token tok(TokenType::TOKEN_STRING, raw_lexeme, start_line, start_col);
     tok.string_value = text;
     return tok;
 }

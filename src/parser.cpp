@@ -153,6 +153,11 @@ std::shared_ptr<Stmt> Parser::parse_statement() {
     if (tok.type == TokenType::KW_CHECK) {
         return parse_check_statement();
     }
+    if (tok.type == TokenType::KW_OTHERWISE) {
+        throw ParseError("Syntax Error at line " + std::to_string(tok.line) + ", col " + std::to_string(tok.col) +
+                         ": 'otherwise' can only appear immediately on the next line after an 'if' statement.",
+                         tok.line, tok.col);
+    }
 
     // Otherwise, standalone expression or unrecognized line
     int l = tok.line;
@@ -450,8 +455,8 @@ std::shared_ptr<Stmt> Parser::parse_python_statement() {
                     py_code += std::string(next_tok.col - 1, ' ');
                 }
                 line_start = false;
-            } else if (!py_code.empty() && py_code.back() != '\n' && py_code.back() != ' ' &&
-                next_tok.lexeme != "(" && next_tok.lexeme != ")" && next_tok.lexeme != ":" && next_tok.lexeme != ".") {
+            } else if (!py_code.empty() && py_code.back() != '\n' && py_code.back() != ' ' && py_code.back() != '.' && py_code.back() != '(' &&
+                next_tok.lexeme != "(" && next_tok.lexeme != ")" && next_tok.lexeme != ":" && next_tok.lexeme != "." && next_tok.lexeme != ",") {
                 if (!((py_code.back() == 'f' || py_code.back() == 'r' || py_code.back() == 'b') && (!next_tok.lexeme.empty() && (next_tok.lexeme.front() == '"' || next_tok.lexeme.front() == '\'')))) {
                     py_code += " ";
                 }
@@ -582,41 +587,90 @@ std::shared_ptr<Stmt> Parser::parse_check_statement() {
     return std::make_shared<ExprStmt>(check_expr, line, col);
 }
 
-// if <condition> then ... [else ...] end if
+// if <condition> then ... [else/otherwise ...] [end if]
+// Supports:
+// 1. Single-line: if [input] then [output]
+//    Optionally followed on the next line by: otherwise [output]
+// 2. Block: if [input] then: ... [else/otherwise:] ... end if
 std::shared_ptr<Stmt> Parser::parse_if_statement() {
     Token if_tok = advance(); // Consume 'if'
     int line = if_tok.line;
     int col = if_tok.col;
 
     auto cond = parse_expression();
-    match(TokenType::KW_THEN);
-    match(TokenType::TOKEN_COLON);
-    match(TokenType::TOKEN_NEWLINE);
+    consume(TokenType::KW_THEN, "Expected 'then' after if condition");
 
     std::vector<std::shared_ptr<Stmt>> then_branch;
     std::vector<std::shared_ptr<Stmt>> else_branch;
 
-    while (!is_at_end() && peek().type != TokenType::KW_ELSE && peek().type != TokenType::KW_END) {
-        skip_newlines();
-        if (peek().type == TokenType::KW_ELSE || peek().type == TokenType::KW_END) break;
-        auto s = parse_statement();
-        if (s) then_branch.push_back(s);
+    // Check if it's block if: then: \n
+    if (match(TokenType::TOKEN_COLON)) {
+        match(TokenType::TOKEN_NEWLINE);
+        while (!is_at_end() && peek().type != TokenType::KW_ELSE && peek().type != TokenType::KW_OTHERWISE && peek().type != TokenType::KW_END) {
+            skip_newlines();
+            if (peek().type == TokenType::KW_ELSE || peek().type == TokenType::KW_OTHERWISE || peek().type == TokenType::KW_END) break;
+            auto s = parse_statement();
+            if (s) then_branch.push_back(s);
+        }
+
+        if (match(TokenType::KW_ELSE) || match(TokenType::KW_OTHERWISE)) {
+            match(TokenType::TOKEN_COLON);
+            match(TokenType::TOKEN_NEWLINE);
+            while (!is_at_end() && peek().type != TokenType::KW_END) {
+                skip_newlines();
+                if (peek().type == TokenType::KW_END) break;
+                auto s = parse_statement();
+                if (s) else_branch.push_back(s);
+            }
+        }
+
+        consume(TokenType::KW_END, "Expected 'end if' to close if block");
+        match(TokenType::KW_IF);
+        match(TokenType::TOKEN_NEWLINE);
+
+        return std::make_shared<IfStmt>(cond, then_branch, else_branch, line, col);
     }
 
-    if (match(TokenType::KW_ELSE)) {
-        match(TokenType::TOKEN_COLON);
-        match(TokenType::TOKEN_NEWLINE);
-        while (!is_at_end() && peek().type != TokenType::KW_END) {
-            skip_newlines();
-            if (peek().type == TokenType::KW_END) break;
-            auto s = parse_statement();
-            if (s) else_branch.push_back(s);
+    // Single-line inline 'if [input] then [output]'
+    if (peek().type == TokenType::KW_OTHERWISE) {
+        throw ParseError("Syntax Error at line " + std::to_string(peek().line) +
+                         ": 'otherwise' cannot be on the same line as 'if ... then'. In E++, 'otherwise' always has to be on the next line.",
+                         peek().line, peek().col);
+    }
+
+    auto then_stmt = parse_statement();
+    if (then_stmt) {
+        then_branch.push_back(then_stmt);
+    }
+
+    // Did then_stmt already consume the newline?
+    if (previous().type == TokenType::TOKEN_NEWLINE) {
+        if (peek().type == TokenType::KW_OTHERWISE || peek().type == TokenType::KW_ELSE) {
+            advance(); // consume 'otherwise' or 'else'
+            auto else_stmt = parse_statement();
+            if (else_stmt) {
+                else_branch.push_back(else_stmt);
+            }
+        }
+    } else {
+        // Was 'otherwise' placed on the same line?
+        if (peek().type == TokenType::KW_OTHERWISE || peek().type == TokenType::KW_ELSE) {
+            throw ParseError("Syntax Error at line " + std::to_string(peek().line) +
+                             ": 'otherwise' cannot be on the same line as 'if ... then'. In E++, 'otherwise' always has to be on the next line.",
+                             peek().line, peek().col);
+        }
+        if (match(TokenType::TOKEN_NEWLINE)) {
+            if (peek().type == TokenType::KW_OTHERWISE || peek().type == TokenType::KW_ELSE) {
+                advance(); // consume 'otherwise' or 'else'
+                auto else_stmt = parse_statement();
+                if (else_stmt) {
+                    else_branch.push_back(else_stmt);
+                }
+            } else {
+                current--; // rewind newline
+            }
         }
     }
-
-    consume(TokenType::KW_END, "Expected 'end if' to close if statement");
-    match(TokenType::KW_IF);
-    match(TokenType::TOKEN_NEWLINE);
 
     return std::make_shared<IfStmt>(cond, then_branch, else_branch, line, col);
 }

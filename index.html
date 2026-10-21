@@ -861,105 +861,382 @@ function showToast(msg, isErr = false) {
 }
 
 // ==========================================
-// In-Browser Python Execution Engine
+// In-Browser Python Execution Engine (Native Lexer/Interpreter - No Pyodide)
 // ==========================================
 
 function executeInBrowserPython(pyCode, envVars, printFn) {
-  // Prepend injected variables from E++
-  let jsScope = {
-    math: {
-      sqrt: Math.sqrt,
-      factorial: (n) => { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; },
-      sin: Math.sin,
-      cos: Math.cos,
-      pi: Math.PI,
-      e: Math.E,
-      pow: Math.pow
-    }
-  };
-  for (let k in envVars) {
-    jsScope[k] = envVars[k];
-    jsScope[k.toLowerCase()] = envVars[k];
-    jsScope[k.toUpperCase()] = envVars[k];
-    jsScope['EppVersion'] = envVars[k];
-    const cap = k.replace(/(?:^|\s|_|-)(\w)/g, (_, c) => c.toUpperCase());
-    jsScope[cap] = envVars[k];
+  // Reject turtle explicitly
+  if (/\b(?:import\s+turtle|from\s+turtle|turtle\.)\b/i.test(pyCode)) {
+    throw new Error("[Python Error] The 'turtle' library is not supported in E++.");
   }
 
-  // Custom print function
   let printedLines = [];
   function pyPrint(...args) {
-    const line = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+    const line = args.map(a => {
+      if (a === null) return 'None';
+      if (a === true) return 'True';
+      if (a === false) return 'False';
+      if (typeof a === 'object') return JSON.stringify(a);
+      return String(a);
+    }).join(' ');
     printedLines.push(line);
     printFn(line);
   }
 
-  // Pre-process code:
-  // Auto-fix 'for I in range 3:' -> 'for I in range(3):'
-  let cleanPy = pyCode.replace(/range\s+(\d+)\s*:/g, 'range($1):');
+  // Standard Library Emulations
+  const pyMath = {
+    sqrt: Math.sqrt,
+    pow: Math.pow,
+    factorial: (n) => { let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; },
+    ceil: Math.ceil,
+    floor: Math.floor,
+    sin: Math.sin,
+    cos: Math.cos,
+    tan: Math.tan,
+    asin: Math.asin,
+    acos: Math.acos,
+    atan: Math.atan,
+    atan2: Math.atan2,
+    log: Math.log,
+    log10: Math.log10,
+    log2: Math.log2,
+    exp: Math.exp,
+    radians: (deg) => deg * Math.PI / 180,
+    degrees: (rad) => rad * 180 / Math.PI,
+    hypot: Math.hypot,
+    gcd: (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b) { let t = b; b = a % b; a = t; } return a; },
+    fabs: Math.abs,
+    isclose: (a, b, rel_tol = 1e-9, abs_tol = 0.0) => Math.abs(a - b) <= Math.max(rel_tol * Math.max(Math.abs(a), Math.abs(b)), abs_tol),
+    pi: Math.PI,
+    e: Math.E,
+    tau: Math.PI * 2,
+    inf: Infinity,
+    nan: NaN
+  };
 
-  // Convert Python f"..." to template literals
-  cleanPy = cleanPy.replace(/f"([^"\\]*(?:\\.[^"\\]*)*)"/g, (match, inner) => {
-    return '`' + inner.replace(/\{([^}]+)\}/g, '${$1}') + '`';
-  });
-  cleanPy = cleanPy.replace(/f'([^'\\]*(?:\\.[^'\\]*)*)'/g, (match, inner) => {
-    return '`' + inner.replace(/\{([^}]+)\}/g, '${$1}') + '`';
-  });
+  const pyRandom = {
+    random: () => Math.random(),
+    randint: (a, b) => Math.floor(Math.random() * (b - a + 1)) + a,
+    choice: (seq) => seq[Math.floor(Math.random() * seq.length)],
+    shuffle: (arr) => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; },
+    randrange: (start, stop, step = 1) => {
+      if (stop === undefined) { stop = start; start = 0; }
+      const choices = [];
+      for (let i = start; (step > 0 ? i < stop : i > stop); i += step) choices.push(i);
+      return choices[Math.floor(Math.random() * choices.length)];
+    },
+    uniform: (a, b) => Math.random() * (b - a) + a,
+    sample: (population, k) => {
+      const copy = [...population];
+      const res = [];
+      for (let i = 0; i < k && copy.length > 0; i++) {
+        const idx = Math.floor(Math.random() * copy.length);
+        res.push(copy.splice(idx, 1)[0]);
+      }
+      return res;
+    },
+    seed: () => {}
+  };
 
-  // Convert Python loops and statements to JS executable scope
-  // If it's single line print: print(...)
-  const printMatch = cleanPy.trim().match(/^print\s*\((.*)\)$/);
-  if (printMatch) {
-    try {
-      const argsExpr = printMatch[1];
-      // Evaluate args in JS scope
-      const fn = new Function('print', ...Object.keys(jsScope), `print(${argsExpr});`);
-      fn(pyPrint, ...Object.values(jsScope));
-      return printedLines.join('\n');
-    } catch (e) {
-      // Fallback
+  const pyJson = {
+    loads: (s) => JSON.parse(s),
+    dumps: (obj, indent) => JSON.stringify(obj, null, indent || 0)
+  };
+
+  const pyRe = {
+    search: (pattern, str) => {
+      const reg = new RegExp(pattern);
+      const m = reg.exec(str);
+      if (!m) return null;
+      return {
+        group: (i = 0) => m[i],
+        groups: () => m.slice(1),
+        start: () => m.index,
+        end: () => m.index + m[0].length,
+        span: () => [m.index, m.index + m[0].length]
+      };
+    },
+    match: (pattern, str) => {
+      const reg = new RegExp('^' + pattern);
+      const m = reg.exec(str);
+      if (!m) return null;
+      return {
+        group: (i = 0) => m[i],
+        groups: () => m.slice(1),
+        start: () => m.index,
+        end: () => m.index + m[0].length,
+        span: () => [m.index, m.index + m[0].length]
+      };
+    },
+    findall: (pattern, str) => {
+      const reg = new RegExp(pattern, 'g');
+      return str.match(reg) || [];
+    },
+    sub: (pattern, repl, str) => str.replace(new RegExp(pattern, 'g'), repl),
+    split: (pattern, str) => str.split(new RegExp(pattern))
+  };
+
+  const pyStatistics = {
+    mean: (data) => data.reduce((a, b) => a + b, 0) / data.length,
+    median: (data) => {
+      const s = [...data].sort((a, b) => a - b);
+      const mid = Math.floor(s.length / 2);
+      return s.length % 2 !== 0 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+    },
+    mode: (data) => {
+      const c = {};
+      let maxC = 0, best = data[0];
+      for (let x of data) { c[x] = (c[x] || 0) + 1; if (c[x] > maxC) { maxC = c[x]; best = x; } }
+      return best;
+    },
+    stdev: (data) => {
+      const m = data.reduce((a, b) => a + b, 0) / data.length;
+      const v = data.reduce((a, b) => a + Math.pow(b - m, 2), 0) / (data.length - 1);
+      return Math.sqrt(v);
+    },
+    variance: (data) => {
+      const m = data.reduce((a, b) => a + b, 0) / data.length;
+      return data.reduce((a, b) => a + Math.pow(b - m, 2), 0) / (data.length - 1);
     }
-  }
+  };
 
-  // Loop matching: for var in range(N): ...
-  const loopMatch = cleanPy.match(/for\s+([a-zA-Z_]\w*)\s+in\s+range\s*\(([^)]+)\)\s*:\s*\n?([\s\S]*)/i);
-  if (loopMatch) {
-    const loopVar = loopMatch[1];
-    const rangeLimit = parseInt(loopMatch[2].trim()) || 0;
-    const bodyCode = loopMatch[3].trim();
+  const pyTime = {
+    time: () => Date.now() / 1000,
+    sleep: () => {},
+    ctime: () => new Date().toString(),
+    asctime: () => new Date().toString(),
+    perf_counter: () => (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000
+  };
 
-    // Check if body is print(...)
-    const bodyPrint = bodyCode.match(/print\s*\((.*)\)/);
-    for (let idx = 0; idx < rangeLimit; idx++) {
-      jsScope[loopVar] = idx;
-      if (bodyPrint) {
-        try {
-          const fn = new Function('print', ...Object.keys(jsScope), `print(${bodyPrint[1]});`);
-          fn(pyPrint, ...Object.values(jsScope));
-        } catch (err) {
-          pyPrint(`[Python Error] ${err.message}`);
+  const pyDatetime = {
+    datetime: {
+      now: () => ({
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
+        day: new Date().getDate(),
+        hour: new Date().getHours(),
+        minute: new Date().getMinutes(),
+        second: new Date().getSeconds(),
+        strftime: () => new Date().toISOString(),
+        toString: () => new Date().toISOString()
+      }),
+      today: () => ({
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
+        day: new Date().getDate()
+      })
+    },
+    date: {
+      today: () => ({
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
+        day: new Date().getDate()
+      })
+    },
+    timedelta: (args) => args
+  };
+
+  const pyString = {
+    ascii_letters: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    ascii_lowercase: 'abcdefghijklmnopqrstuvwxyz',
+    ascii_uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    digits: '0123456789',
+    hexdigits: '0123456789abcdefABCDEF',
+    octdigits: '01234567',
+    punctuation: '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~',
+    whitespace: ' \t\n\r\x0b\x0c',
+    printable: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ \t\n\r\x0b\x0c'
+  };
+
+  const pySys = {
+    version: '3.11.0 (E++ Browser Engine)',
+    platform: 'web',
+    argv: ['epp'],
+    exit: (c = 0) => { throw new Error('[Python SystemExit]: ' + c); }
+  };
+
+  const pyOs = {
+    name: 'posix',
+    environ: {},
+    getcwd: () => '/',
+    path: {
+      join: (...args) => args.join('/'),
+      basename: (p) => p.split('/').pop(),
+      dirname: (p) => p.split('/').slice(0, -1).join('/') || '/',
+      exists: () => true
+    }
+  };
+
+  const pyBuiltins = {
+    range: (a, b, step = 1) => {
+      if (b === undefined) { b = a; a = 0; }
+      const arr = [];
+      for (let i = a; (step > 0 ? i < b : i > b); i += step) arr.push(i);
+      return arr;
+    },
+    len: (x) => (x !== null && x !== undefined && x.length !== undefined) ? x.length : (typeof x === 'object' ? Object.keys(x).length : 0),
+    str: (x) => String(x),
+    int: (x) => parseInt(x, 10),
+    float: (x) => parseFloat(x),
+    bool: (x) => Boolean(x),
+    sum: (arr) => arr.reduce((acc, v) => acc + v, 0),
+    min: (...args) => Array.isArray(args[0]) ? Math.min(...args[0]) : Math.min(...args),
+    max: (...args) => Array.isArray(args[0]) ? Math.max(...args[0]) : Math.max(...args),
+    abs: Math.abs,
+    round: (x, d = 0) => { const f = Math.pow(10, d); return Math.round(x * f) / f; },
+    list: (x) => Array.from(x),
+    dict: (entries) => entries ? Object.fromEntries(entries) : {},
+    set: (x) => new Set(x),
+    tuple: (x) => Object.freeze(Array.from(x)),
+    any: (arr) => arr.some(Boolean),
+    all: (arr) => arr.every(Boolean),
+    reversed: (arr) => [...arr].reverse(),
+    sorted: (arr) => [...arr].sort()
+  };
+
+  // Convert Python code to JS
+  function transpilePythonToJs(code) {
+    let pre = code.replace(/range\s+(\d+)\s*:/g, 'range($1):');
+    const lines = pre.split('\n');
+    let jsLines = [];
+    let blockIndents = [];
+
+    for (let rawLine of lines) {
+      if (!rawLine.trim() || rawLine.trim().startsWith('#')) continue;
+
+      const indentMatch = rawLine.match(/^(\s*)/);
+      const indent = indentMatch ? indentMatch[1].length : 0;
+      const trimmed = rawLine.trim();
+
+      let isElseOrElif = /^else\s*:|^elif\s+/.test(trimmed);
+      while (blockIndents.length > 0 && indent <= blockIndents[blockIndents.length - 1].indent) {
+        const top = blockIndents.pop();
+        if (isElseOrElif && indent === top.indent) {
+          break;
         }
+        jsLines.push(' '.repeat(top.indent) + '}');
       }
+
+      if (/^(?:import\s+|from\s+)/.test(trimmed)) {
+        continue;
+      }
+
+      let line = trimmed;
+      // Convert f"..." and f'...'
+      line = line.replace(/f"([^"\\]*(?:\\.[^"\\]*)*)"/g, (m, inner) => '`' + inner.replace(/\{([^}]+)\}/g, '${$1}') + '`');
+      line = line.replace(/f'([^'\\]*(?:\\.[^'\\]*)*)'/g, (m, inner) => '`' + inner.replace(/\{([^}]+)\}/g, '${$1}') + '`');
+      line = line.replace(/r"([^"\\]*(?:\\.[^"\\]*)*)"/g, '"$1"');
+
+      // Replace keywords outside strings
+      line = line.replace(/(".*?"|'.*?'|`.*?`|\b(?:and|or|not|True|False|None)\b)/g, (match) => {
+        if (match.startsWith('"') || match.startsWith("'") || match.startsWith('`')) return match;
+        switch (match) {
+          case 'and': return '&&';
+          case 'or': return '||';
+          case 'not': return '!';
+          case 'True': return 'true';
+          case 'False': return 'false';
+          case 'None': return 'null';
+          default: return match;
+        }
+      });
+
+      line = line.replace(/\.append\(/g, '.push(');
+
+      if (/^elif\s+(.+):$/.test(line)) {
+        const cond = line.match(/^elif\s+(.+):$/)[1];
+        jsLines.push(' '.repeat(indent) + '} else if (' + cond + ') {');
+        blockIndents.push({ indent: indent, type: 'elif' });
+        continue;
+      }
+      if (/^else\s*:$/.test(line)) {
+        jsLines.push(' '.repeat(indent) + '} else {');
+        blockIndents.push({ indent: indent, type: 'else' });
+        continue;
+      }
+      if (/^if\s+(.+):$/.test(line)) {
+        const cond = line.match(/^if\s+(.+):$/)[1];
+        jsLines.push(' '.repeat(indent) + 'if (' + cond + ') {');
+        blockIndents.push({ indent: indent, type: 'if' });
+        continue;
+      }
+      const forMatch = line.match(/^for\s+([a-zA-Z_]\w*)\s+in\s+(.+):$/);
+      if (forMatch) {
+        const v = forMatch[1];
+        const it = forMatch[2];
+        jsLines.push(' '.repeat(indent) + 'for (let ' + v + ' of ' + it + ') {');
+        blockIndents.push({ indent: indent, type: 'for' });
+        continue;
+      }
+      const whileMatch = line.match(/^while\s+(.+):$/);
+      if (whileMatch) {
+        const cond = whileMatch[1];
+        jsLines.push(' '.repeat(indent) + 'while (' + cond + ') {');
+        blockIndents.push({ indent: indent, type: 'while' });
+        continue;
+      }
+      const defMatch = line.match(/^def\s+([a-zA-Z_]\w*)\s*\((.*?)\):$/);
+      if (defMatch) {
+        const fn = defMatch[1];
+        const args = defMatch[2];
+        jsLines.push(' '.repeat(indent) + 'function ' + fn + '(' + args + ') {');
+        blockIndents.push({ indent: indent, type: 'def' });
+        continue;
+      }
+
+      const assignMatch = line.match(/^([a-zA-Z_]\w*)\s*=(?!=)\s*(.+)$/);
+      if (assignMatch) {
+        const varName = assignMatch[1];
+        const expr = assignMatch[2];
+        jsLines.push(' '.repeat(indent) + 'var ' + varName + ' = ' + expr + ';');
+        continue;
+      }
+
+      jsLines.push(' '.repeat(indent) + line + ';');
     }
-    return printedLines.join('\n');
+
+    while (blockIndents.length > 0) {
+      const top = blockIndents.pop();
+      jsLines.push(' '.repeat(top.indent) + '}');
+    }
+
+    return jsLines.join('\n');
   }
 
-  // Generic Python block lines
-  const lines = cleanPy.split('\n');
-  for (let l of lines) {
-    let tr = l.trim();
-    if (!tr || tr.startsWith('#') || tr.startsWith('import ') || tr.startsWith('from ')) continue;
-    const pm = tr.match(/^print\s*\((.*)\)$/);
-    if (pm) {
-      try {
-        const fn = new Function('print', ...Object.keys(jsScope), `print(${pm[1]});`);
-        fn(pyPrint, ...Object.values(jsScope));
-      } catch (err) {
-        // Fallback plain string print
-        pyPrint(pm[1].replace(/['"`]/g, ''));
-      }
-    }
+  const jsScript = transpilePythonToJs(pyCode);
+  const context = {
+    print: pyPrint,
+    math: pyMath,
+    random: pyRandom,
+    json: pyJson,
+    re: pyRe,
+    statistics: pyStatistics,
+    time: pyTime,
+    datetime: pyDatetime,
+    string: pyString,
+    sys: pySys,
+    os: pyOs,
+    ...pyBuiltins
+  };
+
+  for (let k in envVars) {
+    context[k] = envVars[k];
+    context[k.toLowerCase()] = envVars[k];
+    context[k.toUpperCase()] = envVars[k];
+    context['EppVersion'] = envVars[k];
+    const cap = k.replace(/(?:^|\s|_|-)(\w)/g, (_, c) => c.toUpperCase());
+    context[cap] = envVars[k];
   }
+
+  try {
+    const fnKeys = Object.keys(context);
+    const fnVals = Object.values(context);
+    const runner = new Function(...fnKeys, jsScript);
+    runner(...fnVals);
+  } catch (err) {
+    printFn(`[Python Error] ${err.message}`);
+  }
+
   return printedLines.join('\n');
 }
 
@@ -1009,10 +1286,9 @@ class EppEvaluator {
         i++;
         while (i < lines.length) {
           let nextL = lines[i];
-          // Check if upcoming line is an unindented E++ statement
           let tr = nextL.trim();
           if (tr && !nextL.startsWith(' ') && !nextL.startsWith('\t')) {
-            if (/^(?:say|tell|let|define|ask|add|note|run)\b/i.test(tr)) {
+            if (/^(?:say|tell|let|define|ask|add|note|run|if|otherwise)\b/i.test(tr)) {
               i--; // rewind
               break;
             }
@@ -1025,8 +1301,146 @@ class EppEvaluator {
         continue;
       }
 
+      // IF STATEMENT: if [input] then [output] and block if
+      if (/^if\s+/i.test(line)) {
+        if (/\botherwise\b/i.test(line)) {
+          throw new Error(`[E++ Syntax Error] at line ${lineNum}: 'otherwise' cannot be on the same line as 'if ... then'. In E++, 'otherwise' always has to be on the next line.`);
+        }
+
+        const ifMatch = line.match(/^if\s+(.+?)\s+then\s*(?::\s*)?(.*)$/i);
+        if (!ifMatch) {
+          throw new Error(`[E++ Syntax Error] at line ${lineNum}: Expected 'then' after if condition, e.g. if <condition> then <statement>`);
+        }
+
+        const condStr = ifMatch[1].trim();
+        const thenInline = ifMatch[2].trim();
+        const condResult = await this.evalCondition(condStr, lineNum);
+
+        // Check if next non-empty line is 'otherwise':
+        let hasOtherwise = false;
+        let otherwiseLine = '';
+        let otherwiseLineNum = 0;
+        let nextIdx = i + 1;
+        while (nextIdx < lines.length && !lines[nextIdx].trim()) {
+          nextIdx++;
+        }
+        if (nextIdx < lines.length && /^otherwise\b/i.test(lines[nextIdx].trim())) {
+          hasOtherwise = true;
+          otherwiseLine = lines[nextIdx].trim();
+          otherwiseLineNum = nextIdx + 1;
+          i = nextIdx; // advance past otherwise line
+        }
+
+        if (thenInline) {
+          // Single-line if: if [input] then [output]
+          if (condResult) {
+            await this.execStatement(thenInline, lineNum, printFn, askFn);
+          } else if (hasOtherwise) {
+            const othMatch = otherwiseLine.match(/^otherwise\s*(?::\s*)?(.*)$/i);
+            const othStmt = othMatch ? othMatch[1].trim() : '';
+            if (othStmt) {
+              await this.execStatement(othStmt, otherwiseLineNum, printFn, askFn);
+            }
+          }
+          continue;
+        } else {
+          // Block if: if <cond> then: ... otherwise: ... end if
+          let thenLines = [];
+          let elseLines = [];
+          let currentTarget = thenLines;
+          i++;
+          while (i < lines.length) {
+            let blkL = lines[i].trim();
+            if (/^end\s+if\b/i.test(blkL)) {
+              break;
+            } else if (/^(?:otherwise|else)\b/i.test(blkL)) {
+              currentTarget = elseLines;
+              i++;
+              continue;
+            }
+            if (blkL) currentTarget.push({ line: blkL, lineNum: i + 1 });
+            i++;
+          }
+          const activeBlock = condResult ? thenLines : elseLines;
+          for (let item of activeBlock) {
+            await this.execStatement(item.line, item.lineNum, printFn, askFn);
+          }
+          continue;
+        }
+      }
+
+      // Standalone OTHERWISE check
+      if (/^otherwise\b/i.test(line)) {
+        throw new Error(`[E++ Syntax Error] at line ${lineNum}: 'otherwise' can only appear immediately on the next line after an 'if' statement.`);
+      }
+
       await this.execStatement(line, lineNum, printFn, askFn);
     }
+  }
+
+  async evalCondition(condStr, lineNum) {
+    condStr = condStr.trim();
+
+    // 1. Check if ... is [not] a number
+    if (/^check\s+if\s+/i.test(condStr)) {
+      return this.evalTypeCheck(condStr, lineNum);
+    }
+
+    // 2. is not equal to / is not
+    const neqMatch = condStr.match(/^(.+?)\s+is\s+not\s+(?:equal\s+to\s+)?(.+)$/i);
+    if (neqMatch) {
+      const left = await this.evalExpr(neqMatch[1].trim(), lineNum);
+      const right = await this.evalExpr(neqMatch[2].trim(), lineNum);
+      return String(left).toLowerCase() !== String(right).toLowerCase();
+    }
+
+    // 3. is greater than or equal to
+    const gteMatch = condStr.match(/^(.+?)\s+is\s+greater\s+than\s+or\s+equal\s+to\s+(.+)$/i);
+    if (gteMatch) {
+      const left = Number(await this.evalExpr(gteMatch[1].trim(), lineNum));
+      const right = Number(await this.evalExpr(gteMatch[2].trim(), lineNum));
+      return left >= right;
+    }
+
+    // 4. is less than or equal to
+    const lteMatch = condStr.match(/^(.+?)\s+is\s+less\s+than\s+or\s+equal\s+to\s+(.+)$/i);
+    if (lteMatch) {
+      const left = Number(await this.evalExpr(lteMatch[1].trim(), lineNum));
+      const right = Number(await this.evalExpr(lteMatch[2].trim(), lineNum));
+      return left <= right;
+    }
+
+    // 5. is greater than
+    const gtMatch = condStr.match(/^(.+?)\s+is\s+greater\s+than\s+(.+)$/i);
+    if (gtMatch) {
+      const left = Number(await this.evalExpr(gtMatch[1].trim(), lineNum));
+      const right = Number(await this.evalExpr(gtMatch[2].trim(), lineNum));
+      return left > right;
+    }
+
+    // 6. is less than
+    const ltMatch = condStr.match(/^(.+?)\s+is\s+less\s+than\s+(.+)$/i);
+    if (ltMatch) {
+      const left = Number(await this.evalExpr(ltMatch[1].trim(), lineNum));
+      const right = Number(await this.evalExpr(ltMatch[2].trim(), lineNum));
+      return left < right;
+    }
+
+    // 7. is equal to / is / equals
+    const eqMatch = condStr.match(/^(.+?)\s+(?:is\s+(?:equal\s+to\s+|equals\s+)?|equals\s+)(.+)$/i);
+    if (eqMatch) {
+      const left = await this.evalExpr(eqMatch[1].trim(), lineNum);
+      const right = await this.evalExpr(eqMatch[2].trim(), lineNum);
+      const leftNum = Number(left);
+      const rightNum = Number(right);
+      if (!isNaN(leftNum) && !isNaN(rightNum) && String(left).trim() !== '' && String(right).trim() !== '') {
+        return leftNum === rightNum;
+      }
+      return String(left).toLowerCase() === String(right).toLowerCase();
+    }
+
+    const val = await this.evalExpr(condStr, lineNum);
+    return Boolean(val);
   }
 
   async execStatement(line, lineNum, printFn, askFn) {
