@@ -1,10 +1,2 @@
-note [02_arithmetic.epp: Built-in English arithmetic & type checks]
-
-say 1 plus 1
-say 1 minus 1
-say 2 times 3
-say 6 divided by 2
-
-note [Checking if values are numbers or not:]
-check if "Hello" is not a number
-check if "Woohoo!" is a number
+call ENCRYPTION_KEY
+AAABoV84Ty7V+6bMzwkN7OfWhf0yGdIvfYsXguKHkveb/VF0hPTXvefZ4Dfl0VGjBv/zNJKoPUYYgKJL88ZGzzsm2fxsVa+cgMf4gDTRXFL0OtbRuew2vsEXfOV0PXncs3zTiP0u8cQA7oE1YMtuS6nbD5QP4YApzDY7wEJE9gU24lIPbSg5VkHW/8cZCdTsSvXKp/CYLxfTLIsz7qifcfoio+89OJZIuDYPUZ5ptJRl3sQ700an1h+31gGncWg/3NS8iMD+ofa8yyT57q5D5iTCmM1EAKhBI/MoxmWvvPE2PMr3RJ92QlPaCnAzQcWYqe2HciYxwds=

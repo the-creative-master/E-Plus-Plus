@@ -1,13 +1,2 @@
-note [07_control_flow.epp: Conditionals and Repeat loops]
-
-let 'Score' be 95
-
-if 'Score' is greater than 50 then:
-    say "Student passed with flying colors!"
-else:
-    say "Needs improvement."
-end if
-
-repeat 3 times:
-    say "E++ makes programming read like a book!"
-end repeat
+call ENCRYPTION_KEY
+AAABoV84Tzjw0VB/E5kkjdST37uWP5X1cAvdM59DEQzsbwU/PLV5AW+qhuPRloLYi9robMiBxEpteDstH0+7UkHrwMIsn8ubBIfo5Sjjae1pZ5svzG2WfPwegJEObRzvcPeMrEufgz4hNCLzjfiwLlTQdX1+IGzsrFVbbcaySfQaDwSjGYHR+yZVHP0FF4ft4pYE0sjkv13qfBmRd/OCRH7dB1nJtARgkBNKrnqYj+0o8CCiUWVl745FILLk/xprBdX92dHImEuPl6L8RPiOnRTWzDNj/0gaO+4wcboB/MUzWv5FUE8/OAjWgqcnkGXcs6wBXk9eVjFHnAePu2N868K3h0R9Vg4ieMMBgW8H5LBlztrKIV9Pt5IyhqpVtOU=

@@ -1,4 +1,2 @@
-note [05_interactive_ask.epp: Prompting user for input with ask]
-
-ask "What is your name?" and save the output as 'Name'
-say "Hello ", 'name', "Welcome to E++!"
+call ENCRYPTION_KEY
+AAABoV84TzU0pIagS+FdHu37xQDl1wmtyS1zQm4CO/+ikHuvI9OpUDlN0cXgb4ryXiik5UqdkZNb0dj3UgcMOM6fRJx/d6xAl2UXCoknZNyJfVZWfvyOOybiDEoPWWk9K3lLJhIT+j6/iyqUWS2oFzbTotoTZhYQ9ZCqXfNgeXKh5SUQvdVO6I8e57XE4PuXjwM/W9joljWjAPpm8HBW81cn2WrGrmH+sA==

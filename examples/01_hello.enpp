@@ -1,9 +1,2 @@
-note [01_hello.epp: The classic Hello World in E++]
-
-say "Hello"
-
-note [In E++, anything in quotes is a string:]
-say "1 + 1"
-
-note [Without quotes, math is evaluated naturally:]
-say 1 plus 1
+call ENCRYPTION_KEY
+AAABoV84TysZzus2CBGmfoAyll+IpgMa58jzV4WG08XIM2vz3fC1r4wzMhE15WPE3emjsaWdv5vHiztngUCmkO1CVoyIOclCOzX6A6eAGnzjjlW4Derf5jwVw4llXL3rgrtEmK7t2siZSNec9b92OdkLfmv20hpqrxR+3POLUw2xzmWLSl4EPJJI/eu4vK+3Czz6Zq9cNzgF1j45SnIxw5COdLMxOoiQ+TuSmyAYS44cGkLK8jXmT/o4b+br0PmZ2MQDuQpp1A==

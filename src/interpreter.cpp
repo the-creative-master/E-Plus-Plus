@@ -617,6 +617,29 @@ void Interpreter::visitPythonStmt(PythonStmt* stmt) {
     }
 
     std::string code = stmt->python_code;
+    // Dedent python code block
+    std::istringstream stream(code);
+    std::string l;
+    std::vector<std::string> lines;
+    size_t min_indent = SIZE_MAX;
+    while (std::getline(stream, l)) {
+        lines.push_back(l);
+        size_t non_ws = l.find_first_not_of(" \t");
+        if (non_ws != std::string::npos && l[non_ws] != '\r' && l[non_ws] != '\n') {
+            if (non_ws < min_indent) min_indent = non_ws;
+        }
+    }
+    if (min_indent == SIZE_MAX) min_indent = 0;
+    std::string dedented = "";
+    for (const auto& line_item : lines) {
+        if (line_item.size() >= min_indent) {
+            dedented += line_item.substr(min_indent) + "\n";
+        } else {
+            dedented += line_item + "\n";
+        }
+    }
+    code = dedented;
+
     // Auto-fix "range X:" to "range(X):" if written in natural English
     // e.g. for I in range 3: -> for I in range(3):
     size_t range_pos = code.find("range ");

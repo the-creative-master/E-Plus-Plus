@@ -19,11 +19,12 @@ clean:
 	rm -f $(OBJS) $(TARGET)
 
 zip:
-	rm -f epp_language.zip
-	zip -r epp_language.zip include/ src/ examples/ Makefile CMakeLists.txt README.md LANGUAGE.md index.html css/ -x "*.o" -x "*.DS_Store"
+	rm -f epp_language.zip E++.zip
+	zip -r epp_language.zip include/ src/ examples/ Makefile CMakeLists.txt README.md LANGUAGE.md index.html lexer.py epp.py epp -x "*.o" -x "*.DS_Store"
+	cp epp_language.zip E++.zip
 
 test: $(TARGET)
-	@echo "=== Running E++ Tests ==="
+	@echo "=== Running E++ Tests (C++ Engine) ==="
 	@./$(TARGET) -e 'note [Testing notes]'
 	@./$(TARGET) -e 'say "Hello"'
 	@./$(TARGET) -e 'say 1 plus 1'
@@ -42,5 +43,12 @@ test: $(TARGET)
 	@./$(TARGET) examples/04_variables.enpp
 	@./$(TARGET) examples/06_math_library.enppl
 	@./$(TARGET) examples/09_random_library.enppl
+	@./$(TARGET) examples/14_system_library.enppl
 	@./$(TARGET) examples/16_release_showcase.enppl
+	@echo "=== Running E++ Tests (Python Runner) ==="
+	@python3 epp.py examples/04_variables.enpp
+	@python3 epp.py examples/06_math_library.enppl
+	@python3 epp.py examples/09_random_library.enppl
+	@python3 epp.py examples/14_system_library.enppl
+	@python3 epp.py examples/16_release_showcase.enppl
 	@echo "=== All Tests Passed! ==="

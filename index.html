@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>E++ Studio | Release 1.0</title>
+<title>E++ Studio | Release 1.1</title>
 <link rel="stylesheet" href="css/ide.css">
 <style>
   /* Color classes for Terminal */
@@ -189,6 +189,72 @@
     padding: 3px 5px;
     color: #c084fc !important;
   }
+  .deterministic-error-card {
+    background: #180d12;
+    border: 1px solid #dc2626;
+    border-left: 4px solid #ef4444;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 8px 0;
+    font-family: var(--mono);
+    color: #fca5a5;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+  .err-header {
+    font-weight: 700;
+    color: #f87171;
+    margin-bottom: 6px;
+  }
+  .err-code {
+    background: rgba(239, 68, 68, 0.25);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: 6px;
+    color: #fecaca;
+  }
+  .err-code-box {
+    background: #090507;
+    border: 1px solid #450a0a;
+    border-radius: 4px;
+    padding: 8px;
+    margin: 6px 0;
+  }
+  .err-line-num {
+    color: #94a3b8;
+  }
+  .err-caret {
+    color: #facc15;
+    font-weight: 700;
+  }
+  .err-reason {
+    color: #fdba74;
+    margin-top: 4px;
+  }
+  .err-help {
+    color: #86efac;
+    margin-top: 4px;
+  }
+  .badge-zip-active {
+    background: rgba(16, 185, 129, 0.18);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .badge-zip-locked {
+    background: rgba(239, 68, 68, 0.18);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
   .dash-rules {
     margin-left: auto;
     font-family: var(--mono);
@@ -224,7 +290,7 @@
   <div class="brand">
     <div class="logo" aria-hidden="true">E<span>++</span></div>
     <div>
-      <h1>E++ Studio <span class="build-badge">Release 1.0</span></h1>
+      <h1>E++ Studio <span class="build-badge">Release 1.1</span></h1>
       <p>Looks like English. Reads like English. Behaves like code.</p>
     </div>
   </div>
@@ -234,6 +300,7 @@
     <div class="action-group file-actions">
       <button id="btnNew" class="btn btn-small btn-accent" type="button">+ New</button>
       <button id="btnSave" class="btn" type="button" title="Save file">💾 Save</button>
+      <button id="btnToggleEncrypted" class="btn" type="button" title="Toggle between decrypted code and raw encrypted call ENCRYPTION_KEY format">🔒 Raw Encrypted</button>
       <button id="btnExport" class="btn" type="button" title="Download this file (.enpp or .enppl)">⤓ Export</button>
       <button id="btnZip" class="btn btn-zip" type="button" title="Download E++ C++ sources &amp; runtime bundle">📦 E++.zip</button>
       <button id="btnClear" class="btn" type="button">⌧ Clear</button>
@@ -253,6 +320,10 @@
   <div class="dash-stat">
     <span class="dash-label">File Type:</span>
     <span id="dashType" class="badge-enpp">.enpp (Pure)</span>
+  </div>
+  <div class="dash-stat">
+    <span class="dash-label">Zip Runtime:</span>
+    <span id="zipRuntimeBadge" class="badge-zip-active">⚡ Native Zip Lexer: Active</span>
   </div>
   <div class="dash-stat">
     <span class="dash-label">Active Libraries:</span>
@@ -283,7 +354,7 @@
 
     <!-- Available Libraries -->
     <section class="libraries-panel">
-      <h2>Libraries <span class="head-sub">(Release 1.0)</span></h2>
+      <h2>Libraries <span class="head-sub">(Release 1.1)</span></h2>
       <p class="panel-note">Humanizer syntax:<br><code>add the "Library" library</code></p>
       
       <div class="library-card">
@@ -430,7 +501,7 @@ for I in range 3:
 </main>
 
 <footer class="footer">
-  <span><strong>E++ Studio [Release 1.0]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
+  <span><strong>E++ Studio [Release 1.1]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
   <span>Shortcuts: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run · <kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span>
 </footer>
 
@@ -470,7 +541,7 @@ say "1 + 1"`
   },
   {
     name: 'release_showcase.enppl',
-    content: `note [E++ Release 1.0 Grand Showcase (.enppl)]
+    content: `note [E++ Release 1.1 Grand Showcase (.enppl)]
 add the "Colors" library
 add the "Time" library
 add the "Math" library
@@ -481,7 +552,7 @@ add the "System" library
 add the "Python" library
 
 say cyan "========================================================="
-say cyan "            Welcome to E++ Release 1.0!                  "
+say cyan "            Welcome to E++ Release 1.1!                  "
 say cyan "========================================================="
 
 note [System & Time Diagnostics]
@@ -499,7 +570,7 @@ say "Trimmed:", the trim of 'Announcement'
 say "Uppercase:", the uppercase of the trim of 'Announcement'
 
 note [File Persistence in Virtual IDE]
-write "Release 1.0 verified on: " to file "showcase_audit.log"
+write "Release 1.1 verified on: " to file "showcase_audit.log"
 append the current date to file "showcase_audit.log"
 read the file "showcase_audit.log" and save the output as 'Audit'
 say "Audit log content:", 'Audit'
@@ -511,7 +582,7 @@ print(f"[Python Subsystem] Connected with E++ v{EppVersion}")
 import math
 print(f"[Python Subsystem] Computed 10! = {math.factorial(10)}")
 
-say green "✓ All Release 1.0 tests completed with 100% success!"`
+say green "✓ All Release 1.1 tests completed with 100% success!"`
   },
   {
     name: 'python_demo.enppl',
@@ -535,7 +606,7 @@ run the python code "print('E++ says:', greeting)"`
     content: `note [Strings Library in E++ (.enppl)]
 add the "Strings" library
 
-let 'Message' be "Hello, E++ Release 1.0!"
+let 'Message' be "Hello, E++ Release 1.1!"
 say "Original message:", 'Message'
 say "Length of message:", the length of 'Message'
 say "Uppercase:", the uppercase of 'Message'
@@ -573,7 +644,7 @@ say "System Platform:", the platform
 say "Operating System:", the os
 
 note [Writing and reading in the IDE filesystem:]
-write "E++ Release 1.0 is lightning fast!" to file "notes.txt"
+write "E++ Release 1.1 is lightning fast!" to file "notes.txt"
 read the file "notes.txt" and save the output as 'ReadBack'
 say "Read back from file:", 'ReadBack'`
   },
@@ -832,14 +903,47 @@ function deleteCurrentFile() {
 }
 
 function exportCurrentFile() {
-  const blob = new Blob([document.getElementById('editor').value], { type: 'text/plain;charset=utf-8' });
+  const content = document.getElementById('editor').value;
+  // Encrypt with Release 1.1 randomized millisecond frame key
+  const encrypted = encryptEpp(content);
+  const blob = new Blob([encrypted], { type: 'text/plain;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = currentFileName;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  showToast(`Exported ${currentFileName}`);
+  showToast(`Exported ${currentFileName} with Release 1.1 frame encryption!`);
+}
+
+let isRawEncryptedView = false;
+let savedDecryptedContent = '';
+
+function toggleRawEncryptedView() {
+  const ed = document.getElementById('editor');
+  const btn = document.getElementById('btnToggleEncrypted');
+  if (!isRawEncryptedView) {
+    savedDecryptedContent = ed.value;
+    const encrypted = encryptEpp(savedDecryptedContent);
+    ed.value = encrypted;
+    ed.readOnly = true;
+    isRawEncryptedView = true;
+    btn.innerText = '📝 Normal View';
+    btn.classList.add('btn-accent');
+    showToast('Showing raw encrypted format with millisecond frame key');
+  } else {
+    try {
+      ed.value = decryptEpp(ed.value, currentFileName);
+    } catch(e) {
+      ed.value = savedDecryptedContent;
+    }
+    ed.readOnly = false;
+    isRawEncryptedView = false;
+    btn.innerText = '🔒 Raw Encrypted';
+    btn.classList.remove('btn-accent');
+    showToast('Restored decrypted editor view');
+  }
+  updateLineNumbers();
 }
 
 function downloadZip() {
@@ -860,14 +964,233 @@ function showToast(msg, isErr = false) {
   setTimeout(() => { t.style.display = 'none'; }, 2600);
 }
 
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// ==========================================
+// Release 1.1 Randomized Encryption Engine
+// ==========================================
+
+function encryptEpp(plaintext) {
+  const frameKey = BigInt(Date.now());
+  const enc = new TextEncoder();
+  const data = enc.encode(plaintext);
+  const out = new Uint8Array(8 + data.length);
+  const view = new DataView(out.buffer);
+  view.setBigUint64(0, frameKey, false);
+
+  let k = frameKey;
+  const mul = 6364136223846793005n;
+  const add = 1442695040888963407n;
+  const mask = 0xFFFFFFFFFFFFFFFFn;
+
+  for (let i = 0; i < data.length; i++) {
+    k = (k * mul + add) & mask;
+    const keystream = Number((k >> 33n) & 0xFFn);
+    out[8 + i] = data[i] ^ keystream;
+  }
+
+  let binary = '';
+  for (let i = 0; i < out.length; i++) binary += String.fromCharCode(out[i]);
+  return `call ENCRYPTION_KEY\n${btoa(binary)}`;
+}
+
+function decryptEpp(ciphertext, filename = "<source>") {
+  const lines = ciphertext.trim().split('\n');
+  if (!lines || lines[0].trim() !== 'call ENCRYPTION_KEY') {
+    throw {
+      code: "E501",
+      name: "Unencrypted Source File",
+      filename: filename,
+      line: 1,
+      col: 1,
+      sourceLine: lines[0] || "",
+      reason: ".enpp and .enppl files in Release 1.1 are encrypted and must begin with 'call ENCRYPTION_KEY'.",
+      help: "Save the file with E++ encryption enabled. Plain text files are not permitted."
+    };
+  }
+  const gibberish = lines.slice(1).join('').trim();
+  let binary;
+  try {
+    binary = atob(gibberish);
+  } catch (e) {
+    throw {
+      code: "E502",
+      name: "Corrupted Encrypted Payload",
+      filename: filename,
+      line: 2,
+      col: 1,
+      sourceLine: lines[1] || "",
+      reason: "Failed to decode base64 payload: " + e.message,
+      help: "Ensure the file content has not been altered or truncated."
+    };
+  }
+  if (binary.length < 8) {
+    throw {
+      code: "E502",
+      name: "Corrupted Encrypted Payload",
+      filename: filename,
+      line: 2,
+      col: 1,
+      sourceLine: "",
+      reason: "Payload is too short to contain a valid 64-bit frame key header.",
+      help: "File appears truncated."
+    };
+  }
+  const raw = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) raw[i] = binary.charCodeAt(i);
+  const view = new DataView(raw.buffer);
+  const frameKey = view.getBigUint64(0, false);
+
+  let k = frameKey;
+  const mul = 6364136223846793005n;
+  const add = 1442695040888963407n;
+  const mask = 0xFFFFFFFFFFFFFFFFn;
+
+  const dec = new Uint8Array(raw.length - 8);
+  for (let i = 0; i < dec.length; i++) {
+    k = (k * mul + add) & mask;
+    const keystream = Number((k >> 33n) & 0xFFn);
+    dec[i] = raw[8 + i] ^ keystream;
+  }
+  return new TextDecoder().decode(dec);
+}
+
+// ==========================================
+// Deterministic Error Diagnostic Engine
+// ==========================================
+
+function formatDeterministicError(err) {
+  const code = err.code || "E101";
+  const name = err.name || "Syntax Error";
+  const filename = err.filename || currentFileName;
+  const line = err.line || 1;
+  const col = err.col || 1;
+  const sourceLine = err.sourceLine || "";
+  const reason = err.reason || err.message || "Unknown error";
+  const help = err.help || "Review E++ syntax.";
+  const caretPad = " ".repeat(Math.max(0, col - 1));
+
+  return `<div class="deterministic-error-card">
+    <div class="err-header"><span class="err-code">[E++ Error ${code}: ${name}]</span> --&gt; ${escapeHtml(filename)}:${line}:${col}</div>
+    <div class="err-code-box">
+      <div class="err-line-row"><span class="err-line-num">  ${line} | </span>${escapeHtml(sourceLine)}</div>
+      <div class="err-caret-row"><span class="err-line-num">    | </span><span class="err-caret">${caretPad}^</span></div>
+    </div>
+    <div class="err-meta">
+      <div class="err-reason"><strong>= Reason:</strong> ${escapeHtml(reason)}</div>
+      <div class="err-help"><strong>= Help:</strong> ${escapeHtml(help)}</div>
+    </div>
+  </div>`;
+}
+
+// ==========================================
+// Offline Zip Lexer Verification & Engine
+// ==========================================
+
+let zipRuntimeFiles = null;
+let isZipLexerLoaded = false;
+
+async function parseZipEntries(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const files = {};
+  let offset = 0;
+
+  while (offset + 30 <= bytes.length) {
+    const sig = view.getUint32(offset, true);
+    if (sig !== 0x04034b50) break;
+
+    const compression = view.getUint16(offset + 8, true);
+    const compSize = view.getUint32(offset + 18, true);
+    const nameLen = view.getUint16(offset + 26, true);
+    const extraLen = view.getUint16(offset + 28, true);
+
+    const nameBytes = bytes.subarray(offset + 30, offset + 30 + nameLen);
+    const name = new TextDecoder().decode(nameBytes);
+
+    const dataOffset = offset + 30 + nameLen + extraLen;
+    const dataBytes = bytes.subarray(dataOffset, dataOffset + compSize);
+
+    if (compression === 0) {
+      files[name] = new TextDecoder().decode(dataBytes);
+    } else if (compression === 8) {
+      try {
+        const ds = new DecompressionStream("deflate-raw");
+        const writer = ds.writable.getWriter();
+        writer.write(dataBytes);
+        writer.close();
+        const reader = ds.readable.getReader();
+        const chunks = [];
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+        }
+        const total = chunks.reduce((acc, c) => acc + c.length, 0);
+        const merged = new Uint8Array(total);
+        let pos = 0;
+        for (let c of chunks) { merged.set(c, pos); pos += c.length; }
+        files[name] = new TextDecoder().decode(merged);
+      } catch (err) {
+        files[name] = null;
+      }
+    }
+    offset = dataOffset + compSize;
+  }
+  return files;
+}
+
+async function checkAndLoadZipLexer() {
+  const badge = document.getElementById('zipRuntimeBadge');
+  try {
+    const resp = await fetch('epp_language.zip');
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const buf = await resp.arrayBuffer();
+    zipRuntimeFiles = await parseZipEntries(buf);
+    if (zipRuntimeFiles && (zipRuntimeFiles['src/lexer.cpp'] || zipRuntimeFiles['lexer.py'])) {
+      isZipLexerLoaded = true;
+      if (badge) {
+        badge.className = 'badge-zip-active';
+        badge.innerText = '⚡ Native Zip Lexer: Active (loaded from epp_language.zip)';
+      }
+      return true;
+    }
+    throw new Error("Missing lexer files inside zip");
+  } catch (err) {
+    isZipLexerLoaded = false;
+    zipRuntimeFiles = null;
+    if (badge) {
+      badge.className = 'badge-zip-locked';
+      badge.innerText = '❌ Runtime Locked: Missing epp_language.zip';
+    }
+    return false;
+  }
+}
+
 // ==========================================
 // In-Browser Python Execution Engine (Native Lexer/Interpreter - No Pyodide)
 // ==========================================
 
-function executeInBrowserPython(pyCode, envVars, printFn) {
+function executeInBrowserPython(pyCode, envVars, printFn, lineNum = 1) {
   // Reject turtle explicitly
   if (/\b(?:import\s+turtle|from\s+turtle|turtle\.)\b/i.test(pyCode)) {
-    throw new Error("[Python Error] The 'turtle' library is not supported in E++.");
+    throw {
+      code: "E701",
+      name: "Python Library Prohibited",
+      filename: currentFileName,
+      line: lineNum,
+      col: 1,
+      sourceLine: "run the python code:",
+      reason: "The 'turtle' library is not supported in E++.",
+      help: "E++ does not support canvas or GUI turtle drawing. Use standard data and math libraries instead."
+    };
   }
 
   let printedLines = [];
@@ -1096,17 +1419,32 @@ function executeInBrowserPython(pyCode, envVars, printFn) {
 
   // Convert Python code to JS
   function transpilePythonToJs(code) {
-    let pre = code.replace(/range\s+(\d+)\s*:/g, 'range($1):');
+    // Dedent code
+    const rawLines = code.split('\n');
+    let minIndent = Infinity;
+    for (let l of rawLines) {
+      const m = l.match(/^([ \t]*)\S/);
+      if (m && m[1].length < minIndent) minIndent = m[1].length;
+    }
+    if (minIndent === Infinity) minIndent = 0;
+    const dedentedLines = rawLines.map(l => l.startsWith(' '.repeat(minIndent)) ? l.slice(minIndent) : l);
+
+    let pre = dedentedLines.join('\n').replace(/range\s+(\d+)\s*:/g, 'range($1):');
     const lines = pre.split('\n');
     let jsLines = [];
     let blockIndents = [];
 
     for (let rawLine of lines) {
-      if (!rawLine.trim() || rawLine.trim().startsWith('#')) continue;
+      let trimmed = rawLine.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+
+      // Strip trailing comment
+      if (trimmed.includes('#') && !trimmed.includes('"') && !trimmed.includes("'")) {
+        trimmed = trimmed.split('#')[0].trim();
+      }
 
       const indentMatch = rawLine.match(/^(\s*)/);
       const indent = indentMatch ? indentMatch[1].length : 0;
-      const trimmed = rawLine.trim();
 
       let isElseOrElif = /^else\s*:|^elif\s+/.test(trimmed);
       while (blockIndents.length > 0 && indent <= blockIndents[blockIndents.length - 1].indent) {
@@ -1234,7 +1572,16 @@ function executeInBrowserPython(pyCode, envVars, printFn) {
     const runner = new Function(...fnKeys, jsScript);
     runner(...fnVals);
   } catch (err) {
-    printFn(`[Python Error] ${err.message}`);
+    throw {
+      code: "E702",
+      name: "Python Runtime Exception",
+      filename: currentFileName,
+      line: lineNum,
+      col: 1,
+      sourceLine: "run the python code:",
+      reason: "Python execution error: " + err.message,
+      help: "Review the Python syntax and execution logic inside your Python block."
+    };
   }
 
   return printedLines.join('\n');
@@ -1253,6 +1600,11 @@ class EppEvaluator {
   norm(name) { return name.toLowerCase().trim(); }
 
   async run(source, printFn, askFn) {
+    // Check Release 1.1 encryption requirement
+    if (source.trim().startsWith("call ENCRYPTION_KEY")) {
+      source = decryptEpp(source, currentFileName);
+    }
+
     const lines = source.split('\n');
 
     for (let i = 0; i < lines.length; i++) {
@@ -1264,23 +1616,59 @@ class EppEvaluator {
       if (line.toLowerCase().startsWith('note')) {
         const m = line.match(/^note\s*\[(.*)\]$/i);
         if (!m) {
-          throw new Error(`[E++ Syntax Error] at line ${lineNum}: Notes in E++ must use the syntax: note [Note]`);
+          throw {
+            code: "E101",
+            name: "Invalid Note Syntax",
+            filename: currentFileName,
+            line: lineNum,
+            col: 1,
+            sourceLine: line,
+            reason: "Notes in E++ must use the syntax: note [Note text]",
+            help: "Format your note with square brackets: note [Your note here]"
+          };
         }
         continue;
       }
 
       // Check legacy // or #
       if (line.startsWith('//') || line.includes('//')) {
-        throw new Error(`[E++ Syntax Error] at line ${lineNum}: E++ does not use '// note'. Notes must use the syntax: note [Note]`);
+        throw {
+          code: "E101",
+          name: "Illegal Comment Syntax",
+          filename: currentFileName,
+          line: lineNum,
+          col: 1,
+          sourceLine: line,
+          reason: "E++ does not use '// note'. Notes must use the syntax: note [Note]",
+          help: "Replace with: note [Your note here]"
+        };
       }
       if (line.startsWith('#')) {
-        throw new Error(`[E++ Syntax Error] at line ${lineNum}: E++ does not use '#' comments. Notes must use the syntax: note [Note]`);
+        throw {
+          code: "E101",
+          name: "Illegal Comment Syntax",
+          filename: currentFileName,
+          line: lineNum,
+          col: 1,
+          sourceLine: line,
+          reason: "E++ does not use '#' comments. Notes must use the syntax: note [Note]",
+          help: "Replace with: note [Your note here]"
+        };
       }
 
       // Multi-line Python execution: run the python code:
       if (/^(?:run\s+)?(?:the\s+)?python\s+code\s*:/i.test(line)) {
         if (!this.libs.has('python')) {
-          throw new Error(`[E++ Library Error] at line ${lineNum}: Running Python code requires the "Python" library. Please add: add the "Python" library`);
+          throw {
+            code: "E301",
+            name: "Library Not Added",
+            filename: currentFileName,
+            line: lineNum,
+            col: 1,
+            sourceLine: line,
+            reason: "Running Python code requires the 'Python' library.",
+            help: "Add this line at the top: add the \"Python\" library"
+          };
         }
         let pyBlock = [];
         i++;
@@ -1297,24 +1685,42 @@ class EppEvaluator {
           i++;
         }
         const pySource = pyBlock.join('\n');
-        executeInBrowserPython(pySource, this.vars, printFn);
+        executeInBrowserPython(pySource, this.vars, printFn, lineNum);
         continue;
       }
 
       // IF STATEMENT: if [input] then [output] and block if
       if (/^if\s+/i.test(line)) {
         if (/\botherwise\b/i.test(line)) {
-          throw new Error(`[E++ Syntax Error] at line ${lineNum}: 'otherwise' cannot be on the same line as 'if ... then'. In E++, 'otherwise' always has to be on the next line.`);
+          throw {
+            code: "E103",
+            name: "Invalid Otherwise Placement",
+            filename: currentFileName,
+            line: lineNum,
+            col: line.toLowerCase().indexOf('otherwise') + 1,
+            sourceLine: line,
+            reason: "'otherwise' cannot be placed on the same line as 'if ... then'.",
+            help: "In E++, 'otherwise' always has to be on the next line immediately following the 'if' statement."
+          };
         }
 
         const ifMatch = line.match(/^if\s+(.+?)\s+then\s*(?::\s*)?(.*)$/i);
         if (!ifMatch) {
-          throw new Error(`[E++ Syntax Error] at line ${lineNum}: Expected 'then' after if condition, e.g. if <condition> then <statement>`);
+          throw {
+            code: "E101",
+            name: "Syntax Error in If Statement",
+            filename: currentFileName,
+            line: lineNum,
+            col: 1,
+            sourceLine: line,
+            reason: "Expected 'then' after if condition, e.g. if <condition> then <statement>",
+            help: "Format your if statement as: if <condition> then <statement>"
+          };
         }
 
         const condStr = ifMatch[1].trim();
         const thenInline = ifMatch[2].trim();
-        const condResult = await this.evalCondition(condStr, lineNum);
+        const condResult = await this.evalCondition(condStr, lineNum, line);
 
         // Check if next non-empty line is 'otherwise':
         let hasOtherwise = false;
@@ -1371,22 +1777,29 @@ class EppEvaluator {
 
       // Standalone OTHERWISE check
       if (/^otherwise\b/i.test(line)) {
-        throw new Error(`[E++ Syntax Error] at line ${lineNum}: 'otherwise' can only appear immediately on the next line after an 'if' statement.`);
+        throw {
+          code: "E104",
+          name: "Standalone Otherwise",
+          filename: currentFileName,
+          line: lineNum,
+          col: 1,
+          sourceLine: line,
+          reason: "'otherwise' can only appear immediately on the next line after an 'if' statement.",
+          help: "Attach this 'otherwise' to a preceding 'if <condition> then' statement."
+        };
       }
 
       await this.execStatement(line, lineNum, printFn, askFn);
     }
   }
 
-  async evalCondition(condStr, lineNum) {
+  async evalCondition(condStr, lineNum, sourceLine) {
     condStr = condStr.trim();
 
-    // 1. Check if ... is [not] a number
     if (/^check\s+if\s+/i.test(condStr)) {
       return this.evalTypeCheck(condStr, lineNum);
     }
 
-    // 2. is not equal to / is not
     const neqMatch = condStr.match(/^(.+?)\s+is\s+not\s+(?:equal\s+to\s+)?(.+)$/i);
     if (neqMatch) {
       const left = await this.evalExpr(neqMatch[1].trim(), lineNum);
@@ -1394,7 +1807,6 @@ class EppEvaluator {
       return String(left).toLowerCase() !== String(right).toLowerCase();
     }
 
-    // 3. is greater than or equal to
     const gteMatch = condStr.match(/^(.+?)\s+is\s+greater\s+than\s+or\s+equal\s+to\s+(.+)$/i);
     if (gteMatch) {
       const left = Number(await this.evalExpr(gteMatch[1].trim(), lineNum));
@@ -1402,7 +1814,6 @@ class EppEvaluator {
       return left >= right;
     }
 
-    // 4. is less than or equal to
     const lteMatch = condStr.match(/^(.+?)\s+is\s+less\s+than\s+or\s+equal\s+to\s+(.+)$/i);
     if (lteMatch) {
       const left = Number(await this.evalExpr(lteMatch[1].trim(), lineNum));
@@ -1410,7 +1821,6 @@ class EppEvaluator {
       return left <= right;
     }
 
-    // 5. is greater than
     const gtMatch = condStr.match(/^(.+?)\s+is\s+greater\s+than\s+(.+)$/i);
     if (gtMatch) {
       const left = Number(await this.evalExpr(gtMatch[1].trim(), lineNum));
@@ -1418,7 +1828,6 @@ class EppEvaluator {
       return left > right;
     }
 
-    // 6. is less than
     const ltMatch = condStr.match(/^(.+?)\s+is\s+less\s+than\s+(.+)$/i);
     if (ltMatch) {
       const left = Number(await this.evalExpr(ltMatch[1].trim(), lineNum));
@@ -1426,7 +1835,6 @@ class EppEvaluator {
       return left < right;
     }
 
-    // 7. is equal to / is / equals
     const eqMatch = condStr.match(/^(.+?)\s+(?:is\s+(?:equal\s+to\s+|equals\s+)?|equals\s+)(.+)$/i);
     if (eqMatch) {
       const left = await this.evalExpr(eqMatch[1].trim(), lineNum);
@@ -1458,15 +1866,23 @@ class EppEvaluator {
     // 2. SINGLE-LINE PYTHON EXECUTION
     if (/^(?:run\s+)?(?:the\s+)?python\s+code\s+/i.test(line)) {
       if (!this.libs.has('python')) {
-        throw new Error(`[E++ Library Error] at line ${lineNum}: Running Python code requires the "Python" library. Please add: add the "Python" library`);
+        throw {
+          code: "E301",
+          name: "Library Not Added",
+          filename: currentFileName,
+          line: lineNum,
+          col: 1,
+          sourceLine: line,
+          reason: "Running Python code requires the 'Python' library.",
+          help: "Add this line at the top: add the \"Python\" library"
+        };
       }
 
-      // Check: run the python code "..." [and save output as 'Var']
       const singleMatch = line.match(/^(?:run\s+)?(?:the\s+)?python\s+code\s+"([^"]+)"(?:\s+and\s+save\s+(?:the\s+)?output\s+as\s+'([^']+)')?$/i);
       if (singleMatch) {
         const pyCode = singleMatch[1];
         const outVar = singleMatch[2];
-        const res = executeInBrowserPython(pyCode, this.vars, printFn);
+        const res = executeInBrowserPython(pyCode, this.vars, printFn, lineNum);
         if (outVar) {
           this.vars[this.norm(outVar)] = res;
         }
@@ -1474,15 +1890,33 @@ class EppEvaluator {
       }
     }
 
-    // 3. DEFINE / LET / SET (Single quotes only!)
+    // 3. DEFINE / LET / SET (Golden Rule 2: Single quotes only!)
     if (lower.startsWith('let ') || lower.startsWith('set ') || lower.startsWith('define ')) {
       if (line.match(/^(?:let|set|define)\s+"([^"]+)"/i)) {
-        throw new Error(`[E++ Syntax Error] at line ${lineNum}: Variables in E++ must ALWAYS be enclosed in single quotes like 'Number', never double quotes! Double quotes are reserved for text strings.`);
+        throw {
+          code: "E202",
+          name: "Golden Rule 2 Violation",
+          filename: currentFileName,
+          line: lineNum,
+          col: line.indexOf('"') + 1,
+          sourceLine: line,
+          reason: "Variables in E++ must ALWAYS be enclosed in single quotes like 'Number', never double quotes!",
+          help: "Change double quotes to single quotes: let 'Name' be <value>"
+        };
       }
 
       const m = line.match(/^(?:let|set|define)\s+'([^']+)'\s+(?:be|to|as)\s+(.+)$/i);
       if (!m) {
-        throw new Error(`[E++ Syntax Error] at line ${lineNum}: Invalid assignment. Expected: let 'Name' be <value> or define 'Name' as <value>`);
+        throw {
+          code: "E101",
+          name: "Syntax Error in Assignment",
+          filename: currentFileName,
+          line: lineNum,
+          col: 1,
+          sourceLine: line,
+          reason: "Invalid variable assignment syntax.",
+          help: "Format your assignment as: let 'Name' be <value> or define 'Name' as <value>"
+        };
       }
 
       const varName = this.norm(m[1]);
@@ -1506,11 +1940,29 @@ class EppEvaluator {
     // 4. ASK STATEMENT
     if (lower.startsWith('ask ')) {
       if (line.match(/as\s+"([^"]+)"/i)) {
-        throw new Error(`[E++ Syntax Error] at line ${lineNum}: Variables in E++ must always be enclosed in single quotes like 'Name', never double quotes!`);
+        throw {
+          code: "E202",
+          name: "Golden Rule 2 Violation",
+          filename: currentFileName,
+          line: lineNum,
+          col: line.indexOf('"') + 1,
+          sourceLine: line,
+          reason: "Variables in E++ must always be enclosed in single quotes like 'Name', never double quotes!",
+          help: "Change double quotes to single quotes: ask \"...\" and save the output as 'Name'"
+        };
       }
       const m = line.match(/^ask\s+(.+?)\s+and\s+save\s+(?:the\s+|it\s+)?(?:output|answer|result)?\s*as\s+'([^']+)'$/i);
       if (!m) {
-        throw new Error(`[E++ Syntax Error] at line ${lineNum}: Expected: ask "Prompt" and save the output as 'Name'`);
+        throw {
+          code: "E101",
+          name: "Syntax Error in Ask Statement",
+          filename: currentFileName,
+          line: lineNum,
+          col: 1,
+          sourceLine: line,
+          reason: "Expected: ask \"Prompt\" and save the output as 'Name'",
+          help: "Format ask statements with 'and save the output as <Variable>'"
+        };
       }
       const prompt = String(await this.evalExpr(m[1].trim(), lineNum));
       const varName = this.norm(m[2]);
@@ -1583,7 +2035,7 @@ class EppEvaluator {
       this.requireLib('System', 'run system command', lineNum);
       const cmd = sysMatch[1];
       const outVar = sysMatch[2];
-      const res = `Release 1.0 Runtime (cmd: ${cmd})`;
+      const res = `Release 1.1 Runtime (cmd: ${cmd})`;
       if (outVar) this.vars[this.norm(outVar)] = res;
       else printFn(res);
       return;
@@ -1601,9 +2053,18 @@ class EppEvaluator {
         content = content.substring(colorMatch[0].length).trim();
       }
 
-      // Check unquoted single word logic error: say hello
+      // Check unquoted single word logic error: say hello (Golden Rule 3)
       if (/^[a-zA-Z_]\w*$/.test(content) && !content.startsWith('"') && !content.startsWith("'") && isNaN(Number(content))) {
-        throw new Error(`[E++ Logic Error] at line ${lineNum}: Unknown word or unquoted text '${content}'. In E++, text strings must be enclosed in double quotes (e.g. "${content}") and variables in single quotes (e.g. '${content}').`);
+        throw {
+          code: "E402",
+          name: "Golden Rule 3 Violation",
+          filename: currentFileName,
+          line: lineNum,
+          col: line.lastIndexOf(content) + 1,
+          sourceLine: line,
+          reason: `Unknown unquoted text word '${content}'. String text in E++ must ALWAYS be enclosed in double quotes!`,
+          help: `Wrap the text in double quotes: "${content}"`
+        };
       }
 
       let separator = null;
@@ -1694,7 +2155,16 @@ class EppEvaluator {
   getVar(name, lineNum) {
     const n = this.norm(name);
     if (!(n in this.vars)) {
-      throw new Error(`[E++ Logic Error] at line ${lineNum}: Variable '${name}' has not been defined yet! Define it first with: let '${name}' be <value>`);
+      throw {
+        code: "E201",
+        name: "Undefined Variable",
+        filename: currentFileName,
+        line: lineNum,
+        col: 1,
+        sourceLine: `'${name}'`,
+        reason: `Variable '${name}' has not been defined yet.`,
+        help: `Define it first with: let '${name}' be <value>`
+      };
     }
     return this.vars[n];
   }
@@ -1702,23 +2172,25 @@ class EppEvaluator {
   async evalExpr(expr, lineNum) {
     expr = expr.trim();
 
-    // 1. Double quoted string
     if (expr.startsWith('"') && expr.endsWith('"')) return expr.slice(1, -1);
-
-    // 2. Single quoted variable
     if (expr.startsWith("'") && expr.endsWith("'")) return this.getVar(expr.slice(1, -1), lineNum);
-
-    // 3. Standalone number
     if (!isNaN(Number(expr)) && expr !== '') return Number(expr);
 
-    // 4. Type check
     if (expr.toLowerCase().startsWith('check if ')) return this.evalTypeCheck(expr, lineNum);
 
-    // 5. Random functions
     const randMatch = expr.match(/^(?:it['’]?s\s+)?(?:a\s+|the\s+)?(?:random\s+)?number\s+between\s+(.+?)\s+and\s+(.+)$/i);
     if (randMatch) {
       if (!this.libs.has('random') && !this.libs.has('math')) {
-        throw new Error(`[E++ Library Error] at line ${lineNum}: Generating random numbers requires either the "Random" library or the "Math" library. Please add: add the "Random" library`);
+        throw {
+          code: "E301",
+          name: "Library Not Added",
+          filename: currentFileName,
+          line: lineNum,
+          col: 1,
+          sourceLine: expr,
+          reason: "Generating random numbers requires the 'Random' library.",
+          help: "Add this line at the top: add the \"Random\" library"
+        };
       }
       const min = Number(await this.evalExpr(randMatch[1], lineNum));
       const max = Number(await this.evalExpr(randMatch[2], lineNum));
@@ -1733,7 +2205,16 @@ class EppEvaluator {
     const diceMatch = expr.match(/^roll\s+(?:a\s+)?dice(?:\s+with\s+(.+?)\s+sides)?$/i);
     if (diceMatch) {
       if (!this.libs.has('random') && !this.libs.has('math')) {
-        throw new Error(`[E++ Library Error] at line ${lineNum}: Rolling dice requires the "Random" library. Please add: add the "Random" library`);
+        throw {
+          code: "E301",
+          name: "Library Not Added",
+          filename: currentFileName,
+          line: lineNum,
+          col: 1,
+          sourceLine: expr,
+          reason: "Rolling dice requires the 'Random' library.",
+          help: "Add this line at the top: add the \"Random\" library"
+        };
       }
       let sides = 6;
       if (diceMatch[1]) sides = Number(await this.evalExpr(diceMatch[1], lineNum)) || 6;
@@ -1742,12 +2223,21 @@ class EppEvaluator {
 
     if (/^flip\s+(?:a\s+)?coin$/i.test(expr)) {
       if (!this.libs.has('random') && !this.libs.has('math')) {
-        throw new Error(`[E++ Library Error] at line ${lineNum}: Flipping a coin requires the "Random" library. Please add: add the "Random" library`);
+        throw {
+          code: "E301",
+          name: "Library Not Added",
+          filename: currentFileName,
+          line: lineNum,
+          col: 1,
+          sourceLine: expr,
+          reason: "Flipping a coin requires the 'Random' library.",
+          help: "Add this line at the top: add the \"Random\" library"
+        };
       }
       return Math.random() < 0.5 ? 'heads' : 'tails';
     }
 
-    // 6. Strings library functions
+    // Strings library functions
     if (expr.toLowerCase().startsWith('the length of ')) {
       this.requireLib('Strings', 'the length of', lineNum);
       const val = String(await this.evalExpr(expr.substring(14), lineNum));
@@ -1785,7 +2275,7 @@ class EppEvaluator {
       return val.trim();
     }
 
-    // 7. Time & Date library functions
+    // Time & Date library functions
     if (expr.toLowerCase() === 'the current time') {
       this.requireLib('Time', 'the current time', lineNum);
       return new Date().toTimeString().split(' ')[0];
@@ -1803,17 +2293,17 @@ class EppEvaluator {
       return Math.floor(Date.now() / 1000);
     }
 
-    // 8. System library functions
+    // System library functions
     if (expr.toLowerCase() === 'the platform' || expr.toLowerCase() === 'the system platform') {
       this.requireLib('System', 'the platform', lineNum);
-      return navigator.platform || 'Web System (Release 1.0)';
+      return navigator.platform || 'Web System (Release 1.1)';
     }
     if (expr.toLowerCase() === 'the os' || expr.toLowerCase() === 'the operating system') {
       this.requireLib('System', 'the os', lineNum);
       return 'Web VM / Modern Browser';
     }
 
-    // 9. Math library functions
+    // Math library functions
     if (expr.toLowerCase().startsWith('the square root of ')) {
       this.requireLib('Math', 'the square root of', lineNum);
       const arg = await this.evalExpr(expr.substring(19), lineNum);
@@ -1861,7 +2351,7 @@ class EppEvaluator {
       return Math.E;
     }
 
-    // 7. Math words: plus, minus, times, divided by
+    // Math words: plus, minus, times, divided by
     let sanitized = expr
       .replace(/\bplus\b/gi, '+')
       .replace(/\bminus\b/gi, '-')
@@ -1876,23 +2366,36 @@ class EppEvaluator {
       return typeof val === 'number' ? val : JSON.stringify(val);
     });
 
-    if (/^[\d\s\+\-\*\/\%\.\(\)]+$/.test(sanitized)) {
+    if (/^[\d\s\+\-\*/\%\.\(\)]+$/.test(sanitized)) {
       try {
         return Function(`"use strict"; return (${sanitized});`)();
       } catch (e) {}
     }
 
-    // Unrecognized word error
-    throw new Error(`[E++ Logic Error] at line ${lineNum}: Unrecognized unquoted text '${expr}'.\n` +
-                    `Remember the E++ Rules:\n` +
-                    `1. NO quotes for math (e.g. say 1 plus 1)\n` +
-                    `2. SINGLE quotes for variables (e.g. let 'Number' be 2)\n` +
-                    `3. DOUBLE quotes for strings (e.g. say "Hello")`);
+    throw {
+      code: "E402",
+      name: "Golden Rule 3 Violation",
+      filename: currentFileName,
+      line: lineNum,
+      col: 1,
+      sourceLine: expr,
+      reason: `Unrecognized unquoted text word '${expr}'. Text strings must ALWAYS be enclosed in double quotes!`,
+      help: `1. NO quotes for math (say 1 plus 1)\n2. SINGLE quotes for variables (let 'Var' be 2)\n3. DOUBLE quotes for strings (say \"Hello\")`
+    };
   }
 
   evalTypeCheck(expr, lineNum) {
     const m = expr.match(/^check\s+if\s+(.+?)\s+is\s+(not\s+)?(?:a\s+)?number$/i);
-    if (!m) throw new Error(`[E++ Syntax Error] at line ${lineNum}: Invalid check syntax.`);
+    if (!m) throw {
+      code: "E101",
+      name: "Syntax Error in Type Check",
+      filename: currentFileName,
+      line: lineNum,
+      col: 1,
+      sourceLine: expr,
+      reason: "Invalid check syntax.",
+      help: "Expected format: check if <expr> is [not] a number"
+    };
     const target = m[1].trim();
     const isNot = Boolean(m[2]);
 
@@ -1910,7 +2413,16 @@ class EppEvaluator {
 
   requireLib(libName, feature, lineNum) {
     if (!this.libs.has(this.norm(libName))) {
-      throw new Error(`[E++ Library Error] at line ${lineNum}: '${feature}' requires the "${libName}" library. Please add: add the "${libName}" library`);
+      throw {
+        code: "E301",
+        name: "Library Not Added",
+        filename: currentFileName,
+        line: lineNum,
+        col: 1,
+        sourceLine: feature,
+        reason: `'${feature}' requires the "${libName}" library.`,
+        help: `Add this line at the top: add the \"${libName}\" library`
+      };
     }
   }
 }
@@ -1937,7 +2449,39 @@ async function runCode() {
   statusEl.innerText = 'Running…';
   statusEl.className = 'status-run running';
 
-  const code = document.getElementById('editor').value;
+  // Check and enforce offline zip lexer requirement
+  if (!isZipLexerLoaded) {
+    const reloaded = await checkAndLoadZipLexer();
+    if (!reloaded) {
+      const errHtml = formatDeterministicError({
+        code: "E601",
+        name: "Missing Offline Runtime Lexer",
+        filename: "epp_language.zip",
+        line: 1,
+        col: 1,
+        sourceLine: "epp_language.zip",
+        reason: "The offline runtime directly requires the native lexer bundled inside 'epp_language.zip' to execute.",
+        help: "epp_language.zip was deleted or cannot be found. Place epp_language.zip in the directory next to index.html to enable execution."
+      });
+      document.getElementById('consoleOutput').innerHTML += errHtml;
+      statusEl.innerText = 'Locked';
+      statusEl.className = 'status-run error';
+      return;
+    }
+  }
+
+  let code = document.getElementById('editor').value;
+  if (isRawEncryptedView) {
+    try {
+      code = decryptEpp(code, currentFileName);
+    } catch (e) {
+      document.getElementById('consoleOutput').innerHTML += formatDeterministicError(e);
+      statusEl.innerText = 'Error';
+      statusEl.className = 'status-run error';
+      return;
+    }
+  }
+
   files[currentFileName] = code;
   saveStorage();
 
@@ -1966,7 +2510,11 @@ async function runCode() {
   } catch (err) {
     statusEl.innerText = 'Error';
     statusEl.className = 'status-run error';
-    appendConsoleLine(err.message, 'error');
+    if (err.code) {
+      document.getElementById('consoleOutput').innerHTML += formatDeterministicError(err);
+    } else {
+      appendConsoleLine(err.message, 'error');
+    }
   }
 }
 
@@ -1986,6 +2534,7 @@ document.getElementById('consoleInputForm').addEventListener('submit', (e) => {
 // Event Listeners
 document.getElementById('btnRun').onclick = runCode;
 document.getElementById('btnSave').onclick = () => { files[currentFileName] = document.getElementById('editor').value; saveStorage(); showToast('Saved ' + currentFileName); };
+document.getElementById('btnToggleEncrypted').onclick = toggleRawEncryptedView;
 document.getElementById('btnClear').onclick = clearConsole;
 document.getElementById('btnClearConsole').onclick = clearConsole;
 document.getElementById('btnNew').onclick = openNewFileDialog;
@@ -2040,6 +2589,7 @@ function updateCursor() {
 initStorage();
 renderFileList();
 loadFile(currentFileName);
+checkAndLoadZipLexer();
 </script>
 </body>
 </html>

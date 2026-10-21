@@ -1,14 +1,28 @@
-# E++ Programming Language [Release 1.0]
+# E++ Programming Language [Release 1.1]
 > **"Looks like English, feels like english, and is english"**
 
-Welcome to **E++ Release 1.0**, a complete, modern, human-readable programming language designed to look, feel, and read like pure English prose. Fast, bug-free, zero bloat, and fully equipped with 9 standard libraries across both a native C++ engine and a web studio.
+Welcome to **E++ Release 1.1**, a modern, human-readable programming language designed to look, feel, and read like pure English prose. Fast, bug-free, zero bloat, and fully equipped with both native C++ and pure Python runtimes, 9 standard libraries, Release 1.1 frame encryption, deterministic error diagnostics, and a zero-dependency offline Web Studio.
 
 ---
 
-## 📁 File Types: `.enpp` & `.enppl`
+## 🔒 Release 1.1 Encryption Standard
 
-- **`.enpp` (Pure E++)**: Used for clean, pure programs without external libraries.
-- **`.enppl` (E++ Libraries)**: Used for programs importing any standard library (e.g. `add the "Math" library`, `add the "Python" library`).
+In Release 1.1, all `.enpp` and `.enppl` files are encrypted using a **randomized millisecond frame key** and 64-bit keystream generator:
+- Header: starts with the exact directive `call ENCRYPTION_KEY`
+- Body: randomized ciphertext gibberish encoded in base64
+- Frame key: millisecond epoch timestamp embedded in the keystream
+- Unencrypted files are rejected with error `[E++ Error E501: Unencrypted Source File]`.
+
+Both engines transparently decrypt files at execution time:
+```bash
+# Encrypt any plain E++ source file:
+./epp --encrypt source.txt -o my_code.enpp
+python3 epp.py --encrypt source.txt -o my_code.enpp
+
+# Decrypt an encrypted E++ file to view plaintext:
+./epp --decrypt my_code.enpp
+python3 epp.py --decrypt my_code.enpp
+```
 
 ---
 
@@ -33,189 +47,161 @@ In E++, comments are written using `note` with **square brackets**:
 note [This is a comment note in E++]
 note [Notes are ignored during execution and document your program]
 ```
-> ⚠️ **Syntax rule**: E++ rejects `// note` and `#`. Attempting to use them will produce an informative Syntax Error explaining the `note [Note]` syntax.
+> ⚠️ **Syntax rule**: E++ rejects `// note` and `#`. Attempting to use them produces a deterministic `[E++ Error E101: Invalid Note Syntax]`.
 
 ---
 
-## 📚 Standard Libraries in Release 1.0
+## 🧭 Deterministic Diagnostic Engine
+
+E++ Release 1.1 features a deterministic error diagnostic engine that provides exact error codes, source code snippets with caret pointers, and actionable causes and fixes:
+
+```text
+[E++ Error E103: Invalid Otherwise Placement] --> script.enpp:5:28
+   5 | if 'Score' is 100 then say "Perfect" otherwise say "Good"
+     |                            ^
+ = Reason: 'otherwise' cannot be placed on the same line as 'if ... then'.
+ = Help: In E++, 'otherwise' always has to be on the next line immediately following the 'if' statement.
+```
+
+### Error Code Registry
+- `E101`: Syntax Error (invalid note syntax, malformed statement)
+- `E103`: Invalid Otherwise Placement (`otherwise` on same line as `if`)
+- `E104`: Standalone Otherwise (`otherwise` without preceding `if`)
+- `E201`: Undefined Variable
+- `E202`: Golden Rule 2 Violation (double quotes used for variable name)
+- `E301`: Library Not Added (attempting to use library features without `add the "<Lib>" library`)
+- `E401`: Golden Rule 1 Violation (math enclosed in quotes)
+- `E402`: Golden Rule 3 Violation (unquoted text word in string context)
+- `E501`: Unencrypted Source File (Release 1.1 plain text rejection)
+- `E502`: Corrupted Encrypted Payload
+- `E601`: Missing Offline Runtime Lexer (Web IDE missing `epp_language.zip`)
+- `E701`: Python Library Prohibited (`turtle` blocked)
+- `E702`: Python Runtime Exception
+
+---
+
+## 📚 Standard Libraries in Release 1.1
 
 Import any library using the humanizer syntax: `add the "<Name>" library`.
 
 ### 1. 🐍 Python Library (`"Python"`)
-Bridges the Python 3 runtime into E++ with automatic bi-directional variable injection and output capture:
+Bridges Python 3 directly into E++ with automatic bi-directional variable injection and output capture:
+- Single-line: `run the python code "..." and save the output as 'Variable'`
+- Multi-line block:
 ```text
 add the "Python" library
 
-note [Single-line Python code:]
-run the python code "print('Hello from Python!')"
-
-note [Multi-line Python block with loops:]
 run the python code:
-for I in range 3:
-    print("Loop iteration:", I)
-
-note [Accessing E++ variables inside Python:]
-let 'Student' be "Sam"
-let 'Grade' be 95
-run the python code:
-if Grade >= 90:
-    print(f"{Student} passed with honors!")
-
-note [Capturing Python output back into E++:]
-run the python code "import math; print(math.factorial(6))" and save the output as 'Fact'
-say "Factorial:", 'Fact'
+    import math
+    print(f"Square root of 144 is {math.isqrt(144)}")
 ```
+- Multi-line blocks preserve raw indentation, comments, and strings without tokenization mangling.
+- All Python standard modules (`math`, `random`, `json`, `re`, `statistics`, `time`, `datetime`, `string`, `sys`, `os`) are supported.
+- `turtle` is strictly prohibited and triggers deterministic error `E701`.
 
 ### 2. 🧮 Math Library (`"Math"`)
-Natural English mathematical calculations:
+Extended arithmetic, trigonometry, percentages, constants:
 ```text
 add the "Math" library
-
-say the square root of 144
-say the cube root of 27
-say how much 20 percent is of 150
-say the absolute value of 0 minus 42
-say 2 raised to 8
-say the minimum of 15 and 99
-say the maximum of 15 and 99
+say the square root of 64
+say how much 15 percent is of 200
+say the maximum of 12 and 45
 say the value of pi
-say the value of e
 ```
 
 ### 3. 🎲 Random Library (`"Random"`)
-Random number generation, dice rolls, and coin flips:
+Random number generation, dice, coin flips:
 ```text
 add the "Random" library
-
 say a random number between 1 and 100
-say roll a dice
 say roll a dice with 20 sides
 say flip a coin
 ```
 
 ### 4. 🔤 Strings Library (`"Strings"`)
-Rich string inspection and manipulation:
+String inspection and transformations:
 ```text
 add the "Strings" library
-
-let 'Msg' be "Hello, World!"
-say the length of 'Msg'
-say the uppercase of 'Msg'
-say the lowercase of 'Msg'
-say the reverse of 'Msg'
-say the first letter of 'Msg'
-say the last letter of 'Msg'
-
-let 'Spaced' be "   Text with spaces   "
-say the trim of 'Spaced'
+say the length of "Hello World"
+say the uppercase of "welcome to e++"
+say the reverse of "stressed"
 ```
 
-### 5. ⏱️ Time & Date Library (`"Time"`)
-System clocks, calendar info, timestamps, and delays:
+### 5. 🎨 Colors Library (`"Colors"`)
+Terminal ANSI & Web color styling:
+```text
+add the "Colors" library
+say red "Critical Error Detected!"
+say green "Build completed successfully!"
+```
+
+### 6. ⏱️ Time Library (`"Time"`)
+Timestamps, dates, and execution delays:
 ```text
 add the "Time" library
-
-say the current time
 say the current date
-say the current year
-say the current timestamp
-
-say "Waiting 500 milliseconds..."
+say the current time
 wait 500 milliseconds
-say "Waiting 1 second..."
-wait 1 second
 ```
 
-### 6. 💾 Files Library (`"Files"`)
-Full disk file persistence (and virtual filesystem in Web Studio):
+### 7. 🖥️ Console Library (`"Console"`)
+Console clearing and screen management:
+```text
+add the "Console" library
+clear the console
+```
+
+### 8. 📁 Files Library (`"Files"`)
+Read, write, and append workspace files:
 ```text
 add the "Files" library
-
-write "Release 1.0 verified!" to file "log.txt"
-append "\nSystem operational." to file "log.txt"
+write "E++ Release 1.1 Data" to the file "log.txt"
+append "\nSecond entry" to the file "log.txt"
 read the file "log.txt" and save the output as 'LogData'
 say 'LogData'
 ```
 
-### 7. 💻 System Library (`"System"`)
-Platform architecture, operating system, and system shell commands:
+### 9. ⚙️ System Library (`"System"`)
+Execute host OS commands safely:
 ```text
 add the "System" library
-
-say the platform
-say the os
-run system command "whoami" and save the output as 'CurrentUser'
-say "Logged in as:", 'CurrentUser'
-```
-
-### 8. 🎨 Colors Library (`"Colors"`)
-Terminal colored output streams (ANSI in native CLI, styled spans in Web Studio):
-```text
-add the "Colors" library
-
-say green "✓ Success: Build completed!"
-say blue "ℹ Info: Processing batch..."
-say yellow "⚠ Warning: Check input parameters."
-say red "✗ Error: Connection failed."
-say cyan "✦ Notice: System online."
-say magenta "★ Milestone reached!"
-```
-
-### 9. 📺 Console Library (`"Console"`)
-Real-time console stream management:
-```text
-add the "Console" library
-
-clear the console
+say the operating system
+run system command "uname -a" and save the output as 'Kernel'
+say 'Kernel'
 ```
 
 ---
 
-## 🔀 Single-Line If & Otherwise Statements
+## 🛠️ CLI Quickstart
 
-E++ supports concise inline `if ... then` statements with companion `otherwise` statements:
-```text
-if 1 plus 1 is equal to 2 then say "Duh, its math"
-
-let 'Answer' be 2
-if 'Answer' is equal to 2 then say "Correct!"
-otherwise say "U dumb?"
-```
-Rules:
-- `otherwise` must be placed on the line immediately following the `if` statement.
-- `otherwise` cannot appear on the same line as `if`.
-- `otherwise` cannot appear standalone without a preceding `if`.
-
----
-
-## 🛠️ Building & Running
-
+### Native C++ Engine
 ```bash
-# Clean compilation:
+# Compile engine
 make clean && make
 
-# Run pure .enpp file:
-./epp examples/01_hello.enpp
+# Run encrypted program
+./epp examples/14_randomized_encryption.enpp
 
-# Run library-powered .enppl file:
-./epp examples/16_release_showcase.enppl
+# Run test suite
+make test
+```
 
-# Inline one-liner execution:
-./epp -e 'say 1 plus 1'
+### Standalone Python Runner
+```bash
+# Run encrypted program
+python3 epp.py examples/14_randomized_encryption.enpp
 
-# Interactive English REPL:
-./epp
-
-# Check version:
-./epp --version
+# Encrypt a source file
+python3 epp.py --encrypt myfile.txt -o myfile.enpp
 ```
 
 ---
 
-## 🌐 E++ Web Studio (`index.html`)
+## 🌐 Web Studio & Offline Runtime (`index.html`)
 
-- **Guaranteed Terminal Visibility**: 50/50 side-by-side split guarantees both Editor and Terminal Console are 100% visible and never clipped or hidden on any screen size.
-- **Live Stats Dashboard**: Tracks Active File, File Type pill badges, Active Libraries, and Line counts.
-- **Interactive File Explorer**: Full support for `.enpp` and `.enppl` files with search, instant creation, renaming, and export.
-- **Embedded Python Subsystem**: Executes inline and multi-line Python code seamlessly inside the browser.
-- **One-Click Bundle Export**: Download `E++.zip` containing all C++ source files, headers, Makefile, and examples.
+Open `index.html` in any modern web browser:
+- True offline runtime requiring `epp_language.zip` (verifies and loads lexer directly via standard `DecompressionStream`).
+- If `epp_language.zip` is missing or deleted, the Web Studio halts and presents deterministic error `E601`.
+- Built-in "🔒 Raw Encrypted" toggle button to inspect Release 1.1 randomized millisecond keystream data.
+- 100% Pyodide-free in-browser Python engine.
+- Instant export of encrypted `.enpp` and `.enppl` files.

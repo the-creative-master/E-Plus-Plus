@@ -432,36 +432,40 @@ std::shared_ptr<Stmt> Parser::parse_python_statement() {
 
     if (match(TokenType::TOKEN_COLON)) {
         is_multiline = true;
-        match(TokenType::TOKEN_NEWLINE);
-        bool line_start = true;
-        while (!is_at_end()) {
-            Token t = peek();
-            if (t.type == TokenType::KW_SAY || t.type == TokenType::KW_TELL ||
-                t.type == TokenType::KW_LET || t.type == TokenType::KW_DEFINE ||
-                t.type == TokenType::KW_ASK || t.type == TokenType::KW_ADD ||
-                t.type == TokenType::KW_NOTE || t.type == TokenType::KW_RUN ||
-                t.type == TokenType::KW_END) {
-                if (t.col <= 2) break;
-            }
-            if (t.type == TokenType::TOKEN_NEWLINE) {
-                advance();
-                py_code += "\n";
-                line_start = true;
-                continue;
-            }
-            Token next_tok = advance();
-            if (line_start) {
-                if (next_tok.col > 1) {
-                    py_code += std::string(next_tok.col - 1, ' ');
+        skip_newlines();
+        if (peek().type == TokenType::TOKEN_PYTHON_BLOCK) {
+            py_code = advance().string_value;
+        } else {
+            bool line_start = true;
+            while (!is_at_end()) {
+                Token t = peek();
+                if (t.type == TokenType::KW_SAY || t.type == TokenType::KW_TELL ||
+                    t.type == TokenType::KW_LET || t.type == TokenType::KW_DEFINE ||
+                    t.type == TokenType::KW_ASK || t.type == TokenType::KW_ADD ||
+                    t.type == TokenType::KW_NOTE || t.type == TokenType::KW_RUN ||
+                    t.type == TokenType::KW_END) {
+                    if (t.col <= 2) break;
                 }
-                line_start = false;
-            } else if (!py_code.empty() && py_code.back() != '\n' && py_code.back() != ' ' && py_code.back() != '.' && py_code.back() != '(' &&
-                next_tok.lexeme != "(" && next_tok.lexeme != ")" && next_tok.lexeme != ":" && next_tok.lexeme != "." && next_tok.lexeme != ",") {
-                if (!((py_code.back() == 'f' || py_code.back() == 'r' || py_code.back() == 'b') && (!next_tok.lexeme.empty() && (next_tok.lexeme.front() == '"' || next_tok.lexeme.front() == '\'')))) {
-                    py_code += " ";
+                if (t.type == TokenType::TOKEN_NEWLINE) {
+                    advance();
+                    py_code += "\n";
+                    line_start = true;
+                    continue;
                 }
+                Token next_tok = advance();
+                if (line_start) {
+                    if (next_tok.col > 1) {
+                        py_code += std::string(next_tok.col - 1, ' ');
+                    }
+                    line_start = false;
+                } else if (!py_code.empty() && py_code.back() != '\n' && py_code.back() != ' ' && py_code.back() != '.' && py_code.back() != '(' &&
+                    next_tok.lexeme != "(" && next_tok.lexeme != ")" && next_tok.lexeme != ":" && next_tok.lexeme != "." && next_tok.lexeme != ",") {
+                    if (!((py_code.back() == 'f' || py_code.back() == 'r' || py_code.back() == 'b') && (!next_tok.lexeme.empty() && (next_tok.lexeme.front() == '"' || next_tok.lexeme.front() == '\'')))) {
+                        py_code += " ";
+                    }
+                }
+                py_code += next_tok.lexeme;
             }
-            py_code += next_tok.lexeme;
         }
     } else if (peek().type == TokenType::TOKEN_STRING) {
         py_code = advance().string_value;

@@ -31,7 +31,33 @@ void print_help() {
     std::cout << "  say the square root of 2\n";
 }
 
-bool run_code(const std::string& source, epp::Interpreter& interpreter) {
+static void print_deterministic_error(const std::string& code, const std::string& name,
+                                       const std::string& filename, int line, int col,
+                                       const std::string& reason, const std::string& help_msg,
+                                       const std::string& source = "") {
+    std::cerr << "\n[E++ Error " << code << ": " << name << "]\n";
+    std::cerr << "  --> " << filename << ":" << line << ":" << col << "\n";
+    std::cerr << "   |\n";
+    if (!source.empty()) {
+        std::istringstream st(source);
+        std::string cur;
+        int cur_l = 1;
+        while (std::getline(st, cur)) {
+            if (cur_l == line) {
+                std::cerr << "  " << line << " | " << cur << "\n";
+                std::cerr << "   | ";
+                for (int i = 1; i < col; i++) std::cerr << " ";
+                std::cerr << "^\n";
+                break;
+            }
+            cur_l++;
+        }
+    }
+    std::cerr << "   = Reason: " << reason << "\n";
+    std::cerr << "   = Help: " << help_msg << "\n\n";
+}
+
+bool run_code(const std::string& source, epp::Interpreter& interpreter, const std::string& filename = "<cli>") {
     try {
         epp::Lexer lexer(source);
         auto tokens = lexer.tokenize();
@@ -42,19 +68,33 @@ bool run_code(const std::string& source, epp::Interpreter& interpreter) {
         interpreter.execute(statements);
         return true;
     } catch (const epp::LogicError& e) {
-        std::cerr << "\n[E++ Logic Error] " << e.what() << "\n";
+        print_deterministic_error("E402", "Logic Error", filename, e.line, e.col, e.what(), "Check the 3 Golden Rules: no quotes for math, single quotes for variables, double quotes for strings.", source);
         return false;
     } catch (const epp::ParseError& e) {
-        std::cerr << "\n[E++ Syntax Error] " << e.what() << "\n";
+        std::string reason = e.what();
+        std::string err_code = "E101";
+        std::string help = "Verify statement syntax and matching keywords.";
+        if (reason.find("otherwise") != std::string::npos) {
+            err_code = "E103";
+            help = "In E++, 'otherwise' must be on the line immediately following the 'if' statement.";
+        }
+        print_deterministic_error(err_code, "Syntax Error", filename, e.line, e.col, reason, help, source);
         return false;
     } catch (const epp::LibraryError& e) {
-        std::cerr << "\n[E++ Library Error] " << e.what() << "\n";
+        print_deterministic_error("E301", "Library Not Added", filename, e.line, e.col, e.what(), "Add the library at the top of your program: add the \"<Library>\" library", source);
         return false;
     } catch (const epp::RuntimeError& e) {
-        std::cerr << "\n[E++ Runtime Error] " << e.what() << "\n";
+        std::string reason = e.what();
+        std::string err_code = "E702";
+        std::string help = "Review the execution logic.";
+        if (reason.find("turtle") != std::string::npos) {
+            err_code = "E701";
+            help = "The 'turtle' library is not supported in E++. Use standard data and math libraries instead.";
+        }
+        print_deterministic_error(err_code, "Runtime Error", filename, e.line, e.col, reason, help, source);
         return false;
     } catch (const std::exception& e) {
-        std::cerr << "\n[E++ Syntax Error] " << e.what() << "\n";
+        print_deterministic_error("E101", "Execution Exception", filename, 1, 1, e.what(), "Check your program structure.", source);
         return false;
     }
 }
@@ -93,6 +133,42 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    // Encryption tool
+    if (arg1 == "--encrypt" && argc >= 3) {
+        std::string src_path = argv[2];
+        std::ifstream f(src_path);
+        if (!f.is_open()) {
+            std::cerr << "Error: Could not open file '" << src_path << "'\n";
+            return 1;
+        }
+        std::stringstream buf; buf << f.rdbuf();
+        std::string encrypted = epp::encrypt_epp(buf.str());
+        std::string out_path = (argc >= 5 && std::string(argv[3]) == "-o") ? argv[4] : src_path;
+        std::ofstream out(out_path);
+        out << encrypted;
+        std::cout << "Encrypted " << src_path << " -> " << out_path << " with Release 1.1 millisecond frame key.\n";
+        return 0;
+    }
+
+    // Decryption tool
+    if (arg1 == "--decrypt" && argc >= 3) {
+        std::string src_path = argv[2];
+        std::ifstream f(src_path);
+        if (!f.is_open()) {
+            std::cerr << "Error: Could not open file '" << src_path << "'\n";
+            return 1;
+        }
+        std::stringstream buf; buf << f.rdbuf();
+        try {
+            std::string decrypted = epp::decrypt_epp(buf.str(), src_path);
+            std::cout << decrypted << "\n";
+            return 0;
+        } catch (const std::exception& e) {
+            std::cerr << e.what() << "\n";
+            return 1;
+        }
+    }
+
     epp::Interpreter interpreter;
 
     if (arg1 == "-e" && argc >= 3) {
@@ -113,6 +189,19 @@ int main(int argc, char* argv[]) {
     buffer << file.rdbuf();
     std::string source = buffer.str();
 
-    bool ok = run_code(source, interpreter);
+    // Enforce Release 1.1 encryption for .enpp and .enppl
+    bool is_epp_file = (filepath.size() >= 5 && filepath.substr(filepath.size() - 5) == ".enpp") ||
+                       (filepath.size() >= 6 && filepath.substr(filepath.size() - 6) == ".enppl");
+    if (is_epp_file) {
+        if (source.rfind("call ENCRYPTION_KEY", 0) != 0) {
+            print_deterministic_error("E501", "Unencrypted Source File", filepath, 1, 1,
+                "File '" + filepath + "' is unencrypted. In Release 1.1, .enpp and .enppl files are encrypted with a randomized millisecond frame key and must begin with 'call ENCRYPTION_KEY'.",
+                "Encrypt the file using: ./epp --encrypt \"" + filepath + "\" or python3 epp.py --encrypt \"" + filepath + "\"",
+                source);
+            return 1;
+        }
+    }
+
+    bool ok = run_code(source, interpreter, filepath);
     return ok ? 0 : 1;
 }

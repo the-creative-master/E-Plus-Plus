@@ -1,13 +1,2 @@
-note [System Library Demonstration in E++ (.enppl)]
-add the "System" library
-
-note [1. Inspecting Platform and OS]
-say "Operating System:", the os
-say "Architecture Platform:", the platform
-
-note [2. Executing shell commands and capturing stdout]
-run system command "whoami" and save the output as 'User'
-say "Running as system user:", 'User'
-
-run system command "uname -r" and save the output as 'Kernel'
-say "Operating system kernel:", 'Kernel'
+call ENCRYPTION_KEY
+AAABoV84T0sirnrp7RCzO5o3EVuDboMq2BeA0ky7747CZQbFGYzZpJMZIz84APCkj7fOX6LJRmsjCcaBhwJv3CE413gnAw8khhH23r1yCWKwZ6L5yLHBcfdZtK+F9imsG5yLjLVaREj8L/ucYmP0FwGlfXyqIbm/+ui4GP/9cF7T09k2WOQ3YhFRUiCgVSSPye63C2cW3FC91Y6qunn5fxMjudEbd6oCmR308MqteqNx0iguOkdPQfke0DHbhRLYp1/ali5v05fbvI0fsTZGZ6spYiweTVazmB5zMTwoQ4It2t9gk0JY5oFb2c3/78+tguBJRsl/3PZ4MBXndu6sktYeGH6iXAOrf4B3jRm+ElQHMRqsxponX4xMr3JIdr9O/VdZjg6Y8K7QkblG7xPuk4bNNCvKz9lDuIo8ZCXK2i7e0S3nnETsiQMqcVjNdDiokxGByl07EKVU9+k6K762CEo0hUowQn6eK+NFaTVR/mEPy6kYfdv6/kdS18tlMVKaUe+UUffL9KYgzoS4IqqMn/y3kZpNq9E9PAp2G+/myVn8oq5hR6X6WpoupL6mkRuOnTK1XkWoOntS7/s7tT6Bv8Lpu2mnNwI=

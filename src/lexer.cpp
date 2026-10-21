@@ -2,6 +2,10 @@
 #include <cctype>
 #include <algorithm>
 #include <stdexcept>
+#include <cstdint>
+#include <chrono>
+#include <sstream>
+#include <vector>
 
 namespace epp {
 
@@ -160,7 +164,11 @@ std::string Lexer::to_lower(const std::string& s) {
     return res;
 }
 
-Lexer::Lexer(const std::string& source) : src(source) {}
+Lexer::Lexer(const std::string& source) : src(source) {
+    if (src.rfind("call ENCRYPTION_KEY", 0) == 0) {
+        src = decrypt_epp(src);
+    }
+}
 
 bool Lexer::is_at_end() const {
     return cursor >= src.size();
@@ -217,6 +225,40 @@ void Lexer::skip_whitespace_and_comments() {
     }
 }
 
+static bool is_py_block_header(const std::string& s, size_t pos) {
+    auto skip_ws = [&](size_t& p) {
+        while (p < s.size() && (s[p] == ' ' || s[p] == '\t')) p++;
+    };
+    auto match_kw = [&](size_t& p, const std::string& kw) -> bool {
+        skip_ws(p);
+        if (p + kw.size() <= s.size()) {
+            std::string sub = s.substr(p, kw.size());
+            for (char& ch : sub) ch = std::tolower(ch);
+            if (sub == kw) {
+                size_t after = p + kw.size();
+                if (after == s.size() || !isalnum(static_cast<unsigned char>(s[after]))) {
+                    p = after;
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+    match_kw(pos, "run");
+    match_kw(pos, "the");
+    if (!match_kw(pos, "python")) return false;
+    if (!match_kw(pos, "code")) return false;
+    skip_ws(pos);
+    if (pos < s.size() && s[pos] == ':') {
+        pos++;
+        skip_ws(pos);
+        if (pos < s.size() && s[pos] == '\n') {
+            return true;
+        }
+    }
+    return false;
+}
+
 std::vector<Token> Lexer::tokenize() {
     std::vector<Token> tokens;
     while (!is_at_end()) {
@@ -232,6 +274,51 @@ std::vector<Token> Lexer::tokenize() {
             if (!tokens.empty() && tokens.back().type != TokenType::TOKEN_NEWLINE) {
                 tokens.emplace_back(TokenType::TOKEN_NEWLINE, "\n", start_line, start_col);
             }
+            continue;
+        }
+
+        // Check for dedicated raw Python block
+        if (is_py_block_header(src, cursor)) {
+            int start_l = line;
+            int start_c = col;
+            while (!is_at_end() && peek() != '\n') advance();
+            if (!is_at_end() && peek() == '\n') advance();
+
+            tokens.emplace_back(TokenType::KW_RUN, "run", start_l, start_c);
+            tokens.emplace_back(TokenType::KW_PYTHON, "python", start_l, start_c);
+            tokens.emplace_back(TokenType::KW_CODE, "code", start_l, start_c);
+            tokens.emplace_back(TokenType::TOKEN_COLON, ":", start_l, start_c);
+            tokens.emplace_back(TokenType::TOKEN_NEWLINE, "\n", start_l, start_c);
+
+            std::string py_block = "";
+            int py_start_line = line;
+
+            while (!is_at_end()) {
+                size_t temp = cursor;
+                while (temp < src.size() && (src[temp] == ' ' || src[temp] == '\t')) temp++;
+                size_t indent_len = temp - cursor;
+                if (temp < src.size() && src[temp] != '\n' && src[temp] != '\r') {
+                    size_t w_end = temp;
+                    while (w_end < src.size() && (isalnum(static_cast<unsigned char>(src[w_end])) || src[w_end] == '_')) w_end++;
+                    std::string first_w = src.substr(temp, w_end - temp);
+                    for (char& ch : first_w) ch = std::tolower(ch);
+                    if (indent_len == 0 && (first_w == "say" || first_w == "tell" || first_w == "let" ||
+                        first_w == "set" || first_w == "define" || first_w == "ask" || first_w == "add" ||
+                        first_w == "note" || first_w == "run" || first_w == "if" || first_w == "otherwise")) {
+                        break;
+                    }
+                }
+                while (!is_at_end() && peek() != '\n') {
+                    py_block += advance();
+                }
+                if (!is_at_end() && peek() == '\n') {
+                    py_block += advance();
+                }
+            }
+
+            Token tok(TokenType::TOKEN_PYTHON_BLOCK, py_block, py_start_line, 1);
+            tok.string_value = py_block;
+            tokens.push_back(tok);
             continue;
         }
 
@@ -484,8 +571,130 @@ std::string Lexer::token_type_name(TokenType t) {
         case TokenType::KW_SEPARATION: return "separation";
         case TokenType::KW_METHOD: return "method";
         case TokenType::KW_OF: return "of";
+        case TokenType::TOKEN_PYTHON_BLOCK: return "PYTHON_BLOCK";
         default: return "KEYWORD";
     }
+}
+
+// ==========================================
+// Release 1.1 Randomized Encryption Engine
+// ==========================================
+
+static const std::string b64_chars = 
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "abcdefghijklmnopqrstuvwxyz"
+    "0123456789+/";
+
+static std::string base64_encode_bytes(const std::vector<uint8_t>& buf) {
+    std::string ret;
+    int i = 0;
+    uint8_t char_array_3[3];
+    uint8_t char_array_4[4];
+
+    for (uint8_t b : buf) {
+        char_array_3[i++] = b;
+        if (i == 3) {
+            char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+            char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+            char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+            char_array_4[3] = char_array_3[2] & 0x3f;
+            for (i = 0; i < 4; i++) ret += b64_chars[char_array_4[i]];
+            i = 0;
+        }
+    }
+    if (i != 0) {
+        for (int j = i; j < 3; j++) char_array_3[j] = '\0';
+        char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+        char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+        char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+        char_array_4[3] = char_array_3[2] & 0x3f;
+        for (int j = 0; j < i + 1; j++) ret += b64_chars[char_array_4[j]];
+        while (i++ < 3) ret += '=';
+    }
+    return ret;
+}
+
+static std::vector<uint8_t> base64_decode_bytes(const std::string& encoded_string) {
+    size_t in_len = encoded_string.size();
+    int i = 0, in_ = 0;
+    uint8_t char_array_4[4], char_array_3[3];
+    std::vector<uint8_t> ret;
+
+    while (in_len-- && (encoded_string[in_] != '=') && (isalnum(static_cast<unsigned char>(encoded_string[in_])) || (encoded_string[in_] == '+') || (encoded_string[in_] == '/'))) {
+        char_array_4[i++] = encoded_string[in_]; in_++;
+        if (i == 4) {
+            for (i = 0; i < 4; i++) char_array_4[i] = b64_chars.find(char_array_4[i]);
+            char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+            char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+            char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+            for (i = 0; i < 3; i++) ret.push_back(char_array_3[i]);
+            i = 0;
+        }
+    }
+    if (i) {
+        for (int j = i; j < 4; j++) char_array_4[j] = 0;
+        for (int j = 0; j < 4; j++) char_array_4[j] = b64_chars.find(char_array_4[j]);
+        char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+        char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+        char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+        for (int j = 0; j < i - 1; j++) ret.push_back(char_array_3[j]);
+    }
+    return ret;
+}
+
+std::string encrypt_epp(const std::string& plaintext) {
+    uint64_t frame_key = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+    std::vector<uint8_t> buf(8 + plaintext.size());
+    for (int i = 0; i < 8; i++) {
+        buf[i] = (frame_key >> ((7 - i) * 8)) & 0xFF;
+    }
+    uint64_t k = frame_key;
+    const uint64_t mul = 6364136223846793005ULL;
+    const uint64_t add = 1442695040888963407ULL;
+    for (size_t i = 0; i < plaintext.size(); i++) {
+        k = k * mul + add;
+        uint8_t keystream = (k >> 33) & 0xFF;
+        buf[8 + i] = static_cast<uint8_t>(plaintext[i]) ^ keystream;
+    }
+    return "call ENCRYPTION_KEY\n" + base64_encode_bytes(buf);
+}
+
+std::string decrypt_epp(const std::string& ciphertext, const std::string& filename) {
+    (void)filename;
+    std::istringstream stream(ciphertext);
+    std::string header;
+    std::getline(stream, header);
+    while (!header.empty() && (header.back() == '\r' || header.back() == ' ')) header.pop_back();
+    if (header != "call ENCRYPTION_KEY") {
+        throw std::runtime_error("[E++ Error E501: Invalid Encryption Header] File must begin with 'call ENCRYPTION_KEY'");
+    }
+    std::string line, gibberish;
+    while (std::getline(stream, line)) {
+        gibberish += line;
+    }
+    std::string clean_gib;
+    for (char c : gibberish) if (!isspace(static_cast<unsigned char>(c))) clean_gib += c;
+
+    std::vector<uint8_t> raw = base64_decode_bytes(clean_gib);
+    if (raw.size() < 8) {
+        throw std::runtime_error("[E++ Error E502: Corrupted Ciphertext] Payload too short.");
+    }
+    uint64_t frame_key = 0;
+    for (int i = 0; i < 8; i++) {
+        frame_key = (frame_key << 8) | raw[i];
+    }
+    uint64_t k = frame_key;
+    const uint64_t mul = 6364136223846793005ULL;
+    const uint64_t add = 1442695040888963407ULL;
+    std::string dec;
+    dec.reserve(raw.size() - 8);
+    for (size_t i = 8; i < raw.size(); i++) {
+        k = k * mul + add;
+        uint8_t keystream = (k >> 33) & 0xFF;
+        dec.push_back(static_cast<char>(raw[i] ^ keystream));
+    }
+    return dec;
 }
 
 } // namespace epp

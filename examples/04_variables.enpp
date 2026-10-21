@@ -1,7 +1,2 @@
-note [04_variables.epp: Variables in E++ are always enclosed in single quotes!]
-
-let 'Grade' be 29
-let 'Student' be Sam
-let 'Comment' be What a Disgrace!
-
-say 'Student', "got a grade of ", 'grade', ". Comments on this grade are: ", 'Comment'
+call ENCRYPTION_KEY
+AAABoV84TzNCRg+EsVGY+H4iMkb9vj6deVu9YcfCEYR6a9al/8zg+6F+rh05Hr5PjKv9rGsB6Nqk+QCVx257AsDvpqGMfTR+UqV4dypWY6wFxrg4PiF/VuxHlM+XuScQ9r07430ftrfWSa6YwMlWFs+llO3G94pCBlkhtlUBMIq2vtowmeCI7CebCO7PSBZF6H35Xl8fEXV4zN1uJi8J/fkL9q/9A0Iytyk7gMuH1UOjYFd/YxazUhNncRtIlJXWVezk/BC7Ou9F+2qS/OytT5IcNWrzG5UkUZbHukxs805eFgRxLEtQ4zYLASMTVbl1imZEy7QkguxOzw==

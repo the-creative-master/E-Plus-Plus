@@ -18,6 +18,7 @@ enum class TokenType {
     TOKEN_STRING,       // "double quotes"
     TOKEN_VARIABLE,     // 'single quotes'
     TOKEN_IDENTIFIER,   // unquoted word
+    TOKEN_PYTHON_BLOCK, // raw multi-line Python block
 
     // Punctuation & math symbols
     TOKEN_COMMA,
@@ -226,6 +227,10 @@ private:
 
     static const std::unordered_map<std::string, TokenType> keywords;
 };
+
+// Release 1.1 Randomized Encryption Engine
+std::string encrypt_epp(const std::string& plaintext);
+std::string decrypt_epp(const std::string& ciphertext, const std::string& filename = "<source>");
 
 } // namespace epp
 
