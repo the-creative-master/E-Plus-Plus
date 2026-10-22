@@ -1,7 +1,7 @@
-# E++ Programming Language [1.1 Workspace Patch 1]
+# E++ Programming Language [1.1 Language Patch 1]
 > **"Looks like English, feels like english, and is english"**
 
-Welcome to **E++ 1.1 Workspace Patch 1**, a modern, human-readable programming language designed to look, feel, and read like pure English prose. Fast, bug-free, zero bloat, and fully equipped with both native C++ and pure Python runtimes, 9 standard libraries, deterministic error diagnostics, and a zero-dependency offline Web Studio.
+Welcome to **E++ 1.1 Language Patch 1**, a modern, human-readable programming language designed to look, feel, and read like pure English prose. Fast, bug-free, zero bloat, and fully equipped with both native C++ and pure Python runtimes, 9 standard libraries, deterministic error diagnostics, and a zero-dependency offline Web Studio.
 
 ---
 
@@ -32,7 +32,7 @@ note [Notes are ignored during execution and document your program]
 
 ## 🧭 Deterministic Diagnostic Engine
 
-E++ 1.1 Workspace Patch 1 features a deterministic error diagnostic engine that provides exact error codes, source code snippets with caret pointers, and actionable causes and fixes:
+E++ 1.1 Language Patch 1 features a deterministic error diagnostic engine that provides exact error codes, source code snippets with caret pointers, and actionable causes and fixes:
 
 ```text
 [E++ Error E103: Invalid Otherwise Placement] --> script.enpp:5:28
@@ -57,7 +57,7 @@ E++ 1.1 Workspace Patch 1 features a deterministic error diagnostic engine that 
 
 ---
 
-## 📚 Standard Libraries in 1.1 Workspace Patch 1
+## 📚 Standard Libraries in 1.1 Language Patch 1
 
 Import any library using the humanizer syntax: `add the "<Name>" library`.
 
@@ -132,7 +132,7 @@ clear the console
 Read, write, and append workspace files:
 ```text
 add the "Files" library
-write "E++ 1.1 Workspace Patch 1 Data" to the file "log.txt"
+write "E++ 1.1 Language Patch 1 Data" to the file "log.txt"
 append "\nSecond entry" to the file "log.txt"
 read the file "log.txt" and save the output as 'LogData'
 say 'LogData'

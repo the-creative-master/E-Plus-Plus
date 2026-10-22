@@ -9,7 +9,7 @@
 
 void print_banner() {
     std::cout << "=========================================================\n";
-    std::cout << "   E++ Programming Language [1.1 Workspace Patch 1]     \n";
+    std::cout << "   E++ Programming Language [1.1 Language Patch 1]     \n";
     std::cout << "   \"Looks like English, feels like english, and is english\"\n";
     std::cout << "=========================================================\n";
 }

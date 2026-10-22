@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>E++ Studio | 1.1 Workspace Patch 1</title>
+<title>E++ Studio | 1.1 Language Patch 1</title>
 <link rel="stylesheet" href="css/ide.css">
 <style>
   /* Color classes for Terminal */
@@ -290,7 +290,7 @@
   <div class="brand">
     <div class="logo" aria-hidden="true">E<span>++</span></div>
     <div>
-      <h1>E++ Studio <span class="build-badge">1.1 Workspace Patch 1</span></h1>
+      <h1>E++ Studio <span class="build-badge">1.1 Language Patch 1</span></h1>
       <p>Looks like English. Reads like English. Behaves like code.</p>
     </div>
   </div>
@@ -353,7 +353,7 @@
 
     <!-- Available Libraries -->
     <section class="libraries-panel">
-      <h2>Libraries <span class="head-sub">(1.1 Workspace Patch 1)</span></h2>
+      <h2>Libraries <span class="head-sub">(1.1 Language Patch 1)</span></h2>
       <p class="panel-note">Humanizer syntax:<br><code>add the "Library" library</code></p>
       
       <div class="library-card">
@@ -500,7 +500,7 @@ for I in range 3:
 </main>
 
 <footer class="footer">
-  <span><strong>E++ Studio [1.1 Workspace Patch 1]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
+  <span><strong>E++ Studio [1.1 Language Patch 1]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
   <span>Shortcuts: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run · <kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span>
 </footer>
 
@@ -540,7 +540,7 @@ say "1 + 1"`
   },
   {
     name: 'release_showcase.enppl',
-    content: `note [E++ 1.1 Workspace Patch 1 Grand Showcase (.enppl)]
+    content: `note [E++ 1.1 Language Patch 1 Grand Showcase (.enppl)]
 add the "Colors" library
 add the "Time" library
 add the "Math" library
@@ -551,7 +551,7 @@ add the "System" library
 add the "Python" library
 
 say cyan "========================================================="
-say cyan "         Welcome to E++ 1.1 Workspace Patch 1!           "
+say cyan "         Welcome to E++ 1.1 Language Patch 1!           "
 say cyan "========================================================="
 
 note [System & Time Diagnostics]
@@ -569,7 +569,7 @@ say "Trimmed:", the trim of 'Announcement'
 say "Uppercase:", the uppercase of the trim of 'Announcement'
 
 note [File Persistence in Virtual IDE]
-write "1.1 Workspace Patch 1 verified on: " to file "showcase_audit.log"
+write "1.1 Language Patch 1 verified on: " to file "showcase_audit.log"
 append the current date to file "showcase_audit.log"
 read the file "showcase_audit.log" and save the output as 'Audit'
 say "Audit log content:", 'Audit'
@@ -581,7 +581,7 @@ print(f"[Python Subsystem] Connected with E++ v{EppVersion}")
 import math
 print(f"[Python Subsystem] Computed 10! = {math.factorial(10)}")
 
-say green "✓ All 1.1 Workspace Patch 1 tests completed with 100% success!"`
+say green "✓ All 1.1 Language Patch 1 tests completed with 100% success!"`
   },
   {
     name: 'python_demo.enppl',
@@ -605,7 +605,7 @@ run the python code "print('E++ says:', greeting)"`
     content: `note [Strings Library in E++ (.enppl)]
 add the "Strings" library
 
-let 'Message' be "Hello, E++ 1.1 Workspace Patch 1!"
+let 'Message' be "Hello, E++ 1.1 Language Patch 1!"
 say "Original message:", 'Message'
 say "Length of message:", the length of 'Message'
 say "Uppercase:", the uppercase of 'Message'
@@ -643,7 +643,7 @@ say "System Platform:", the platform
 say "Operating System:", the os
 
 note [Writing and reading in the IDE filesystem:]
-write "E++ 1.1 Workspace Patch 1 is lightning fast!" to file "notes.txt"
+write "E++ 1.1 Language Patch 1 is lightning fast!" to file "notes.txt"
 read the file "notes.txt" and save the output as 'ReadBack'
 say "Read back from file:", 'ReadBack'`
   },
@@ -2010,7 +2010,7 @@ class EppEvaluator {
       this.requireLib('System', 'run system command', lineNum);
       const cmd = sysMatch[1];
       const outVar = sysMatch[2];
-      const res = `1.1 Workspace Patch 1 Runtime (cmd: ${cmd})`;
+      const res = `1.1 Language Patch 1 Runtime (cmd: ${cmd})`;
       if (outVar) this.vars[this.norm(outVar)] = res;
       else printFn(res);
       return;
@@ -2351,7 +2351,7 @@ class EppEvaluator {
     // System library functions
     if (expr.toLowerCase() === 'the platform' || expr.toLowerCase() === 'the system platform') {
       this.requireLib('System', 'the platform', lineNum);
-      return navigator.platform || 'Web System (1.1 Workspace Patch 1)';
+      return navigator.platform || 'Web System (1.1 Language Patch 1)';
     }
     if (expr.toLowerCase() === 'the os' || expr.toLowerCase() === 'the operating system') {
       this.requireLib('System', 'the os', lineNum);
