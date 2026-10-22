@@ -300,9 +300,11 @@
     <div class="action-group file-actions">
       <button id="btnNew" class="btn btn-small btn-accent" type="button">+ New</button>
       <button id="btnSave" class="btn" type="button" title="Save file">💾 Save</button>
+      <button id="btnImport" class="btn" type="button" title="Open or import a .enpp or .enppl file">⤒ Import</button>
       <button id="btnExport" class="btn" type="button" title="Download this file (.enpp or .enppl)">⤓ Export</button>
       <button id="btnZip" class="btn btn-zip" type="button" title="Download E++ C++ sources &amp; runtime bundle">📦 E++.zip</button>
       <button id="btnClear" class="btn" type="button">⌧ Clear</button>
+      <input id="importFileInput" type="file" accept=".enpp,.enppl" style="display:none;">
     </div>
     <div class="action-group run-actions">
       <button id="btnRun" class="btn btn-run" type="button" title="Run (Ctrl+Enter)">▶ Run</button>
@@ -777,7 +779,17 @@ function loadFile(name) {
     saveStorage();
   }
   currentFileName = name;
-  document.getElementById('editor').value = files[name] || '';
+  let fileContent = files[name] || '';
+  if (fileContent.trim().startsWith('call ENCRYPTION_KEY')) {
+    try {
+      fileContent = decryptEpp(fileContent, name);
+      files[name] = fileContent;
+      saveStorage();
+    } catch (e) {
+      console.warn('Transparent decryption failed:', e);
+    }
+  }
+  document.getElementById('editor').value = fileContent;
   document.getElementById('currentFileName').innerText = name;
   document.getElementById('statusFile').innerText = name;
   document.getElementById('dashFile').innerText = name;
@@ -917,9 +929,13 @@ function exportCurrentFile() {
   if (!fileNameToExport.endsWith('.enpp') && !fileNameToExport.endsWith('.enppl')) {
     fileNameToExport += '.enpp';
   }
-  const content = document.getElementById('editor').value;
+  const rawContent = document.getElementById('editor').value;
+  // Transparently encrypt under the hood with Release 1.1 randomized frame encryption
+  const encryptedContent = rawContent.trim().startsWith('call ENCRYPTION_KEY')
+    ? rawContent
+    : encryptEpp(rawContent);
   // Use application/octet-stream so browsers never append .txt extension
-  const blob = new Blob([content], { type: 'application/octet-stream' });
+  const blob = new Blob([encryptedContent], { type: 'application/octet-stream' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = fileNameToExport;
@@ -931,6 +947,32 @@ function exportCurrentFile() {
     URL.revokeObjectURL(a.href);
   }, 100);
   showToast(`Exported ${fileNameToExport}`);
+}
+
+function handleFileObject(file) {
+  if (!file) return;
+  let fileName = file.name.replace(/\.txt$/i, '');
+  if (!fileName.endsWith('.enpp') && !fileName.endsWith('.enppl')) {
+    fileName += '.enpp';
+  }
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    let content = evt.target.result;
+    if (content.trim().startsWith('call ENCRYPTION_KEY')) {
+      try {
+        content = decryptEpp(content, fileName);
+      } catch (err) {
+        showToast('Error reading file: ' + (err.message || 'corrupt'), true);
+        return;
+      }
+    }
+    files[fileName] = content;
+    saveStorage();
+    renderFileList();
+    loadFile(fileName);
+    showToast(`Opened ${fileName}`);
+  };
+  reader.readAsText(file);
 }
 
 function downloadZip() {
@@ -2606,12 +2648,44 @@ document.getElementById('btnNew').onclick = openNewFileDialog;
 document.getElementById('btnSidebarNew').onclick = openNewFileDialog;
 document.getElementById('btnRename').onclick = openRenameDialog;
 document.getElementById('btnDelete').onclick = deleteCurrentFile;
+document.getElementById('btnImport').onclick = () => document.getElementById('importFileInput').click();
+document.getElementById('importFileInput').onchange = (e) => {
+  if (e.target.files && e.target.files[0]) {
+    handleFileObject(e.target.files[0]);
+    e.target.value = '';
+  }
+};
 document.getElementById('btnExport').onclick = exportCurrentFile;
 document.getElementById('btnZip').onclick = downloadZip;
 document.getElementById('btnRestoreExamples').onclick = () => restoreDefaultFiles(true);
 document.getElementById('fileSearch').oninput = renderFileList;
 
+// Drag and drop support
+window.addEventListener('dragover', (e) => e.preventDefault());
+window.addEventListener('drop', (e) => {
+  e.preventDefault();
+  if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+    handleFileObject(e.dataTransfer.files[0]);
+  }
+});
+
 const editor = document.getElementById('editor');
+editor.addEventListener('paste', (e) => {
+  const text = (e.clipboardData || window.clipboardData)?.getData('text');
+  if (text && text.trim().startsWith('call ENCRYPTION_KEY')) {
+    try {
+      const dec = decryptEpp(text.trim(), currentFileName);
+      e.preventDefault();
+      const start = editor.selectionStart;
+      const end = editor.selectionEnd;
+      const cur = editor.value;
+      editor.value = cur.substring(0, start) + dec + cur.substring(end);
+      editor.selectionStart = editor.selectionEnd = start + dec.length;
+      updateLineNumbers();
+      updateDashboard();
+    } catch (err) {}
+  }
+});
 editor.oninput = () => {
   updateLineNumbers();
   updateDashboard();
