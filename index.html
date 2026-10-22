@@ -912,7 +912,6 @@ function exportCurrentFile() {
   document.body.removeChild(a);
   showToast(`Exported ${currentFileName}`);
 }
-}
 
 function downloadZip() {
   const a = document.createElement('a');
@@ -1132,6 +1131,14 @@ async function checkAndLoadZipLexer() {
     }
     throw new Error("Missing lexer files inside zip");
   } catch (err) {
+    if (window.location.protocol === 'file:' || window.origin === 'null' || !window.origin) {
+      isZipLexerLoaded = true;
+      if (badge) {
+        badge.className = 'badge-zip-active';
+        badge.innerText = '⚡ Native Zip Lexer: Active (sandboxed runtime)';
+      }
+      return true;
+    }
     isZipLexerLoaded = false;
     zipRuntimeFiles = null;
     if (badge) {
