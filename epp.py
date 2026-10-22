@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-E++ (E-Plus-Plus) Release 1.1 Direct Python Runtime & Engine
+E++ (E-Plus-Plus) 1.1 Workspace Patch 1 Direct Python Runtime & Engine
 Uses the native Python lexer to run E++ and Python code directly.
 """
 
@@ -870,12 +870,10 @@ class Interpreter:
 
 def main():
     if len(sys.argv) < 2:
-        print("E++ Release 1.1 Python Direct Engine")
+        print("E++ [1.1 Workspace Patch 1] Python Direct Engine")
         print("Usage:")
         print("  python3 epp.py <file.enpp|file.enppl>")
         print("  python3 epp.py -e '<code string>'")
-        print("  python3 epp.py --encrypt <file> [-o <out>]")
-        print("  python3 epp.py --decrypt <file>")
         sys.exit(0)
 
     arg = sys.argv[1]

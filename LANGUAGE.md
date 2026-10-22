@@ -1,8 +1,8 @@
-# The E++ Language Reference (Release 1.1)
+# The E++ Language Reference (1.1 Workspace Patch 1)
 
 > **"Looks like English, feels like english, and is english"**
 
-Welcome to **E++ Release 1.1**, a modern, human-readable programming language designed to read and behave like pure English prose.
+Welcome to **E++ 1.1 Workspace Patch 1**, a modern, human-readable programming language designed to read and behave like pure English prose.
 
 ---
 
@@ -53,7 +53,7 @@ otherwise say "Failed."
 
 ---
 
-## 5. Python Integration (Release 1.1)
+## 5. Python Integration (1.1 Workspace Patch 1)
 
 To run Python, add the `"Python"` library:
 ```text
