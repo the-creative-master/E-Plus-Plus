@@ -710,6 +710,15 @@ function initStorage() {
   if (saved) {
     try { files = JSON.parse(saved); } catch (e) { files = {}; }
   }
+  // Strip any accidental .txt suffixes from filenames
+  const cleanFiles = {};
+  for (let k in files) {
+    const cleanKey = k.replace(/\.txt$/i, '');
+    cleanFiles[cleanKey] = files[k];
+  }
+  files = cleanFiles;
+  currentFileName = currentFileName.replace(/\.txt$/i, '');
+
   if (!files || Object.keys(files).length === 0 || !files['hello.enpp'] || !files['release_showcase.enppl']) {
     restoreDefaultFiles(false);
   } else {
@@ -852,6 +861,7 @@ function closeFileDialog() {
 function confirmFileDialog() {
   let name = document.getElementById('fileDialogInput').value.trim();
   if (!name) return;
+  name = name.replace(/\.txt$/i, '');
   if (!name.endsWith('.enpp') && !name.endsWith('.enppl')) {
     name += '.enpp';
   }
@@ -877,6 +887,7 @@ function confirmFileDialog() {
 }
 
 function renameCurrentFile(newName) {
+  newName = newName.replace(/\.txt$/i, '');
   if (newName === currentFileName) return;
   files[newName] = document.getElementById('editor').value;
   delete files[currentFileName];
@@ -902,15 +913,24 @@ function deleteCurrentFile() {
 }
 
 function exportCurrentFile() {
+  let fileNameToExport = currentFileName.replace(/\.txt$/i, '');
+  if (!fileNameToExport.endsWith('.enpp') && !fileNameToExport.endsWith('.enppl')) {
+    fileNameToExport += '.enpp';
+  }
   const content = document.getElementById('editor').value;
-  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  // Use application/octet-stream so browsers never append .txt extension
+  const blob = new Blob([content], { type: 'application/octet-stream' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = currentFileName;
+  a.download = fileNameToExport;
+  a.setAttribute('download', fileNameToExport);
   document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
-  showToast(`Exported ${currentFileName}`);
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }, 100);
+  showToast(`Exported ${fileNameToExport}`);
 }
 
 function downloadZip() {
