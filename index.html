@@ -2028,20 +2028,6 @@ class EppEvaluator {
         content = content.substring(colorMatch[0].length).trim();
       }
 
-      // Check unquoted single word logic error: say hello (Golden Rule 3)
-      if (/^[a-zA-Z_]\w*$/.test(content) && !content.startsWith('"') && !content.startsWith("'") && isNaN(Number(content))) {
-        throw {
-          code: "E402",
-          name: "Golden Rule 3 Violation",
-          filename: currentFileName,
-          line: lineNum,
-          col: line.lastIndexOf(content) + 1,
-          sourceLine: line,
-          reason: `Unknown unquoted text word '${content}'. String text in E++ must ALWAYS be enclosed in double quotes!`,
-          help: `Wrap the text in double quotes: "${content}"`
-        };
-      }
-
       let separator = null;
       let exprPart = content;
 
@@ -2144,12 +2130,106 @@ class EppEvaluator {
     return this.vars[n];
   }
 
+  safeEvaluateMath(exprStr) {
+    let str = exprStr
+      .replace(/\bplus\b/gi, "+")
+      .replace(/\bminus\b/gi, "-")
+      .replace(/\btimes\b/gi, "*")
+      .replace(/\bmultiplied\s+by\b/gi, "*")
+      .replace(/\bdivided\s+by\b/gi, "/")
+      .replace(/\bmodulo\b/gi, "%")
+      .replace(/\bmod\b/gi, "%");
+
+    const tokens = [];
+    let i = 0;
+    while (i < str.length) {
+      const c = str[i];
+      if (/\s/.test(c)) { i++; continue; }
+      if (/[\d.]/.test(c)) {
+        let numStr = "";
+        while (i < str.length && /[\d.]/.test(str[i])) {
+          numStr += str[i];
+          i++;
+        }
+        tokens.push({ type: "NUM", val: parseFloat(numStr) });
+        continue;
+      }
+      if ("+-*/%()".includes(c)) {
+        tokens.push({ type: "OP", val: c });
+        i++;
+        continue;
+      }
+      return null;
+    }
+
+    if (tokens.length === 0) return null;
+
+    let pos = 0;
+    function parseExpression() {
+      let left = parseTerm();
+      if (left === null) return null;
+      while (pos < tokens.length && (tokens[pos].val === "+" || tokens[pos].val === "-")) {
+        const op = tokens[pos++].val;
+        const right = parseTerm();
+        if (right === null) return null;
+        left = op === "+" ? left + right : left - right;
+      }
+      return left;
+    }
+
+    function parseTerm() {
+      let left = parseFactor();
+      if (left === null) return null;
+      while (pos < tokens.length && (tokens[pos].val === "*" || tokens[pos].val === "/" || tokens[pos].val === "%")) {
+        const op = tokens[pos++].val;
+        const right = parseFactor();
+        if (right === null) return null;
+        if (op === "*") left = left * right;
+        else if (op === "/") left = right === 0 ? 0 : left / right;
+        else if (op === "%") left = left % right;
+      }
+      return left;
+    }
+
+    function parseFactor() {
+      if (pos >= tokens.length) return null;
+      const t = tokens[pos++];
+      if (t.type === "NUM") return t.val;
+      if (t.type === "OP" && t.val === "(") {
+        const val = parseExpression();
+        if (pos < tokens.length && tokens[pos].val === ")") pos++;
+        return val;
+      }
+      if (t.type === "OP" && t.val === "-") {
+        const val = parseFactor();
+        return val === null ? null : -val;
+      }
+      return null;
+    }
+
+    const res = parseExpression();
+    if (pos !== tokens.length) return null;
+    return res;
+  }
+
   async evalExpr(expr, lineNum) {
     expr = expr.trim();
+    if (!expr) return "";
 
     if (expr.startsWith('"') && expr.endsWith('"')) return expr.slice(1, -1);
     if (expr.startsWith("'") && expr.endsWith("'")) return this.getVar(expr.slice(1, -1), lineNum);
     if (!isNaN(Number(expr)) && expr !== '') return Number(expr);
+
+    // Direct arithmetic evaluation (zero eval/Function, 100% CSP compliant)
+    let exprWithVars = expr.replace(/'([^']+)'/g, (_, vName) => {
+      const val = this.getVar(vName, lineNum);
+      return typeof val === 'number' ? val : (isNaN(Number(val)) ? 0 : Number(val));
+    });
+
+    const directMath = this.safeEvaluateMath(exprWithVars);
+    if (directMath !== null && !isNaN(directMath)) {
+      return directMath;
+    }
 
     if (expr.toLowerCase().startsWith('check if ')) return this.evalTypeCheck(expr, lineNum);
 
@@ -2341,22 +2421,13 @@ class EppEvaluator {
       return typeof val === 'number' ? val : JSON.stringify(val);
     });
 
-    if (/^[\d\s\+\-\*/\%\.\(\)]+$/.test(sanitized)) {
-      try {
-        return Function(`"use strict"; return (${sanitized});`)();
-      } catch (e) {}
+    const finalMath = this.safeEvaluateMath(sanitized);
+    if (finalMath !== null && !isNaN(finalMath)) {
+      return finalMath;
     }
 
-    throw {
-      code: "E402",
-      name: "Golden Rule 3 Violation",
-      filename: currentFileName,
-      line: lineNum,
-      col: 1,
-      sourceLine: expr,
-      reason: `Unrecognized unquoted text word '${expr}'. Text strings must ALWAYS be enclosed in double quotes!`,
-      help: `1. NO quotes for math (say 1 plus 1)\n2. SINGLE quotes for variables (let 'Var' be 2)\n3. DOUBLE quotes for strings (say \"Hello\")`
-    };
+    // Natural speech fallback: return natural text without throwing rigid quote errors
+    return expr;
   }
 
   evalTypeCheck(expr, lineNum) {

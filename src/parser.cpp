@@ -1001,15 +1001,10 @@ std::shared_ptr<Expr> Parser::parse_primary() {
         current--; // rewind 'the'
     }
 
-    // If it's an unquoted word (TOKEN_IDENTIFIER), throw LOGIC ERROR!
-    // As requested: say hello -> throws logic error!
+    // Allow unquoted natural identifiers as literal words
     if (tok.type == TokenType::TOKEN_IDENTIFIER) {
         advance();
-        throw LogicError("Logic Error at line " + std::to_string(l) + ", col " + std::to_string(c) +
-                         ": Unknown word or unquoted text '" + tok.lexeme +
-                         "'. In E++, text strings must be enclosed in double quotes (e.g. \"" +
-                         tok.lexeme + "\") and variables in single quotes (e.g. '" + tok.lexeme + "').",
-                         l, c);
+        return std::make_shared<LiteralExpr>(Value::make_string(tok.lexeme), l, c);
     }
 
     throw ParseError("Expected expression, found '" + tok.lexeme + "' at line " +

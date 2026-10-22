@@ -680,6 +680,7 @@ class Interpreter:
         return bool(val)
 
     def eval_expr(self, tokens: List[Token], line: int, col: int, allow_raw_words: bool = False) -> Any:
+        tokens = [t for t in tokens if t.type not in (TokenType.NEWLINE, TokenType.EOF)]
         if not tokens:
             return ""
 
@@ -847,21 +848,8 @@ class Interpreter:
             except Exception:
                 pass
 
-        # Check if single unquoted word error (Golden Rule 3: Strings in double quotes!)
-        if not allow_raw_words and len(tokens) == 1 and tokens[0].type == TokenType.IDENTIFIER:
-            cur_line = self.get_source_line(line)
-            raise EppDiagnosticError(
-                code="E402",
-                name="Golden Rule 3 Violation",
-                filename=self.filename,
-                line=line,
-                col=tokens[0].col,
-                source_line=cur_line,
-                reason=f"Unquoted text word '{tokens[0].lexeme}'. String text in E++ must ALWAYS be enclosed in double quotes!",
-                help_msg=f"Enclose the string in double quotes: \"{tokens[0].lexeme}\""
-            )
-
-        return " ".join(t.lexeme for t in tokens) if allow_raw_words else expr_str
+        # Natural speech / words fallback
+        return " ".join(t.lexeme for t in tokens)
 
 
 # ==========================================
