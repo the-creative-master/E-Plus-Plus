@@ -16,14 +16,17 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const context = vm.createContext({
   console, setTimeout, clearTimeout, Promise, Math, JSON, Date,
   Map, Set, Error, Number, String, Array, Object, RegExp, Uint8Array, Uint32Array,
-  DataView, TextEncoder, TextDecoder, Blob: undefined, Symbol
+  DataView, TextEncoder, TextDecoder, Blob: undefined, Symbol,
+  // Release 1.2: the vault needs a secure random source for its keys.
+  crypto: globalThis.crypto
 });
 context.window = context;
 context.globalThis = context;
 
 for (const file of [
-  'errors.js', 'lexer.js', 'ast.js', 'libraries.js', 'parser.js',
-  'python-runner.js', 'interpreter.js', 'files.js', 'highlight.js', 'standalone-generator.js'
+  'errors.js', 'lexer.js', 'ast.js', 'libraries.js', 'keyboard.js', 'parser.js',
+  'python-runner.js', 'interpreter.js', 'files.js', 'highlight.js', 'standalone-generator.js',
+  'vault.js'
 ]) {
   vm.runInContext(readFileSync(join(root, 'js', file), 'utf8'), context, { filename: file });
 }
@@ -36,13 +39,18 @@ function ok(name) { passed += 1; console.log('  ✓ ' + name); }
 async function run(source, options = {}) {
   const output = [];
   const answers = [...(options.answers || [])];
+  const events = [];
   const interpreter = await EPP.run(source, {
     output: (t) => output.push(t),
     input: async () => answers.shift() ?? '',
     delay: async () => {},
+    frame: async () => {},
     pythonExecutor: options.pythonExecutor,
+    keys: options.keys || {},
+    maxFrames: options.maxFrames || 20,
+    onGame: (event) => events.push(event),
   });
-  return { output, interpreter };
+  return { output, interpreter, events };
 }
 
 async function expectError(name, source, pattern, options) {
@@ -764,5 +772,322 @@ console.log('\n--- Dev Build 6: Exact Equality ---');
   assert.deepEqual([...output], ['different']);
   ok('is not exactly equal to: case-sensitive difference detected');
 }
+
+// ============================================================
+// Release 1.2 — Encryption++ (the E++ Vault)
+// ============================================================
+console.log('\nRelease 1.2: Encryption++ (the E++ Vault)');
+
+const VAULT_KEY = Uint8Array.from({ length: 32 }, (_, i) => i);
+
+{
+  const hex = (bytes) => Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  assert.equal(hex(EPP.Vault.sha256(EPP.Vault.utf8Encode('abc'))),
+    'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+  assert.equal(hex(EPP.Vault.hmacSha256(EPP.Vault.utf8Encode('key'), EPP.Vault.utf8Encode('The quick brown fox jumps over the lazy dog'))),
+    'f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8');
+  ok('SHA-256 and HMAC-SHA256 match the published test vectors');
+}
+
+{
+  // RFC 8439 section 2.3.2 — the reference ChaCha20 block.
+  const nonce = Uint8Array.from([0, 0, 0, 9, 0, 0, 0, 0x4a, 0, 0, 0, 0]);
+  const block = EPP.Vault.chacha20Block(VAULT_KEY, nonce, 1);
+  const hex = Array.from(block).map(b => b.toString(16).padStart(2, '0')).join('');
+  assert.equal(hex, '10f1e7e4d13b5915500fdd1fa32071c4c7d1f4c733c068030422aa9ac3d46c4ed2826446079faa0914c2d705d98b02a2b5129cd1de164eb9cbd083e8a2503c4e');
+  ok('ChaCha20 matches the RFC 8439 block test vector');
+}
+
+{
+  const plaintext = 'say "Hello, World!"\nnote [unicode ✓ 漢字]\nsay 1 plus 1\n';
+  const sealed = EPP.Vault.encryptText(plaintext, VAULT_KEY);
+  assert.ok(EPP.Vault.looksLikeVault(sealed));
+  assert.equal(EPP.Vault.decryptText(sealed, VAULT_KEY), plaintext);
+  assert.ok(!sealed.includes('Hello'), 'ciphertext must not contain the source');
+  assert.ok(!/encrypt|key|vault/i.test(sealed), 'the file must not announce the scheme');
+  ok('a sealed project opens with its key and leaks nothing readable');
+}
+
+{
+  const sealed = EPP.Vault.encryptText('say "secret"', VAULT_KEY);
+  const otherKey = EPP.Vault.generateKey();
+  assert.throws(() => EPP.Vault.decryptText(sealed, otherKey), (e) => e.code === 'E520');
+  const tampered = EPP.Vault.base64Decode(sealed);
+  tampered[30] ^= 0x01;
+  assert.throws(() => EPP.Vault.decryptText(EPP.Vault.base64Encode(tampered), VAULT_KEY), (e) => e.code === 'E520');
+  assert.throws(() => EPP.Vault.decryptText('say "plain text"', VAULT_KEY), (e) => e.code === 'E511');
+  ok('wrong keys and edited files are rejected (E520), plaintext is not a vault (E511)');
+}
+
+{
+  const sealedA = EPP.Vault.encryptText('say "first"', VAULT_KEY);
+  const second = EPP.Vault.generateKey();
+  const sealedB = EPP.Vault.encryptText('say "second"', second);
+  const ring = new EPP.Vault.Keyring(new EPP.Vault.MemoryKeyStore());
+  const made = await ring.createKeyFor('game.eppl');
+  assert.equal(typeof made.key, 'string');
+  await ring.importJson({ keys: [{ id: 'a', project: 'game.eppl', key: EPP.Vault.base64Encode(VAULT_KEY), createdAt: '2026-01-01T00:00:00Z' }] });
+  await ring.importJson({ keys: [{ id: 'b', project: 'game.eppl', key: EPP.Vault.base64Encode(second), createdAt: '2026-01-02T00:00:00Z' }] });
+  const openA = await ring.openVault(sealedA, 'game.eppl');
+  const openB = await ring.openVault(sealedB, 'game.eppl');
+  assert.equal(openA.text, 'say "first"');
+  assert.equal(openB.text, 'say "second"');
+  assert.ok(openA.tried <= 3 && openB.tried <= 3, 'tried ' + openA.tried + '/' + openB.tried);
+  ok('the keyring tries every saved key until a project opens');
+}
+
+{
+  const ring = new EPP.Vault.Keyring(new EPP.Vault.MemoryKeyStore());
+  const made = await ring.createKeyFor('demo.enppl');
+  assert.equal(made.record.project, 'demo.enppl');
+  assert.equal(made.record.fingerprint, EPP.Vault.fingerprint(made.key));
+  const exported = await ring.exportJson();
+  const other = new EPP.Vault.Keyring(new EPP.Vault.MemoryKeyStore());
+  const added = await other.importJson(exported);
+  assert.equal(added, 1);
+  assert.equal(await other.keyCount(), 1);
+  const missing = await new EPP.Vault.Keyring(new EPP.Vault.MemoryKeyStore()).openVault(
+    EPP.Vault.encryptText('say "x"', VAULT_KEY), 'x.enppl');
+  assert.equal(missing.ok, false);
+  ok('keys can be exported, imported and counted per browser');
+}
+
+// ============================================================
+// Release 1.2 — Game library
+// ============================================================
+console.log('\nRelease 1.2: Game library');
+
+{
+  const { output, interpreter, events } = await run(
+    'add the "Game" library\n' +
+    'set the game window to 640 by 480\n' +
+    'set the game background to "night"\n' +
+    'create the actor \'hero\' with the image "hero.png"\n' +
+    'put the actor \'hero\' at 100 and 120\n' +
+    '\'hero\' move right "10"\n' +
+    'show the actor \'hero\'\n' +
+    'say \'hero\'\n'
+  );
+  assert.deepEqual([...output], ['hero']);
+  const hero = interpreter.actors.get('hero');
+  assert.equal(hero.x, 110);
+  assert.equal(hero.y, 120);
+  assert.equal(interpreter.game.width, 640);
+  assert.equal(interpreter.game.background, 'night');
+  assert.ok(events.some(e => e.action === 'create' && e.actor.name === 'hero'));
+  ok('actors are created with an image, placed, moved and named like a variable');
+}
+
+{
+  const { output } = await run(
+    'add the "Game" library\n' +
+    'create the actor \'hero\' with the image "a.png"\n' +
+    'put the actor \'hero\' at 10 and 10\n' +
+    'create the actor \'gem\' with the image "b.png"\n' +
+    'put the actor \'gem\' at 40 and 10\n' +
+    'if \'hero\' is touching \'gem\' then say "touching" otherwise say "apart"\n' +
+    'put the actor \'gem\' at 400 and 400\n' +
+    'if \'hero\' is touching \'gem\' then say "touching" otherwise say "apart"\n' +
+    'if \'hero\' is touching \'ghost\' then say "yes" otherwise say "no ghost"\n'
+  );
+  assert.deepEqual([...output], ['touching', 'apart', 'no ghost']);
+  ok('is touching compares two actors and simply ignores unknown names');
+}
+
+{
+  const { output, interpreter } = await run(
+    'add the "Game" library\n' +
+    'create the actor \'hero\' with the image "a.png"\n' +
+    'put the actor \'hero\' at 0 and 0\n' +
+    'play the game\n' +
+    '  \'hero\' move right "5"\n' +
+    '  if \'hero\' is touching \'hero\' then stop the game\n' +
+    'end the game\n' +
+    'say "loop finished"\n'
+  );
+  assert.deepEqual([...output], ['loop finished']);
+  assert.equal(interpreter.game.frames, 1);
+  assert.equal(interpreter.actors.get('hero').x, 5);
+  ok('play the game runs frame by frame and stop the game ends it');
+}
+
+{
+  EPP.Libraries.hideForDistribution(['Game', 'ImprovedWait']);
+  await expectError('the Game library is not in a distribution build',
+    'add the "Game" library\ncreate the actor \'a\' with the image "x"\n',
+    /not included in this build/);
+  await expectError('ImprovedWait is left out of E++.zip and says so',
+    'add the "ImprovedWait" library', /not included in this build/);
+  EPP.Libraries.showAll();
+  assert.ok(EPP.Libraries.isAvailable('Game'));
+}
+
+// ============================================================
+// Release 1.2 — Keyboard library
+// ============================================================
+console.log('\nRelease 1.2: Keyboard library');
+
+{
+  assert.equal(EPP.Keys.normalize('Up arrow'), 'ArrowUp');
+  assert.equal(EPP.Keys.normalize('arrow up'), 'ArrowUp');
+  assert.equal(EPP.Keys.normalize('SPACE'), ' ');
+  assert.equal(EPP.Keys.normalize('a'), 'a');
+  const tracker = new EPP.Keys.Tracker();
+  tracker.down.ArrowUp = true;
+  assert.equal(tracker.isDown('up arrow'), true);
+  assert.equal(tracker.isDown('down arrow'), false);
+  assert.equal(tracker.anyDown(), true);
+  ok('key names normalise and the tracker knows what is held down');
+}
+
+{
+  const { output } = await run(
+    'add the "Keyboard" library\n' +
+    'if the "Up arrow" key is pressed then say "up"\n' +
+    'if the "space" key is pressed then say "jump"\n' +
+    'if the "down arrow" key is not pressed then say "not down"\n' +
+    'if the "p" key is pressed then say "p"\n',
+    { keys: { ArrowUp: true, ' ': true, p: true } }
+  );
+  assert.deepEqual([...output], ['up', 'jump', 'not down', 'p']);
+  ok('the "Up arrow" key is pressed works for arrows, space and letters');
+}
+
+{
+  // Quotes around the key name are optional: the sentence reads the same.
+  const { output } = await run(
+    'add the "Keyboard" library\n' +
+    'if the Up arrow key is pressed then say "up"\n' +
+    'if the space key is pressed then say "jump"\n' +
+    'if the left arrow key is not pressed then say "not left"\n' +
+    'if the a key is pressed then say "a"\n',
+    { keys: { ArrowUp: true, ' ': true, a: true } }
+  );
+  assert.deepEqual([...output], ['up', 'jump', 'not left', 'a']);
+  ok('key names work without quotes too');
+}
+
+{
+  const { output } = await run(
+    'add the "Keyboard" library\nsay "last key: " plus the key pressed\n',
+    { keys: {} }
+  );
+  assert.deepEqual([...output], ['last key: ']);
+  ok('the key pressed reads the most recent key');
+}
+
+await expectError('key checks need the Keyboard library',
+  'if the "Up arrow" key is pressed then say "up"', /Keyboard library/);
+
+// ============================================================
+// Release 1.2 — ImprovedWait and ImprovedWaitLite
+// ============================================================
+console.log('\nRelease 1.2: library registry');
+
+{
+  // The classic libraries and the 1.2 ones have to agree on their names.
+  assert.equal(EPP.Libraries.canonical('strings'), 'Text');
+  assert.equal(EPP.Libraries.canonical('time'), 'Time');
+  assert.equal(EPP.Libraries.canonical('files'), 'Files');
+  assert.equal(EPP.Libraries.canonical('system'), 'System');
+  assert.equal(EPP.Libraries.canonical('colors'), 'Colors');
+  assert.equal(EPP.Libraries.canonical('console'), 'Console');
+  assert.equal(EPP.Libraries.canonical('improved wait lite'), 'ImprovedWaitLite');
+  assert.equal(EPP.Libraries.canonical('improved wait'), 'ImprovedWait');
+  ok('every library name resolves, including the classic ones');
+
+  // ImprovedWait is the superset: it owns the lite features too.
+  const owners = EPP.Libraries.ownersOf('wait until');
+  assert.ok(owners.indexOf('ImprovedWaitLite') !== -1 && owners.indexOf('ImprovedWait') !== -1);
+  ok('ImprovedWait owns every ImprovedWaitLite feature');
+
+  const actorOwners = EPP.Libraries.ownersOf('pause the actor');
+  assert.deepEqual(actorOwners, ['ImprovedWait']);
+  ok('actor control belongs to ImprovedWait alone');
+}
+
+{
+  // An actor size is a multiplier; a huge number is a mistake worth explaining.
+  const { output } = await run([
+    'add library "Game"',
+    "create the actor 'hero' with the image \"hero.png\"",
+    "set the size of the actor 'hero' to 2"
+  ].join('\n'));
+  assert.equal(output.length, 0);
+  ok('a sensible actor size is accepted');
+
+  await expectError('an actor size that is really pixels is refused',
+    ['add library "Game"', "create the actor 'hero' with the image \"hero.png\"",
+     "set the size of the actor 'hero' to 72"].join('\n'),
+    /multiplier/i);
+}
+
+console.log('\nRelease 1.2: ImprovedWait / ImprovedWaitLite');
+
+{
+  const { output } = await run(
+    'add library "ImprovedWaitLite"\n' +
+    'wait 1 second as \'intro\'\n' +
+    'wait 1 second and then say "then ran"\n' +
+    'define \'ready\' as 5\n' +
+    'wait at most 2 seconds until \'ready\' is equal to 5\n' +
+    'say "done"\n'
+  );
+  assert.deepEqual([...output], ['then ran', 'done']);
+  ok('named waits, wait ... and then ..., and wait at most ... until ...');
+}
+
+{
+  await expectError('wait until needs a variable that exists',
+    'add library "ImprovedWaitLite"\nwait at most 1 second until \'ghost\' is equal to 1',
+    /has not been defined/);
+}
+
+{
+  const { output } = await run(
+    'add library "ImprovedWaitLite"\n' +
+    'wait 0.1 seconds as \'short\'\n' +
+    'cancel the wait \'short\'\n' +
+    'say "cancelled"\n'
+  );
+  assert.deepEqual([...output], ['cancelled']);
+  ok('cancel the wait stops a named wait');
+}
+
+await expectError('wait for an actor needs ImprovedWait, not ImprovedWaitLite',
+  'add library "ImprovedWaitLite"\nwait for the actor \'hero\' to finish',
+  /ImprovedWait library/);
+
+{
+  const { output } = await run(
+    'add library "ImprovedWait"\n' +
+    'add the "Game" library\n' +
+    'create the actor \'hero\' with the image "a.png"\n' +
+    'stop the actor \'hero\'\n' +
+    'wait for the actor \'hero\' to finish\n' +
+    'say "actor finished"\n'
+  );
+  assert.deepEqual([...output], ['actor finished']);
+  ok('ImprovedWait waits for an actor and can stop it from somewhere else');
+}
+
+{
+  const { output } = await run(
+    'add library "ImprovedWait"\n' +
+    'add the "Game" library\n' +
+    'create the actor \'enemy\' with the image "a.png"\n' +
+    'pause the actor \'enemy\'\n' +
+    '\'enemy\' move right "10"\n' +
+    'resume the actor \'enemy\'\n' +
+    '\'enemy\' move right "10"\n'
+  );
+  const state = EPP.Libraries.ownersOf('pause the actor');
+  assert.deepEqual([...output], []);
+  assert.ok(state.includes('ImprovedWait'));
+  ok('a paused actor ignores movement until it is resumed');
+}
+
+// Restore the full library set for any later test.
+EPP.Libraries.showAll();
 
 console.log('\nAll ' + passed + ' E++ test groups passed.');

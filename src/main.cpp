@@ -1,3 +1,4 @@
+#include "vault.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "interpreter.hpp"
@@ -9,7 +10,7 @@
 
 void print_banner() {
     std::cout << "=========================================================\n";
-    std::cout << "   E++ Programming Language [1.1 Workspace Patch 2]     \n";
+    std::cout << "   E++ Programming Language [1.2 Encryption++]     \n";
     std::cout << "   \"Looks like English, feels like english, and is english\"\n";
     std::cout << "=========================================================\n";
 }
@@ -22,6 +23,12 @@ void print_help() {
     std::cout << "  epp                     Start the interactive E++ REPL\n";
     std::cout << "  epp --help, -h          Show this help message\n";
     std::cout << "  epp --version, -v       Show version info\n";
+    std::cout << "\nSealed projects (Release 1.2):\n";
+    std::cout << "  epp --key <64 hex> <file.enpp>       Open with one key\n";
+    std::cout << "  epp --keyring <keys.json> <file>     Try every key in a keyring\n";
+    std::cout << "  epp --new-key                        Print a fresh vault key\n";
+    std::cout << "  epp --encrypt <in> -o <out> [--key]  Seal a project\n";
+    std::cout << "  epp --decrypt <file> [--key]         Print a sealed project\n";
     std::cout << "\nExamples:\n";
     std::cout << "  say \"Hello, World!\"\n";
     std::cout << "  say 1 plus 1\n";
@@ -123,7 +130,36 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    std::string arg1 = argv[1];
+    // Pull the vault flags out first so they work before or after the file.
+    std::string key_hex;
+    std::string keyring_path;
+    std::vector<std::string> args;
+    for (int i = 0; i < argc; i++) {
+        std::string arg = argv[i];
+        if (arg == "--key" && i + 1 < argc) { key_hex = argv[++i]; continue; }
+        if (arg == "--keyring" && i + 1 < argc) { keyring_path = argv[++i]; continue; }
+        args.push_back(arg);
+    }
+
+    std::vector<epp::VaultKey> keys;
+    epp::VaultKey single_key{};
+    bool have_single_key = false;
+    if (!key_hex.empty()) {
+        if (!epp::key_from_hex(key_hex, single_key)) {
+            std::cerr << "[E++ Error E522: Bad Key] --key needs 64 hex characters (a 32-byte E++ vault key).\n";
+            return 1;
+        }
+        have_single_key = true;
+        keys.push_back(single_key);
+    }
+    std::vector<epp::VaultKey> from_keyring = epp::load_keyring(keyring_path);
+    keys.insert(keys.end(), from_keyring.begin(), from_keyring.end());
+    std::vector<epp::VaultKey> from_env = epp::keyring_from_environment();
+    keys.insert(keys.end(), from_env.begin(), from_env.end());
+    if (!keys.empty()) epp::set_keyring(keys);
+
+    std::string arg1 = args[1];
+
     if (arg1 == "-h" || arg1 == "--help") {
         print_help();
         return 0;
@@ -133,26 +169,40 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    // Fresh key for sealing a project from the command line.
+    if (arg1 == "--new-key") {
+        epp::VaultKey fresh = epp::random_key();
+        std::string hex = epp::to_hex(std::vector<uint8_t>(fresh.begin(), fresh.end()));
+        std::cout << hex << "\n";
+        std::cerr << "Key fingerprint: " << epp::fingerprint(fresh) << "\n";
+        return 0;
+    }
+
     // Encryption tool
-    if (arg1 == "--encrypt" && argc >= 3) {
-        std::string src_path = argv[2];
+    if (arg1 == "--encrypt" && args.size() >= 3) {
+        std::string src_path = args[2];
         std::ifstream f(src_path);
         if (!f.is_open()) {
             std::cerr << "Error: Could not open file '" << src_path << "'\n";
             return 1;
         }
         std::stringstream buf; buf << f.rdbuf();
-        std::string encrypted = epp::encrypt_epp(buf.str());
-        std::string out_path = (argc >= 5 && std::string(argv[3]) == "-o") ? argv[4] : src_path;
+        epp::VaultKey key = have_single_key ? single_key : epp::random_key();
+        std::string encrypted = epp::encrypt_epp(buf.str(), key);
+        std::string out_path = src_path;
+        if (args.size() >= 5 && (args[3] == "-o" || args[3] == "--output")) out_path = args[4];
         std::ofstream out(out_path);
         out << encrypted;
-        std::cout << "Encrypted " << src_path << " -> " << out_path << " with Release 1.1 millisecond frame key.\n";
+        std::cout << "Sealed " << src_path << " -> " << out_path
+                  << "\nKey (hex): " << epp::to_hex(std::vector<uint8_t>(key.begin(), key.end()))
+                  << "\nFingerprint: " << epp::fingerprint(key)
+                  << "\nKeep the key: the project cannot be opened without it.\n";
         return 0;
     }
 
     // Decryption tool
-    if (arg1 == "--decrypt" && argc >= 3) {
-        std::string src_path = argv[2];
+    if (arg1 == "--decrypt" && args.size() >= 3) {
+        std::string src_path = args[2];
         std::ifstream f(src_path);
         if (!f.is_open()) {
             std::cerr << "Error: Could not open file '" << src_path << "'\n";
@@ -160,7 +210,7 @@ int main(int argc, char* argv[]) {
         }
         std::stringstream buf; buf << f.rdbuf();
         try {
-            std::string decrypted = epp::decrypt_epp(buf.str(), src_path);
+            std::string decrypted = epp::open_vault(buf.str(), src_path);
             std::cout << decrypted << "\n";
             return 0;
         } catch (const std::exception& e) {
@@ -171,8 +221,8 @@ int main(int argc, char* argv[]) {
 
     epp::Interpreter interpreter;
 
-    if (arg1 == "-e" && argc >= 3) {
-        std::string inline_code = argv[2];
+    if (arg1 == "-e" && args.size() >= 3) {
+        std::string inline_code = args[2];
         bool ok = run_code(inline_code, interpreter);
         return ok ? 0 : 1;
     }
@@ -188,6 +238,14 @@ int main(int argc, char* argv[]) {
     std::stringstream buffer;
     buffer << file.rdbuf();
     std::string source = buffer.str();
+    if (epp::is_vault(source)) {
+        try {
+            source = epp::open_vault(source, filepath);
+        } catch (const std::exception& e) {
+            std::cerr << e.what() << "\n";
+            return 1;
+        }
+    }
 
     bool ok = run_code(source, interpreter, filepath);
     return ok ? 0 : 1;

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>E++ Studio | 1.1 Workspace Patch 2</title>
+<title>E++ Studio | 1.2 Encryption++ &amp; Games</title>
 <link rel="stylesheet" href="css/ide.css">
 <style>
   /* Color classes for Terminal */
@@ -282,6 +282,66 @@
     white-space: pre;
     overflow: auto;
   }
+  /* Release 1.2 — game pane */
+  .game-pane {
+    flex: 0 0 auto;
+    border-top: 1px solid rgba(56, 189, 248, 0.35);
+    background: #04070e;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 46%;
+  }
+  .game-pane-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #7dd3fc;
+    background: rgba(14, 165, 233, 0.12);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+  }
+  .game-pane-head #gameStats { margin-left: auto; color: #94a3b8; }
+  #gameCanvas {
+    width: 100%;
+    height: auto;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+    background: #05070d;
+    image-rendering: auto;
+  }
+  .keys-list {
+    max-height: 220px;
+    overflow-y: auto;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #cbd5e1;
+    background: #060a12;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin: 10px 0;
+    line-height: 1.7;
+  }
+  .keys-list .key-row { display: flex; gap: 10px; }
+  .keys-list .key-fp { color: #7dd3fc; }
+  .keys-list .key-project { color: #e2e8f0; flex: 1; }
+  .keys-list .key-when { color: #64748b; }
+  .dialog-note { color: #94a3b8; font-size: 12.5px; line-height: 1.5; margin: 0 0 6px; }
+  .key-chip {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 6px;
+    padding: 2px 7px;
+    margin-right: 6px;
+    color: #7dd3fc;
+  }
 </style>
 </head>
 <body>
@@ -290,7 +350,7 @@
   <div class="brand">
     <div class="logo" aria-hidden="true">E<span>++</span></div>
     <div>
-      <h1>E++ Studio <span class="build-badge">1.1 Workspace Patch 2</span></h1>
+      <h1>E++ Studio <span class="build-badge">1.2 Encryption++ &amp; Games</span></h1>
       <p>Looks like English. Reads like English. Behaves like code.</p>
     </div>
   </div>
@@ -303,8 +363,11 @@
       <button id="btnImport" class="btn" type="button" title="Open or import a .enpp or .enppl file">⤒ Import</button>
       <button id="btnExport" class="btn" type="button" title="Download this file (.enpp or .enppl)">⤓ Export</button>
       <button id="btnZip" class="btn btn-zip" type="button" title="Download E++ C++ sources &amp; runtime bundle">📦 E++.zip</button>
+      <button id="btnImage" class="btn btn-small" type="button" style="display:none;" title="Add an actor image to this game">🖼 Image</button>
+      <button id="btnKeys" class="btn btn-small" type="button" title="Manage this browser's project keys">🔑 Keys</button>
       <button id="btnClear" class="btn" type="button">⌧ Clear</button>
       <input id="importFileInput" type="file" accept=".enpp,.enppl" style="display:none;">
+      <input id="imageFileInput" type="file" accept="image/*" style="display:none;">
     </div>
     <div class="action-group run-actions">
       <button id="btnRun" class="btn btn-run" type="button" title="Run (Ctrl+Enter)">▶ Run</button>
@@ -334,6 +397,10 @@
     <span class="dash-label">Lines of Code:</span>
     <span id="dashLines" class="dash-val">8</span>
   </div>
+  <div class="dash-stat">
+    <span class="dash-label">Project Keys:</span>
+    <span id="dashVault" class="dash-val">0 keys saved</span>
+  </div>
   <div class="dash-rules">
     Rules: <span>No quotes for math</span> • <span>'Var' for variables</span> • <span>"Text" for strings</span>
   </div>
@@ -355,7 +422,7 @@
 
     <!-- Available Libraries -->
     <section class="libraries-panel">
-      <h2>Libraries <span class="head-sub">(1.1 Workspace Patch 2)</span></h2>
+      <h2>Libraries <span class="head-sub">(1.2 Encryption++)</span></h2>
       <p class="panel-note">Humanizer syntax:<br><code>add the "Library" library</code></p>
       
       <div class="library-card">
@@ -429,6 +496,41 @@
         </div>
         <p>Clear screen and real-time terminal stream management.</p>
       </div>
+
+      <p class="panel-note" id="distributionNotice" style="display:none;">This is the <strong>E++.zip</strong> build: Game and ImprovedWait live in the full Studio only. Keyboard and ImprovedWaitLite are here.</p>
+
+      <!-- Release 1.2 libraries -->
+      <div class="library-card" data-library="Game">
+        <div class="lib-card-top">
+          <h3>Game <span>add library "Game"</span></h3>
+          <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Game')">+ Insert</button>
+        </div>
+        <p>The pygame zero of E++: a game window, actors with images, movement, collisions and a game loop. Not inside E++.zip.</p>
+      </div>
+
+      <div class="library-card">
+        <div class="lib-card-top">
+          <h3>Keyboard <span>add library "Keyboard"</span></h3>
+          <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Keyboard')">+ Insert</button>
+        </div>
+        <p><code>if the "Up arrow" key is pressed then ...</code> — arrows, space, enter and every letter. Inside E++.zip.</p>
+      </div>
+
+      <div class="library-card">
+        <div class="lib-card-top">
+          <h3>ImprovedWaitLite <span>add library "ImprovedWaitLite"</span></h3>
+          <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('ImprovedWaitLite')">+ Insert</button>
+        </div>
+        <p>Named waits, <code>wait until</code>, <code>wait at most</code> and <code>wait ... and then ...</code>. Inside E++.zip.</p>
+      </div>
+
+      <div class="library-card" data-library="ImprovedWait">
+        <div class="lib-card-top">
+          <h3>ImprovedWait <span>add library "ImprovedWait"</span></h3>
+          <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('ImprovedWait')">+ Insert</button>
+        </div>
+        <p>Everything in ImprovedWaitLite plus actors: wait for an actor to finish, stop or pause another actor. Not inside E++.zip.</p>
+      </div>
     </section>
 
     <!-- Quick Reference -->
@@ -489,6 +591,15 @@ for I in range 3:
         <span class="console-hint">Real-time output stream</span>
         <button id="btnClearConsole" class="btn btn-small" type="button">Clear</button>
       </div>
+      <!-- Game pane: appears when a program opens the Game library -->
+      <div id="gamePane" class="game-pane" style="display:none;">
+        <div class="game-pane-head">
+          <span id="gameTitle">Game — 800 × 600</span>
+          <span id="gameStats">0 fps</span>
+          <button id="btnGameStop" class="btn btn-small btn-danger-outline" type="button">Stop game</button>
+        </div>
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+      </div>
       <div id="consoleOutput" class="console-output"></div>
 
       <!-- Interactive Ask Input Form -->
@@ -502,7 +613,7 @@ for I in range 3:
 </main>
 
 <footer class="footer">
-  <span><strong>E++ Studio [1.1 Workspace Patch 2]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
+  <span><strong>E++ Studio [1.2 Encryption++]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
   <span>Shortcuts: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run · <kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span>
 </footer>
 
@@ -519,12 +630,40 @@ for I in range 3:
   </form>
 </dialog>
 
+<dialog id="keysDialog" class="file-dialog">
+  <form method="dialog" id="keysDialogForm">
+    <h2>Project Keys</h2>
+    <p class="dialog-note">Every download gets its own random key. Keys stay in this browser (IndexedDB) and never travel inside the file.</p>
+    <div id="keysList" class="keys-list"></div>
+    <div class="dialog-actions">
+      <button id="btnKeysImport" class="btn" type="button">Import keyring…</button>
+      <button id="btnKeysExport" class="btn" type="button">Export keyring</button>
+      <button id="btnKeysClose" class="btn btn-accent" type="button" onclick="document.getElementById('keysDialog').close()">Close</button>
+    </div>
+    <input id="keyringFileInput" type="file" accept=".json,application/json" style="display:none;">
+  </form>
+</dialog>
+
 <div id="toast" class="toast" style="display:none;"></div>
 
+<!-- Release 1.2 runtime modules. These are shared with the headless
+     test-suite, so the Studio and `npm test` run the same engine. -->
+<script src="js/libraries.js"></script>
+<script src="js/keyboard.js"></script>
+<script src="js/vault.js"></script>
+<script src="js/game-library.js"></script>
 <script>
 // ==========================================
 // E++ Pure & Fast In-Browser Engine + Python
 // ==========================================
+
+// tools/build-zip.mjs writes `window.EPP_DISTRIBUTION = true` into the copy of
+// this page that ships in E++.zip. The Game library needs a canvas and the
+// ImprovedWait actor engine is the biggest module in the release, so both stay
+// out of the standalone bundle and say why in plain English.
+if (window.EPP_DISTRIBUTION && window.EPP && window.EPP.Libraries) {
+  window.EPP.Libraries.hideForDistribution(['Game', 'ImprovedWait']);
+}
 
 const DEFAULT_FILES = [
   {
@@ -542,7 +681,7 @@ say "1 + 1"`
   },
   {
     name: 'release_showcase.enppl',
-    content: `note [E++ 1.1 Workspace Patch 2 Grand Showcase (.enppl)]
+    content: `note [E++ 1.2 Encryption++ Grand Showcase (.enppl)]
 add the "Colors" library
 add the "Time" library
 add the "Math" library
@@ -553,7 +692,7 @@ add the "System" library
 add the "Python" library
 
 say cyan "========================================================="
-say cyan "         Welcome to E++ 1.1 Workspace Patch 2!           "
+say cyan "         Welcome to E++ 1.2 Encryption++!           "
 say cyan "========================================================="
 
 note [System & Time Diagnostics]
@@ -571,19 +710,19 @@ say "Trimmed:", the trim of 'Announcement'
 say "Uppercase:", the uppercase of the trim of 'Announcement'
 
 note [File Persistence in Virtual IDE]
-write "1.1 Workspace Patch 2 verified on: " to file "showcase_audit.log"
+write "1.2 Encryption++ verified on: " to file "showcase_audit.log"
 append the current date to file "showcase_audit.log"
 read the file "showcase_audit.log" and save the output as 'Audit'
 say "Audit log content:", 'Audit'
 
 note [Python Engine Bridge]
-let 'EppVersion' be "1.1.1"
+let 'EppVersion' be "1.2"
 run the python code:
 print(f"[Python Subsystem] Connected with E++ v{EppVersion}")
 import math
 print(f"[Python Subsystem] Computed 10! = {math.factorial(10)}")
 
-say green "✓ All 1.1 Workspace Patch 2 tests completed with 100% success!"`
+say green "✓ All 1.2 Encryption++ tests completed with 100% success!"`
   },
   {
     name: 'python_demo.enppl',
@@ -607,7 +746,7 @@ run the python code "print('E++ says:', greeting)"`
     content: `note [Strings Library in E++ (.enppl)]
 add the "Strings" library
 
-let 'Message' be "Hello, E++ 1.1 Workspace Patch 2!"
+let 'Message' be "Hello, E++ 1.2 Encryption++!"
 say "Original message:", 'Message'
 say "Length of message:", the length of 'Message'
 say "Uppercase:", the uppercase of 'Message'
@@ -645,7 +784,7 @@ say "System Platform:", the platform
 say "Operating System:", the os
 
 note [Writing and reading in the IDE filesystem:]
-write "E++ 1.1 Workspace Patch 2 is lightning fast!" to file "notes.txt"
+write "E++ 1.2 Encryption++ is lightning fast!" to file "notes.txt"
 read the file "notes.txt" and save the output as 'ReadBack'
 say "Read back from file:", 'ReadBack'`
   },
@@ -699,10 +838,84 @@ say "Hello ", "World! ", "Welcome to E++!"`
 
 ask "What is your name?" and save the output as 'Name'
 say "Hello ", 'name', ", Welcome to E++!"`
+  },
+  {
+    name: 'game_showcase.enppl',
+    hideInDistribution: true,
+    content: `note [E++ 1.2 — the Game library: the pygame zero of E++.]
+note [Press the Image button, type an actor name, pick a picture — the name]
+note [then behaves like a variable that loads that image.]
+add the "Game" library
+add the "Keyboard" library
+add the "ImprovedWaitLite" library
+
+set the game window to 640 by 480
+set the game background to "night"
+
+create the actor 'hero' with the image "hero.png"
+create the actor 'gem' with the image "gem.png"
+put the actor 'hero' at 0 and 120
+put the actor 'gem' at 0 and -120
+set the size of the actor 'hero' to 2
+
+let 'score' be 0
+let 'frames' be 0
+
+note [Everything between play the game and end the game runs once per frame.]
+play the game
+  if the "Up arrow" key is pressed then 'hero' move up "5"
+  if the "Down arrow" key is pressed then 'hero' move down "5"
+  if the "Left arrow" key is pressed then 'hero' move left "5"
+  if the "Right arrow" key is pressed then 'hero' move right "5"
+
+  note [The gem drifts towards the hero, so the demo plays itself.]
+  'gem' move down "2"
+
+  if 'hero' is touching 'gem' then
+    let 'score' be 'score' plus 1
+    say "Gem caught! Score: ", 'score'
+    put the actor 'gem' at 0 and -120
+  end if
+
+  let 'frames' be 'frames' plus 1
+
+  note [The demo ends by itself after 600 frames — or press Stop game.]
+  if 'frames' is greater than 600 then stop the game
+end the game
+
+say "Final score: ", 'score'`
+  },
+  {
+    name: 'keyboard_playground.enppl',
+    content: `note [E++ 1.2 — the Keyboard library: any key, by name.]
+add the "Keyboard" library
+add the "ImprovedWaitLite" library
+
+say "Hold a key down while this program runs!"
+wait 2 seconds as 'look at the keyboard'
+say "Two seconds are up. Here is what is held down right now:"
+
+if the "Up arrow" key is pressed then say "Up arrow: pressed."
+otherwise say "Up arrow: not pressed."
+
+if the "a" key is pressed then say "The letter a: pressed."
+otherwise say "The letter a: not pressed."
+
+if the "Space" key is pressed then say "Space bar: pressed."
+otherwise say "Space bar: not pressed."
+
+say "The most recent key was: ", the key pressed
+
+note [ImprovedWaitLite adds named waits, deadlines and wait ... and then ...]
+wait 1 second and then say "That pause ran its statement after one second."
+say "Hold the Left arrow for a second..."
+wait at most 3 seconds until the "Left arrow" key is pressed
+say "Done — the Left arrow finished the program."`
   }
 ];
 
 // File Storage (.enpp & .enppl)
+const DEFAULTS_VERSION = '1.2';
 let files = {};
 let currentFileName = 'hello.enpp';
 let fileDialogMode = 'new';
@@ -725,16 +938,40 @@ function initStorage() {
     restoreDefaultFiles(false);
   } else {
     currentFileName = Object.keys(files)[0];
+    addNewDefaults();
   }
+}
+
+/**
+ * A release can add example files without touching whatever the reader was
+ * working on: only files that do not exist yet are copied in.
+ */
+function addNewDefaults() {
+  const seen = localStorage.getItem('epp_defaults_version');
+  if (seen === DEFAULTS_VERSION) return;
+  availableDefaultFiles().forEach(f => {
+    if (files[f.name] === undefined) files[f.name] = f.content;
+  });
+  localStorage.setItem('epp_defaults_version', DEFAULTS_VERSION);
+  saveStorage();
 }
 
 function saveStorage() {
   localStorage.setItem('epp_files_release_1_0', JSON.stringify(files));
 }
 
+/**
+ * The E++.zip build leaves two libraries out, so it also leaves out the
+ * example that cannot run there. Everything else is identical.
+ */
+function availableDefaultFiles() {
+  if (window.EPP_DISTRIBUTION) return DEFAULT_FILES.filter(f => !f.hideInDistribution);
+  return DEFAULT_FILES;
+}
+
 function restoreDefaultFiles(notify = true) {
   files = {};
-  DEFAULT_FILES.forEach(f => { files[f.name] = f.content; });
+  availableDefaultFiles().forEach(f => { files[f.name] = f.content; });
   currentFileName = 'hello.enpp';
   saveStorage();
   renderFileList();
@@ -773,22 +1010,33 @@ function renderFileList() {
   });
 }
 
-function loadFile(name) {
+async function loadFile(name) {
+  // Leaving a project always stops its game.
+  if (activeEvaluator) activeEvaluator.cancel();
+  if (activeGameHost) activeGameHost.stop();
+  showGamePane(false);
   if (currentFileName && currentFileName !== name && files[currentFileName] !== undefined) {
     files[currentFileName] = document.getElementById('editor').value;
     saveStorage();
   }
   currentFileName = name;
   let fileContent = files[name] || '';
-  if (fileContent.trim().startsWith('call ENCRYPTION_KEY')) {
+
+  // A project opened from disk arrives as a vault. Import already unlocks it,
+  // but a file restored from an old localStorage entry may still be sealed.
+  if (isEncryptedProject(fileContent)) {
     try {
-      fileContent = decryptEpp(fileContent, name);
+      const result = await decryptProject(fileContent, name);
+      fileContent = result.text;
       files[name] = fileContent;
       saveStorage();
-    } catch (e) {
-      console.warn('Transparent decryption failed:', e);
+    } catch (error) {
+      fileContent = '';
+      showDeterministicError(error);
+      showToast('This project could not be unlocked with the keys saved here.', true);
     }
   }
+
   document.getElementById('editor').value = fileContent;
   document.getElementById('currentFileName').innerText = name;
   document.getElementById('statusFile').innerText = name;
@@ -797,12 +1045,40 @@ function loadFile(name) {
   updateDashboard();
   updateLineNumbers();
   renderFileList();
+  updateKeyBadge();
+}
+
+const LIBRARY_PATTERNS = [
+  ['Python', /add\s+(?:the\s+)?["']?python["']?\s+library/i],
+  ['Math', /add\s+(?:the\s+)?["']?math["']?\s+library/i],
+  ['Random', /add\s+(?:the\s+)?["']?random["']?\s+library/i],
+  ['Strings', /add\s+(?:the\s+)?["']?(?:strings|text)["']?\s+library/i],
+  ['Time', /add\s+(?:the\s+)?["']?time["']?\s+library/i],
+  ['Files', /add\s+(?:the\s+)?["']?files["']?\s+library/i],
+  ['System', /add\s+(?:the\s+)?["']?system["']?\s+library/i],
+  ['Colors', /add\s+(?:the\s+)?["']?colors["']?\s+library/i],
+  ['Console', /add\s+(?:the\s+)?["']?console["']?\s+library/i],
+  ['Game', /add\s+(?:the\s+)?["']?game["']?\s+library/i],
+  ['Keyboard', /add\s+(?:the\s+)?["']?keyboard["']?\s+library/i],
+  ['ImprovedWaitLite', /add\s+(?:the\s+)?["']?improved\s*wait\s*lite["']?\s+library/i],
+  ['ImprovedWait', /add\s+(?:the\s+)?["']?improved\s*wait["']?\s+library/i]
+];
+
+function librariesIn(content) {
+  const found = [];
+  LIBRARY_PATTERNS.forEach(([name, pattern]) => { if (pattern.test(content)) found.push(name); });
+  // ImprovedWait contains ImprovedWaitLite; do not list the same features twice.
+  return found;
+}
+
+function usesGameLibrary(content) {
+  return /add\s+(?:the\s+)?["']?game["']?\s+library/i.test(content);
 }
 
 function updateDashboard() {
   const content = document.getElementById('editor').value;
   const isEnppl = currentFileName.endsWith('.enppl') || /add\s+(?:the\s+)?["']?\w+["']?\s+library/i.test(content);
-  
+
   const typeBadge = document.getElementById('dashType');
   typeBadge.className = isEnppl ? 'badge-enppl' : 'badge-enpp';
   typeBadge.innerText = isEnppl ? '.enppl (Libraries)' : '.enpp (Pure)';
@@ -811,20 +1087,18 @@ function updateDashboard() {
   document.getElementById('dashLines').innerText = lines;
   document.getElementById('statusLines').innerText = lines + ' lines';
 
-  // Check libraries
-  let libs = [];
-  if (/add\s+(?:the\s+)?["']?python["']?\s+library/i.test(content)) libs.push('Python');
-  if (/add\s+(?:the\s+)?["']?math["']?\s+library/i.test(content)) libs.push('Math');
-  if (/add\s+(?:the\s+)?["']?random["']?\s+library/i.test(content)) libs.push('Random');
-  if (/add\s+(?:the\s+)?["']?strings["']?\s+library/i.test(content)) libs.push('Strings');
-  if (/add\s+(?:the\s+)?["']?time["']?\s+library/i.test(content)) libs.push('Time');
-  if (/add\s+(?:the\s+)?["']?files["']?\s+library/i.test(content)) libs.push('Files');
-  if (/add\s+(?:the\s+)?["']?system["']?\s+library/i.test(content)) libs.push('System');
-  if (/add\s+(?:the\s+)?["']?colors["']?\s+library/i.test(content)) libs.push('Colors');
-  if (/add\s+(?:the\s+)?["']?console["']?\s+library/i.test(content)) libs.push('Console');
+  const libs = librariesIn(content);
   const libText = libs.length > 0 ? libs.join(', ') : 'None';
   document.getElementById('dashLibs').innerText = libText;
   document.getElementById('statusLibraries').innerText = 'Libraries: ' + libText;
+
+  // Release 1.2: the image button only makes sense for a Game project.
+  const imageButton = document.getElementById('btnImage');
+  if (imageButton) {
+    const gameAvailable = !(window.EPP && window.EPP.Libraries && !window.EPP.Libraries.isAvailable('Game'));
+    imageButton.style.display = (usesGameLibrary(content) && gameAvailable) ? '' : 'none';
+  }
+  updateKeyBadge();
 }
 
 function updateLineNumbers() {
@@ -924,18 +1198,29 @@ function deleteCurrentFile() {
   showToast('File deleted.');
 }
 
-function exportCurrentFile() {
+/**
+ * Export = seal with a brand new key for this project.
+ * The plaintext stays in this browser only; the file that leaves the Studio
+ * is sealed: no readable code, only a block of base64 that a saved key opens.
+ */
+async function exportCurrentFile() {
   let fileNameToExport = currentFileName.replace(/\.txt$/i, '');
   if (!fileNameToExport.endsWith('.enpp') && !fileNameToExport.endsWith('.enppl')) {
     fileNameToExport += '.enpp';
   }
   const rawContent = document.getElementById('editor').value;
-  // Transparently encrypt under the hood with Release 1.1 randomized frame encryption
-  const encryptedContent = rawContent.trim().startsWith('call ENCRYPTION_KEY')
-    ? rawContent
-    : encryptEpp(rawContent);
-  // Use application/octet-stream so browsers never append .txt extension
-  const blob = new Blob([encryptedContent], { type: 'application/octet-stream' });
+  if (!rawContent.trim()) { showToast('There is nothing to download yet.', true); return; }
+
+  let sealed;
+  try {
+    sealed = await encryptProject(fileNameToExport, rawContent);
+  } catch (error) {
+    showToast(error.message || 'Could not encrypt this project.', true);
+    return;
+  }
+
+  // application/octet-stream ensures the browser honours the exact extension
+  const blob = new Blob([sealed.text], { type: 'application/octet-stream' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = fileNameToExport;
@@ -946,43 +1231,144 @@ function exportCurrentFile() {
     document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
   }, 100);
-  showToast(`Exported ${fileNameToExport}`);
+  // Keep the plaintext in the local project store so editing carries on.
+  files[currentFileName] = rawContent;
+  saveStorage();
+  showToast(`Sealed ${fileNameToExport} with a new key (${sealed.fingerprint}).`);
 }
 
-function handleFileObject(file) {
+/** Reads an image, shrinks it to 256px and returns a data: URL. */
+function imageFileToDataUrl(file, maxSide = 256) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('That image could not be read.'));
+    reader.onload = () => {
+      const original = String(reader.result);
+      let settled = false;
+      const finish = (value) => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
+      // If the browser never fires load or error (an odd format, a very slow
+      // decoder), the original file is still a perfectly good image source.
+      const fallback = setTimeout(() => finish(original), 3000);
+      const img = new Image();
+      img.onerror = () => { clearTimeout(fallback); finish(original); };
+      img.onload = () => {
+        clearTimeout(fallback);
+        try {
+          const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+          const width = Math.max(1, Math.round(img.width * scale));
+          const height = Math.max(1, Math.round(img.height * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          const hasAlpha = /^image\/(png|webp|gif|svg)/i.test(file.type);
+          finish(canvas.toDataURL(hasAlpha ? 'image/png' : 'image/jpeg', 0.86));
+        } catch (error) {
+          finish(original);
+        }
+      };
+      img.src = original;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/** The 🖼 Image button: name the actor, pick the picture, insert the line. */
+let pendingActorName = '';
+
+async function addActorImage() {
+  const fileInput = document.getElementById('imageFileInput');
+  const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+  const typed = pendingActorName || prompt('Name the actor for this image:', 'hero');
+  pendingActorName = '';
+  if (!typed) return;
+  if (!file) {
+    showToast('Pick an image file as well — the actor loads that picture.', true);
+    return;
+  }
+  const actorName = typed.trim().replace(/^'+|'+$/g, '');
+  if (!/^[A-Za-z][A-Za-z0-9 _-]*$/.test(actorName)) {
+    showToast('An actor name has to start with a letter (letters, numbers, spaces, - and _ are fine).', true);
+    return;
+  }
+  const dataUrl = await imageFileToDataUrl(file);
+  const ed = document.getElementById('editor');
+  const line = `create the actor '${actorName}' with the image "${dataUrl}"\n`;
+  const caret = ed.selectionStart || 0;
+  ed.value = ed.value.slice(0, caret) + line + ed.value.slice(caret);
+  ed.selectionStart = ed.selectionEnd = caret + line.length;
+  // A game project is a library project, so it has to be .enppl.
+  if (currentFileName.endsWith('.enpp')) {
+    renameCurrentFile(currentFileName.replace(/\.enpp$/, '.enppl'));
+  }
+  updateDashboard();
+  updateLineNumbers();
+  saveStorage();
+  showToast(`Actor '${actorName}' created — the name now holds its image.`);
+}
+
+async function handleFileObject(file) {
   if (!file) return;
   let fileName = file.name.replace(/\.txt$/i, '');
   if (!fileName.endsWith('.enpp') && !fileName.endsWith('.enppl')) {
     fileName += '.enpp';
   }
-  const reader = new FileReader();
-  reader.onload = function(evt) {
-    let content = evt.target.result;
-    if (content.trim().startsWith('call ENCRYPTION_KEY')) {
-      try {
-        content = decryptEpp(content, fileName);
-      } catch (err) {
-        showToast('Error reading file: ' + (err.message || 'corrupt'), true);
-        return;
-      }
-    }
-    files[fileName] = content;
-    saveStorage();
-    renderFileList();
-    loadFile(fileName);
-    showToast(`Opened ${fileName}`);
-  };
-  reader.readAsText(file);
+  let text;
+  try {
+    text = await readFileText(file);
+  } catch (error) {
+    showToast('That file could not be read.', true);
+    return;
+  }
+
+  if (!isEncryptedProject(text)) {
+    showDeterministicError({
+      code: 'E511',
+      filename: fileName,
+      reason: 'Plain .enpp and .enppl files are not accepted. In E++ 1.2 every downloadable project is encrypted.',
+      help: 'Import a project that was downloaded from the E++ Studio, or copy the code into a new file here.'
+    });
+    showToast('That file is not an encrypted E++ project.', true);
+    return;
+  }
+
+  let plaintext;
+  try {
+    const result = await decryptProject(text, fileName);
+    plaintext = result.text;
+    showToast('Unlocked ' + fileName + ' with a saved key.');
+  } catch (error) {
+    showDeterministicError(error);
+    showToast(error.message || 'No saved key opens this project.', true);
+    return;
+  }
+
+  if (files[fileName] !== undefined) {
+    const base = fileName.replace(/\.(enpp|enppl)$/i, '');
+    const ext = fileName.slice(base.length);
+    let n = 2;
+    let candidate = base + ' (imported)' + ext;
+    while (files[candidate] !== undefined) { candidate = base + ' (imported ' + n + ')' + ext; n += 1; }
+    fileName = candidate;
+  }
+  files[fileName] = plaintext;
+  saveStorage();
+  renderFileList();
+  loadFile(fileName);
 }
 
 function downloadZip() {
   const a = document.createElement('a');
-  a.href = 'epp_language.zip';
-  a.download = 'epp_language.zip';
+  a.href = 'E++.zip';
+  a.download = 'E++.zip';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  showToast('Downloading epp_language.zip...');
+  showToast('Downloading E++.zip (Keyboard and ImprovedWaitLite included)…');
 }
 
 function showToast(msg, isErr = false) {
@@ -1003,94 +1389,199 @@ function escapeHtml(str) {
 }
 
 // ==========================================
-// Release 1.1 Randomized Encryption Engine
+// Release 1.2 — Encryption++ (the E++ Vault)
 // ==========================================
+//
+// Every download gets its own cryptographically random 256-bit key. The key
+// never goes inside the file: it is kept in this browser's IndexedDB, one
+// entry per project, so a project can be downloaded many times and every
+// download still opens. Importing tries every remembered key until one
+// works. The sealing code itself lives in js/vault.js and is shared with the
+// headless test-suite and the command-line engines.
+//
+// Nothing in the file, the UI or the error messages spells out the scheme.
 
-function encryptEpp(plaintext) {
-  const frameKey = BigInt(Date.now());
-  const enc = new TextEncoder();
-  const data = enc.encode(plaintext);
-  const out = new Uint8Array(8 + data.length);
-  const view = new DataView(out.buffer);
-  view.setBigUint64(0, frameKey, false);
+let vaultKeyring = null;
+let vaultReady = false;
 
-  let k = frameKey;
-  const mul = 6364136223846793005n;
-  const add = 1442695040888963407n;
-  const mask = 0xFFFFFFFFFFFFFFFFn;
-
-  for (let i = 0; i < data.length; i++) {
-    k = (k * mul + add) & mask;
-    const keystream = Number((k >> 33n) & 0xFFn);
-    out[8 + i] = data[i] ^ keystream;
-  }
-
-  let binary = '';
-  for (let i = 0; i < out.length; i++) binary += String.fromCharCode(out[i]);
-  return `call ENCRYPTION_KEY\n${btoa(binary)}`;
+function vaultApi() {
+  return (window.EPP && window.EPP.Vault) || null;
 }
 
-function decryptEpp(ciphertext, filename = "<source>") {
-  const lines = ciphertext.trim().split('\n');
-  if (!lines || lines[0].trim() !== 'call ENCRYPTION_KEY') {
-    throw {
-      code: "E501",
-      name: "Unencrypted Source File",
-      filename: filename,
-      line: 1,
-      col: 1,
-      sourceLine: lines[0] || "",
-      reason: ".enpp and .enppl files in Release 1.1 are encrypted and must begin with 'call ENCRYPTION_KEY'.",
-      help: "Save the file with E++ encryption enabled. Plain text files are not permitted."
-    };
+function getKeyring() {
+  const Vault = vaultApi();
+  if (!Vault) return null;
+  if (!vaultKeyring) {
+    const store = (typeof indexedDB !== 'undefined')
+      ? new Vault.IndexedDbKeyStore()
+      : new Vault.MemoryKeyStore();
+    vaultKeyring = new Vault.Keyring(store);
   }
-  const gibberish = lines.slice(1).join('').trim();
-  let binary;
+  return vaultKeyring;
+}
+
+/**
+ * Opens the browser's key store once, on first boot, and shows the count.
+ * The bundled example project has a published key in examples/epp-keys.json so
+ * that the demo file opens on a fresh machine; it is only ever that one key.
+ */
+async function ensureVaultReady() {
+  const ring = getKeyring();
+  if (!ring || vaultReady) return ring;
   try {
-    binary = atob(gibberish);
-  } catch (e) {
-    throw {
-      code: "E502",
-      name: "Corrupted Encrypted Payload",
-      filename: filename,
-      line: 2,
-      col: 1,
-      sourceLine: lines[1] || "",
-      reason: "Failed to decode base64 payload: " + e.message,
-      help: "Ensure the file content has not been altered or truncated."
-    };
+    await ring.allKeys();
+    vaultReady = true;
+    updateKeyBadge();
+  } catch (error) {
+    console.warn('E++ keyring unavailable:', error);
   }
-  if (binary.length < 8) {
-    throw {
-      code: "E502",
-      name: "Corrupted Encrypted Payload",
-      filename: filename,
-      line: 2,
-      col: 1,
-      sourceLine: "",
-      reason: "Payload is too short to contain a valid 64-bit frame key header.",
-      help: "File appears truncated."
-    };
+  try {
+    const response = await fetch('examples/epp-keys.json', { cache: 'no-store' });
+    if (response && response.ok) {
+      const added = await ring.importJson(await response.text());
+      if (added) updateKeyBadge();
+    }
+  } catch (error) {
+    // No example keyring next to the page: nothing to do.
   }
-  const raw = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) raw[i] = binary.charCodeAt(i);
-  const view = new DataView(raw.buffer);
-  const frameKey = view.getBigUint64(0, false);
-
-  let k = frameKey;
-  const mul = 6364136223846793005n;
-  const add = 1442695040888963407n;
-  const mask = 0xFFFFFFFFFFFFFFFFn;
-
-  const dec = new Uint8Array(raw.length - 8);
-  for (let i = 0; i < dec.length; i++) {
-    k = (k * mul + add) & mask;
-    const keystream = Number((k >> 33n) & 0xFFn);
-    dec[i] = raw[8 + i] ^ keystream;
-  }
-  return new TextDecoder().decode(dec);
+  return ring;
 }
 
+async function updateKeyBadge() {
+  const badge = document.getElementById('dashVault');
+  if (!badge) return;
+  const ring = getKeyring();
+  if (!ring) { badge.innerText = 'unavailable'; return; }
+  try {
+    const count = await ring.keyCount();
+    badge.innerText = count + (count === 1 ? ' key' : ' keys') + ' saved';
+  } catch (e) {
+    badge.innerText = 'locked';
+  }
+}
+
+/**
+ * Downloads are always written with a brand new key for this project. The
+ * previous keys stay in the keyring, so older downloads still open.
+ */
+async function encryptProject(name, plaintext) {
+  const Vault = vaultApi();
+  const ring = getKeyring();
+  if (!Vault || !ring) {
+    throw new Error('The encryption runtime is missing. Keep js/vault.js next to index.html.');
+  }
+  const made = await ring.createKeyFor(name);
+  updateKeyBadge();
+  return { text: Vault.encryptText(plaintext, made.key), fingerprint: made.record.fingerprint };
+}
+
+/** Tries every saved key (and the bundled example key) against a vault. */
+async function decryptProject(text, filename) {
+  const Vault = vaultApi();
+  const ring = getKeyring();
+  if (!Vault) {
+    throw new Error('The encryption runtime is missing. Keep js/vault.js next to index.html.');
+  }
+  if (!Vault.looksLikeVault(text)) {
+    throw Object.assign(new Error('This file is not an encrypted E++ project.'), {
+      code: 'E511',
+      filename: filename,
+      reason: 'The file does not look like an E++ vault. Encrypted projects contain only a base64 block.',
+      help: 'Use a .enpp or .enppl file that was downloaded from the E++ Studio.'
+    });
+  }
+  const result = await ring.openVault(text, filename);
+  if (result.ok) {
+    updateKeyBadge();
+    return result;
+  }
+  const tried = result.tried || 0;
+  const error = result.error || {};
+  throw Object.assign(new Error(error.reason || 'No saved key opens this project.'), {
+    code: error.code || 'E521',
+    filename: filename,
+    reason: result.corrupt
+      ? (error.reason || 'This vault is damaged.')
+      : 'None of the ' + tried + ' key' + (tried === 1 ? '' : 's') + ' saved in this browser opens this project.',
+    help: result.corrupt
+      ? (error.help || 'Download the project again to get a complete file.')
+      : 'Open the project in the browser that downloaded it, or import its keyring file (🔑 Keys).'
+  });
+}
+
+/** Back-compat shims: the rest of the Studio calls these. */
+async function encryptEpp(plaintext) {
+  const made = await encryptProject(currentFileName, plaintext);
+  return made.text;
+}
+async function decryptEpp(ciphertext, filename) {
+  const result = await decryptProject(ciphertext, filename || '<source>');
+  return result.text;
+}
+
+function isEncryptedProject(text) {
+  const Vault = vaultApi();
+  return !!(Vault && Vault.looksLikeVault(text));
+}
+
+// Keyring management (export / import / forget)
+async function exportKeyring() {
+  const ring = getKeyring();
+  if (!ring) return;
+  const json = await ring.exportJson();
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'epp-keys.json';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { a.remove(); URL.revokeObjectURL(a.href); }, 100);
+  showToast('Exported epp-keys.json — keep it private.');
+}
+
+/** Blob.text() with a FileReader fallback for older browsers. */
+function readFileText(file) {
+  if (file && typeof file.text === 'function') return file.text();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error || new Error('The file could not be read.'));
+    reader.readAsText(file);
+  });
+}
+
+function importKeyringFile(file) {
+  if (!file) return;
+  readFileText(file).then(async (text) => {
+    try {
+      const added = await getKeyring().importJson(text);
+      updateKeyBadge();
+      showToast(added ? 'Imported ' + added + ' key(s).' : 'Those keys were already saved.');
+    } catch (error) {
+      showToast('That is not an E++ keyring file.', true);
+    }
+  });
+}
+
+async function showKeyringPanel() {
+  const ring = getKeyring();
+  if (!ring) { showToast('The encryption runtime is missing (js/vault.js).', true); return; }
+  const dialog = document.getElementById('keysDialog');
+  const list = document.getElementById('keysList');
+  const keys = await ring.allKeys();
+  list.innerHTML = keys.length
+    ? keys.map(k => {
+        const when = k.createdAt ? String(k.createdAt).slice(0, 10) : '';
+        return '<div class="key-row"><span class="key-fp">' + escapeHtml(k.fingerprint || '??????') +
+          '</span><span class="key-project">' + escapeHtml(k.project || 'project') +
+          '</span><span class="key-when">' + escapeHtml(when) + '</span></div>';
+      }).join('')
+    : '<div class="key-row"><span class="key-project">No keys yet — download a project and one is created for it.</span></div>';
+  if (typeof dialog.showModal === 'function') dialog.showModal();
+  else alert('Keys saved: ' + keys.length);
+}
+
+// ==========================================
 // ==========================================
 // Deterministic Error Diagnostic Engine
 // ==========================================
@@ -1117,6 +1608,14 @@ function formatDeterministicError(err) {
       <div class="err-help"><strong>= Help:</strong> ${escapeHtml(help)}</div>
     </div>
   </div>`;
+}
+
+/** Prints a deterministic error card in the console. */
+function showDeterministicError(err) {
+  const output = document.getElementById('consoleOutput');
+  if (!output) return;
+  output.innerHTML += formatDeterministicError(err);
+  output.scrollTop = output.scrollHeight;
 }
 
 // ==========================================
@@ -1628,18 +2127,99 @@ function executeInBrowserPython(pyCode, envVars, printFn, lineNum = 1) {
 // E++ Pure Evaluator Engine
 // ==========================================
 
+// Shared game state for the current run (the canvas lives in the console card).
+let activeGameHost = null;
+let activeEvaluator = null;
+let keyTracker = null;
+
+function ensureKeyTracker() {
+  if (!keyTracker && window.EPP && EPP.Keys) {
+    keyTracker = new EPP.Keys.Tracker(window);
+  }
+  if (keyTracker) keyTracker.attach(window);
+  return keyTracker;
+}
+
+function ensureGameHost() {
+  const canvas = document.getElementById('gameCanvas');
+  if (!activeGameHost && window.EPP && EPP.GameHost && canvas) {
+    activeGameHost = new EPP.GameHost(canvas);
+  }
+  if (activeGameHost) activeGameHost.attach(canvas);
+  return activeGameHost;
+}
+
+/** Small read-only window into the live game, used by the test-suite. */
+function EPPStudioState() {
+  return { host: activeGameHost, evaluator: activeEvaluator, keyTracker: keyTracker };
+}
+window.EPPStudioState = EPPStudioState;
+
+function showGamePane(show) {
+  const pane = document.getElementById('gamePane');
+  if (pane) pane.style.display = show ? 'flex' : 'none';
+}
+
+function nextFrame() {
+  return new Promise(resolve => {
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => resolve());
+    else setTimeout(resolve, 16);
+  });
+}
+
 class EppEvaluator {
   constructor() {
     this.vars = {};
     this.libs = new Set();
+    this.actors = {};
+    this.timers = {};
+    this.game = { width: 800, height: 600, background: 'night', running: false, frames: 0 };
+    this.cancelled = false;
+    this.keys = ensureKeyTracker();
+    activeEvaluator = this;
   }
 
   norm(name) { return name.toLowerCase().trim(); }
 
+  cancel() { this.cancelled = true; this.game.running = false; }
+
+  requireGame() {
+    this.requireLib('Game', 'the Game library', 0);
+    const host = ensureGameHost();
+    if (!host) {
+      throw Object.assign(new Error('The game runtime is missing.'), {
+        code: 'E301',
+        reason: 'The Game library needs js/game-library.js next to index.html.',
+        help: 'Use the full Studio download (E++.zip leaves the Game library out on purpose).'
+      });
+    }
+    return host;
+  }
+
+  actorOf(name, lineNum) {
+    const key = this.norm(name);
+    if (!this.actors[key]) {
+      throw {
+        code: 'E201',
+        name: 'Unknown Actor',
+        filename: currentFileName,
+        line: lineNum || 1,
+        col: 1,
+        sourceLine: `'${name}'`,
+        reason: `There is no actor called '${name}' yet.`,
+        help: `Create it first: create the actor '${name}' with the image "picture.png" — or press the 🖼 Image button.`
+      };
+    }
+    return this.actors[key];
+  }
+
+  gameHost() { return activeGameHost; }
+
   async run(source, printFn, askFn) {
-    // Check Release 1.1 encryption requirement
-    if (source.trim().startsWith("call ENCRYPTION_KEY")) {
-      source = decryptEpp(source, currentFileName);
+    // A sealed project is opened before it ever reaches the editor; this
+    // guard covers text that was pasted or restored from elsewhere.
+    if (isEncryptedProject(source)) {
+      source = (await decryptProject(source, currentFileName)).text;
     }
 
     const lines = source.split('\n');
@@ -1794,7 +2374,9 @@ class EppEvaluator {
           i++;
           while (i < lines.length) {
             let blkL = lines[i].trim();
-            if (/^end\s+if\b/i.test(blkL)) {
+            // `end if` is the documented closer; a bare `end` closes a block
+            // too, because that is how people naturally write it.
+            if (/^end(\s+if)?\b/i.test(blkL)) {
               break;
             } else if (/^(?:otherwise|else)\b/i.test(blkL)) {
               currentTarget = elseLines;
@@ -1826,12 +2408,101 @@ class EppEvaluator {
         };
       }
 
+      // Release 1.2 — play the game ... end the game (Game library)
+      if (/^play\s+the\s+game\s*:?$/i.test(line)) {
+        this.requireLib('Game', 'play the game', lineNum);
+        const block = [];
+        let j = i + 1;
+        for (; j < lines.length; j++) {
+          const inner = lines[j].trim();
+          if (/^end\s+the\s+game$/i.test(inner)) break;
+          if (inner && !inner.startsWith('note')) block.push({ line: inner, lineNum: j + 1 });
+        }
+        if (j >= lines.length) {
+          throw {
+            code: 'E101',
+            name: 'Unclosed Game Loop',
+            filename: currentFileName,
+            line: lineNum,
+            col: 1,
+            sourceLine: line,
+            reason: 'This "play the game" never ends.',
+            help: 'Close it with: end the game'
+          };
+        }
+        i = j;
+        const host = this.requireGame();
+        showGamePane(true);
+        host.setWindow(this.game.width, this.game.height);
+        host.start(this.game);
+        this.game.running = true;
+        let frames = 0;
+        const startedAt = performance.now();
+        const blockSource = block.map(item => item.line).join('\n');
+        this.setGameStats(0);
+        while (this.game.running && !this.cancelled) {
+          // The body runs through the normal statement runner, so if-blocks,
+          // waits and nested game statements all behave exactly as outside.
+          if (blockSource.trim()) await this.run(blockSource, printFn, askFn);
+          this.game.frames += 1;
+          frames += 1;
+          host.tick();
+          const elapsed = (performance.now() - startedAt) / 1000;
+          if (frames % 15 === 0) this.setGameStats(Math.round(frames / Math.max(elapsed, 0.001)));
+          if (frames > 120000) {
+            this.game.running = false;
+            throw {
+              code: 'E101',
+              name: 'Runaway Game Loop',
+              filename: currentFileName,
+              line: lineNum,
+              col: 1,
+              sourceLine: line,
+              reason: 'The game ran for 120000 frames without stopping.',
+              help: 'Add "stop the game" inside the loop.'
+            };
+          }
+          await nextFrame();
+        }
+        host.stop();
+        this.setGameStats(0, true);
+        continue;
+      }
+
       await this.execStatement(line, lineNum, printFn, askFn);
     }
   }
 
+  setGameStats(fps, finished) {
+    const stats = document.getElementById('gameStats');
+    const title = document.getElementById('gameTitle');
+    if (title) title.innerText = 'Game — ' + this.game.width + ' × ' + this.game.height;
+    if (!stats) return;
+    stats.innerText = finished ? 'stopped' : (fps ? fps + ' fps' : 'starting…');
+  }
+
   async evalCondition(condStr, lineNum, sourceLine) {
     condStr = condStr.trim();
+
+    // Release 1.2 — Keyboard: the "Up arrow" key is pressed
+    // Quotes around the key name are optional: `the Up arrow key is pressed`
+    // reads exactly like the sentence, and means the same thing.
+    let mKey = condStr.match(/^the\s+"([^"]+)"\s+key\s+is\s+(not\s+)?pressed$/i)
+      || condStr.match(/^the\s+([A-Za-z0-9][A-Za-z0-9 ]*?)\s+key\s+is\s+(not\s+)?pressed$/i);
+    if (mKey) {
+      this.requireLib('Keyboard', 'key is pressed', lineNum);
+      const tracker = ensureKeyTracker();
+      const down = tracker ? tracker.isDown(mKey[1]) : false;
+      return mKey[2] ? !down : down;
+    }
+
+    // Release 1.2 — Game: 'hero' is touching 'gem'
+    let mTouch = condStr.match(/^'([^']+)'\s+is\s+(not\s+)?touching\s+'([^']+)'$/i);
+    if (mTouch) {
+      this.requireLib('Game', 'is touching', lineNum);
+      const touching = this.requireGame().touching(mTouch[1], mTouch[3]);
+      return mTouch[2] ? !touching : touching;
+    }
 
     if (/^check\s+if\s+/i.test(condStr)) {
       return this.evalTypeCheck(condStr, lineNum);
@@ -1893,11 +2564,180 @@ class EppEvaluator {
 
     // 1. ADD LIBRARY
     if (lower.startsWith('add ')) {
-      const m = line.match(/^add\s+(?:the\s+)?["']?(\w+)["']?\s+library$/i);
+      const m = line.match(/^add\s+(?:the\s+)?["']?([A-Za-z][A-Za-z ]*?)["']?\s+library$/i);
       if (m) {
-        this.libs.add(this.norm(m[1]));
+        const canonical = (window.EPP && EPP.Libraries) ? EPP.Libraries.canonical(m[1]) : m[1];
+        const name = canonical || m[1];
+        if (window.EPP && EPP.Libraries) {
+          if (!EPP.Libraries.isKnown(name)) {
+            throw {
+              code: 'E301',
+              name: 'Unknown Library',
+              filename: currentFileName,
+              line: lineNum,
+              col: 1,
+              sourceLine: line,
+              reason: `There is no library called "${m[1]}".`,
+              help: 'Available libraries: ' + EPP.Libraries.names().join(', ') + '.'
+            };
+          }
+          if (!EPP.Libraries.isAvailable(name)) {
+            throw {
+              code: 'E302',
+              name: 'Library Not In This Build',
+              filename: currentFileName,
+              line: lineNum,
+              col: 1,
+              sourceLine: line,
+              reason: EPP.Libraries.whyUnavailable(name) || ('The "' + name + '" library is not part of this build.'),
+              help: name === 'ImprovedWait'
+                ? 'Add the "ImprovedWaitLite" library instead — it has every non-game waiting feature.'
+                : 'Use the full E++ Studio download, which includes this library.'
+            };
+          }
+        }
+        this.libs.add(this.norm(name));
         return;
       }
+    }
+
+    // ---------------- Release 1.2 — Game library ----------------
+    // set the game window to 640 by 480
+    let mGame = line.match(/^set\s+the\s+game\s+window\s+to\s+(.+?)\s+by\s+(.+)$/i);
+    if (mGame) {
+      this.requireLib('Game', 'set the game window', lineNum);
+      const width = Math.round(Number(await this.evalExpr(mGame[1], lineNum)));
+      const height = Math.round(Number(await this.evalExpr(mGame[2], lineNum)));
+      if (!width || !height || width < 1 || height < 1) {
+        throw {
+          code: 'E101', name: 'Bad Game Window', filename: currentFileName, line: lineNum, col: 1,
+          sourceLine: line, reason: 'The game window needs a width and a height bigger than zero.',
+          help: 'For example: set the game window to 640 by 480'
+        };
+      }
+      this.game.width = width;
+      this.game.height = height;
+      const host = this.requireGame();
+      host.setWindow(width, height);
+      showGamePane(true);
+      return;
+    }
+
+    // set the game background to "night"
+    mGame = line.match(/^set\s+the\s+game\s+background\s+to\s+(.+)$/i);
+    if (mGame) {
+      this.requireLib('Game', 'set the game background', lineNum);
+      this.game.background = String(await this.evalExpr(mGame[1], lineNum));
+      this.requireGame().setBackground(this.game.background);
+      return;
+    }
+
+    // set the size of the actor 'hero' to 2
+    mGame = line.match(/^set\s+the\s+size\s+of\s+the\s+actor\s+'([^']+)'\s+to\s+(.+)$/i);
+    if (mGame) {
+      this.requireLib('Game', 'set the size of the actor', lineNum);
+      const actor = this.actorOf(mGame[1], lineNum);
+      const size = Number(await this.evalExpr(mGame[2], lineNum));
+      if (!isFinite(size) || size <= 0) {
+        throw {
+          code: 'E101', name: 'Bad Actor Size', filename: currentFileName, line: lineNum, col: 1,
+          sourceLine: line,
+          reason: `"${mGame[2]}" is not an actor size.`,
+          help: `Write it like this: set the size of the actor '${mGame[1]}' to 2`
+        };
+      }
+      if (size > 10) {
+        throw {
+          code: 'E101', name: 'Actor Size Is A Multiplier', filename: currentFileName, line: lineNum, col: 1,
+          sourceLine: line,
+          reason: `An actor size is a multiplier: 1 is its normal size, and ${size} would be ${size} times bigger.`,
+          help: `Try 2 for twice as big. To shrink one, use a number between 0.1 and 1.`
+        };
+      }
+      actor.scale = Math.max(0.05, size);
+      const host = this.requireGame();
+      host.setScale(actor.name, actor.scale);
+      return;
+    }
+
+    // create the actor 'hero' with the image "<source>"
+    mGame = line.match(/^create\s+the\s+actor\s+'([^']+)'\s+with\s+the\s+image\s+"([\s\S]*)"$/i);
+    if (mGame) {
+      this.requireLib('Game', 'create the actor', lineNum);
+      const actorName = mGame[1];
+      const source = mGame[2];
+      const host = this.requireGame();
+      const actor = host.createActor(actorName, source);
+      this.actors[this.norm(actorName)] = actor || { name: actorName, source, x: 0, y: 0, scale: 1, visible: true };
+      // The actor's name behaves like a variable that loads its image.
+      this.vars[this.norm(actorName)] = actorName;
+      showGamePane(true);
+      return;
+    }
+
+    // put the actor 'hero' at 100 and 200
+    mGame = line.match(/^put\s+the\s+actor\s+'([^']+)'\s+at\s+(.+?)\s+and\s+(.+)$/i);
+    if (mGame) {
+      this.requireLib('Game', 'put the actor', lineNum);
+      const actor = this.actorOf(mGame[1], lineNum);
+      const x = Number(await this.evalExpr(mGame[2], lineNum)) || 0;
+      const y = Number(await this.evalExpr(mGame[3], lineNum)) || 0;
+      actor.x = x; actor.y = y;
+      this.requireGame().placeActor(actor.name, x, y);
+      return;
+    }
+
+    // show the actor 'hero' / hide the actor 'hero'
+    mGame = line.match(/^(show|hide)\s+the\s+actor\s+'([^']+)'$/i);
+    if (mGame) {
+      this.requireLib('Game', mGame[1].toLowerCase() + ' the actor', lineNum);
+      const actor = this.actorOf(mGame[2], lineNum);
+      actor.visible = mGame[1].toLowerCase() === 'show';
+      this.requireGame().setVisible(actor.name, actor.visible);
+      return;
+    }
+
+    // pause / resume / stop the actor 'hero', and stop every actor
+    mGame = line.match(/^(pause|resume|stop)\s+the\s+actor\s+'([^']+)'$/i);
+    if (mGame) {
+      const action = mGame[1].toLowerCase();
+      this.requireLib('ImprovedWait', action + ' the actor', lineNum);
+      const actor = this.actorOf(mGame[2], lineNum);
+      if (action === 'pause') actor.paused = true;
+      else if (action === 'resume') { actor.paused = false; actor.stopped = false; }
+      else { actor.paused = true; actor.stopped = true; }
+      this.requireGame().controlActor(actor.name, action);
+      return;
+    }
+    if (/^stop\s+every\s+actor$/i.test(line)) {
+      this.requireLib('ImprovedWait', 'stop every actor', lineNum);
+      Object.keys(this.actors).forEach(key => { this.actors[key].stopped = true; this.actors[key].paused = true; });
+      this.requireGame().controlActor('*', 'stop');
+      return;
+    }
+
+    // stop the game
+    if (/^stop\s+the\s+game$/i.test(line)) {
+      this.requireLib('Game', 'stop the game', lineNum);
+      this.game.running = false;
+      return;
+    }
+
+    // 'hero' move right "4" — actors move with the Draw words
+    mGame = line.match(/^'([^']+)'\s+move\s+(up|down|left|right)\s+"([^"]*)"$/i);
+    if (mGame && this.actors[this.norm(mGame[1])]) {
+      const actor = this.actorOf(mGame[1], lineNum);
+      const pixels = Number(mGame[3]);
+      if (!/^-?\d+(\.\d+)?$/.test(String(mGame[3]).trim())) {
+        throw {
+          code: 'E101', name: 'Bad Move Amount', filename: currentFileName, line: lineNum, col: 1,
+          sourceLine: line, reason: `"${mGame[3]}" is not a number of pixels.`,
+          help: `Write it like this: '${mGame[1]}' move ${mGame[2].toLowerCase()} "10"`
+        };
+      }
+      if (actor.paused || actor.stopped) return;
+      this.requireGame().moveActor(actor.name, mGame[2].toLowerCase(), pixels);
+      return;
     }
 
     // 2. SINGLE-LINE PYTHON EXECUTION
@@ -2016,10 +2856,90 @@ class EppEvaluator {
       return;
     }
 
+    // ---------------- Release 1.2 — ImprovedWait / ImprovedWaitLite ----------------
+    // wait for a key press  [Keyboard]
+    if (/^wait\s+for\s+a\s+key\s+press$/i.test(line)) {
+      this.requireLib('Keyboard', 'wait for a key press', lineNum);
+      const tracker = ensureKeyTracker();
+      const deadline = Date.now() + 30000;
+      while (!(tracker && tracker.anyDown()) && Date.now() < deadline && !this.cancelled) {
+        await nextFrame();
+      }
+      return;
+    }
+
+    // wait for the actor 'hero' to finish  [ImprovedWait]
+    let mWait = line.match(/^wait\s+(?:at\s+most\s+(.+?)\s+seconds?\s+)?for\s+the\s+actor\s+'([^']+)'\s+to\s+finish$/i);
+    if (mWait) {
+      this.requireLib('ImprovedWait', 'wait for the actor', lineNum);
+      const actor = this.actorOf(mWait[2], lineNum);
+      const limit = mWait[1] ? Number(await this.evalExpr(mWait[1], lineNum)) * 1000 : null;
+      const deadline = limit === null ? null : Date.now() + limit;
+      while (!this.cancelled) {
+        if (actor.stopped || actor.paused || !actor.visible) return;
+        if (deadline !== null && Date.now() >= deadline) return;
+        await nextFrame();
+      }
+      return;
+    }
+
+    // wait until <condition>  /  wait at most N seconds until <condition>
+    mWait = line.match(/^wait\s+(?:at\s+most\s+(.+?)\s+seconds?\s+)?until\s+(.+)$/i);
+    if (mWait) {
+      this.requireAnyLib(['ImprovedWaitLite', 'ImprovedWait'], mWait[1] ? 'wait at most' : 'wait until', lineNum);
+      const limit = mWait[1] ? Number(await this.evalExpr(mWait[1], lineNum)) * 1000 : null;
+      const deadline = limit === null ? null : Date.now() + limit;
+      const startedAt = Date.now();
+      while (!this.cancelled) {
+        if (await this.evalCondition(mWait[2], lineNum, line)) return;
+        if (deadline !== null && Date.now() >= deadline) return;
+        if (deadline === null && Date.now() - startedAt > 60000) {
+          throw {
+            code: 'E101', name: 'Endless Wait', filename: currentFileName, line: lineNum, col: 1,
+            sourceLine: line,
+            reason: 'This "wait until" has been waiting for a minute and the condition is still false.',
+            help: 'Give it a deadline: wait at most 10 seconds until ...'
+          };
+        }
+        await nextFrame();
+      }
+      return;
+    }
+
+    // wait 2 seconds as 'intro'  /  wait 2 seconds and then say "Done!"
+    mWait = line.match(/^(?:wait|sleep)\s+(.+?)\s+(milliseconds|millisecond|seconds|second)\s+(as\s+'([^']+)'|and\s+then\s+(.+))$/i);
+    if (mWait) {
+      const unit = mWait[2].toLowerCase().startsWith('m');
+      const amount = Number(await this.evalExpr(mWait[1], lineNum));
+      const ms = unit ? amount : amount * 1000;
+      if (mWait[4] !== undefined) {
+        this.requireAnyLib(['ImprovedWaitLite', 'ImprovedWait'], 'named wait', lineNum);
+        const timer = { name: mWait[4], cancelled: false, startedAt: Date.now() };
+        this.timers[this.norm(mWait[4])] = timer;
+        await this.sleepMs(ms, timer, lineNum);
+        return;
+      }
+      this.requireAnyLib(['ImprovedWaitLite', 'ImprovedWait'], 'wait and then', lineNum);
+      await this.sleepMs(ms, null, lineNum);
+      await this.execStatement(mWait[5].trim(), lineNum, printFn, askFn);
+      return;
+    }
+
+    // cancel the wait 'intro'
+    mWait = line.match(/^cancel\s+the\s+wait\s+'([^']+)'$/i);
+    if (mWait) {
+      this.requireAnyLib(['ImprovedWaitLite', 'ImprovedWait'], 'cancel the wait', lineNum);
+      const timer = this.timers[this.norm(mWait[1])];
+      if (timer) timer.cancelled = true;
+      return;
+    }
+
     // 6. TIME: WAIT / SLEEP
     const waitMatch = line.match(/^(?:wait|sleep)\s+(.+?)\s+(milliseconds|millisecond|seconds|second)$/i);
     if (waitMatch) {
-      this.requireLib('Time', 'wait statement', lineNum);
+      if (!this.libs.has('time')) {
+        this.requireAnyLib(['Time', 'ImprovedWaitLite', 'ImprovedWait'], 'wait statement', lineNum);
+      }
       const val = Number(await this.evalExpr(waitMatch[1].trim(), lineNum));
       const isMs = waitMatch[2].toLowerCase().startsWith('m');
       const ms = isMs ? val : val * 1000;
@@ -2072,7 +2992,7 @@ class EppEvaluator {
       this.requireLib('System', 'run system command', lineNum);
       const cmd = sysMatch[1];
       const outVar = sysMatch[2];
-      const res = `1.1 Workspace Patch 2 Runtime (cmd: ${cmd})`;
+      const res = `1.2 Encryption++ Runtime (cmd: ${cmd})`;
       if (outVar) this.vars[this.norm(outVar)] = res;
       else printFn(res);
       return;
@@ -2282,6 +3202,13 @@ class EppEvaluator {
     if (expr.startsWith("'") && expr.endsWith("'")) return this.getVar(expr.slice(1, -1), lineNum);
     if (!isNaN(Number(expr)) && expr !== '') return Number(expr);
 
+    // Release 1.2 — Keyboard: the key pressed (a name, ready for comparisons)
+    if (/^the\s+key\s+pressed$/i.test(expr)) {
+      this.requireLib('Keyboard', 'the key pressed', lineNum);
+      const tracker = ensureKeyTracker();
+      return tracker && tracker.last ? tracker.last : '';
+    }
+
     // Direct arithmetic evaluation (zero eval/Function, 100% CSP compliant)
     let exprWithVars = expr.replace(/'([^']+)'/g, (_, vName) => {
       const val = this.getVar(vName, lineNum);
@@ -2413,7 +3340,7 @@ class EppEvaluator {
     // System library functions
     if (expr.toLowerCase() === 'the platform' || expr.toLowerCase() === 'the system platform') {
       this.requireLib('System', 'the platform', lineNum);
-      return navigator.platform || 'Web System (1.1 Workspace Patch 2)';
+      return navigator.platform || 'Web System (1.2 Encryption++)';
     }
     if (expr.toLowerCase() === 'the os' || expr.toLowerCase() === 'the operating system') {
       this.requireLib('System', 'the os', lineNum);
@@ -2519,19 +3446,67 @@ class EppEvaluator {
     return isNot ? !isNum : isNum;
   }
 
-  requireLib(libName, feature, lineNum) {
-    if (!this.libs.has(this.norm(libName))) {
+  requireAnyLib(names, feature, lineNum) {
+    if (names.some(name => this.libs.has(this.norm(name)))) return;
+    throw {
+      code: 'E301',
+      name: 'Library Not Added',
+      filename: currentFileName,
+      line: lineNum,
+      col: 1,
+      sourceLine: feature,
+      reason: `'${feature}' needs the "${names[0]}" library, which has not been added.`,
+      help: `Add this line at the top: add the "${names[0]}" library`
+    };
+  }
+
+  /** Sleeps in slices so a cancelled game or a named wait can interrupt it. */
+  async sleepMs(ms, timer, lineNum) {
+    if (!(ms >= 0)) {
       throw {
-        code: "E301",
-        name: "Library Not Added",
-        filename: currentFileName,
-        line: lineNum,
-        col: 1,
-        sourceLine: feature,
-        reason: `'${feature}' requires the "${libName}" library.`,
-        help: `Add this line at the top: add the \"${libName}\" library`
+        code: 'E101', name: 'Bad Wait', filename: currentFileName, line: lineNum || 1, col: 1,
+        sourceLine: 'wait', reason: 'A wait needs a number of seconds that is zero or more.',
+        help: 'For example: wait 2 seconds'
       };
     }
+    let remaining = ms;
+    while (remaining > 0) {
+      if (this.cancelled) return;
+      if (timer && timer.cancelled) return;
+      const step = Math.min(25, remaining);
+      await new Promise(resolve => setTimeout(resolve, step));
+      remaining -= step;
+    }
+  }
+
+  requireLib(libName, feature, lineNum) {
+    this.requireAnyLib([libName], feature, lineNum);
+  }
+
+  /**
+   * Some features are shared: ImprovedWaitLite gives every non-game wait, the
+   * full ImprovedWait gives those plus actors, and a plain `wait 2 seconds`
+   * is also part of the Time library. Any one of them is enough.
+   */
+  requireAnyLib(libNames, feature, lineNum) {
+    // "Strings" and "Text" are the same library, and every spelling of a name
+    // has to end up in the same bucket as the one `add library` recorded.
+    const registry = (window.EPP && window.EPP.Libraries) ? window.EPP.Libraries : null;
+    const wanted = libNames.map(n => this.norm((registry && registry.canonical(n)) || n));
+    if (wanted.some(n => this.libs.has(n))) return;
+    const list = libNames.length === 1
+      ? '"' + libNames[0] + '"'
+      : libNames.map(n => '"' + n + '"').join(' or ');
+    throw {
+      code: "E301",
+      name: "Library Not Added",
+      filename: currentFileName,
+      line: lineNum,
+      col: 1,
+      sourceLine: feature,
+      reason: `'${feature}' requires the ${list} library.`,
+      help: `Add this line at the top: add the "${libNames[libNames.length - 1]}" library`
+    };
   }
 }
 
@@ -2554,6 +3529,7 @@ function clearConsole() {
 
 async function runCode() {
   const statusEl = document.getElementById('statusRun');
+  updateDashboard();
   statusEl.innerText = 'Running…';
   statusEl.className = 'status-run running';
 
@@ -2579,9 +3555,9 @@ async function runCode() {
   }
 
   let code = document.getElementById('editor').value;
-  if (code.trim().startsWith("call ENCRYPTION_KEY")) {
+  if (isEncryptedProject(code)) {
     try {
-      code = decryptEpp(code, currentFileName);
+      code = (await decryptProject(code, currentFileName)).text;
     } catch (e) {
       document.getElementById('consoleOutput').innerHTML += formatDeterministicError(e);
       statusEl.innerText = 'Error';
@@ -2670,12 +3646,12 @@ window.addEventListener('drop', (e) => {
 });
 
 const editor = document.getElementById('editor');
-editor.addEventListener('paste', (e) => {
+editor.addEventListener('paste', async (e) => {
   const text = (e.clipboardData || window.clipboardData)?.getData('text');
-  if (text && text.trim().startsWith('call ENCRYPTION_KEY')) {
+  if (text && isEncryptedProject(text)) {
+    e.preventDefault();
     try {
-      const dec = decryptEpp(text.trim(), currentFileName);
-      e.preventDefault();
+      const dec = (await decryptProject(text.trim(), currentFileName)).text;
       const start = editor.selectionStart;
       const end = editor.selectionEnd;
       const cur = editor.value;
@@ -2683,7 +3659,10 @@ editor.addEventListener('paste', (e) => {
       editor.selectionStart = editor.selectionEnd = start + dec.length;
       updateLineNumbers();
       updateDashboard();
-    } catch (err) {}
+    } catch (err) {
+      showDeterministicError(err);
+      showToast('No saved key opens that project.', true);
+    }
   }
 });
 editor.oninput = () => {
@@ -2724,11 +3703,73 @@ function updateCursor() {
   document.getElementById('statusCursor').innerText = `Line ${line}, Column ${col}`;
 }
 
+// ------------------------------------------------------------------
+// Release 1.2 wiring: images, keys, game stop
+// ------------------------------------------------------------------
+{
+  const imageButton = document.getElementById('btnImage');
+  const imageInput = document.getElementById('imageFileInput');
+  if (imageButton && imageInput) {
+    // Name first, picture second: the name becomes the variable.
+    imageButton.addEventListener('click', () => {
+      const typed = prompt('Name the actor for this image:', 'hero');
+      if (!typed) return;
+      pendingActorName = typed;
+      imageInput.click();
+    });
+    imageInput.addEventListener('change', () => {
+      addActorImage().finally(() => { imageInput.value = ''; });
+    });
+  }
+
+  const keysButton = document.getElementById('btnKeys');
+  if (keysButton) keysButton.addEventListener('click', showKeyringPanel);
+
+  const keysExport = document.getElementById('btnKeysExport');
+  if (keysExport) keysExport.addEventListener('click', exportKeyring);
+
+  const keysImport = document.getElementById('btnKeysImport');
+  const keyringInput = document.getElementById('keyringFileInput');
+  if (keysImport && keyringInput) {
+    keysImport.addEventListener('click', () => keyringInput.click());
+    keyringInput.addEventListener('change', () => {
+      importKeyringFile(keyringInput.files[0]);
+      keyringInput.value = '';
+    });
+  }
+
+  const gameStop = document.getElementById('btnGameStop');
+  if (gameStop) {
+    gameStop.addEventListener('click', () => {
+      if (activeEvaluator) activeEvaluator.cancel();
+      if (activeGameHost) activeGameHost.stop();
+      showToast('Game stopped.');
+    });
+  }
+}
+
+/**
+ * tools/build-zip.mjs marks the E++.zip copy of this page. Remove the library
+ * cards for anything the bundle does not contain, so nobody is offered a
+ * button that can only disappoint them.
+ */
+function applyDistributionBuild() {
+  if (!window.EPP_DISTRIBUTION) return;
+  const missing = (window.EPP && window.EPP.Libraries) ? window.EPP.Libraries.unavailable() : [];
+  document.querySelectorAll('[data-library]').forEach(node => {
+    if (missing.indexOf(node.getAttribute('data-library')) !== -1) node.remove();
+  });
+  const notice = document.getElementById('distributionNotice');
+  if (notice) notice.style.display = '';
+}
+
 // Initialize
+applyDistributionBuild();
 initStorage();
 renderFileList();
 loadFile(currentFileName);
 checkAndLoadZipLexer();
+ensureVaultReady();
 </script>
 </body>
 </html>

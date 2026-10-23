@@ -1,2 +1,15 @@
-call ENCRYPTION_KEY
-AAABoV84T0a1QxE2C8ggPRLDOLB28CzV8hCfOlk2IHlE4bBk2691cMBggEjW7jfcD8LKq1MIJrEp8Z2OaCpwFOJrzwtIDY2dm3l+H/joeG5KAZi2KyaraodA3cpvdqtOkgoIRGnbcjBNDrx9wCdcSf3bnGke9+K2VvUaxuJYAQZtb2Yn/0ziihk6CxUuVrUcWB/Nxu9Us6ikZbaLelsBvGvSBAVSxlcYuwOvlUlXKXvPBwnrl/mhN1IwFEj+Oek9/RaGOp13akVDrxAB74tiyO+gg2SXaXTKdHbhCNCzRWEA/1nf8I5EkuLTH4F0aIfks4E4ij4Lt9YxC1LsD7hjdTwWBgGxfhnYfk/mwGFMox0SsPpkyIRQnRV6prfYN+18mo38tVJN3mmzBXRaDwEAeIfgzLQx2x45jOFvcJWB1GTvXtj1FrbFM4waO1SusNsNsyJMepAuxBFDoVcR2XTs2UFMMSbD1C0amUnZ1JSpYBpwTKJjwPAoYvE9qN89sxQcoIL5EVWS7ZrzQqMCwiSgOcWsGLZAZlmCH9SWga8LA7SbpK5UyL5jtu0aZbvCiZKa6+8iP6T3P5fpGhktcRPfavOzVY7vSlgc6MHbmhicsiYAFpIKF58MkqfG9a8amnyWckQlOJp5OG6d4iTKuQ==
+note [Time & Date Library Demonstration in E++ (.enppl)]
+add the "Time" library
+
+note [1. Reading Clock and Calendar]
+say "Current system time:", the current time
+say "Current system date:", the current date
+say "Current calendar year:", the current year
+say "Unix timestamp:", the current timestamp
+
+note [2. Waiting and Sleeping]
+say "Preparing countdown in 500 milliseconds..."
+wait 500 milliseconds
+say "Pausing for 1 second..."
+wait 1 second
+say "Resumed execution successfully!"

@@ -10,3 +10,10 @@ release_notes.txt
 *.png
 .cache/
 node_modules/
+
+# Release packaging staging
+.dist/
+
+# Python
+__pycache__/
+*.pyc

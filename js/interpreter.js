@@ -172,6 +172,49 @@
     return { type: type, friendly: friendly };
   }
 
+  // ---------------- Release 1.2: keyboard, actors, waits ----------------
+
+  /*
+   * Every way of writing a key becomes one canonical name, so
+   *   the "Up arrow" key, "up-arrow", "ARROW UP" and "UpArrow"
+   * all mean the same physics key. The IDE maps these names to
+   * KeyboardEvent.key values when it feeds the game loop.
+   */
+  var KEY_ALIASES = {
+    'up arrow': 'ArrowUp', 'uparrow': 'ArrowUp', 'arrowup': 'ArrowUp', 'arrow up': 'ArrowUp', 'up': 'ArrowUp',
+    'down arrow': 'ArrowDown', 'downarrow': 'ArrowDown', 'arrowdown': 'ArrowDown', 'arrow down': 'ArrowDown', 'down': 'ArrowDown',
+    'left arrow': 'ArrowLeft', 'leftarrow': 'ArrowLeft', 'arrowleft': 'ArrowLeft', 'arrow left': 'ArrowLeft', 'left': 'ArrowLeft',
+    'right arrow': 'ArrowRight', 'rightarrow': 'ArrowRight', 'arrowright': 'ArrowRight', 'arrow right': 'ArrowRight', 'right': 'ArrowRight',
+    'space': ' ', 'space bar': ' ', 'spacebar': ' ', 'the space bar': ' ',
+    'enter': 'Enter', 'return': 'Enter', 'the enter key': 'Enter',
+    'escape': 'Escape', 'esc': 'Escape',
+    'tab': 'Tab', 'shift': 'Shift', 'control': 'Control', 'ctrl': 'Control', 'alt': 'Alt',
+    'backspace': 'Backspace', 'delete': 'Delete', 'any': '*', 'any key': '*'
+  };
+
+  function normalizeKeyName(name) {
+    var raw = String(name === undefined || name === null ? '' : name).trim();
+    var lower = raw.toLowerCase();
+    if (KEY_ALIASES[lower]) return KEY_ALIASES[lower];
+    if (raw.length === 1) return lower;
+    // "a" / "A" typed as a letter, or a raw KeyboardEvent.key such as "F5".
+    return raw;
+  }
+
+  function Actor(name, image) {
+    this.name = name;
+    this.image = image || '';
+    this.x = 0;
+    this.y = 0;
+    this.width = 64;
+    this.height = 64;
+    this.scale = 1;
+    this.visible = true;
+    this.paused = false;
+    this.stopped = false;
+    this.direction = 0;
+  }
+
   // ---------------- Interpreter ----------------
   function Interpreter(options) {
     options = options || {};
@@ -202,6 +245,20 @@
     this.onImageCheck = typeof options.onImageCheck === 'function' ? options.onImageCheck : function () {
       return false; // default: nothing exists in the pure interpreter
     };
+    // Release 1.2 — Keyboard: which keys are down right now. The IDE writes
+    // into this object from real keydown/keyup events; a headless run can
+    // pass its own, or supply isKeyPressed.
+    this.keys = options.keys || Object.create(null);
+    this.isKeyPressed = typeof options.isKeyPressed === 'function' ? options.isKeyPressed : null;
+    // Release 1.2 — Game: called on every visible change so a host can draw
+    // the game without the interpreter knowing anything about canvases.
+    this.onGame = typeof options.onGame === 'function' ? options.onGame : function () {};
+    // Waits for the next animation frame in `play the game` blocks. Hosts
+    // that want a slower or faster game can inject their own.
+    this.frame = typeof options.frame === 'function' ? options.frame : function () {
+      return new Promise(function (resolve) { setTimeout(resolve, 16); });
+    };
+    this.maxFrames = options.maxFrames || 100000;
     this.maxSteps = options.maxSteps || 100000;
     this.maxLoopIterations = options.maxLoopIterations || 10000;
     this.cancelled = false;
@@ -212,6 +269,10 @@
     this.variables = new Map();       // lowercased name -> value
     this.loadedLibraries = new Set(); // canonical library names
     this.sprites = new Map();         // lowercased name -> { name, x, y }
+    this.actors = new Map();          // Release 1.2 — lowercased name -> Actor
+    this.game = { width: 800, height: 600, background: null, running: false, frames: 0 };
+    this.timers = new Map();          // Release 1.2 — named waits
+    this.lastKey = '';                // Release 1.2 — most recent key pressed
     this.images = new Map();          // Dev Build 5: lowercased name -> { name, source }
     this.lastIf = null;               // nearest previous if (for loopback)
     this.pythonGlobals = Object.create(null);
@@ -241,7 +302,98 @@
       throw new RuntimeError('The interpreter needs a parsed E++ program.');
     }
     await this.executeBlock(program.body);
-    return { variables: this.variables, loadedLibraries: this.loadedLibraries, sprites: this.sprites, images: this.images };
+    return {
+      variables: this.variables, loadedLibraries: this.loadedLibraries,
+      sprites: this.sprites, images: this.images,
+      actors: this.actors, game: this.game
+    };
+  };
+
+  // ---------------- Release 1.2 helpers ----------------
+
+  Interpreter.prototype.requireActor = function (node, name) {
+    var actorKey = String(name).toLowerCase();
+    if (!this.actors.has(actorKey)) {
+      throw new RuntimeError('There is no actor called \'' + name + '\'.',
+        node.line, node.column,
+        'Create it first, for example: create the actor \'' + name + '\' with the image "picture.png"');
+    }
+    return this.actors.get(actorKey);
+  };
+
+  /** Sends a game event to the host (the IDE draws it; tests just watch). */
+  Interpreter.prototype.emitGame = function (action, actor) {
+    this.onGame({
+      action: action,
+      actor: actor ? { name: actor.name, image: actor.image, x: actor.x, y: actor.y, scale: actor.scale, visible: actor.visible, paused: actor.paused, stopped: actor.stopped } : null,
+      actors: this.actorsArray(),
+      width: this.game.width,
+      height: this.game.height,
+      background: this.game.background,
+      running: this.game.running,
+      frames: this.game.frames
+    });
+  };
+
+  Interpreter.prototype.actorsArray = function () {
+    var list = [];
+    this.actors.forEach(function (actor) {
+      list.push({ name: actor.name, image: actor.image, x: actor.x, y: actor.y, width: actor.width, height: actor.height, scale: actor.scale, visible: actor.visible, paused: actor.paused, stopped: actor.stopped });
+    });
+    return list;
+  };
+
+  /** Collision test used by `if 'hero' is touching 'gem' then`. */
+  Interpreter.prototype.actorsTouch = function (nameA, nameB) {
+    var a = this.actors.get(String(nameA).toLowerCase());
+    var b = this.actors.get(String(nameB).toLowerCase());
+    if (!a || !b) return false;
+    if (!a.visible || !b.visible || a.stopped || b.stopped) return false;
+    var halfA = (a.width * a.scale) / 2;
+    var halfB = (b.width * b.scale) / 2;
+    var dx = Math.abs(a.x - b.x);
+    var dy = Math.abs(a.y - b.y);
+    return dx < halfA + halfB && dy < (a.height * a.scale) / 2 + (b.height * b.scale) / 2;
+  };
+
+  Interpreter.prototype.keyIsDown = function (keyName) {
+    var key = normalizeKeyName(keyName);
+    if (key === '*') return this.anyKeyDown();
+    if (this.isKeyPressed) return !!this.isKeyPressed(key);
+    return !!this.keys[key];
+  };
+
+  Interpreter.prototype.anyKeyDown = function () {
+    if (this.isKeyPressed) return !!this.isKeyPressed('*');
+    for (var key in this.keys) { if (this.keys[key]) return true; }
+    return false;
+  };
+
+  Interpreter.prototype.startTimer = function (name, node) {
+    var timer = { name: name || null, cancelled: false, startedAt: Date.now(), node: node };
+    if (name) this.timers.set(String(name).toLowerCase(), timer);
+    return timer;
+  };
+
+  /**
+   * Sleeps in short slices so `cancel the wait 'x'` and the Stop button can
+   * interrupt a wait in the middle instead of finishing it first.
+   */
+  Interpreter.prototype.sleepFor = async function (seconds, timer) {
+    if (seconds < 0) {
+      throw new RuntimeError('Cannot wait for a negative amount of time (' + seconds + ' seconds).',
+        timer && timer.node ? timer.node.line : null, timer && timer.node ? timer.node.column : null,
+        'Use a number of seconds that is 0 or more.');
+    }
+    var remaining = seconds * 1000;
+    var slice = 25;
+    while (remaining > 0) {
+      if (this.cancelled) throw new RuntimeError('Execution was stopped.', null, null, null);
+      if (timer && timer.cancelled) return;
+      var step = Math.min(slice, remaining);
+      await this.delay(step / 1000);
+      remaining -= step;
+    }
   };
 
   Interpreter.prototype.executeBlock = async function (statements) {
@@ -256,6 +408,158 @@
     var AST = EPP.AST.Type;
 
     switch (node.type) {
+      // ---------------- Release 1.2 — Game library -------------------
+      case AST.GAME_WINDOW: {
+        var gw = Math.round(this.toNumber(await this.evaluate(node.width), node, 'the game window width'));
+        var gh = Math.round(this.toNumber(await this.evaluate(node.height), node, 'the game window height'));
+        if (gw < 1 || gh < 1) {
+          throw new RuntimeError('A game window needs a width and a height bigger than zero.',
+            node.line, node.column, 'For example: set the game window to 640 by 480');
+        }
+        this.game.width = gw;
+        this.game.height = gh;
+        this.emitGame('window');
+        return;
+      }
+      case AST.GAME_BACKGROUND: {
+        this.game.background = stringify(await this.evaluate(node.value));
+        this.emitGame('background');
+        return;
+      }
+      case AST.DEFINE_ACTOR: {
+        var actorSource = stringify(await this.evaluate(node.image));
+        var newActor = new Actor(node.name, actorSource);
+        this.actors.set(node.name.toLowerCase(), newActor);
+        // The actor's name works like any other variable from here on, which
+        // is what "that name is treated like a variable which loads the
+        // image" means: say 'hero' / display image 'hero' both work.
+        this.variables.set(node.name.toLowerCase(), node.name);
+        this.images.set(node.name.toLowerCase(), { name: node.name, source: actorSource });
+        this.emitGame('create', newActor);
+        return;
+      }
+      case AST.PLACE_ACTOR: {
+        var placeActor = this.requireActor(node, node.name);
+        placeActor.x = this.toNumber(await this.evaluate(node.x), node, 'the actor x position');
+        placeActor.y = this.toNumber(await this.evaluate(node.y), node, 'the actor y position');
+        this.emitGame('place', placeActor);
+        return;
+      }
+      case AST.ACTOR_SIZE: {
+        var sizedActor = this.requireActor(node, node.name);
+        var size = this.toNumber(await this.evaluate(node.size), node, 'the actor size');
+        if (size <= 0) {
+          throw new RuntimeError('An actor size has to be bigger than zero.', node.line, node.column,
+            'For example: set the size of the actor \'hero\' to 2');
+        }
+        if (size > 10) {
+          throw new RuntimeError('An actor size is a multiplier: 1 is its normal size, and ' + size + ' would be ' + size + ' times bigger.', node.line, node.column,
+            'Try 2 for twice as big, or a number between 0.1 and 1 to shrink one.');
+        }
+        sizedActor.scale = size;
+        this.emitGame('size', sizedActor);
+        return;
+      }
+      case AST.ACTOR_ACTION: {
+        if (node.name === '*') {
+          var stoppedCount = 0;
+          this.actors.forEach(function (a) { a.stopped = true; stoppedCount += 1; });
+          this.emitGame('stop-all');
+          return;
+        }
+        var targetActor = this.requireActor(node, node.name);
+        if (node.action === 'show') targetActor.visible = true;
+        else if (node.action === 'hide') targetActor.visible = false;
+        else if (node.action === 'pause') targetActor.paused = true;
+        else if (node.action === 'resume') { targetActor.paused = false; targetActor.stopped = false; }
+        else if (node.action === 'stop') { targetActor.stopped = true; targetActor.paused = true; }
+        this.emitGame(node.action, targetActor);
+        return;
+      }
+      case AST.GAME_LOOP: {
+        if (!this.game.running) this.game.running = true;
+        this.emitGame('start');
+        var frames = 0;
+        while (this.game.running && !this.cancelled) {
+          this.checkRunning(node);
+          await this.executeBlock(node.body);
+          frames += 1;
+          this.game.frames += 1;
+          if (frames >= this.maxFrames) {
+            throw new RuntimeError('The game ran for ' + frames + ' frames and was stopped.',
+              node.line, node.column,
+              'Add "stop the game" somewhere in the loop, or raise the frame limit.');
+          }
+          await this.frame();
+        }
+        this.game.running = false;
+        this.emitGame('finish');
+        return;
+      }
+      case AST.STOP_GAME: {
+        this.game.running = false;
+        this.emitGame('stop');
+        return;
+      }
+
+      // ---------------- Release 1.2 — Keyboard library ---------------
+      case AST.WAIT_FOR_KEY: {
+        var keyDeadline = Date.now() + 30000;
+        var anyKey = this.anyKeyDown();
+        while (!anyKey && Date.now() < keyDeadline && !this.cancelled) {
+          await this.frame();
+          anyKey = this.anyKeyDown();
+        }
+        return;
+      }
+
+      // ------- Release 1.2 — ImprovedWait / ImprovedWaitLite ----------
+      case AST.WAIT_NAMED: {
+        var namedTimer = this.startTimer(node.timerName, node);
+        await this.sleepFor(this.toNumber(await this.evaluate(node.duration), node, 'wait'), namedTimer);
+        return;
+      }
+      case AST.WAIT_THEN: {
+        var thenTimer = this.startTimer(node.timerName, node);
+        await this.sleepFor(this.toNumber(await this.evaluate(node.duration), node, 'wait'), thenTimer);
+        if (node.statement) await this.executeStatement(node.statement);
+        return;
+      }
+      case AST.CANCEL_WAIT: {
+        var key = String(node.timerName).toLowerCase();
+        if (this.timers.has(key)) this.timers.get(key).cancelled = true;
+        return;
+      }
+      case AST.WAIT_UNTIL: {
+        var untilLimit = node.limit === null ? null
+          : this.toNumber(await this.evaluate(node.limit), node, 'wait at most');
+        var deadline = untilLimit === null ? null : Date.now() + untilLimit * 1000;
+        var timer = this.startTimer(null, node);
+        while (!timer.cancelled && !this.cancelled) {
+          if (await this.evaluateCondition(node.condition)) return;
+          if (deadline !== null && Date.now() >= deadline) return;
+          if (deadline === null && Date.now() - timer.startedAt > 60000) {
+            throw new RuntimeError('This "wait until" has been waiting for a minute and the condition is still false.',
+              node.line, node.column,
+              'Give it a deadline: wait at most 10 seconds until ...');
+          }
+          await this.frame();
+        }
+        return;
+      }
+      case AST.WAIT_FOR_ACTOR: {
+        var waitActor = this.requireActor(node, node.name);
+        var limitSeconds = node.limit === null ? null
+          : this.toNumber(await this.evaluate(node.limit), node, 'wait at most');
+        var actorDeadline = limitSeconds === null ? null : Date.now() + limitSeconds * 1000;
+        while (!this.cancelled) {
+          if (waitActor.stopped || waitActor.paused || !waitActor.visible) return;
+          if (actorDeadline !== null && Date.now() >= actorDeadline) return;
+          await this.frame();
+        }
+        return;
+      }
+
       case AST.DEFINE:
       case AST.SET: {
         // Bare words on the right-hand side of Define/Set are the literal
@@ -345,6 +649,23 @@
       }
       case AST.MOVE_SPRITE: {
         var moveKey = node.name.toLowerCase();
+        // Release 1.2 — actors move with exactly the same words as sprites.
+        if (this.actors.has(moveKey)) {
+          var actorToMove = this.actors.get(moveKey);
+          if (actorToMove.paused || actorToMove.stopped) return;
+          var actorPixels = parseFloat(String(node.pixels).trim());
+          if (!/^-?\d+(\.\d+)?$/.test(String(node.pixels).trim())) {
+            throw new RuntimeError('The actor can only move by a number of pixels, but "' + node.pixels + '" is not a number.',
+              node.line, node.column,
+              'Write the pixels as numbers inside double quotes, for example: \'' + node.name + '\' move ' + node.direction + ' "10"');
+          }
+          if (node.direction === 'up') actorToMove.y -= actorPixels;
+          else if (node.direction === 'down') actorToMove.y += actorPixels;
+          else if (node.direction === 'left') actorToMove.x -= actorPixels;
+          else if (node.direction === 'right') actorToMove.x += actorPixels;
+          this.emitGame('move', actorToMove);
+          return;
+        }
         if (!this.sprites.has(moveKey)) {
           throw new RuntimeError('There is no sprite called \'' + node.name + '\' to move.',
             node.line, node.column,
@@ -510,7 +831,22 @@
 
   Interpreter.prototype.evaluateCondition = async function (node) {
     if (!node) return false;
+    // Release 1.2 — Keyboard: the "Up arrow" key is pressed
+    if (node.type === 'KeyPressed') {
+      var pressed = this.keyIsDown(node.key);
+      return node.negated ? !pressed : pressed;
+    }
     var left = await this.evaluate(node.left);
+    // Release 1.2 — Game: is touching
+    if (node.operator === 'touching') {
+      // Take the actor name straight from the syntax when possible, so a
+      // typo is simply "not touching" instead of an undefined-variable error.
+      var otherName;
+      if (node.right && node.right.type === 'Variable') otherName = node.right.name;
+      else if (node.right && node.right.type === 'BareWord') otherName = node.right.text;
+      else otherName = stringify(await this.evaluate(node.right));
+      return this.actorsTouch(stringify(left), otherName);
+    }
     if (node.operator === 'truthy') return truthy(left);
     // Number tests: typed answers count as numbers when they look like
     // one ("11" is a number, "eleven" and "" are not).
@@ -593,6 +929,8 @@
 
   Interpreter.prototype.evaluate = async function (node) {
     var AST = EPP.AST.Type;
+    // Release 1.2 — Keyboard: the key pressed
+    if (node.type === AST.KEY_PRESSED) return this.lastKey || '';
     switch (node.type) {
       case AST.LITERAL: return node.value;
 
@@ -748,6 +1086,8 @@
 
   EPP.Fraction = Fraction;
   EPP.Interpreter = Interpreter;
+  EPP.normalizeKeyName = normalizeKeyName;
+  EPP.Actor = Actor;
   EPP.run = run;
   EPP.stringifyValue = stringify;
   EPP.translatePythonError = translatePythonError;

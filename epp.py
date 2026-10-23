@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-E++ (E-Plus-Plus) 1.1 Workspace Patch 2 Direct Python Runtime & Engine
-Uses the native Python lexer to run E++ and Python code directly.
+E++ (E-Plus-Plus) 1.2 Encryption++ Direct Python Runtime & Engine
+Uses the native Python lexer to run E++ and Python code directly, including
+sealed (encrypted) .enpp / .enppl projects.
 """
 
 import sys
@@ -22,7 +23,8 @@ from typing import Dict, Any, List, Optional
 
 from lexer import (
     Lexer, Token, TokenType, EppDiagnosticError,
-    encrypt_epp, decrypt_epp
+    encrypt_epp, decrypt_epp, is_vault, open_vault, random_key,
+    key_from_hex, vault_fingerprint
 )
 
 class Interpreter:
@@ -158,9 +160,10 @@ class Interpreter:
         return output.strip()
 
     def run_source(self, source: str):
-        # Transparent secret decryption if encrypted
-        if source.strip().startswith("call ENCRYPTION_KEY"):
-            source = decrypt_epp(source, self.filename)
+        # A sealed project is opened with the keyring before interpretation.
+        from lexer import is_vault, _open_vault_with_keys
+        if is_vault(source):
+            source = _open_vault_with_keys(source, self.filename)
 
         self.source_lines = source.split("\n")
         lexer = Lexer(source, self.filename)
@@ -856,56 +859,149 @@ class Interpreter:
 # CLI Entrypoint
 # ==========================================
 
+def _usage():
+    print("E++ [1.2 Encryption++] Python Direct Engine")
+    print("Usage:")
+    print("  python3 epp.py <file.enpp|file.enppl>             Run a program")
+    print("  python3 epp.py -e '<code string>'                 Run inline code")
+    print()
+    print("Sealed projects:")
+    print("  python3 epp.py --key <64 hex> <file.enpp>         Open with one key")
+    print("  python3 epp.py --keyring <keys.json> <file>       Try every key in a keyring")
+    print("  python3 epp.py --new-key                          Print a fresh key")
+    print("  python3 epp.py --encrypt <in> -o <out> [--key]    Seal a project")
+    print("  python3 epp.py --decrypt <file> [--key]           Print a sealed project")
+
+
+def _split_global_flags(args):
+    """--key and --keyring work before or after the subcommand, like the C++ CLI."""
+    keyhex = None
+    keyring_path = None
+    rest = []
+    i = 0
+    while i < len(args):
+        arg = args[i]
+        if arg in ("--key", "-k") and i + 1 < len(args):
+            keyhex = args[i + 1]
+            i += 2
+        elif arg == "--keyring" and i + 1 < len(args):
+            keyring_path = args[i + 1]
+            i += 2
+        else:
+            rest.append(arg)
+            i += 1
+    if keyhex:
+        try:
+            bytes.fromhex(keyhex.strip())
+        except ValueError:
+            raise EppDiagnosticError(
+                code="E522", name="Bad Key", filename="<cli>", line=1, col=1, source_line="",
+                reason="--key needs 64 hex characters (a 32-byte E++ vault key).",
+                help_msg="Copy the key from epp-keys.json, or pass --keyring that file."
+            )
+    return keyhex, keyring_path, rest
+
+
+def _output_path(rest, default):
+    if "-o" in rest:
+        index = rest.index("-o")
+        if index + 1 < len(rest):
+            return rest[index + 1]
+    if "--output" in rest:
+        index = rest.index("--output")
+        if index + 1 < len(rest):
+            return rest[index + 1]
+    return default
+
+
 def main():
-    if len(sys.argv) < 2:
-        print("E++ [1.1 Workspace Patch 2] Python Direct Engine")
-        print("Usage:")
-        print("  python3 epp.py <file.enpp|file.enppl>")
-        print("  python3 epp.py -e '<code string>'")
+    args = sys.argv[1:]
+    if not args:
+        _usage()
         sys.exit(0)
 
-    arg = sys.argv[1]
+    if args[0] in ("-h", "--help"):
+        _usage()
+        return
 
-    # Inline execution
-    if arg == "-e" and len(sys.argv) > 2:
-        code = sys.argv[2]
-        interp = Interpreter("<cli>")
+    try:
+        keyhex, keyring_path, rest = _split_global_flags(args)
+    except EppDiagnosticError as err:
+        print(err)
+        sys.exit(1)
+
+    if not rest:
+        _usage()
+        sys.exit(0)
+
+    arg = rest[0]
+
+    # A fresh key, for sealing a project by hand.
+    if arg == "--new-key":
+        key = random_key()
+        print(key.hex())
+        print("Key fingerprint: " + vault_fingerprint(key), file=sys.stderr)
+        return
+
+    # Seal a project.
+    if arg == "--encrypt" and len(rest) > 1:
+        src_path = rest[1]
+        if not os.path.exists(src_path):
+            print(f"[E++ Error E404: File Not Found] File '{src_path}' does not exist.")
+            sys.exit(1)
+        with open(src_path, "r", encoding="utf-8") as handle:
+            content = handle.read()
+        key = key_from_hex(keyhex) if keyhex else random_key()
+        sealed = encrypt_epp(content, key)
+        out_path = _output_path(rest, src_path)
+        with open(out_path, "w", encoding="utf-8") as handle:
+            handle.write(sealed)
+        print(f"Sealed {src_path} -> {out_path}")
+        print("Key (hex): " + key.hex())
+        print("Fingerprint: " + vault_fingerprint(key))
+        print("Keep the key: the project cannot be opened without it.")
+        return
+
+    # Print a sealed project.
+    if arg == "--decrypt" and len(rest) > 1:
+        src_path = rest[1]
+        if not os.path.exists(src_path):
+            print(f"[E++ Error E404: File Not Found] File '{src_path}' does not exist.")
+            sys.exit(1)
+        with open(src_path, "r", encoding="utf-8") as handle:
+            content = handle.read()
         try:
-            interp.run_source(code)
+            print(open_vault(content, src_path, keyhex=keyhex, keyring_path=keyring_path))
         except EppDiagnosticError as err:
             print(err)
             sys.exit(1)
         return
 
-    # Encryption tool
-    if arg == "--encrypt" and len(sys.argv) > 2:
-        src_path = sys.argv[2]
-        with open(src_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        encrypted = encrypt_epp(content)
-        out_path = sys.argv[4] if len(sys.argv) > 4 and sys.argv[3] == "-o" else src_path
-        with open(out_path, "w", encoding="utf-8") as f:
-            f.write(encrypted)
-        print(f"Encrypted {src_path} -> {out_path} with Release 1.1 millisecond frame key.")
+    # Inline execution.
+    if arg == "-e" and len(rest) > 1:
+        interp = Interpreter("<cli>")
+        try:
+            interp.run_source(rest[1])
+        except EppDiagnosticError as err:
+            print(err)
+            sys.exit(1)
         return
 
-    # Decryption tool
-    if arg == "--decrypt" and len(sys.argv) > 2:
-        src_path = sys.argv[2]
-        with open(src_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        dec = decrypt_epp(content, src_path)
-        print(dec)
-        return
-
-    # Run file
+    # Run a file, opening it first if it is sealed.
     filename = arg
     if not os.path.exists(filename):
         print(f"[E++ Error E404: File Not Found] File '{filename}' does not exist.")
         sys.exit(1)
 
-    with open(filename, "r", encoding="utf-8") as f:
-        content = f.read()
+    with open(filename, "r", encoding="utf-8") as handle:
+        content = handle.read()
+
+    if is_vault(content):
+        try:
+            content = open_vault(content, filename, keyhex=keyhex, keyring_path=keyring_path)
+        except EppDiagnosticError as err:
+            print(err)
+            sys.exit(1)
 
     interp = Interpreter(filename)
     try:
@@ -913,6 +1009,7 @@ def main():
     except EppDiagnosticError as err:
         print(err)
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

@@ -1,11 +1,11 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -O2 -Iinclude
 
-SRCS = src/lexer.cpp src/parser.cpp src/interpreter.cpp src/main.cpp
+SRCS = src/lexer.cpp src/parser.cpp src/interpreter.cpp src/vault.cpp src/main.cpp
 OBJS = $(SRCS:.cpp=.o)
 TARGET = epp
 
-.PHONY: all clean test
+.PHONY: all clean test zip
 
 all: $(TARGET)
 
@@ -18,10 +18,8 @@ src/%.o: src/%.cpp
 clean:
 	rm -f $(OBJS) $(TARGET)
 
-zip:
-	rm -f epp_language.zip E++.zip
-	zip -r epp_language.zip include/ src/ examples/ Makefile CMakeLists.txt README.md LANGUAGE.md index.html lexer.py epp.py epp -x "*.o" -x "*.DS_Store"
-	cp epp_language.zip E++.zip
+zip: $(TARGET)
+	@node tools/build-zip.mjs
 
 test: $(TARGET)
 	@echo "=== Running E++ Tests (C++ Engine) ==="
@@ -45,10 +43,12 @@ test: $(TARGET)
 	@./$(TARGET) examples/09_random_library.enppl
 	@./$(TARGET) examples/14_system_library.enppl
 	@./$(TARGET) examples/16_release_showcase.enppl
+	@./$(TARGET) --keyring examples/epp-keys.json examples/17_sealed_project.enpp
 	@echo "=== Running E++ Tests (Python Runner) ==="
 	@python3 epp.py examples/04_variables.enpp
 	@python3 epp.py examples/06_math_library.enppl
 	@python3 epp.py examples/09_random_library.enppl
 	@python3 epp.py examples/14_system_library.enppl
 	@python3 epp.py examples/16_release_showcase.enppl
+	@python3 epp.py --keyring examples/epp-keys.json examples/17_sealed_project.enpp
 	@echo "=== All Tests Passed! ==="

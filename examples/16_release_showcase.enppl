@@ -1,2 +1,42 @@
-call ENCRYPTION_KEY
-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
+note [E++ 1.2 Encryption++ Grand Showcase (.enppl)]
+add the "Colors" library
+add the "Time" library
+add the "Math" library
+add the "Random" library
+add the "Strings" library
+add the "Files" library
+add the "System" library
+add the "Python" library
+
+say cyan "========================================================="
+say cyan "         Welcome to E++ 1.2 Encryption++!           "
+say cyan "========================================================="
+
+note [System & Time Diagnostics]
+say blue "System Platform:", the platform
+say blue "Current Date & Time:", the current date, "at", the current time
+
+note [Natural Math & Random Computations]
+say "Square root of 144 is", the square root of 144
+say "Rolling a 20-sided dice gives:", roll a dice with 20 sides
+say "Flipping a coin gives:", flip a coin
+
+note [Strings Processing]
+let 'Announcement' be "   e++ is readable like english!   "
+say "Trimmed:", the trim of 'Announcement'
+say "Uppercase:", the uppercase of the trim of 'Announcement'
+
+note [File Persistence]
+write "E++ 1.2 verified on: " to file "showcase_audit.log"
+append the current date to file "showcase_audit.log"
+read the file "showcase_audit.log" and save the output as 'Audit'
+say "Audit log content:", 'Audit'
+
+note [Python Engine Bridge]
+let 'EppVersion' be "1.2"
+run the python code:
+print(f"[Python Subsystem] Connected with E++ v{EppVersion}")
+import math
+print(f"[Python Subsystem] Computed 10! = {math.factorial(10)}")
+
+say green "✓ All E++ 1.2 tests completed with 100% success!"

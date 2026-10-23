@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-E++ (E-Plus-Plus) 1.1 Workspace Patch 2 Lexer and Subsystem
+E++ (E-Plus-Plus) 1.2 Encryption++ Lexer and Subsystem
 Written in Python for direct execution and runtime integration.
 """
 
@@ -12,106 +12,285 @@ from enum import Enum, auto
 from typing import List, Optional, Tuple, Dict, Any
 
 # ==========================================
-# Release 1.1 Randomized Encryption Engine
+# Release 1.2 sealed projects (Encryption++)
 # ==========================================
+#
+# A project that leaves the Studio is a sealed file. The key that opens it is
+# generated for that download and kept outside the file, in this browser's
+# key store or in an exported keyring. This module is the reference
+# implementation used by the Python engine; js/vault.js and src/vault.cpp
+# must stay byte-compatible with it (see tests/run-tests.mjs).
+#
+# This is deliberately not a documented format: nothing user-facing explains
+# how a sealed project is put together.
 
-def encrypt_epp(plaintext: str) -> str:
-    """
-    Encrypts E++ source code into Release 1.1 format.
-    Uses a randomized 64-bit millisecond key called at that exact frame.
-    Format:
-      call ENCRYPTION_KEY
-      <encrypted_gibberish>
-    """
-    frame_key = int(time.time() * 1000)
-    data = plaintext.encode("utf-8")
-    out = bytearray(8)
-    struct.pack_into(">Q", out, 0, frame_key)
+import hashlib
+import hmac
+import os
 
-    k = frame_key
-    mul = 6364136223846793005
-    add = 1442695040888963407
-    mask = 0xFFFFFFFFFFFFFFFF
-
-    for b in data:
-        k = (k * mul + add) & mask
-        keystream = (k >> 33) & 0xFF
-        out.append(b ^ keystream)
-
-    gibberish = base64.b64encode(out).decode("ascii")
-    return f"call ENCRYPTION_KEY\n{gibberish}"
+VAULT_MAGIC = b"\x8b\xe7\x1c"
+VAULT_VERSION = 0x12
+VAULT_HEADER = 16
+VAULT_TAG = 32
+VAULT_KEY_LEN = 32
+VAULT_NONCE_LEN = 12
+VAULT_ENC_LABEL = b"E++ Vault v1 encryption"
+VAULT_MAC_LABEL = b"E++ Vault v1 authentication"
 
 
-def decrypt_epp(ciphertext: str, filename: str = "<source>") -> str:
-    """
-    Decrypts Release 1.1 encrypted .enpp/.enppl content.
-    Identifies and validates the 'call ENCRYPTION_KEY' header.
-    """
-    lines = ciphertext.strip().split("\n")
-    if not lines or lines[0].strip() != "call ENCRYPTION_KEY":
-        raise EppDiagnosticError(
-            code="E501",
-            name="Unencrypted Source File",
-            filename=filename,
-            line=1,
-            col=1,
-            source_line=lines[0] if lines else "",
-            reason=".enpp and .enppl files in Release 1.1 are encrypted and must begin with 'call ENCRYPTION_KEY'.",
-            help_msg="Ensure the file was saved with E++ encryption. Plain text files are no longer permitted."
-        )
+def _rotl32(value: int, count: int) -> int:
+    return ((value << count) | (value >> (32 - count))) & 0xFFFFFFFF
 
-    gibberish = "".join(lines[1:]).strip()
+
+def _quarter_round(state, a, b, c, d):
+    state[a] = (state[a] + state[b]) & 0xFFFFFFFF
+    state[d] = _rotl32(state[d] ^ state[a], 16)
+    state[c] = (state[c] + state[d]) & 0xFFFFFFFF
+    state[b] = _rotl32(state[b] ^ state[c], 12)
+    state[a] = (state[a] + state[b]) & 0xFFFFFFFF
+    state[d] = _rotl32(state[d] ^ state[a], 8)
+    state[c] = (state[c] + state[d]) & 0xFFFFFFFF
+    state[b] = _rotl32(state[b] ^ state[c], 7)
+
+
+def chacha20_block(key: bytes, nonce: bytes, counter: int) -> bytes:
+    constants = [0x61707865, 0x3320646E, 0x79622D32, 0x6B206574]
+    state = constants[:]
+    for i in range(8):
+        state.append(int.from_bytes(key[i * 4:i * 4 + 4], "little"))
+    state.append(counter & 0xFFFFFFFF)
+    for i in range(3):
+        state.append(int.from_bytes(nonce[i * 4:i * 4 + 4], "little"))
+
+    working = state[:]
+    for _ in range(10):
+        _quarter_round(working, 0, 4, 8, 12)
+        _quarter_round(working, 1, 5, 9, 13)
+        _quarter_round(working, 2, 6, 10, 14)
+        _quarter_round(working, 3, 7, 11, 15)
+        _quarter_round(working, 0, 5, 10, 15)
+        _quarter_round(working, 1, 6, 11, 12)
+        _quarter_round(working, 2, 7, 8, 13)
+        _quarter_round(working, 3, 4, 9, 14)
+
+    out = bytearray()
+    for i in range(16):
+        value = (working[i] + state[i]) & 0xFFFFFFFF
+        out += value.to_bytes(4, "little")
+    return bytes(out)
+
+
+def chacha20_xor(key: bytes, nonce: bytes, data: bytes, counter: int = 0) -> bytes:
+    out = bytearray()
+    for offset in range(0, len(data), 64):
+        block = chacha20_block(key, nonce, counter)
+        counter += 1
+        chunk = data[offset:offset + 64]
+        out += bytes(a ^ b for a, b in zip(chunk, block))
+    return bytes(out)
+
+
+def vault_subkeys(master: bytes):
+    if len(master) != VAULT_KEY_LEN:
+        raise ValueError("An E++ vault key must be 32 bytes.")
+    enc = hmac.new(master, VAULT_ENC_LABEL, hashlib.sha256).digest()
+    mac = hmac.new(master, VAULT_MAC_LABEL, hashlib.sha256).digest()
+    return enc, mac
+
+
+def random_key() -> bytes:
+    return os.urandom(VAULT_KEY_LEN)
+
+
+def key_from_hex(keyhex: str) -> bytes:
+    key = bytes.fromhex(str(keyhex).strip())
+    if len(key) != VAULT_KEY_LEN:
+        raise ValueError("An E++ vault key must be 32 bytes (64 hex characters).")
+    return key
+
+
+def vault_fingerprint(master: bytes) -> str:
+    digest = hashlib.sha256(b"E++ Vault v1 fingerprint" + master).digest()
+    return digest[:3].hex()
+
+
+def is_vault(text: str) -> bool:
     try:
-        raw = base64.b64decode(gibberish)
-    except Exception as e:
-        raise EppDiagnosticError(
-            code="E502",
-            name="Corrupted Encrypted Payload",
-            filename=filename,
-            line=2,
-            col=1,
-            source_line=lines[1] if len(lines) > 1 else "",
-            reason=f"Failed to decode encrypted base64 payload: {str(e)}",
-            help_msg="Check that the encrypted file has not been altered or truncated."
-        )
+        raw = base64.b64decode("".join(str(text).split()), validate=True)
+    except Exception:
+        return False
+    return len(raw) > VAULT_HEADER + VAULT_TAG and raw[:3] == VAULT_MAGIC
 
-    if len(raw) < 8:
-        raise EppDiagnosticError(
-            code="E502",
-            name="Corrupted Encrypted Payload",
-            filename=filename,
-            line=2,
-            col=1,
-            source_line=lines[1] if len(lines) > 1 else "",
-            reason="Payload is too short to contain a valid 64-bit frame key header.",
-            help_msg="File appears truncated."
-        )
 
-    frame_key = struct.unpack_from(">Q", raw, 0)[0]
-    k = frame_key
-    mul = 6364136223846793005
-    add = 1442695040888963407
-    mask = 0xFFFFFFFFFFFFFFFF
+def encrypt_epp(plaintext: str, key: bytes) -> str:
+    """Seals source code into a Release 1.2 vault with the given 32-byte key."""
+    if isinstance(key, str):
+        key = bytes.fromhex(key)
+    enc_key, mac_key = vault_subkeys(key)
+    nonce = os.urandom(VAULT_NONCE_LEN)
+    body = chacha20_xor(enc_key, nonce, plaintext.encode("utf-8"))
+    header = VAULT_MAGIC + bytes([VAULT_VERSION]) + nonce
+    payload = header + body
+    tag = hmac.new(mac_key, payload, hashlib.sha256).digest()
+    encoded = base64.b64encode(payload + tag).decode("ascii")
+    return "\n".join(encoded[i:i + 60] for i in range(0, len(encoded), 60)) + "\n"
 
-    dec = bytearray()
-    for b in raw[8:]:
-        k = (k * mul + add) & mask
-        keystream = (k >> 33) & 0xFF
-        dec.append(b ^ keystream)
 
+def decrypt_epp(ciphertext: str, key: bytes, filename: str = "<source>") -> str:
+    """Opens a Release 1.2 vault. Raises EppDiagnosticError with E511-E520."""
+    if isinstance(key, str):
+        key = bytes.fromhex(key)
     try:
-        return dec.decode("utf-8")
-    except Exception as e:
+        raw = base64.b64decode("".join(str(ciphertext).split()), validate=True)
+    except Exception:
         raise EppDiagnosticError(
-            code="E502",
-            name="Corrupted Encrypted Payload",
-            filename=filename,
-            line=2,
-            col=1,
-            source_line="",
-            reason=f"Decrypted stream is not valid UTF-8: {str(e)}",
-            help_msg="Verify the encryption frame key."
+            code="E511", name="This is not an E++ vault", filename=filename,
+            line=1, col=1, source_line="",
+            reason="The file contains characters that are not part of an encrypted E++ project.",
+            help_msg="Download the project again from the E++ Studio, or check the file was not edited by hand."
         )
+    if len(raw) < VAULT_HEADER + VAULT_TAG:
+        raise EppDiagnosticError(
+            code="E512", name="This E++ vault is too short", filename=filename,
+            line=1, col=1, source_line="",
+            reason="The file is smaller than its own header, so part of it is missing.",
+            help_msg="Download the project again to get a complete file."
+        )
+    if raw[:3] != VAULT_MAGIC:
+        raise EppDiagnosticError(
+            code="E511", name="This is not an E++ vault", filename=filename,
+            line=1, col=1, source_line="",
+            reason="The file does not start with the E++ vault signature.",
+            help_msg="Only files downloaded by the E++ Studio are sealed projects."
+        )
+    if raw[3] != VAULT_VERSION:
+        raise EppDiagnosticError(
+            code="E513", name="This E++ vault was written by a different release", filename=filename,
+            line=1, col=1, source_line="",
+            reason=f"The file format version is {raw[3]}, but this engine reads version {VAULT_VERSION}.",
+            help_msg="Open the file with the release of E++ that created it, then download it again."
+        )
+
+    enc_key, mac_key = vault_subkeys(key)
+    nonce = raw[4:4 + VAULT_NONCE_LEN]
+    payload, tag = raw[:-VAULT_TAG], raw[-VAULT_TAG:]
+    if not hmac.compare_digest(hmac.new(mac_key, payload, hashlib.sha256).digest(), tag):
+        raise EppDiagnosticError(
+            code="E520", name="This key does not open this project", filename=filename,
+            line=1, col=1, source_line="",
+            reason="The key was tried, but the file rejected it — the key belongs to another project, or the file has changed.",
+            help_msg="Pass the key that sealed this project with --key, or point --keyring at its keyring file."
+        )
+    body = raw[VAULT_HEADER:-VAULT_TAG]
+    try:
+        return chacha20_xor(enc_key, nonce, body).decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise EppDiagnosticError(
+            code="E512", name="Corrupted Encrypted Payload", filename=filename,
+            line=1, col=1, source_line="",
+            reason=f"The decrypted stream is not valid UTF-8: {exc}",
+            help_msg="The project may have been truncated."
+        )
+
+
+def load_keyring(path: Optional[str] = None) -> List[dict]:
+    """Reads an E++ keyring file (the JSON the Studio exports)."""
+    import json
+    candidates = []
+    if path:
+        candidates.append(path)
+    env_path = os.environ.get("EPP_KEYRING")
+    if env_path:
+        candidates.append(env_path)
+    candidates.extend(["epp-keys.json", "keyring.json"])
+    for candidate in candidates:
+        if not candidate or not os.path.exists(candidate):
+            continue
+        try:
+            with open(candidate, "r", encoding="utf-8") as handle:
+                data = json.load(handle)
+        except Exception:
+            continue
+        keys = data.get("keys") if isinstance(data, dict) else data
+        if isinstance(keys, list):
+            return [entry for entry in keys if isinstance(entry, dict) and entry.get("key")]
+    return []
+
+
+def keyring_keys(keyring_path: Optional[str] = None) -> List[bytes]:
+    keys: List[bytes] = []
+    for entry in load_keyring(keyring_path):
+        try:
+            keys.append(base64.b64decode(entry["key"]))
+        except Exception:
+            continue
+    return keys
+
+
+def _open_vault_with_keys(text: str, filename: str, keys: Optional[List[bytes]] = None) -> str:
+    attempts = list(keys or []) + keyring_keys()
+    last: Optional[EppDiagnosticError] = None
+    for candidate in attempts:
+        try:
+            return decrypt_epp(text, candidate, filename)
+        except EppDiagnosticError as exc:
+            if exc.code == "E520":
+                last = exc
+                continue
+            raise
+    if last is not None:
+        raise EppDiagnosticError(
+            code="E520", name="This key does not open this project", filename=filename,
+            line=1, col=1, source_line="",
+            reason=f"None of the {len(attempts)} key(s) that were tried open this project.",
+            help_msg="Put the keyring the Studio exported next to the project (epp-keys.json), or set EPP_KEYRING."
+        )
+    raise EppDiagnosticError(
+        code="E521", name="No Key Available", filename=filename, line=1, col=1, source_line="",
+        reason="This project is sealed and no key was found.",
+        help_msg="Export the keyring from the Studio (🔑 Keys) and save it as epp-keys.json next to the project, or set EPP_KEYRING."
+    )
+
+
+def open_vault(text: str, filename: str = "<source>", keyhex: Optional[str] = None, keyring_path: Optional[str] = None) -> str:
+    """Tries the given key, then every key in the keyring, until one opens the vault."""
+    tried = 0
+    errors = []
+    keys: List[bytes] = []
+    if keyhex:
+        try:
+            keys.append(bytes.fromhex(keyhex.strip()))
+        except ValueError:
+            raise EppDiagnosticError(
+                code="E522", name="Bad Key", filename=filename, line=1, col=1, source_line="",
+                reason="--key needs 64 hex characters (a 32-byte E++ vault key).",
+                help_msg="Copy the key from epp-keys.json, or point --keyring at that file."
+            )
+    for entry in load_keyring(keyring_path):
+        try:
+            keys.append(base64.b64decode(entry["key"]))
+        except Exception:
+            continue
+    for candidate in keys:
+        tried += 1
+        try:
+            return decrypt_epp(text, candidate, filename)
+        except EppDiagnosticError as exc:
+            if exc.code == "E520":
+                errors.append(exc)
+                continue
+            raise
+    if tried == 0:
+        raise EppDiagnosticError(
+            code="E521", name="No Key Available", filename=filename, line=1, col=1, source_line="",
+            reason="This project is sealed and no key was supplied.",
+            help_msg="Use --key <64 hex characters>, put epp-keys.json next to the project, or set EPP_KEYRING."
+        )
+    raise EppDiagnosticError(
+        code="E520", name="This key does not open this project", filename=filename, line=1, col=1, source_line="",
+        reason=f"None of the {tried} key(s) that were tried open this project.",
+        help_msg="Pass the key that sealed it with --key, or import the keyring the Studio exported."
+    )
 
 
 # ==========================================
@@ -305,10 +484,11 @@ class Token:
 # ==========================================
 
 class Lexer:
-    def __init__(self, source: str, filename: str = "<source>"):
-        # Auto-decrypt if encrypted
-        if source.strip().startswith("call ENCRYPTION_KEY"):
-            source = decrypt_epp(source, filename)
+    def __init__(self, source: str, filename: str = "<source>", keys: Optional[List[bytes]] = None):
+        # A sealed project is opened before lexing. The keys come from the
+        # keyring file (EPP_KEYRING / keyring.json) awarded by the Studio.
+        if is_vault(source):
+            source = _open_vault_with_keys(source, filename, keys)
 
         self.source = source
         self.filename = filename

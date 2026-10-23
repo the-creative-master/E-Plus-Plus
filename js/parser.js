@@ -254,14 +254,23 @@
   };
 
   Parser.prototype.requireLibrary = function (feature, token) {
-    var owner = EPP.Libraries ? EPP.Libraries.ownerOf(feature) : null;
-    if (owner && !this.loadedLibraries[owner]) {
-      throw new LibraryError(
-        '"' + feature + '" belongs to the ' + owner + ' library, which has not been added yet.',
-        token.line, token.column,
-        'Add this near the top of your program: add library "' + owner + '"'
-      );
+    if (!EPP.Libraries) return;
+    // A feature may belong to more than one library (ImprovedWait contains
+    // every ImprovedWaitLite feature, for example) — any added owner is enough.
+    var owners = EPP.Libraries.ownersOf
+      ? EPP.Libraries.ownersOf(feature)
+      : (EPP.Libraries.ownerOf(feature) ? [EPP.Libraries.ownerOf(feature)] : []);
+    if (!owners.length) return;
+    for (var i = 0; i < owners.length; i++) {
+      if (this.loadedLibraries[owners[i]]) return;
     }
+    var owner = owners[0];
+    var why = EPP.Libraries.whyUnavailable ? EPP.Libraries.whyUnavailable(owner) : null;
+    throw new LibraryError(
+      '"' + feature + '" belongs to the ' + owner + ' library, which has not been added yet.',
+      token.line, token.column,
+      why || ('Add this near the top of your program: add library "' + owner + '"')
+    );
   };
 
   // ---------- program & statements ----------
@@ -306,11 +315,18 @@
           'To run Python, first add the Python library with: add library \"Python\" — then put the Python inside python code, like this: python code \"print(1)\". If you just want E++ to show something, use the word say.');
       case 'ask': return this.parseAsk();
       case 'wait': return this.parseWait();
+      case 'create': return this.parseCreateActor();
+      case 'put': return this.parsePlaceActor();
+      case 'play': return this.parsePlayGame();
+      case 'pause': return this.parseActorControl('pause');
+      case 'resume': return this.parseActorControl('resume');
+      case 'cancel': return this.parseCancelWait();
       case 'library': return this.parseLibrary();
       case 'if': return this.parseIf();
       case 'repeat': return this.parseRepeat();
       case 'while': return this.parseWhile();
-      case 'stop': case 'break': this.advance(); return EPP.AST.Stop(t);
+      case 'stop': return this.parseStop(t);
+      case 'break': this.advance(); return EPP.AST.Stop(t);
       case 'note': return this.parseNote();
       case 'increase': return this.parseIncreaseDecrease(true);
       case 'decrease': return this.parseIncreaseDecrease(false);
@@ -326,6 +342,14 @@
 
   Parser.prototype.parseAdd = function () {
     var kw = this.advance(); // add
+    // Release 1.2: `add the "Math" library` is the form the documentation
+    // uses, so accept it alongside `add library "Math"`.
+    if (this.isWord('the') && this.peek(1) && this.peek(1).type === 'STRING') {
+      this.advance(); // the
+      var libToken = this.advance(); // "Math"
+      this.expectWord('library', 'after the library name, for example: add the "Math" library.');
+      return this.finishAdd(libToken, kw);
+    }
     if (this.isWord('library')) {
       this.advance(); // library
       var nameToken = this.current();
@@ -343,18 +367,37 @@
             'Rename this file to "' + fname.replace(/\.eppl$/i, '.eppla') + '" to use libraries.');
         }
       }
-      if (!EPP.Libraries || !EPP.Libraries.isKnown(nameToken.value)) {
-        var available = EPP.Libraries ? EPP.Libraries.names().join(', ') : 'Math';
-        throw new LibraryError('There is no library called "' + nameToken.value + '".',
-          nameToken.line, nameToken.column, 'Available libraries: ' + available + '.');
-      }
-      var canonical = EPP.Libraries.canonical(nameToken.value);
-      this.loadedLibraries[canonical] = true;
-      return EPP.AST.Library(canonical, kw);
+      return this.finishAdd(nameToken, kw);
     }
     var t = this.current();
     throw new ParseError('Expected "library" after "add" but found ' + this.describe(t) + '.',
-      kw.line, kw.column, 'To add a library, write: add library "Math".');
+      kw.line, kw.column, 'To add a library, write: add the "Math" library.');
+  };
+
+  /** Shared tail of every way of writing "add a library". */
+  Parser.prototype.finishAdd = function (nameToken, kw) {
+    if (!EPP.Libraries || !EPP.Libraries.isKnown(nameToken.value)) {
+      var available = EPP.Libraries ? EPP.Libraries.names().join(', ') : 'Math';
+      throw new LibraryError('There is no library called "' + nameToken.value + '".',
+        nameToken.line, nameToken.column, 'Available libraries: ' + available + '.');
+    }
+    var canonical = EPP.Libraries.canonical(nameToken.value);
+    if (EPP.Libraries.isAvailable && !EPP.Libraries.isAvailable(canonical)) {
+      throw new LibraryError('The "' + canonical + '" library is not included in this build of E++.',
+        nameToken.line, nameToken.column,
+        EPP.Libraries.whyUnavailable(canonical));
+    }
+    if (this.options && this.options.fileName) {
+      var fname2 = this.options.fileName;
+      if (/\.eppl$/i.test(fname2) && !/\.eppla$/i.test(fname2)) {
+        throw new LibraryError(
+          'Files ending in .eppl cannot use libraries. In E++, .eppl is strictly for files WITHOUT libraries, and .eppla is for files WITH libraries.',
+          nameToken.line, nameToken.column,
+          'Rename this file to "' + fname2.replace(/\.eppl$/i, '.eppla') + '" to use libraries.');
+      }
+    }
+    this.loadedLibraries[canonical] = true;
+    return EPP.AST.Library(canonical, kw);
   };
 
   Parser.prototype.parseName = function (context) {
@@ -482,6 +525,53 @@
 
   Parser.prototype.parseSet = function () {
     var kw = this.advance(); // Set / Change
+
+    // Release 1.2: settings that belong to the Game library.
+    if (this.isWord('the') && this.isWord('game', this.peek(1))) {
+      this.requireLibrary('set the game window', kw);
+      this.advance(); // the
+      this.advance(); // game
+      if (this.matchWord('window')) {
+        this.expectWord('to', 'in "set the game window to 640 by 480".');
+        var width = this.parseExpression();
+        this.expectWord('by', 'between the width and the height, for example: set the game window to 640 by 480.');
+        var height = this.parseExpression();
+        return EPP.AST.GameWindow(width, height, kw);
+      }
+      if (this.matchWord('background')) {
+        this.expectWord('to', 'in "set the game background to \"night\"".');
+        return EPP.AST.GameBackground(this.parseExpression(), kw);
+      }
+      var badGame = this.current();
+      throw new ParseError('Expected "window" or "background" after "set the game" but found ' + this.describe(badGame) + '.',
+        badGame.line, badGame.column,
+        'Write it like this: set the game window to 640 by 480 — or: set the game background to "night".');
+    }
+
+    // set the size of the actor 'hero' to 2
+    if (this.isWord('the') && this.isWord('size', this.peek(1))) {
+      this.requireLibrary('set the size of the actor', kw);
+      this.advance(); // the
+      this.advance(); // size
+      this.expectWord('of', 'in "set the size of the actor \'hero\' to 2".');
+      this.matchWord('the');
+      if (!this.matchWord('actor')) {
+        var badSize = this.current();
+        throw new ParseError('Expected the word "actor" after "the size of" but found ' + this.describe(badSize) + '.',
+          badSize.line, badSize.column,
+          'Write it like this: set the size of the actor \'hero\' to 2');
+      }
+      var sizeName = this.current();
+      if (sizeName.type !== 'VARIABLE') {
+        throw new ParseError('An actor needs a name in single quotes, but found ' + this.describe(sizeName) + '.',
+          sizeName.line, sizeName.column,
+          'Write it like this: set the size of the actor \'hero\' to 2');
+      }
+      this.advance();
+      this.expectWord('to', 'before the size, for example: set the size of the actor \'hero\' to 2.');
+      return EPP.AST.ActorSize(sizeName.value, this.parseExpression(), kw);
+    }
+
     var name;
     // Dev Build 5: Set also accepts a quoted variable name: Set 'count' to 5.
     if (this.current().type === 'VARIABLE') {
@@ -500,6 +590,19 @@
       throw new ParseError('"' + kw.value + '" needs something after it.', kw.line, kw.column,
         'For example: ' + kw.value + ' "Hello". or ' + kw.value + ' 1 plus 1.');
     }
+    // Release 1.2: show the actor 'hero' / hide the actor 'hero' (Game library)
+    if (this.isWord('the') && this.isWord('actor', this.peek(1)) && this.peek(2) &&
+        this.peek(2).type === 'VARIABLE') {
+      var action = kw.value.toLowerCase();
+      if (action === 'show' || action === 'hide') {
+        this.requireLibrary(action + ' the actor', kw);
+        this.advance(); // the
+        this.advance(); // actor
+        var actorName = this.advance().value;
+        return EPP.AST.ActorAction(actorName, action, kw);
+      }
+    }
+
     // Dev Build 5: display image '<name>' — Image library
     if (this.isWord('image') && this.peek(1) && this.peek(1).type === 'VARIABLE') {
       this.requireLibrary('display image', kw);
@@ -530,10 +633,112 @@
     return EPP.AST.Ask(prompt, name, kw);
   };
 
+  /**
+   * Release 1.2 — wait, grown up.
+   *
+   *   wait 2 seconds                          classic wait
+   *   wait 2 seconds as 'intro'               named wait           [ImprovedWaitLite]
+   *   wait 2 seconds and then say "Done!"     wait, then do this   [ImprovedWaitLite]
+   *   wait until 'score' is greater than 10   wait for a condition [ImprovedWaitLite]
+   *   wait at most 5 seconds until 'ready' is true                    [ImprovedWaitLite]
+   *   wait for the actor 'hero' to finish     wait for an actor    [ImprovedWait]
+   *   wait at most 5 seconds for the actor 'hero' to finish           [ImprovedWait]
+   *   wait for a key press                    keyboard             [Keyboard]
+   */
   Parser.prototype.parseWait = function () {
     var kw = this.advance(); // wait
+
+    // wait for a key press  [Keyboard]
+    if (this.isWord('for') && this.isWord('a', this.peek(1)) && this.isWord('key', this.peek(2))) {
+      this.requireLibrary('wait for a key press', kw);
+      this.advance(); // for
+      this.advance(); // a
+      this.advance(); // key
+      this.expectWord('press', 'in "wait for a key press".');
+      return EPP.AST.WaitForKey(kw);
+    }
+
+    // wait for the actor 'hero' to finish  [ImprovedWait]
+    if (this.isWord('for') && this.isWord('the', this.peek(1)) && this.isWord('actor', this.peek(2))) {
+      this.requireLibrary('wait for the actor', kw);
+      this.advance(); // for
+      this.advance(); // the
+      this.advance(); // actor
+      var actorToken = this.current();
+      if (actorToken.type !== 'VARIABLE') {
+        throw new ParseError('An actor needs a name in single quotes, but found ' + this.describe(actorToken) + '.',
+          actorToken.line, actorToken.column,
+          'Write it like this: wait for the actor \'hero\' to finish');
+      }
+      this.advance();
+      this.expectWord('to', 'in "wait for the actor \'hero\' to finish".');
+      this.expectWord('finish', 'in "wait for the actor \'hero\' to finish".');
+      var limitForActor = null;
+      if (this.matchWord('in') || this.matchWord('within')) {
+        limitForActor = this.parseExpression();
+        this.matchWord('seconds'); this.matchWord('second');
+      }
+      return EPP.AST.WaitForActor(actorToken.value, limitForActor, kw);
+    }
+
+    // wait until <condition>  /  wait at most N seconds until <condition>
+    if (this.isWord('until')) {
+      this.requireLibrary('wait until', kw);
+      this.advance(); // until
+      return EPP.AST.WaitUntil(this.parseCondition(), null, false, kw);
+    }
+    if (this.isWord('at') && this.isWord('most', this.peek(1))) {
+      this.requireLibrary('wait at most', kw);
+      this.advance(); // at
+      this.advance(); // most
+      var limit = this.parseExpression();
+      this.matchWord('seconds'); this.matchWord('second');
+      if (this.matchWord('until')) {
+        return EPP.AST.WaitUntil(this.parseCondition(), limit, true, kw);
+      }
+      if (this.isWord('for') && this.isWord('the', this.peek(1)) && this.isWord('actor', this.peek(2))) {
+        this.requireLibrary('wait for the actor', kw);
+        this.advance(); this.advance(); this.advance(); // for the actor
+        var atMostActor = this.current();
+        if (atMostActor.type !== 'VARIABLE') {
+          throw new ParseError('An actor needs a name in single quotes, but found ' + this.describe(atMostActor) + '.',
+            atMostActor.line, atMostActor.column,
+            'Write it like this: wait at most 5 seconds for the actor \'hero\' to finish');
+        }
+        this.advance();
+        this.expectWord('to', 'in "wait at most 5 seconds for the actor \'hero\' to finish".');
+        this.expectWord('finish', 'in "wait at most 5 seconds for the actor \'hero\' to finish".');
+        return EPP.AST.WaitForActor(atMostActor.value, limit, kw);
+      }
+      // wait at most N seconds — a plain wait with a ceiling is just a wait.
+      return EPP.AST.Wait(limit, kw);
+    }
+
     var duration = this.parseExpression();
     this.matchWord('seconds'); this.matchWord('second');
+
+    // wait 2 seconds as 'intro'  [ImprovedWaitLite]
+    if (this.isWord('as') && this.peek(1) && this.peek(1).type === 'VARIABLE') {
+      this.requireLibrary('named wait', kw);
+      this.advance(); // as
+      var timerName = this.advance().value;
+      return EPP.AST.WaitNamed(duration, timerName, kw);
+    }
+
+    // wait 2 seconds and then say "Done!"  [ImprovedWaitLite]
+    if (this.isWord('and') && this.isWord('then', this.peek(1))) {
+      this.requireLibrary('wait and then', kw);
+      this.advance(); // and
+      this.advance(); // then
+      if (this.isSeparator(this.current()) || this.atEnd()) {
+        var badThen = this.current();
+        throw new ParseError('"and then" needs an action after it, but the line ended.',
+          badThen.line, badThen.column,
+          'Write it like this: wait 2 seconds and then say "Done!"');
+      }
+      return EPP.AST.WaitThen(duration, this.parseStatement(), null, kw);
+    }
+
     return EPP.AST.Wait(duration, kw);
   };
 
@@ -606,6 +811,169 @@
         'Write some Python between the quotes, for example: python code "print(\'Hello\')"');
     }
     return EPP.AST.PythonCode(code, kw, block);
+  };
+
+
+  // ------------------------------------------------------------------
+  // Release 1.2 — Game library statements
+  // ------------------------------------------------------------------
+
+  /** create the actor 'hero' with the image "<source>" */
+  Parser.prototype.parseCreateActor = function () {
+    var kw = this.advance(); // create
+    this.requireLibrary('create the actor', kw);
+    this.matchWord('the');
+    if (!this.matchWord('actor')) {
+      var bad = this.current();
+      throw new ParseError('Expected the word "actor" after "create" but found ' + this.describe(bad) + '.',
+        bad.line, bad.column,
+        'Write it like this: create the actor \'hero\' with the image "hero.png" — the Image button in the toolbar writes this line for you.');
+    }
+    var nameToken = this.current();
+    if (nameToken.type !== 'VARIABLE') {
+      throw new ParseError('An actor needs a name in single quotes, but found ' + this.describe(nameToken) + '.',
+        nameToken.line, nameToken.column,
+        'Write it like this: create the actor \'hero\' with the image "hero.png"');
+    }
+    this.advance();
+    if (!this.matchWord('with')) {
+      var badWith = this.current();
+      throw new ParseError('Expected the word "with" after the actor name but found ' + this.describe(badWith) + '.',
+        badWith.line, badWith.column,
+        'Write it like this: create the actor \'hero\' with the image "hero.png"');
+    }
+    this.matchWord('the');
+    if (!this.matchWord('image')) {
+      var badImage = this.current();
+      throw new ParseError('Expected the word "image" after "with" but found ' + this.describe(badImage) + '.',
+        badImage.line, badImage.column,
+        'Write it like this: create the actor \'hero\' with the image "hero.png"');
+    }
+    var source = this.parseExpression();
+    return EPP.AST.DefineActor(nameToken.value, source, kw);
+  };
+
+  /** put the actor 'hero' at 100 and 200 */
+  Parser.prototype.parsePlaceActor = function () {
+    var kw = this.advance(); // put
+    this.requireLibrary('put the actor', kw);
+    this.matchWord('the');
+    if (!this.matchWord('actor')) {
+      var bad = this.current();
+      throw new ParseError('Expected the word "actor" after "put" but found ' + this.describe(bad) + '.',
+        bad.line, bad.column,
+        'Write it like this: put the actor \'hero\' at 100 and 200');
+    }
+    var nameToken = this.current();
+    if (nameToken.type !== 'VARIABLE') {
+      throw new ParseError('An actor needs a name in single quotes, but found ' + this.describe(nameToken) + '.',
+        nameToken.line, nameToken.column, 'Write it like this: put the actor \'hero\' at 100 and 200');
+    }
+    this.advance();
+    this.expectWord('at', 'after the actor name, for example: put the actor \'hero\' at 100 and 200.');
+    var x = this.parseExpression();
+    this.expectWord('and', 'between the two numbers of the position.');
+    var y = this.parseExpression();
+    return EPP.AST.PlaceActor(nameToken.value, x, y, kw);
+  };
+
+  /** play the game ... end the game */
+  Parser.prototype.parsePlayGame = function () {
+    var kw = this.advance(); // play
+    this.requireLibrary('play the game', kw);
+    this.matchWord('the');
+    if (!this.matchWord('game')) {
+      var bad = this.current();
+      throw new ParseError('Expected the word "game" after "play" but found ' + this.describe(bad) + '.',
+        bad.line, bad.column, 'Write it like this: play the game ... end the game');
+    }
+    var part = this.parseBranch(kw);
+    if (part.block) {
+      this.skipSeparators();
+      if (!this.isWord('end')) {
+        var t = this.current();
+        throw new ParseError('This "play the game" block never ends.', t.line, t.column,
+          'Close it with: end the game');
+      }
+      this.advance(); // end
+      this.matchWord('the');
+      this.matchWord('game');
+    }
+    return EPP.AST.GameLoop(part.body, kw);
+  };
+
+  /** stop  /  stop the game  /  stop the actor 'hero'  /  stop every actor */
+  Parser.prototype.parseStop = function (t) {
+    this.advance(); // stop
+    if (this.isSeparator(this.current()) || this.atEnd()) return EPP.AST.Stop(t);
+
+    if (this.isWord('the') && this.isWord('game', this.peek(1))) {
+      this.requireLibrary('stop the game', t);
+      this.advance(); this.advance();
+      return EPP.AST.StopGame(t);
+    }
+
+    if (this.isWord('every') && this.isWord('actor', this.peek(1))) {
+      this.requireLibrary('stop every actor', t);
+      this.advance(); this.advance();
+      return EPP.AST.ActorAction('*', 'stop', t);
+    }
+
+    if (this.isWord('actor') || this.isWord('the')) {
+      this.requireLibrary('stop the actor', t);
+      this.matchWord('the');
+      if (!this.matchWord('actor')) {
+        var badA = this.current();
+        throw new ParseError('Expected the word "actor" after "stop the" but found ' + this.describe(badA) + '.',
+          badA.line, badA.column,
+          'Write it like this: stop the actor \'enemy\' — or just "stop" on its own to end a loop.');
+      }
+      var nameToken = this.current();
+      if (nameToken.type !== 'VARIABLE') {
+        throw new ParseError('An actor needs a name in single quotes, but found ' + this.describe(nameToken) + '.',
+          nameToken.line, nameToken.column, 'Write it like this: stop the actor \'enemy\'');
+      }
+      this.advance();
+      return EPP.AST.ActorAction(nameToken.value, 'stop', t);
+    }
+
+    // A plain "stop" followed by an unrelated word is still a loop break.
+    return EPP.AST.Stop(t);
+  };
+
+  /** pause the actor 'hero'  /  resume the actor 'hero' */
+  Parser.prototype.parseActorControl = function (action) {
+    var kw = this.advance(); // pause / resume
+    this.requireLibrary(action + ' the actor', kw);
+    this.matchWord('the');
+    this.matchWord('actor');
+    var nameToken = this.current();
+    if (nameToken.type !== 'VARIABLE') {
+      throw new ParseError('An actor needs a name in single quotes, but found ' + this.describe(nameToken) + '.',
+        nameToken.line, nameToken.column,
+        'Write it like this: ' + action + ' the actor \'hero\'');
+    }
+    this.advance();
+    return EPP.AST.ActorAction(nameToken.value, action, kw);
+  };
+
+  /** cancel the wait 'intro' */
+  Parser.prototype.parseCancelWait = function () {
+    var kw = this.advance(); // cancel
+    this.requireLibrary('cancel the wait', kw);
+    this.matchWord('the');
+    if (!this.matchWord('wait')) {
+      var bad = this.current();
+      throw new ParseError('Expected the word "wait" after "cancel" but found ' + this.describe(bad) + '.',
+        bad.line, bad.column, 'Write it like this: cancel the wait \'intro\'');
+    }
+    var nameToken = this.current();
+    if (nameToken.type !== 'VARIABLE') {
+      throw new ParseError('A named wait needs a name in single quotes, but found ' + this.describe(nameToken) + '.',
+        nameToken.line, nameToken.column, 'Write it like this: cancel the wait \'intro\'');
+    }
+    this.advance();
+    return EPP.AST.CancelWait(nameToken.value, kw);
   };
 
   Parser.prototype.parseLibrary = function () {
@@ -781,9 +1149,10 @@
     this.skipSeparators();
     if (this.isWord('end')) {
       var after = this.peek(1);
-      if (after && after.type === 'WORD' && after.value.toLowerCase() !== 'if' &&
-          (after.value.toLowerCase() === 'repeat' || after.value.toLowerCase() === 'while')) {
-        this.pos = savedPos; // belongs to an enclosing repeat/while
+      // `end` followed by another block word (repeat, while, game, ...)
+      // belongs to an enclosing block — never swallow it as `end if`.
+      if (after && after.type === 'WORD' && after.value.toLowerCase() !== 'if') {
+        this.pos = savedPos;
         return;
       }
       this.advance(); // end
@@ -821,6 +1190,42 @@
   // ---------- conditions ----------
   Parser.prototype.parseCondition = function () {
     var t0 = this.current();
+
+    // Release 1.2 — Keyboard: the "Up arrow" key is pressed  [Keyboard]
+    // The name can be written with quotes (`the "Up arrow" key is pressed`)
+    // or without them (`the Up arrow key is pressed`), because both read like
+    // the sentence people actually say out loud.
+    if (this.isWord('the') && this.peek(1) && this.peek(1).type === 'STRING' &&
+        this.isWord('key', this.peek(2))) {
+      this.requireLibrary('key is pressed', t0);
+      this.advance(); // the
+      var keyToken = this.advance(); // "Up arrow"
+      this.expectWord('key', 'in "the \\"Up arrow\\" key is pressed".');
+      this.expectWord('is', 'in "the \\"Up arrow\\" key is pressed".');
+      var keyNegated = this.matchWord('not');
+      this.expectWord('pressed', 'in "the \\"Up arrow\\" key is pressed".');
+      return EPP.AST.KeyPressed(keyToken.value, keyNegated, t0);
+    }
+    if (this.isWord('the') && this.peek(1) && this.peek(1).type === 'WORD') {
+      var keyWords = [];
+      var scan = 1;
+      while (this.peek(scan) && this.peek(scan).type === 'WORD' && !this.isWord('key', this.peek(scan))) {
+        keyWords.push(this.peek(scan).value);
+        scan += 1;
+      }
+      if (keyWords.length &&
+          this.isWord('key', this.peek(scan)) &&
+          this.isWord('is', this.peek(scan + 1))) {
+        var looseNegated = this.isWord('not', this.peek(scan + 2));
+        var pressedAt = scan + (looseNegated ? 3 : 2);
+        if (this.isWord('pressed', this.peek(pressedAt))) {
+          this.requireLibrary('key is pressed', t0);
+          for (var keyStep = 0; keyStep < pressedAt; keyStep += 1) this.advance();
+          this.advance(); // pressed
+          return EPP.AST.KeyPressed(keyWords.join(' '), looseNegated, t0);
+        }
+      }
+    }
     // `not a number` on its own has nothing to check here — it only makes
     // sense inside an otherwise-if chain (handled by parseBranchCondition)
     // or written in full as: if 'age' is not a number then ...
@@ -851,6 +1256,20 @@
     }
     this.advance(); // is
     var negated = this.matchWord('not');
+
+    // Release 1.2 — Game: if 'hero' is touching 'gem' then ...  [Game]
+    if (this.isWord('touching') || this.isWord('touches')) {
+      if (negated) {
+        var badNeg = this.current();
+        throw new ParseError('"is not touching" is written "is not touching" only in the other direction — E++ keeps it simple: use is touching and put the not in the branch.',
+          badNeg.line, badNeg.column,
+          'Write: if \'hero\' is touching \'gem\' then ... — and use otherwise for the other case.');
+      }
+      this.requireLibrary('is touching', t);
+      this.advance(); // touching
+      var other = this.parseExpression();
+      return EPP.AST.Condition('touching', left, other, t);
+    }
 
     // Dev Build 5: is [not] a positive number / a negative number (Math library)
     if (this.isWord('a') && this.peek(1) && this.peek(1).type === 'WORD') {
@@ -1037,6 +1456,15 @@
 
     if (t.type === 'WORD') {
       var word = t.value.toLowerCase();
+
+      // Release 1.2 — Keyboard: the key pressed  [Keyboard]
+      if (word === 'the' && this.isWord('key', this.peek(1)) && this.isWord('pressed', this.peek(2))) {
+        this.requireLibrary('the key pressed', t);
+        this.advance(); // the
+        this.advance(); // key
+        this.advance(); // pressed
+        return EPP.AST.KeyPressed('*', false, t);
+      }
 
       if (word === 'true' || word === 'yes') { this.advance(); return EPP.AST.Literal(true, t); }
       if (word === 'false' || word === 'no') { this.advance(); return EPP.AST.Literal(false, t); }

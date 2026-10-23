@@ -41,7 +41,29 @@
     CONVERSION: 'Conversion',
     TEXT_FUNCTION: 'TextFunction',
     RANDOM_NUMBER: 'RandomNumber',
-    CONDITION: 'Condition'
+    CONDITION: 'Condition',
+
+    // Release 1.2 — Game library
+    GAME_WINDOW: 'GameWindow',
+    GAME_BACKGROUND: 'GameBackground',
+    DEFINE_ACTOR: 'DefineActor',
+    PLACE_ACTOR: 'PlaceActor',
+    ACTOR_ACTION: 'ActorAction',
+    ACTOR_SIZE: 'ActorSize',
+    GAME_LOOP: 'GameLoop',
+    STOP_GAME: 'StopGame',
+    TOUCHING: 'Touching',
+
+    // Release 1.2 — Keyboard library
+    KEY_PRESSED: 'KeyPressed',
+    WAIT_FOR_KEY: 'WaitForKey',
+
+    // Release 1.2 — ImprovedWait / ImprovedWaitLite
+    WAIT_THEN: 'WaitThen',
+    WAIT_NAMED: 'WaitNamed',
+    CANCEL_WAIT: 'CancelWait',
+    WAIT_UNTIL: 'WaitUntil',
+    WAIT_FOR_ACTOR: 'WaitForActor'
   };
 
   function at(node, token) {
@@ -108,6 +130,53 @@
     RandomNumber: function (low, high, token) { return at({ type: Type.RANDOM_NUMBER, low: low, high: high }, token); },
     Condition: function (operator, left, right, token) {
       return at({ type: Type.CONDITION, operator: operator, left: left, right: right || null }, token);
+    },
+
+    // ---- Release 1.2 nodes -------------------------------------------------
+
+    GameWindow: function (width, height, token) {
+      return at({ type: Type.GAME_WINDOW, width: width, height: height }, token);
+    },
+    GameBackground: function (value, token) {
+      return at({ type: Type.GAME_BACKGROUND, value: value }, token);
+    },
+    DefineActor: function (name, image, token) {
+      return at({ type: Type.DEFINE_ACTOR, name: name, image: image }, token);
+    },
+    PlaceActor: function (name, x, y, token) {
+      return at({ type: Type.PLACE_ACTOR, name: name, x: x, y: y }, token);
+    },
+    ActorAction: function (name, action, token) {
+      return at({ type: Type.ACTOR_ACTION, name: name, action: action }, token);
+    },
+    ActorSize: function (name, size, token) {
+      return at({ type: Type.ACTOR_SIZE, name: name, size: size }, token);
+    },
+    GameLoop: function (body, token) {
+      return at({ type: Type.GAME_LOOP, body: body || [] }, token);
+    },
+    StopGame: function (token) { return at({ type: Type.STOP_GAME }, token); },
+    Touching: function (name, other, token) {
+      return at({ type: Type.TOUCHING, name: name, other: other }, token);
+    },
+    KeyPressed: function (key, negated, token) {
+      return at({ type: Type.KEY_PRESSED, key: key, negated: !!negated }, token);
+    },
+    WaitForKey: function (token) { return at({ type: Type.WAIT_FOR_KEY }, token); },
+    WaitThen: function (duration, statement, timerName, token) {
+      return at({ type: Type.WAIT_THEN, duration: duration, statement: statement || null, timerName: timerName || null }, token);
+    },
+    WaitNamed: function (duration, timerName, token) {
+      return at({ type: Type.WAIT_NAMED, duration: duration, timerName: timerName }, token);
+    },
+    CancelWait: function (timerName, token) {
+      return at({ type: Type.CANCEL_WAIT, timerName: timerName }, token);
+    },
+    WaitUntil: function (condition, limit, limitIsTime, token) {
+      return at({ type: Type.WAIT_UNTIL, condition: condition, limit: limit || null, limitIsTime: !!limitIsTime }, token);
+    },
+    WaitForActor: function (name, limit, token) {
+      return at({ type: Type.WAIT_FOR_ACTOR, name: name, limit: limit || null }, token);
     },
 
     /** Depth-first walk over a node tree. `visit(node)` runs before children. */

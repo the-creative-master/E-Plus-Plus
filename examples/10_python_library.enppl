@@ -1,2 +1,15 @@
-call ENCRYPTION_KEY
-AAABoV84T0LuhwPpVmjapgFZEWIWRlu3OZCMfymQfgUYhVer0g9gr8XrDZGmQsFwCarKO1qeckDiBAU1LRobrKpm0+Dg/SsNq3BJhgyfIZss7W2z2l3Y56kn7lW/TMXgpwYbKufsWYVYM9v7zlLkOA5nZ2u9hE/FDM+G1YWVmtkR4kq6ueI8+DEOglErIoAxbKEY0LNCmCY4tYaC5qrndMx2Cqvt8ACXRQnRo40iovGXKasKVXQ3XXsOnawr9fTw9Vo2EtPOb9flqhhrkpr5EZqj64CX/urBYk7/N9lg/7uspbZF244RvPj4agbRZNACfiulRe5v+YKvXZi3uuZZcfdIcj4O1ESwhRvShqvn7rJ7p2JCNl4Gbc4I+IL82ZfhlHufbWY3XHsT5TKlSKtF1TE3i5P292sNTUB7K+UVvb3QOesYHZQizY78crK9UjXLouJQU33Bzn6Stk+FjWW82IGPDUkJe6jJinJvXbssFfm8SaNwsaL1WOToFemthWe/Xgm+WmObxmrN7zYfTtjeoat8ZVcVjfVBGANiRyYGDw70lSABlBr/HYLvnhsijNrm9FPaewg40QkfkEvr7Vc8/fFgnZoouHejyDiWS09liZMh
+note [10_python_library.enppl: The Python Library in E++]
+
+add the "Python" library
+
+note [1. Run single-line Python code:]
+run the python code "print('Hello from Python single line!')"
+
+note [2. Run multi-line Python block:]
+run the python code:
+for I in range 3:
+   print("Hello from Python loop:", I)
+
+note [3. Interacting between E++ and Python:]
+let 'Greeting' be "Welcome to E++ and Python"
+run the python code "print('Uppercase:', greeting.upper())"

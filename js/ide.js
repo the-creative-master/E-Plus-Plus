@@ -1,5 +1,5 @@
 /*
- * E++ IDE application (Dev Build 5).
+ * E++ IDE application (1.2 Encryption++).
  *
  * Project Humanizer:
  * - Pure .eppl files (no libraries) vs .eppla files (with libraries).
@@ -23,7 +23,7 @@
     {
       name: 'hello.eppl',
       content:
-        'note: Your first E++ program (Dev Build 5).\n' +
+        'note: Your first E++ program (1.2 Encryption++).\n' +
         'note: Based on WeeklyHow\'s AI programming language video.\n' +
         'Define name as WeeklyHow.\n' +
         'say "Hello " plus \'name\' plus "!"\n' +
@@ -162,11 +162,11 @@
   // ------------------------------------------------------------------
   var TUTORIAL_LESSONS = [
     {
-      title: '1. Welcome to E++ (Dev Build 5)',
+      title: '1. Welcome to E++ (1.2 Encryption++)',
       badge: 'Basics',
       summary: 'E++ is an English-like language based on WeeklyHow’s AI video, where AI was asked to create a coding language that reads like human language.',
       explanation: 'Statements in E++ end with a period (.) or a newline. Comments start with "note:". Words like "say" print text to the console.',
-      code: 'note: Welcome to E++ Dev Build 5!\n' +
+      code: 'note: Welcome to E++ 1.2 Encryption++!\n' +
             'note: Inspired by WeeklyHow\'s AI video.\n' +
             'say "Hello, world!"\n' +
             'say "E++ looks like English, reads like English, and behaves like code."'
@@ -236,7 +236,7 @@
       badge: 'Images',
       summary: 'The Image library lets you work with Base64-encoded images. Define images, check if they exist, and display them in the console!',
       explanation: 'Images use Base64 encoding (a way to store images as text). The library auto-detects PNG, JPEG, GIF, and WebP formats. Use "define", "check if", and "display image" commands.',
-      code: 'note: Image Library Example (Dev Build 5)\n' +
+      code: 'note: Image Library Example (1.2 Encryption++)\n' +
             'note: This tiny PNG is a 1x1 red pixel\n\n' +
             'add library "Image"\n\n' +
             'define \'red_pixel\' as image "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="\n\n' +
@@ -451,7 +451,7 @@
     setSaveStatus('Unsaved changes…', true);
     clearTimeout(saveTimer);
     saveTimer = setTimeout(function () { saveCurrent(false); }, 450);
-    // Dev Build 6: Auto-change to .eppla if library usage detected
+    // Release 1.2: Auto-change to .eppla if library usage detected
     if (settings.autoEppla && currentName && /\.eppl$/i.test(currentName) && !/\.eppla$/i.test(currentName)) {
       if (EPP.hasLibraryUsage(editor.value)) {
         var newName = currentName.replace(/\.eppl$/i, '.eppla');
@@ -750,7 +750,7 @@
     });
   }
 
-  // Dev Build 6: Settings
+  // Release 1.2: Settings
   var SETTINGS_KEY = 'eplusplus.settings.v1';
   var settings = { theme: 'dark', autoEppla: true };
   try {
@@ -1052,7 +1052,7 @@
       pythonExecutor: executePython,
       onSprite: handleSprite,
       onImageDisplay: function (info) {
-        // Dev Build 5: render Base64 image as an actual <img> in the console.
+        // 1.2 Encryption++: render Base64 image as an actual <img> in the console.
         // The source may be a raw base64 string or a full data-URI.
         var src = info.source;
         if (src && !/^data:/i.test(src)) {
@@ -1154,6 +1154,6 @@
   var initial = files.some(function (f) { return f.name === 'hello.eppl'; }) ? 'hello.eppl' : (files[0] && files[0].name);
   if (initial) openFile(initial);
   else refreshEditor();
-  appendConsole('You are running E++ Dev Build 5. Open a .eppl or .eppla file on the left and press Run.', 'system');
+  appendConsole('You are running E++ 1.2 Encryption++. Open a .eppl or .eppla file on the left and press Run.', 'system');
   updateDashboard();
 })();

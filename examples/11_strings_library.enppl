@@ -1,2 +1,23 @@
-call ENCRYPTION_KEY
-AAABoV84T0TD5ZoVcbj8gZ0BrjEZzg2tlGcAQruzYH6wueCdTgnPC1k/ad4msiHIzDCYCHbt4xUhMIZwmLIgDM/PKh3WqytNTdGnaoqbd83clNbK8r1McUStUWtA53ykH+Uo/5uwYc5exnQCU8+2DbjAT0L0eiKvhRZeUkaEk98h595rzY5Ww7y/KU4RpTeFcyvY9ISHY5q06b6Gp8m4v+FqRTveqCXSIEcEHmclA5Ki0QoT86brRlmzlN1YNGnU36r8X9rvjR6GUMr3j7gxAduhfVqVHuvZbNJPKa5nXlY2sHGCp008p3gwvkLCqTfV0TKJAaX4yrBVvx5YwadJuauKR86qFG77+bsgkeRVMhk1hqfZDvQ443hmXhASlKu/KoOpE/tYOQ/kuNbfx8A+k3G/UF5732OItFhQOPjLwDoyRNtrDDcfpAUH4i2eQXL6uApGdHHrRTqtYWbfvsi3S/P63wxNT9N+HvPf9rf4Wpllr1zIAuKLhQlB7Vf5ANvFwmDbWj4VWbphS9l3YzLIe9gOHk/HdL78Ke6/12AHLPGTwsZBusai9PJFIu96tjsGSqZBkVcyFudNEYftFbDXHm/N4AxEIZtH0/MWnr0Eugiip8I7JuAdKdq8yKGJsFZI2UTqwccnJdSn8xLOuG+B2XbYVmzUqT//fWY71Y9F9I2Y29++xgm8BwYWqIKv13tLzyRvDzG7AmD36pHcR0HlcKSclx3nAhcGt3c7L2zMPIDilEl2KgbP0VySoQfAmF7aZowmJKFquKHoKbi3cpNnVufdXb7k6Ts1fEQ1ALPUfucgQu40mKaDkWE+50y/83tVm9yxtXrrIF6un47dDegciubez2HGzMKKI2nLNHZMFgXRkg5PaGWeuRCFm/ORxoakAG6YKrIFLe5jwWLjUieskz8T3RUQ8tABIbCS7/tbXQz7yohnsOb7C3VoQzr2pS4eF8G6wK8ToTCVbtVlC8QglJ6Y7CT8D1pJNQ==
+note [Strings Library Demonstration in E++ (.enppl)]
+add the "Strings" library
+
+note [1. Measuring String Length]
+let 'Message' be "Hello, E++ Release 1.0!"
+say "Original message:", 'Message'
+say "Length of message:", the length of 'Message'
+
+note [2. Uppercase and Lowercase Transforms]
+say "Uppercase:", the uppercase of 'Message'
+say "Lowercase:", the lowercase of 'Message'
+
+note [3. String Reversal]
+say "Reversed message:", the reverse of 'Message'
+
+note [4. First and Last Letters]
+say "First letter:", the first letter of 'Message'
+say "Last letter:", the last letter of 'Message'
+
+note [5. Whitespace Trimming]
+let 'Padded' be "   Spaced out text   "
+say "Before trimming:", 'Padded'
+say "After trimming:", the trim of 'Padded'
