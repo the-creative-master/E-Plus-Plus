@@ -3,21 +3,22 @@
  * Builds the release bundle: E++.zip (and its twin epp_language.zip, which the
  * Studio reads for the offline runtime check).
  *
- * E++.zip is the *standalone* build of E++ 1.2. Two of the new libraries need
- * things the standalone bundle cannot carry:
+ * E++.zip is the *standalone* build of E++ 1.2.1. The Studio and the zip carry
+ * different halves of the game tooling, and only one of them at a time:
  *
- *   Game         — needs a canvas and js/game-library.js
- *   ImprovedWait — the actor half of the waiting engine (the biggest module)
+ *   Studio (E++ Studio)          Game, ImprovedWait
+ *   Zip    (the standalone)      Keyboard, ImprovedWaitLite
  *
- * Both stay out of this bundle. Nothing is silently missing: the copy of
- * index.html inside the zip is stamped with `window.EPP_DISTRIBUTION = true`,
- * so `add library "Game"` explains that the library lives in the full Studio
- * download, and the library cards for both are removed from the page.
+ * Game needs a canvas and js/game-library.js, and ImprovedWait is the actor
+ * half of the waiting engine — neither travels in this bundle. Nothing is
+ * silently missing: the copy of index.html inside the zip is stamped with
+ * `window.EPP_DISTRIBUTION = true`, which makes js/libraries.js hide
+ * Game/ImprovedWait and keeps Keyboard/ImprovedWaitLite, so `add library "Game"`
+ * explains that the library lives in the full Studio download and the library
+ * cards for both are removed from the page.
  *
- * The other two 1.2 libraries ARE here:
- *
- *   Keyboard         — js/keyboard.js
- *   ImprovedWaitLite — every non-game waiting feature
+ * ImprovedWaitLite is the reverse case: it is *only* here. The Studio hides it
+ * and offers ImprovedWait instead, so no page ever shows two ways to wait.
  *
  * Usage: node tools/build-zip.mjs   (or: make zip)
  */
@@ -123,8 +124,8 @@ function stampDistributionFlag() {
   // the module that owns the registry.
   html = html.replace(
     anchor,
-    '<script>\n// This copy of the Studio ships in E++.zip. Game and ImprovedWait are only\n' +
-    '// in the full Studio download; Keyboard and ImprovedWaitLite are here.\n' +
+    '<script>\n// This copy ships in E++.zip: Game and ImprovedWait stay in the full\n' +
+    '// Studio download, Keyboard and ImprovedWaitLite are here.\n' +
     'window.EPP_DISTRIBUTION = true;\n</script>\n' + anchor
   );
 
@@ -185,16 +186,42 @@ function verifyArchive() {
     throw new Error('E++.zip index.html does not mark itself as a distribution build');
   }
 
-  // Keyboard and ImprovedWaitLite have to be usable inside the bundle, and the
-  // two missing libraries must still be described so the page can explain.
+  // Every library has to stay described, even the ones this build hides, so the
+  // page can explain where they went. Keyboard, Time and ImprovedWaitLite are
+  // all usable inside the bundle; Game and ImprovedWait are not.
   const registry = fs.readFileSync(path.join(STAGE, 'js', 'libraries.js'), 'utf8');
-  for (const name of ['Keyboard', 'ImprovedWaitLite', 'Game', 'ImprovedWait']) {
+  for (const name of ['Keyboard', 'ImprovedWaitLite', 'ImprovedWait', 'Game']) {
     if (!registry.includes('    ' + name + ': {')) {
       throw new Error('js/libraries.js no longer describes the ' + name + ' library');
     }
   }
-  if (!page.includes("hideForDistribution(['Game', 'ImprovedWait'])")) {
-    throw new Error('index.html no longer switches off Game/ImprovedWait for a distribution build');
+
+  // The two-build split lives in js/libraries.js. If that table drifts, the zip
+  // would ship the wrong half of the game tooling without anything failing.
+  const builds = registry.match(/var BUILD_LIBRARIES = \{([\s\S]*?)\n  \};/);
+  if (!builds) throw new Error('js/libraries.js no longer declares BUILD_LIBRARIES');
+  const studioLine = (builds[1].match(/studio:\s*\[([^\]]*)\]/) || [])[1] || '';
+  const zipLine = (builds[1].match(/distribution:\s*\[([^\]]*)\]/) || [])[1] || '';
+  const listed = (line) => line.split(',').map((n) => n.trim().replace(/['"]/g, '')).filter(Boolean);
+
+  if (!listed(studioLine).includes('ImprovedWaitLite')) {
+    throw new Error('the Studio build must hide ImprovedWaitLite');
+  }
+  for (const name of ['Game', 'ImprovedWait']) {
+    if (!listed(zipLine).includes(name)) {
+      throw new Error('the E++.zip build must hide ' + name);
+    }
+  }
+  if (listed(zipLine).includes('ImprovedWaitLite')) {
+    throw new Error('ImprovedWaitLite belongs in E++.zip, not in the hidden list');
+  }
+
+  // And the page must actually consult that table rather than a hard-coded list.
+  if (!page.includes('.applyBuild(') || !page.includes('EPP_DISTRIBUTION')) {
+    throw new Error('index.html no longer applies the build library split');
+  }
+  if (!page.includes('function applyBuildLibraries(')) {
+    throw new Error('index.html no longer defines applyBuildLibraries()');
   }
 
   log('verified ' + listing.length + ' files: Keyboard + ImprovedWaitLite in, Game + ImprovedWait out');

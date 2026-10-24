@@ -1,4 +1,4 @@
-# E++ Programming Language [1.2]
+# E++ Programming Language [1.2.1]
 > **"Looks like English, feels like english, and is english"**
 
 Welcome to **E++ 1.2** — a release in three parts: **guided tutorials** built
@@ -9,6 +9,20 @@ into the Studio, the **Game** library that turns E++ into a small game engine
 E++ still runs on three engines that agree with each other: a native C++
 engine, a single-file Python runtime, and the zero-dependency Studio that runs
 offline in the browser.
+
+---
+
+## 🆕 What is new in 1.2.1
+
+A small release that fixes what 1.2 got wrong and tidies what it left rough.
+
+| Change | What it means |
+| --- | --- |
+| **ImprovedWaitLite moved to `E++.zip` only** | The Studio now offers **ImprovedWait** (which already includes every lite feature) and no longer lists ImprovedWaitLite at all. No page shows two ways to wait. |
+| **Actor images work** | Adding a picture now writes `create the actor 'hero' with the image "…"` *and* `put the actor 'hero' at 0 and 0`, so `'hero'` really is the actor afterwards. Images with `//` inside (every data URL) are no longer mistaken for comments. |
+| **A 💡 Suggest button** | Ideas are posted to the project's public issue tracker, so the whole community can see, reply to and vote on them — not just the person who typed them. The panel also lists what everyone else has suggested. |
+| **Cleaner layout** | The toolbar is grouped (files · learn · tools · run) with dividers, the stats bar is split into labelled groups with the golden rules as fine print, and the small panels line up. |
+| **Quieter editor** | Space and the arrow keys scroll the page again instead of being swallowed, and the Studio asks with its own dialogs instead of the browser's `prompt`/`confirm`. |
 
 ---
 
@@ -193,7 +207,10 @@ same key, the same goes for down, left and right, and the quotes are optional �
 `"Escape"`, `"Tab"`, `"Shift"`, `"Control"`, `"Alt"`, `"Backspace"`,
 `"Delete"` and every single letter work too. `any` means "any key".
 
-### ImprovedWaitLite (`"ImprovedWaitLite"`)
+### ImprovedWaitLite (`"ImprovedWaitLite"`) — `E++.zip` only
+The cut-down waiting engine. It is part of the standalone `E++.zip` download and
+is **not** in E++ Studio, which has the full `ImprovedWait` library instead.
+
 ```text
 add the "ImprovedWaitLite" library
 
@@ -223,8 +240,10 @@ stop every actor
 ```
 
 `ImprovedWait` includes every ImprovedWaitLite feature; ImprovedWaitLite does
-**not** include the actor features. That is why the lite library is the one
-that ships in `E++.zip`.
+**not** include the actor features. So each build ships exactly one of them:
+the Studio has `ImprovedWait`, and `E++.zip` — which leaves the game library
+out — has `ImprovedWaitLite`. Writing `add the "ImprovedWaitLite" library` in
+the Studio says where that library lives instead of failing obscurely.
 
 ---
 
@@ -237,7 +256,9 @@ needs a canvas and the **ImprovedWait** actor engine is the largest module in
 the release, so both are left out of the zip on purpose: the build marks them
 as unavailable, removes their cards from the library panel, and
 `add the "Game" library` answers in plain English instead of failing obscurely.
-Use the full Studio release to build games.
+Use the full Studio release to build games. The reverse is true as well:
+**ImprovedWaitLite is only in the zip** — the Studio hides it, so nobody is
+taught two different ways to wait.
 
 ---
 

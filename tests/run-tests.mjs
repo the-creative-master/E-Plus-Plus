@@ -26,7 +26,7 @@ context.globalThis = context;
 for (const file of [
   'errors.js', 'lexer.js', 'ast.js', 'libraries.js', 'keyboard.js', 'parser.js',
   'python-runner.js', 'interpreter.js', 'files.js', 'highlight.js', 'standalone-generator.js',
-  'vault.js', 'tutorials.js'
+  'vault.js', 'ideas.js', 'tutorials.js'
 ]) {
   vm.runInContext(readFileSync(join(root, 'js', file), 'utf8'), context, { filename: file });
 }
@@ -1205,8 +1205,11 @@ console.log('Tutorials');
   ok(T.courses.length + ' courses, ' + cards + ' cards, all fully written');
 
   // Every solution must pass its own card, and every starter must fail it.
+  // The deck is read the way the Studio builds it: `{wait}` resolved to the
+  // waiting library this build actually has.
   EPP.Libraries.showAll();
-  for (const course of T.courses) {
+  const deck = T.forBuild((name) => EPP.Libraries.isAvailable(name));
+  for (const course of deck) {
     for (const step of course.steps) {
       const id = course.id + '/' + step.id;
       const keys = (step.test && step.test.keys) || {};
@@ -1238,7 +1241,7 @@ console.log('Tutorials');
   // Every line a card shows the reader has to run as written. The one
   // exception is the card that is broken on purpose.
   let snippets = 0;
-  for (const course of T.courses) {
+  for (const course of deck) {
     for (const step of course.steps) {
       if (step.id === 'fix-the-error') continue;
       for (const block of step.body) {
@@ -1297,6 +1300,236 @@ console.log('Tutorials');
   assert.deepEqual([...T.requirementsOf(T.courses[0], step)], [...(T.courses[0].needs || []), ...(step.needs || [])],
     'requirementsOf lists the libraries a card needs');
   ok('progress is stored per card under ' + T.progressKey);
+}
+
+// ============================================================
+// Release 1.2.1 — one Studio, one E++.zip, no overlap
+// ============================================================
+console.log('\nRelease 1.2.1: the two builds');
+
+{
+  // The Studio keeps ImprovedWait (actors and all) and hides Its Lite twin.
+  const studioMissing = EPP.Libraries.applyBuild('studio');
+  assert.deepEqual([...studioMissing], ['ImprovedWaitLite'], 'the Studio hides exactly ImprovedWaitLite');
+  assert.equal(EPP.Libraries.isAvailable('ImprovedWait'), true);
+  assert.equal(EPP.Libraries.isAvailable('Game'), true);
+  assert.equal(EPP.Libraries.isAvailable('ImprovedWaitLite'), false);
+  assert.match(EPP.Libraries.whyUnavailable('ImprovedWaitLite'), /E\+\+\.zip/i,
+    'the Studio says where the Lite library lives');
+  ok('the Studio has everything except ImprovedWaitLite');
+
+  // The wait feature must still name an owner the Studio actually has.
+  const studioWaitOwners = EPP.Libraries.ownersOf('wait until');
+  assert.ok(studioWaitOwners.indexOf('ImprovedWaitLite') === -1, 'a hidden library never owns a feature');
+  assert.ok(studioWaitOwners.indexOf('ImprovedWait') !== -1, 'ImprovedWait covers the lite features here');
+  assert.deepEqual([...EPP.Libraries.ownersOf('pause the actor')], ['ImprovedWait']);
+  ok('the wait wording points at ImprovedWait inside the Studio');
+
+  await expectError('the Studio refuses `add library "ImprovedWaitLite"`',
+    'add library "ImprovedWaitLite"\nwait 1 second', /E\+\+\.zip/i);
+
+  // E++.zip is the mirror image: Lite in, Game and ImprovedWait out.
+  const zipMissing = EPP.Libraries.applyBuild('distribution').slice().sort();
+  assert.deepEqual(zipMissing, ['Game', 'ImprovedWait']);
+  assert.equal(EPP.Libraries.isAvailable('ImprovedWaitLite'), true);
+  assert.equal(EPP.Libraries.isAvailable('Keyboard'), true);
+  assert.equal(EPP.Libraries.isAvailable('Game'), false);
+  assert.equal(EPP.Libraries.isAvailable('ImprovedWait'), false);
+  assert.match(EPP.Libraries.whyUnavailable('Game'), /Studio/i);
+  ok('E++.zip has ImprovedWaitLite and leaves Game/ImprovedWait out');
+
+  assert.deepEqual([...EPP.Libraries.ownersOf('wait until')], ['ImprovedWaitLite'],
+    'inside the zip the wait feature belongs to ImprovedWaitLite');
+
+  // The Lite library really runs there, and the missing one really explains.
+  const { output } = await run('add library "ImprovedWaitLite"\nwait 0.1 seconds as \'tick\'\nsay "zip ok"');
+  assert.deepEqual([...output], ['zip ok']);
+  await expectError('E++.zip explains where Game went',
+    'add library "Game"', /Studio/i);
+  ok('the zip runs ImprovedWaitLite and explains the missing Game library');
+
+  // The build table is the single source of truth for both directions.
+  assert.deepEqual([...EPP.Libraries.missingFor('studio')], ['ImprovedWaitLite']);
+  assert.deepEqual([...EPP.Libraries.missingFor('distribution')].sort(), ['Game', 'ImprovedWait']);
+  EPP.Libraries.showAll();
+  assert.equal(EPP.Libraries.isAvailable('ImprovedWaitLite'), true, 'showAll restores everything');
+  assert.equal(EPP.Libraries.isAvailable('Game'), true);
+  ok('applyBuild()/missingFor() describe both builds and showAll() clears them');
+}
+
+{
+  // The tutorial deck follows the build: no card may tell a zip user to add a
+  // library that build does not have (or a Studio user about ImprovedWaitLite).
+  const T = EPP.Tutorials;
+  const studio = EPP.Libraries.applyBuild('studio');
+  const studioDeck = T.forBuild((name) => EPP.Libraries.isAvailable(name));
+  EPP.Libraries.applyBuild('distribution');
+  const zipDeck = T.forBuild((name) => EPP.Libraries.isAvailable(name));
+
+  const text = (deck) => JSON.stringify(deck);
+  assert.ok(studioDeck.length > 0 && zipDeck.length > 0, 'both builds get a deck');
+  assert.ok(!/ImprovedWaitLite/.test(text(studioDeck)), 'the Studio deck never mentions ImprovedWaitLite');
+  assert.ok(!/"ImprovedWait"/.test(text(zipDeck)), 'the zip deck never asks for ImprovedWait');
+  assert.ok(!/"Game"/.test(text(zipDeck)), 'the zip deck never asks for Game');
+  assert.ok(/ImprovedWaitLite/.test(text(zipDeck)), 'the zip deck waits with ImprovedWaitLite');
+  assert.ok(T.totalSteps(studioDeck) > T.totalSteps(zipDeck), 'the zip loses the game cards');
+  const dropped = studioDeck.filter((course) => !zipDeck.some((z) => z.id === course.id))
+    .map((course) => course.id);
+  assert.deepEqual(dropped, ['games'], 'the zip drops the game course, which cannot run without Game');
+  assert.ok(zipDeck.every((course) => course.hiddenSteps === 0), 'no zip course is left half-empty');
+  assert.ok(studioDeck.every((course) => course.hiddenSteps === 0), 'the Studio deck is complete');
+  ok('each build gets only the tutorial cards it can actually run');
+
+  // And the placeholder itself is not a library name.
+  assert.deepEqual([...studio], ['ImprovedWaitLite']);
+  EPP.Libraries.showAll();
+  assert.equal(T.waitLibraryFor((name) => name !== 'ImprovedWaitLite'), 'ImprovedWait');
+  assert.equal(T.waitLibraryFor(() => true), 'ImprovedWait');
+  assert.equal(T.fillPlaceholders('add the "{wait}" library', { wait: 'ImprovedWaitLite' }),
+    'add the "ImprovedWaitLite" library');
+  ok('{wait} resolves to the waiting library this build has');
+}
+
+// ============================================================
+// Release 1.2.1 — the community idea tracker
+// ============================================================
+console.log('\nRelease 1.2.1: suggest a feature');
+
+{
+  const I = EPP.Ideas;
+  assert.ok(I, 'js/ideas.js publishes EPP.Ideas');
+
+  const post = I.postUrl('Let me draw circles in the Game library\nand colour them');
+  assert.ok(post.startsWith('https://github.com/the-creative-master/E-Plus-Plus/issues/new?'), post);
+  assert.ok(post.includes('labels=feature-request'), 'the idea is labelled for the shared list');
+  const query = new URLSearchParams(post.split('?')[1]);
+  assert.ok(query.get('title').startsWith('[Idea] '), 'the title carries the idea mark');
+  assert.strictEqual(query.get('title'), '[Idea] Let me draw circles in the Game library',
+    'the first line becomes the title');
+  assert.ok(query.get('body').includes('and colour them'), 'the whole idea becomes the body');
+  ok('an idea becomes a prefilled public issue');
+
+  const empty = new URLSearchParams(I.postUrl('   ').split('?')[1]);
+  assert.ok(empty.get('title').startsWith('[Idea] '), 'even an empty box gets a usable title');
+  ok('posting with an empty box still opens a usable issue');
+
+  const fixture = [
+    // An idea posted by someone outside the project: no label, only the title.
+    { title: '[Idea] a dark theme', html_url: 'https://x/1', state: 'open', comments: 3,
+      user: { login: 'someone' }, created_at: '2026-10-01T10:00:00Z', reactions: { '+1': 4 } },
+    // An idea labelled by a maintainer: no prefix needed.
+    { title: 'Sound support', html_url: 'https://x/2', state: 'closed', comments: 0,
+      labels: [{ name: 'feature-request' }], user: { login: 'maintainer' }, created_at: '2026-09-02T00:00:00Z' },
+    // Ordinary bug reports and pull requests are not ideas.
+    { title: 'Crash on empty file', html_url: 'https://x/3', labels: [{ name: 'bug' }] },
+    { title: '[Idea] looks like a PR', html_url: 'https://x/4', pull_request: { url: 'x' } }
+  ];
+  const ideas = I.parseIssues(fixture);
+  assert.deepEqual(ideas.map((idea) => idea.title), ['a dark theme', 'Sound support'],
+    'both marks are accepted, and the prefix is stripped');
+  assert.strictEqual(ideas[0].votes, 4);
+  assert.strictEqual(ideas[0].author, 'someone');
+  assert.strictEqual(ideas[0].date, '2026-10-01');
+  assert.strictEqual(ideas[1].state, 'closed');
+  ok('the list accepts labelled ideas and [Idea] titles, and skips everything else');
+
+  assert.deepEqual(I.parseIssues(null), []);
+  assert.deepEqual(I.parseIssues({}), []);
+  assert.deepEqual(I.parseIssues([]), []);
+  ok('a broken or empty API answer is an empty list, not a crash');
+
+  assert.ok(I.issuesUrl().includes('/issues?') && I.issuesUrl().includes('%5BIdea%5D'),
+    'there is always a plain link to the public list');
+
+  // The page must survive a browser with no network at all (the preview case).
+  await assert.rejects(
+    () => I.fetchIdeas({ fetch: () => { throw new Error('offline'); } }),
+    /offline/
+  );
+  const refused = await I.fetchIdeas({
+    fetch: async () => ({ ok: false, status: 403, json: async () => [] })
+  }).then(() => 'resolved', (error) => error.message);
+  assert.match(String(refused), /403/, 'a refused request reports the status');
+  const live = await I.fetchIdeas({
+    fetch: async () => ({
+      ok: true,
+      json: async () => [
+        { title: '[Idea] made up', html_url: 'https://x/9', labels: [], state: 'open',
+          user: { login: 'tester' }, created_at: '2026-10-24T00:00:00Z', reactions: { '+1': 1 } }
+      ]
+    })
+  });
+  assert.deepEqual(live.map((idea) => idea.title), ['made up']);
+  ok('ideas are read through a fetch the tests can stand in for');
+
+  const cached = I.fromCache(I.toCache(ideas, 1000), 1000);
+  assert.deepEqual(cached.map((idea) => idea.url), ['https://x/1', 'https://x/2']);
+  assert.strictEqual(I.fromCache('not json', 1000), null);
+  assert.strictEqual(I.fromCache(I.toCache(ideas, 1), 1 + 7 * 60 * 60 * 1000), null,
+    'a stale cache is not shown as though it were current');
+  ok('the last good list is cached, and an old one is dropped');
+}
+
+// ============================================================
+// Release 1.2.1 — keyboard, dialogs and page wiring
+// ============================================================
+console.log('\nRelease 1.2.1: typing keeps its keys');
+
+{
+  const Tracker = EPP.Keys.Tracker;
+  const tracker = new Tracker();
+  const press = (key, tag, extra) => Object.assign(
+    { key: key, target: Object.assign({ tagName: tag }, extra || {}) });
+
+  assert.strictEqual(tracker.shouldPreventScroll(press(' ', 'TEXTAREA')), false,
+    'space in the editor is a space, not a page scroll');
+  assert.strictEqual(tracker.shouldPreventScroll(press('ArrowUp', 'INPUT')), false);
+  assert.strictEqual(tracker.shouldPreventScroll(press(' ', 'DIV', { isContentEditable: true })), false);
+  assert.strictEqual(tracker.shouldPreventScroll(press('ArrowLeft', 'SELECT')), false);
+  assert.strictEqual(tracker.shouldPreventScroll(press(' ', 'BODY')), true,
+    'a running game still swallows space');
+  assert.strictEqual(tracker.shouldPreventScroll(press('ArrowDown', 'CANVAS')), true);
+  assert.strictEqual(tracker.shouldPreventScroll(press('a', 'BODY')), false,
+    'a letter never scrolls anything');
+  assert.strictEqual(tracker.shouldPreventScroll(' '), true, 'a bare key name still works');
+  assert.strictEqual(tracker.shouldPreventScroll('ArrowUp'), true);
+  ok('space and arrows are swallowed by a game, never by a text field');
+}
+
+{
+  // The Studio must not reach for the browser's blocking dialogs any more.
+  const page = readFileSync(join(root, 'index.html'), 'utf8');
+  assert.ok(!/\bwindow\.(alert|confirm|prompt)\s*\(/.test(page), 'no window.alert/confirm/prompt');
+  assert.ok(!/(^|[^.\w])(alert|confirm)\s*\(\s*['"`]/.test(page), 'no bare alert/confirm call');
+  assert.ok(page.includes('function askDialog('), 'askDialog() is the text prompt');
+  assert.ok(page.includes('function confirmDialog('), 'confirmDialog() is the yes/no prompt');
+  assert.ok(page.includes('id="askOverlay"') && page.includes('id="askOk"') && page.includes('id="askCancel"'),
+    'the in-page dialog exists in the markup');
+  ok('the page asks through its own dialogs, never through alert/confirm/prompt');
+
+  assert.ok(page.includes('id="btnSuggest"'), 'the toolbar has a Suggest button');
+  assert.ok(page.includes('id="suggestOverlay"') && page.includes('id="sugText"'), 'the ideas panel exists');
+  assert.ok(page.includes('id="sugList"'), 'existing ideas are listed in the panel');
+  assert.ok(page.includes('js/ideas.js'), 'the panel uses the shared ideas module');
+  assert.ok(/api\.fetchIdeas\(/.test(page), 'the panel reads the public list, not a local one');
+
+  // The version the page announces matches this release everywhere it shows.
+  assert.ok(page.includes('<title>E++ Studio | 1.2.1</title>'), 'the tab title is 1.2.1');
+  assert.ok(page.includes('class="build-badge">1.2.1<'), 'the header badge is 1.2.1');
+  assert.ok(page.includes("const DEFAULTS_VERSION = '1.2.1'"), 'the defaults stamp is 1.2.1');
+  assert.ok(page.includes("epp_idea_draft_1_2_1"), 'the idea draft key is per release');
+  ok('the page announces 1.2.1 and the new keys are versioned');
+
+  // Every library card is bound to a registry name, so a build can hide it.
+  const cards = page.match(/data-library="[^"]+"/g) || [];
+  assert.ok(cards.length >= 11, 'every library card names its library (' + cards.length + ')');
+  assert.ok(page.includes('function applyBuildLibraries('), 'the page applies the build split on load');
+  assert.ok(page.includes("getElementById('studioNotice')") && page.includes("getElementById('distributionNotice')"),
+    'each build gets its own note');
+  ok('a build can hide a library card and explain why');
+
+  assert.ok(readFileSync(join(root, 'js', 'tutorials.js'), 'utf8').includes("PROGRESS_KEY = 'epp_tutorial_progress_1_2'"),
+    'tutorial progress keeps its 1.2 key, so upgrading does not wipe it');
 }
 
 // Restore the full library set for any later test.

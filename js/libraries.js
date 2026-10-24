@@ -231,19 +231,36 @@
   };
 
   /*
-   * Which libraries a build actually contains. The E++.zip build leaves the
-   * Game and ImprovedWait runtimes out (see tools/build-zip.mjs), and marks
-   * them here so `add library "Game"` explains itself instead of failing
-   * with a confusing "no such library".
+   * Which libraries a build actually contains.
+   *
+   *   E++ Studio (index.html from the repository or the release page):
+   *     every library, including ImprovedWait. ImprovedWaitLite is only the
+   *     cut-down waiting engine that the offline bundle can carry, so the
+   *     Studio does not offer it at all — one waiting library, not two.
+   *
+   *   E++.zip (tools/build-zip.mjs): Keyboard, ImprovedWaitLite and the rest,
+   *     but no Game (canvas runtime) and no ImprovedWait (actor half).
+   *
+   * Each build marks what it does not contain, here, so `add library "Game"`
+   * explains itself in plain English instead of failing with a confusing
+   * "no such library".
    */
   var UNAVAILABLE_REASONS = {
-    Game: 'The Game library is not part of this build. It ships with the E++ Studio download, not inside E++.zip — open the Studio\'s index.html from the release page to build games.',
-    ImprovedWait: 'The ImprovedWait library is not part of this build. ImprovedWaitLite ships inside E++.zip and has all of the non-game waiting features; add library "ImprovedWaitLite" instead.'
+    Game: 'The Game library is not part of this build. It ships with the E++ Studio, not inside E++.zip — open index.html from the release page to build games.',
+    ImprovedWait: 'The ImprovedWait library is not part of this build. ImprovedWaitLite ships inside E++.zip and has every non-game waiting feature; add library "ImprovedWaitLite" instead.',
+    ImprovedWaitLite: 'ImprovedWaitLite is only in E++.zip, where it keeps the offline waiting engine small. The Studio has the full ImprovedWait library, which already includes every wait feature; add library "ImprovedWait" instead.'
   };
 
-  // Empty by default: a full build (Studio, test-suite) has every library.
-  // The E++.zip build calls hideForDistribution() so the two big libraries
-  // explain why they are missing instead of silently existing.
+  /*
+   * The two builds, named once. `distribution` is E++.zip, `studio` is the
+   * full Studio (and the test-suite, which exercises the Studio's own set).
+   */
+  var BUILD_LIBRARIES = {
+    studio: ['ImprovedWaitLite'],
+    distribution: ['Game', 'ImprovedWait']
+  };
+
+  // Empty by default: a full build has every library until it says otherwise.
   var UNAVAILABLE = {};
 
   function canonical(name) {
@@ -307,7 +324,9 @@
       if (owners.indexOf('ImprovedWaitLite') !== -1 && owners.indexOf('ImprovedWait') === -1) {
         owners.push('ImprovedWait');
       }
-      return owners;
+      // Never point at a library this build does not contain: the Studio
+      // should say "ImprovedWait", and E++.zip should say "ImprovedWaitLite".
+      return owners.filter(function (name) { return !UNAVAILABLE[name]; });
     },
 
     /** True when this build actually contains the library. */
@@ -334,11 +353,29 @@
 
     /** Hides the libraries that E++.zip does not ship, with their reasons. */
     hideForDistribution: function (names) {
-      var chosen = names && names.length ? names : ['Game', 'ImprovedWait'];
+      var chosen = names && names.length ? names : BUILD_LIBRARIES.distribution;
       chosen.forEach(function (name) {
         var canonicalName = canonical(name);
         if (canonicalName) UNAVAILABLE[canonicalName] = UNAVAILABLE_REASONS[canonicalName] || 'This library is not part of this build.';
       });
+    },
+
+    /**
+     * Switches the registry to one of the two builds:
+     *   applyBuild()                 the full Studio (ImprovedWaitLite hidden)
+     *   applyBuild('distribution')   E++.zip (Game and ImprovedWait hidden)
+     * Returns the names that are not part of the chosen build.
+     */
+    applyBuild: function (kind) {
+      UNAVAILABLE = {};
+      var missing = BUILD_LIBRARIES[kind === 'distribution' ? 'distribution' : 'studio'];
+      this.hideForDistribution(missing);
+      return missing.slice();
+    },
+
+    /** Every library a build leaves out (kept for the Studio's notices). */
+    missingFor: function (kind) {
+      return (BUILD_LIBRARIES[kind === 'distribution' ? 'distribution' : 'studio'] || []).slice();
     },
 
     /** Test/tooling helper: make every library available again. */
