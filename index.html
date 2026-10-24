@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>E++ Studio | 1.2</title>
+<title>E++ Studio | 1.2.1</title>
 <link rel="stylesheet" href="css/ide.css">
 <style>
   /* Color classes for Terminal */
@@ -350,60 +350,73 @@
   <div class="brand">
     <div class="logo" aria-hidden="true">E<span>++</span></div>
     <div>
-      <h1>E++ Studio <span class="build-badge">1.2</span></h1>
+      <h1>E++ Studio <span class="build-badge">1.2.1</span></h1>
       <p>Looks like English. Reads like English. Behaves like code.</p>
     </div>
   </div>
 
   <div class="top-actions">
     <span id="saveStatus" class="save-status">Saved</span>
-    <div class="action-group file-actions">
-      <button id="btnNew" class="btn btn-small btn-accent" type="button">+ New</button>
-      <button id="btnSave" class="btn" type="button" title="Save file">💾 Save</button>
-      <button id="btnImport" class="btn" type="button" title="Open or import a .enpp or .enppl file">⤒ Import</button>
-      <button id="btnExport" class="btn" type="button" title="Download this file (.enpp or .enppl)">⤓ Export</button>
-      <button id="btnZip" class="btn btn-zip" type="button" title="Download E++ C++ sources &amp; runtime bundle">📦 E++.zip</button>
-      <button id="btnImage" class="btn btn-small" type="button" style="display:none;" title="Add an actor image to this game">🖼 Image</button>
-      <button id="btnLearn" class="btn btn-small btn-tutorial" type="button" title="Learn E++ card by card">🎓 Learn</button>
-      <button id="btnKeys" class="btn btn-small" type="button" title="Manage this browser's project keys">🔑 Keys</button>
-      <button id="btnClear" class="btn" type="button">⌧ Clear</button>
-      <input id="importFileInput" type="file" accept=".enpp,.enppl" style="display:none;">
-      <input id="imageFileInput" type="file" accept="image/*" style="display:none;">
+    <div class="action-bar">
+      <div class="action-group file-actions">
+        <button id="btnNew" class="btn btn-small btn-accent" type="button" title="New file">+ New</button>
+        <button id="btnSave" class="btn btn-small" type="button" title="Save file">💾 Save</button>
+        <button id="btnImport" class="btn btn-small" type="button" title="Open or import a .enpp or .enppl file">⤒ Import</button>
+        <button id="btnExport" class="btn btn-small" type="button" title="Download this file (.enpp or .enppl)">⤓ Export</button>
+        <button id="btnClear" class="btn btn-small" type="button" title="Clear the editor">⌧ Clear</button>
+      </div>
+      <span class="action-divider" aria-hidden="true"></span>
+      <div class="action-group learn-actions">
+        <button id="btnLearn" class="btn btn-small btn-tutorial" type="button" title="Learn E++ card by card">🎓 Learn</button>
+        <button id="btnSuggest" class="btn btn-small btn-suggest" type="button" title="Suggest a feature — everyone can see it">💡 Suggest</button>
+      </div>
+      <span class="action-divider" aria-hidden="true"></span>
+      <div class="action-group tool-actions">
+        <button id="btnImage" class="btn btn-small" type="button" style="display:none;" title="Add an actor image to this game">🖼 Image</button>
+        <button id="btnZip" class="btn btn-small btn-zip" type="button" title="Download E++ C++ sources &amp; runtime bundle">📦 E++.zip</button>
+        <button id="btnKeys" class="btn btn-small" type="button" title="Manage this browser's project keys">🔑 Keys</button>
+      </div>
     </div>
     <div class="action-group run-actions">
       <button id="btnRun" class="btn btn-run" type="button" title="Run (Ctrl+Enter)">▶ Run</button>
     </div>
+    <input id="importFileInput" type="file" accept=".enpp,.enppl" style="display:none;">
+    <input id="imageFileInput" type="file" accept="image/*" style="display:none;">
   </div>
 </header>
 
 <!-- Live Stats Bar (Dashboard) -->
 <div class="dash-banner" id="dashBanner">
-  <div class="dash-stat">
-    <span class="dash-label">Active File:</span>
-    <span id="dashFile" class="dash-val">hello.enpp</span>
+  <div class="dash-group">
+    <div class="dash-stat">
+      <span class="dash-label">Active file</span>
+      <span id="dashFile" class="dash-val">hello.enpp</span>
+      <span id="dashType" class="badge-enpp">.enpp (Pure)</span>
+    </div>
   </div>
-  <div class="dash-stat">
-    <span class="dash-label">File Type:</span>
-    <span id="dashType" class="badge-enpp">.enpp (Pure)</span>
+  <div class="dash-group">
+    <div class="dash-stat">
+      <span class="dash-label">Libraries</span>
+      <span id="dashLibs" class="dash-val">None</span>
+    </div>
+    <div class="dash-stat">
+      <span class="dash-label">Lines</span>
+      <span id="dashLines" class="dash-val">8</span>
+    </div>
+    <div class="dash-stat">
+      <span class="dash-label">Keys</span>
+      <span id="dashVault" class="dash-val">0 saved</span>
+    </div>
   </div>
-  <div class="dash-stat">
-    <span class="dash-label">Zip Runtime:</span>
+  <div class="dash-group dash-group-end">
     <span id="zipRuntimeBadge" class="badge-zip-active">⚡ Native Zip Lexer: Active</span>
-  </div>
-  <div class="dash-stat">
-    <span class="dash-label">Active Libraries:</span>
-    <span id="dashLibs" class="dash-val">None</span>
-  </div>
-  <div class="dash-stat">
-    <span class="dash-label">Lines of Code:</span>
-    <span id="dashLines" class="dash-val">8</span>
-  </div>
-  <div class="dash-stat">
-    <span class="dash-label">Project Keys:</span>
-    <span id="dashVault" class="dash-val">0 keys saved</span>
+    <span class="dash-badge-pill badge-version" id="buildVersion">v1.2.1</span>
   </div>
   <div class="dash-rules">
-    Rules: <span>No quotes for math</span> • <span>'Var' for variables</span> • <span>"Text" for strings</span>
+    <span class="dash-rules-label">Rules</span>
+    <span>No quotes for math</span>
+    <span>'Var' for variables</span>
+    <span>"Text" for strings</span>
   </div>
 </div>
 
@@ -423,10 +436,10 @@
 
     <!-- Available Libraries -->
     <section class="libraries-panel">
-      <h2>Libraries <span class="head-sub">(1.2)</span></h2>
-      <p class="panel-note">Humanizer syntax:<br><code>add the "Library" library</code></p>
+      <h2>Libraries <span class="head-sub">(1.2.1)</span></h2>
+      <p class="panel-note">Both word orders work:<br><code>add library "Math"</code> or <code>add the "Math" library</code></p>
       
-      <div class="library-card">
+      <div class="library-card" data-library="Python">
         <div class="lib-card-top">
           <h3>Python <span>add library "Python"</span></h3>
           <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Python')">+ Insert</button>
@@ -434,7 +447,7 @@
         <p>Runs single-line or multi-line Python code, loops, functions, and math inside E++.</p>
       </div>
 
-      <div class="library-card">
+      <div class="library-card" data-library="Math">
         <div class="lib-card-top">
           <h3>Math <span>add library "Math"</span></h3>
           <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Math')">+ Insert</button>
@@ -442,7 +455,7 @@
         <p>Unlocks square roots, percentages, min/max, absolute value, pi, power, and trig.</p>
       </div>
 
-      <div class="library-card">
+      <div class="library-card" data-library="Random">
         <div class="lib-card-top">
           <h3>Random <span>add library "Random"</span></h3>
           <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Random')">+ Insert</button>
@@ -450,7 +463,7 @@
         <p>Generates random numbers between bounds, 20-sided dice rolls, and coin flips.</p>
       </div>
 
-      <div class="library-card">
+      <div class="library-card" data-library="Text">
         <div class="lib-card-top">
           <h3>Strings <span>add library "Strings"</span></h3>
           <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Strings')">+ Insert</button>
@@ -458,7 +471,7 @@
         <p>String length, uppercase, lowercase, reverse, first/last letter, and trimming.</p>
       </div>
 
-      <div class="library-card">
+      <div class="library-card" data-library="Time">
         <div class="lib-card-top">
           <h3>Time <span>add library "Time"</span></h3>
           <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Time')">+ Insert</button>
@@ -466,7 +479,7 @@
         <p>Current time, date, calendar year, unix timestamps, and wait/sleep delays.</p>
       </div>
 
-      <div class="library-card">
+      <div class="library-card" data-library="Files">
         <div class="lib-card-top">
           <h3>Files <span>add library "Files"</span></h3>
           <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Files')">+ Insert</button>
@@ -474,7 +487,7 @@
         <p>Read from file into variables, write new files, and append data to files.</p>
       </div>
 
-      <div class="library-card">
+      <div class="library-card" data-library="Colors">
         <div class="lib-card-top">
           <h3>Colors <span>add library "Colors"</span></h3>
           <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Colors')">+ Insert</button>
@@ -482,7 +495,7 @@
         <p>Colored terminal messages: red, green, blue, yellow, cyan, and magenta.</p>
       </div>
 
-      <div class="library-card">
+      <div class="library-card" data-library="System">
         <div class="lib-card-top">
           <h3>System <span>add library "System"</span></h3>
           <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('System')">+ Insert</button>
@@ -490,7 +503,7 @@
         <p>Platform architecture, operating system name, and command execution.</p>
       </div>
 
-      <div class="library-card">
+      <div class="library-card" data-library="Console">
         <div class="lib-card-top">
           <h3>Console <span>add library "Console"</span></h3>
           <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Console')">+ Insert</button>
@@ -499,6 +512,7 @@
       </div>
 
       <p class="panel-note" id="distributionNotice" style="display:none;">This is the <strong>E++.zip</strong> build: Game and ImprovedWait live in the full Studio only. Keyboard and ImprovedWaitLite are here.</p>
+      <p class="panel-note" id="studioNotice" style="display:none;">ImprovedWaitLite is only in <strong>E++.zip</strong>; this Studio has the full <strong>ImprovedWait</strong>, with every wait feature.</p>
 
       <!-- Release 1.2 libraries -->
       <div class="library-card" data-library="Game">
@@ -509,7 +523,7 @@
         <p>The pygame zero of E++: a game window, actors with images, movement, collisions and a game loop. Not inside E++.zip.</p>
       </div>
 
-      <div class="library-card">
+      <div class="library-card" data-library="Keyboard">
         <div class="lib-card-top">
           <h3>Keyboard <span>add library "Keyboard"</span></h3>
           <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Keyboard')">+ Insert</button>
@@ -517,7 +531,7 @@
         <p><code>if the "Up arrow" key is pressed then ...</code> — arrows, space, enter and every letter. Inside E++.zip.</p>
       </div>
 
-      <div class="library-card">
+      <div class="library-card" data-library="ImprovedWaitLite">
         <div class="lib-card-top">
           <h3>ImprovedWaitLite <span>add library "ImprovedWaitLite"</span></h3>
           <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('ImprovedWaitLite')">+ Insert</button>
@@ -614,7 +628,7 @@ for I in range 3:
 </main>
 
 <footer class="footer">
-  <span><strong>E++ Studio [1.2]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
+  <span><strong>E++ Studio [1.2.1]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
   <span>Shortcuts: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run · <kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span>
 </footer>
 
@@ -696,11 +710,64 @@ for I in range 3:
   </div>
 </div>
 
+<!-- Community ideas: posted as public issues, so everyone can read them. -->
+<div id="suggestOverlay" class="sug-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="sugTitle">
+  <div class="sug-shell">
+    <header class="sug-head">
+      <div>
+        <span class="sug-kicker">Ideas for E++</span>
+        <h2 id="sugTitle">Suggest a feature</h2>
+      </div>
+      <button id="sugClose" class="btn-close" type="button" aria-label="Close ideas">×</button>
+    </header>
+    <div class="sug-body">
+      <p class="sug-intro">
+        Ideas live in the project's <strong>public issue tracker</strong>, so everyone can read
+        them, reply and add a 👍 — not just the person who wrote them.
+      </p>
+      <label class="sug-field">
+        <span>What should E++ do?</span>
+        <textarea id="sugText" rows="3" spellcheck="true" placeholder="For example: let me draw circles in the Game library"></textarea>
+      </label>
+      <div class="sug-actions">
+        <a id="sugSend" class="btn btn-accent" href="#" target="_blank" rel="noopener noreferrer">Post on GitHub ↗</a>
+        <span class="sug-hint">Opens GitHub with your idea already written. Posting needs a free GitHub account — reading the list does not.</span>
+      </div>
+      <div class="sug-list-head">
+        <h3>Everyone's ideas</h3>
+        <div class="sug-list-tools">
+          <span id="sugStatus" class="sug-status"></span>
+          <button id="sugRefresh" class="btn btn-small" type="button" title="Reload the list">↻</button>
+        </div>
+      </div>
+      <div id="sugList" class="sug-list"><p class="sug-empty">Loading the list…</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- The Studio asks its own questions: browser prompt/confirm/alert are
+     blocked inside a sandboxed frame, and look nothing like the editor. -->
+<div id="askOverlay" class="ask-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="askTitle">
+  <div class="ask-box">
+    <h2 id="askTitle">E++</h2>
+    <p id="askMessage" class="ask-message"></p>
+    <label id="askFieldWrap" class="ask-field">
+      <span id="askLabel"></span>
+      <input id="askInput" type="text" spellcheck="false" autocomplete="off">
+    </label>
+    <div class="ask-actions">
+      <button id="askCancel" class="btn btn-small" type="button">Cancel</button>
+      <button id="askOk" class="btn btn-small btn-accent" type="button">OK</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast" style="display:none;"></div>
 
 <!-- Release 1.2 runtime modules. These are shared with the headless
      test-suite, so the Studio and `npm test` run the same engine. -->
 <script src="js/libraries.js"></script>
+  <script src="js/ideas.js"></script>
 <script src="js/tutorials.js"></script>
 <script src="js/keyboard.js"></script>
 <script src="js/vault.js"></script>
@@ -968,7 +1035,7 @@ say "Done — the Left arrow finished the program."`
 ];
 
 // File Storage (.enpp & .enppl)
-const DEFAULTS_VERSION = '1.2';
+const DEFAULTS_VERSION = '1.2.1';
 let files = {};
 let currentFileName = 'hello.enpp';
 let fileDialogMode = 'new';
@@ -1018,8 +1085,17 @@ function saveStorage() {
  * example that cannot run there. Everything else is identical.
  */
 function availableDefaultFiles() {
-  if (window.EPP_DISTRIBUTION) return DEFAULT_FILES.filter(f => !f.hideInDistribution);
-  return DEFAULT_FILES;
+  const registry = window.EPP && window.EPP.Libraries;
+  const withLite = !registry || registry.isAvailable('ImprovedWaitLite');
+  return DEFAULT_FILES
+    .filter(f => !f.hideInDistribution || !window.EPP_DISTRIBUTION)
+    .map(f => ({
+      ...f,
+      // The Studio has ImprovedWait (which includes every wait feature);
+      // E++.zip has ImprovedWaitLite. The examples are the same text, with
+      // the one library name each build actually ships.
+      content: withLite ? f.content : f.content.replace(/\bImprovedWaitLite\b/g, 'ImprovedWait')
+    }));
 }
 
 function restoreDefaultFiles(notify = true) {
@@ -1120,7 +1196,9 @@ const LIBRARY_PATTERNS = [
 function librariesIn(content) {
   const found = [];
   LIBRARY_PATTERNS.forEach(([name, pattern]) => { if (pattern.test(content)) found.push(name); });
-  // ImprovedWait contains ImprovedWaitLite; do not list the same features twice.
+  // ImprovedWait contains ImprovedWaitLite, so listing both would count the
+  // same wait features twice in the dashboard.
+  if (found.includes('ImprovedWait')) return found.filter(name => name !== 'ImprovedWaitLite');
   return found;
 }
 
@@ -1236,13 +1314,16 @@ function renameCurrentFile(newName) {
   loadFile(newName);
 }
 
-function deleteCurrentFile() {
+async function deleteCurrentFile() {
   const keys = Object.keys(files);
   if (keys.length <= 1) {
     showToast('Cannot delete the last remaining file!', true);
     return;
   }
-  if (!confirm(`Are you sure you want to delete ${currentFileName}?`)) return;
+  const sure = await confirmDialog(`Delete ${currentFileName}? This cannot be undone.`, {
+    title: 'Delete this file?', confirmLabel: 'Delete', danger: true
+  });
+  if (!sure) return;
   delete files[currentFileName];
   currentFileName = Object.keys(files)[0];
   saveStorage();
@@ -1336,7 +1417,13 @@ let pendingActorName = '';
 async function addActorImage() {
   const fileInput = document.getElementById('imageFileInput');
   const file = fileInput && fileInput.files ? fileInput.files[0] : null;
-  const typed = pendingActorName || prompt('Name the actor for this image:', 'hero');
+  const typed = pendingActorName || await askDialog({
+    title: 'Name this actor',
+    message: 'The name becomes part of the program, so it can be anything readable.',
+    label: 'Actor name',
+    value: 'hero',
+    confirmLabel: 'Use this name'
+  });
   pendingActorName = '';
   if (!typed) return;
   if (!file) {
@@ -1350,10 +1437,39 @@ async function addActorImage() {
   }
   const dataUrl = await imageFileToDataUrl(file);
   const ed = document.getElementById('editor');
-  const line = `create the actor '${actorName}' with the image "${dataUrl}"\n`;
-  const caret = ed.selectionStart || 0;
-  ed.value = ed.value.slice(0, caret) + line + ed.value.slice(caret);
-  ed.selectionStart = ed.selectionEnd = caret + line.length;
+  const code = ed.value;
+
+  // The picture only means something inside a game, so the button writes the
+  // three lines an actor needs — and the two setup lines if they are missing.
+  const actorLines = [
+    `create the actor '${actorName}' with the image "${dataUrl}"`,
+    `put the actor '${actorName}' at 0 and 0`
+  ];
+  const setupLines = [];
+  if (!/^\s*add\s+(?:the\s+)?["']?game["']?\s+library\s*$/im.test(code)) {
+    setupLines.push('add the "Game" library');
+  }
+  if (!/^\s*set\s+the\s+game\s+window\s+to\s+/im.test(code)) {
+    setupLines.push('set the game window to 800 by 600');
+  }
+
+  if (setupLines.length) {
+    // A file without the Game setup gets a complete, runnable program at the
+    // top: library, window, actor.
+    const block = setupLines.concat(actorLines).join('\n') + '\n';
+    const rest = code.trim() ? (code.startsWith('\n') ? code : '\n' + code) : '';
+    ed.value = block + rest;
+    ed.selectionStart = ed.selectionEnd = block.length;
+  } else {
+    // A game that already runs gets the actor where the caret is, on its own
+    // lines, so nothing around it is broken.
+    const caret = ed.selectionStart || 0;
+    const lineStart = code.lastIndexOf('\n', Math.max(0, caret - 1)) + 1;
+    const block = actorLines.join('\n') + '\n';
+    ed.value = code.slice(0, lineStart) + block + code.slice(lineStart);
+    ed.selectionStart = ed.selectionEnd = lineStart + block.length;
+  }
+
   // A game project is a library project, so it has to be .enppl.
   if (currentFileName.endsWith('.enpp')) {
     renameCurrentFile(currentFileName.replace(/\.enpp$/, '.enppl'));
@@ -1361,7 +1477,7 @@ async function addActorImage() {
   updateDashboard();
   updateLineNumbers();
   saveStorage();
-  showToast(`Actor '${actorName}' created — the name now holds its image.`);
+  showToast(`Actor '${actorName}' added — run the program to see it on the stage.`);
 }
 
 async function handleFileObject(file) {
@@ -1422,6 +1538,82 @@ function downloadZip() {
   a.click();
   document.body.removeChild(a);
   showToast('Downloading E++.zip (Keyboard and ImprovedWaitLite included)…');
+}
+
+/**
+ * Asks the reader something without leaving the page.
+ *
+ * Returns a Promise: the typed text for an input dialog, true/false for a
+ * confirmation, null when cancelled. Enter accepts, Escape cancels. Works in a
+ * sandboxed frame, where window.prompt / confirm / alert are silently blocked.
+ */
+function askDialog(options = {}) {
+  const overlay = document.getElementById('askOverlay');
+  const title = document.getElementById('askTitle');
+  const message = document.getElementById('askMessage');
+  const fieldWrap = document.getElementById('askFieldWrap');
+  const label = document.getElementById('askLabel');
+  const input = document.getElementById('askInput');
+  const okButton = document.getElementById('askOk');
+  const cancelButton = document.getElementById('askCancel');
+
+  const wantsInput = options.input !== false;
+  title.innerText = options.title || 'E++';
+  message.innerText = options.message || '';
+  message.style.display = options.message ? '' : 'none';
+  fieldWrap.style.display = wantsInput ? '' : 'none';
+  label.innerText = options.label || '';
+  input.type = options.type || 'text';
+  input.value = options.value || '';
+  input.placeholder = options.placeholder || '';
+  okButton.innerText = options.confirmLabel || 'OK';
+  okButton.className = 'btn btn-small ' + (options.danger ? 'btn-danger' : 'btn-accent');
+  cancelButton.innerText = options.cancelLabel || 'Cancel';
+  overlay.style.display = 'flex';
+
+  return new Promise(resolve => {
+    let done = false;
+    const finish = (value) => {
+      if (done) return;
+      done = true;
+      overlay.style.display = 'none';
+      document.removeEventListener('keydown', onKey, true);
+      okButton.removeEventListener('click', accept);
+      cancelButton.removeEventListener('click', cancel);
+      overlay.removeEventListener('click', onBackdrop);
+      input.removeEventListener('keydown', onFieldKey);
+      resolve(value);
+    };
+    const accept = () => finish(wantsInput ? input.value : true);
+    const cancel = () => finish(wantsInput ? null : false);
+    const onKey = (event) => {
+      if (event.key === 'Escape') { event.preventDefault(); cancel(); }
+    };
+    const onBackdrop = (event) => { if (event.target === overlay) cancel(); };
+    const onFieldKey = (event) => {
+      if (event.key === 'Enter') { event.preventDefault(); accept(); }
+    };
+    okButton.addEventListener('click', accept);
+    cancelButton.addEventListener('click', cancel);
+    overlay.addEventListener('click', onBackdrop);
+    input.addEventListener('keydown', onFieldKey);
+    document.addEventListener('keydown', onKey, true);
+    setTimeout(() => {
+      if (wantsInput) { input.focus(); input.select(); } else okButton.focus();
+    }, 0);
+  });
+}
+
+/** A yes/no question, in the same dialog. Resolves true only on Yes. */
+function confirmDialog(message, options = {}) {
+  return askDialog({
+    title: options.title || 'Are you sure?',
+    message,
+    input: false,
+    confirmLabel: options.confirmLabel || 'Yes',
+    cancelLabel: options.cancelLabel || 'No',
+    danger: options.danger
+  }).then(value => value === true);
 }
 
 function showToast(msg, isErr = false) {
@@ -1507,7 +1699,7 @@ async function updateKeyBadge() {
   if (!ring) { badge.innerText = 'unavailable'; return; }
   try {
     const count = await ring.keyCount();
-    badge.innerText = count + (count === 1 ? ' key' : ' keys') + ' saved';
+    badge.innerText = count + (count === 1 ? ' key' : ' keys');
   } catch (e) {
     badge.innerText = 'locked';
   }
@@ -1631,7 +1823,10 @@ async function showKeyringPanel() {
       }).join('')
     : '<div class="key-row"><span class="key-project">No keys yet — download a project and one is created for it.</span></div>';
   if (typeof dialog.showModal === 'function') dialog.showModal();
-  else alert('Keys saved: ' + keys.length);
+  else {
+    dialog.setAttribute('open', '');
+    showToast('This browser cannot show the key panel; ' + keys.length + ' key(s) are saved.');
+  }
 }
 
 // ==========================================
@@ -2185,6 +2380,28 @@ let activeGameHost = null;
 let activeEvaluator = null;
 let keyTracker = null;
 
+/**
+ * True when `needle` appears in a line *outside* quotes.
+ *
+ * E++ reads "quoted text" as data and 'quoted names' as variables, so nothing
+ * inside either is a comment — which is why a base64 image (data:image/png;base64,
+ * ...//...) is not mistaken for a `//` comment.
+ */
+function appearsOutsideQuotes(line, needle) {
+  const text = String(line || '');
+  let quote = null;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (quote) {
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'") { quote = ch; continue; }
+    if (text.startsWith(needle, i)) return true;
+  }
+  return false;
+}
+
 function ensureKeyTracker() {
   if (!keyTracker && window.EPP && EPP.Keys) {
     keyTracker = new EPP.Keys.Tracker(window);
@@ -2300,8 +2517,9 @@ class EppEvaluator {
         continue;
       }
 
-      // Check legacy // or #
-      if (line.startsWith('//') || line.includes('//')) {
+      // Check legacy // or # — but only in code. Quotes are text: an image
+      // arrives as a data: URL, and base64 is full of slashes.
+      if (appearsOutsideQuotes(line, '//')) {
         throw {
           code: "E101",
           name: "Illegal Comment Syntax",
@@ -2313,7 +2531,7 @@ class EppEvaluator {
           help: "Replace with: note [Your note here]"
         };
       }
-      if (line.startsWith('#')) {
+      if (line.trimStart().startsWith('#')) {
         throw {
           code: "E101",
           name: "Illegal Comment Syntax",
@@ -2718,8 +2936,12 @@ class EppEvaluator {
     const lower = line.toLowerCase();
 
     // 1. ADD LIBRARY
+    // Both sentence shapes work, and they have to keep working: the docs and
+    // every library card write `add library "Math"`, the reference also allows
+    // `add the "Math" library`, and the parser in js/parser.js accepts both.
     if (lower.startsWith('add ')) {
-      const m = line.match(/^add\s+(?:the\s+)?["']?([A-Za-z][A-Za-z ]*?)["']?\s+library$/i);
+      const m = line.match(/^add\s+(?:the\s+)?["']?([A-Za-z][A-Za-z ]*?)["']?\s+library$/i)
+        || line.match(/^add\s+(?:the\s+)?librar(?:y|ies)\s+["']?([A-Za-z][A-Za-z ]*?)["']?$/i);
       if (m) {
         const canonical = (window.EPP && EPP.Libraries) ? EPP.Libraries.canonical(m[1]) : m[1];
         const name = canonical || m[1];
@@ -2745,9 +2967,11 @@ class EppEvaluator {
               col: 1,
               sourceLine: line,
               reason: EPP.Libraries.whyUnavailable(name) || ('The "' + name + '" library is not part of this build.'),
-              help: name === 'ImprovedWait'
-                ? 'Add the "ImprovedWaitLite" library instead — it has every non-game waiting feature.'
-                : 'Use the full E++ Studio download, which includes this library.'
+              help: (name === 'ImprovedWaitLite' && EPP.Libraries.isAvailable('ImprovedWait'))
+                ? 'Add the "ImprovedWait" library instead — it has every wait feature, actor waits included.'
+                : (name === 'ImprovedWait' && EPP.Libraries.isAvailable('ImprovedWaitLite'))
+                  ? 'Add the "ImprovedWaitLite" library instead — it has every non-game waiting feature.'
+                  : 'Use the full E++ Studio, which includes this library.'
             };
           }
         }
@@ -3617,20 +3841,6 @@ class EppEvaluator {
     return isNot ? !isNum : isNum;
   }
 
-  requireAnyLib(names, feature, lineNum) {
-    if (names.some(name => this.libs.has(this.norm(name)))) return;
-    throw {
-      code: 'E301',
-      name: 'Library Not Added',
-      filename: currentFileName,
-      line: lineNum,
-      col: 1,
-      sourceLine: feature,
-      reason: `'${feature}' needs the "${names[0]}" library, which has not been added.`,
-      help: `Add this line at the top: add the "${names[0]}" library`
-    };
-  }
-
   /** Sleeps in slices so a cancelled game or a named wait can interrupt it. */
   async sleepMs(ms, timer, lineNum) {
     if (!(ms >= 0)) {
@@ -3882,8 +4092,14 @@ function updateCursor() {
   const imageInput = document.getElementById('imageFileInput');
   if (imageButton && imageInput) {
     // Name first, picture second: the name becomes the variable.
-    imageButton.addEventListener('click', () => {
-      const typed = prompt('Name the actor for this image:', 'hero');
+    imageButton.addEventListener('click', async () => {
+      const typed = await askDialog({
+        title: 'Add an actor image',
+        message: 'Pick the picture next. The actor appears where you put it, and its name becomes part of the program.',
+        label: 'Actor name',
+        value: 'hero',
+        confirmLabel: 'Pick a picture'
+      });
       if (!typed) return;
       pendingActorName = typed;
       imageInput.click();
@@ -3920,6 +4136,223 @@ function updateCursor() {
 }
 
 // ------------------------------------------------------------------
+// 1.2.1 — Ideas: suggestions live in the public issue tracker, so the whole
+// community can read, reply to and vote on them. There is no private inbox.
+// The URLs, the idea filter and the GitHub shape all live in js/ideas.js,
+// where the test suite can reach them; this half is only the page.
+// ------------------------------------------------------------------
+
+const IDEAS = {
+  draftKey: 'epp_idea_draft_1_2_1',
+  cacheKey: 'epp_ideas_cache_1_2_1'
+};
+
+function ideasApi() {
+  return (window.EPP && window.EPP.Ideas) || null;
+}
+
+function ideasIssuesUrl() {
+  const api = ideasApi();
+  return api ? api.issuesUrl() : 'https://github.com/the-creative-master/E-Plus-Plus/issues';
+}
+
+function readIdeasCache() {
+  const api = ideasApi();
+  if (!api) return null;
+  try {
+    return api.fromCache(localStorage.getItem(IDEAS.cacheKey));
+  } catch (error) {
+    return null;
+  }
+}
+
+function writeIdeasCache(items) {
+  const api = ideasApi();
+  if (!api) return;
+  try {
+    localStorage.setItem(IDEAS.cacheKey, api.toCache(items, Date.now()));
+  } catch (error) {
+    // A full browser just skips the cache.
+  }
+}
+
+function ideaItemNode(idea) {
+  const link = document.createElement('a');
+  link.className = 'sug-item';
+  link.href = idea.url;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+
+  const vote = document.createElement('span');
+  vote.className = 'sug-vote';
+  const strong = document.createElement('strong');
+  strong.textContent = String(idea.votes || 0);
+  vote.appendChild(strong);
+  vote.appendChild(document.createTextNode('👍'));
+  link.appendChild(vote);
+
+  const main = document.createElement('span');
+  main.className = 'sug-item-main';
+
+  const title = document.createElement('span');
+  title.className = 'sug-item-title';
+  title.textContent = idea.title;
+  main.appendChild(title);
+
+  const meta = document.createElement('span');
+  meta.className = 'sug-item-meta';
+  const chip = document.createElement('span');
+  const done = idea.state === 'closed';
+  chip.className = 'sug-chip ' + (done ? 'sug-chip-done' : 'sug-chip-open');
+  chip.textContent = done ? 'Added / closed' : 'Open';
+  meta.appendChild(chip);
+  if (idea.comments) meta.appendChild(document.createTextNode(idea.comments + ' replies'));
+  if (idea.author) meta.appendChild(document.createTextNode('by ' + idea.author));
+  if (idea.date) meta.appendChild(document.createTextNode(idea.date));
+  main.appendChild(meta);
+
+  link.appendChild(main);
+  return link;
+}
+
+function renderIdeas(items, note) {
+  const list = document.getElementById('sugList');
+  const status = document.getElementById('sugStatus');
+  if (!list) return;
+  list.innerHTML = '';
+  if (status) status.textContent = note || '';
+  if (!items.length) {
+    const empty = document.createElement('p');
+    empty.className = 'sug-empty';
+    empty.textContent = 'No ideas posted yet — write one above and it becomes the first, for everyone to see.';
+    list.appendChild(empty);
+    return;
+  }
+  items.forEach(idea => list.appendChild(ideaItemNode(idea)));
+}
+
+/** Reads the public issue list. No key, no account, no server of our own. */
+async function loadIdeas() {
+  const api = ideasApi();
+  const status = document.getElementById('sugStatus');
+  const refresh = document.getElementById('sugRefresh');
+  if (refresh) refresh.disabled = true;
+  if (status) status.textContent = 'loading…';
+
+  const cached = readIdeasCache();
+  if (cached) renderIdeas(cached, 'saved copy');
+
+  try {
+    if (!api) throw new Error('The ideas module is missing.');
+    const items = await api.fetchIdeas();
+    writeIdeasCache(items);
+    renderIdeas(items, items.length + ' idea' + (items.length === 1 ? '' : 's'));
+  } catch (error) {
+    if (cached) {
+      renderIdeas(cached, 'offline — showing the saved copy');
+    } else {
+      const list = document.getElementById('sugList');
+      if (status) status.textContent = 'offline';
+      if (list) {
+        list.innerHTML = '';
+        const empty = document.createElement('p');
+        empty.className = 'sug-empty';
+        empty.textContent = 'The list needs the internet, and this page could not reach GitHub. ' +
+          'Your idea still posts — the button below opens it in a new tab.';
+        list.appendChild(empty);
+        const link = document.createElement('a');
+        link.className = 'sug-item';
+        link.href = ideasIssuesUrl();
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = 'Open the idea list on GitHub ↗';
+        list.appendChild(link);
+      }
+    }
+  } finally {
+    if (refresh) refresh.disabled = false;
+  }
+}
+
+/** Keeps the Post button pointing at a prefilled issue with the current text. */
+function syncIdeasDraft() {
+  const text = document.getElementById('sugText');
+  const send = document.getElementById('sugSend');
+  if (!text || !send) return;
+  const idea = text.value.trim();
+  const api = ideasApi();
+  send.href = api ? api.postUrl(idea) : ideasIssuesUrl();
+  send.setAttribute('aria-disabled', idea ? 'false' : 'true');
+  send.title = idea
+    ? 'Open GitHub with this idea filled in'
+    : 'Write the idea first — or open GitHub and describe it there';
+  try {
+    if (idea) localStorage.setItem(IDEAS.draftKey, idea);
+    else localStorage.removeItem(IDEAS.draftKey);
+  } catch (error) {
+    // ignore
+  }
+}
+
+function openIdeas() {
+  const overlay = document.getElementById('suggestOverlay');
+  const text = document.getElementById('sugText');
+  if (!overlay || !text) return;
+  try {
+    const draft = localStorage.getItem(IDEAS.draftKey);
+    if (draft && !text.value) text.value = draft;
+  } catch (error) {
+    // ignore
+  }
+  syncIdeasDraft();
+  overlay.style.display = 'flex';
+  loadIdeas();
+  setTimeout(() => text.focus(), 30);
+}
+
+function closeIdeas() {
+  const overlay = document.getElementById('suggestOverlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function wireIdeas() {
+  const button = document.getElementById('btnSuggest');
+  if (button) button.addEventListener('click', openIdeas);
+
+  const close = document.getElementById('sugClose');
+  if (close) close.addEventListener('click', closeIdeas);
+
+  const text = document.getElementById('sugText');
+  if (text) text.addEventListener('input', syncIdeasDraft);
+
+  const refresh = document.getElementById('sugRefresh');
+  if (refresh) refresh.addEventListener('click', loadIdeas);
+
+  const send = document.getElementById('sugSend');
+  if (send) {
+    send.addEventListener('click', (event) => {
+      if (send.getAttribute('aria-disabled') === 'true') {
+        event.preventDefault();
+        text && text.focus();
+        showToast('Write the idea first, then press Post.', true);
+        return;
+      }
+      // A plain link opens the tab itself; nothing to do but let it happen.
+      showToast('Opening GitHub — the idea is already written for you.');
+    });
+  }
+
+  const overlay = document.getElementById('suggestOverlay');
+  if (overlay) overlay.addEventListener('click', (event) => { if (event.target === overlay) closeIdeas(); });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    const open = overlay && overlay.style.display !== 'none';
+    if (open) closeIdeas();
+  });
+}
+
+// ------------------------------------------------------------------
 // 1.2 — Tutorials: a deck of cards, each one marked by running the code
 // ------------------------------------------------------------------
 
@@ -3932,18 +4365,21 @@ function tutorialCoursesForThisBuild() {
   return T.forBuild(name => !(window.EPP && window.EPP.Libraries) || window.EPP.Libraries.isAvailable(name));
 }
 
-/** Libraries this build leaves out, named once for the tutorial sidebar. */
+/**
+ * The libraries that are actually hiding tutorial cards in this build — not
+ * every library the build lacks. A missing library only counts when putting
+ * it back would bring at least one card with it.
+ */
 function tutorialMissingLibraries() {
   const T = window.EPP && window.EPP.Tutorials;
-  if (!T || !window.EPP.Libraries) return [];
-  const hidden = [];
-  T.courses.forEach(course => {
-    const needs = (course.needs || []).concat(...course.steps.map(step => step.needs || []));
-    needs.forEach(name => {
-      if (hidden.indexOf(name) === -1 && !window.EPP.Libraries.isAvailable(name)) hidden.push(name);
-    });
+  const registry = window.EPP && window.EPP.Libraries;
+  if (!T || !registry) return [];
+  const isAvailable = name => registry.isAvailable(name);
+  const visible = T.totalSteps(T.forBuild(isAvailable));
+  return registry.unavailable().filter(name => {
+    const withIt = T.totalSteps(T.forBuild(other => other === name || isAvailable(other)));
+    return withIt > visible;
   });
-  return hidden;
 }
 
 function loadTutorialProgress() {
@@ -4196,7 +4632,12 @@ async function runTutorialProgram(code, step) {
   const scripted = [...((step && step.test && step.test.answers) || [])];
   const askFn = (prompt) => {
     if (scripted.length) return Promise.resolve(String(scripted.shift()));
-    return Promise.resolve(window.prompt(String(prompt)) || '');
+    return askDialog({
+      title: 'Your program is asking',
+      message: String(prompt),
+      label: 'Your answer',
+      confirmLabel: 'Answer'
+    }).then(answer => answer === null ? '' : String(answer));
   };
 
   // Keyboard cards hand the program a held key, so a lesson about `is pressed`
@@ -4401,10 +4842,13 @@ async function tryTutorialInEditor() {
   await runCode();
 }
 
-function resetTutorialProgress() {
+async function resetTutorialProgress() {
   const deck = getTutorialDeck();
   if (!deck) return;
-  const answer = window.confirm('Start over? Every card goes back to un-finished and your saved code is cleared.');
+  const answer = await confirmDialog(
+    'Every card goes back to un-finished and your saved code is cleared.',
+    { title: 'Start the tutorials over?', confirmLabel: 'Start over', danger: true }
+  );
   if (!answer) return;
   deck.passed.clear();
   deck.drafts = {};
@@ -4488,19 +4932,32 @@ function wireTutorials() {
  * cards for anything the bundle does not contain, so nobody is offered a
  * button that can only disappoint them.
  */
-function applyDistributionBuild() {
-  if (!window.EPP_DISTRIBUTION) return;
-  const missing = (window.EPP && window.EPP.Libraries) ? window.EPP.Libraries.unavailable() : [];
+/**
+ * Puts the page in the right shape for the build it is running as:
+ *   E++.zip        — no Game, no ImprovedWait, and a note saying so
+ *   E++ Studio     — no ImprovedWaitLite (it is the cut-down waiting engine
+ *                    that only the offline bundle needs)
+ */
+function applyBuildLibraries() {
+  const registry = window.EPP && window.EPP.Libraries;
+  const isDistribution = !!window.EPP_DISTRIBUTION;
+  if (registry) registry.applyBuild(isDistribution ? 'distribution' : 'studio');
+
   document.querySelectorAll('[data-library]').forEach(node => {
-    if (missing.indexOf(node.getAttribute('data-library')) !== -1) node.remove();
+    const name = node.getAttribute('data-library');
+    if (registry && !registry.isAvailable(name)) node.remove();
   });
-  const notice = document.getElementById('distributionNotice');
-  if (notice) notice.style.display = '';
+
+  const distributionNotice = document.getElementById('distributionNotice');
+  if (distributionNotice) distributionNotice.style.display = isDistribution ? '' : 'none';
+  const studioNotice = document.getElementById('studioNotice');
+  if (studioNotice) studioNotice.style.display = isDistribution ? 'none' : '';
 }
 
 // Initialize
-applyDistributionBuild();
+applyBuildLibraries();
 wireTutorials();
+wireIdeas();
 initStorage();
 renderFileList();
 loadFile(currentFileName);

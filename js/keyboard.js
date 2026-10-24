@@ -64,7 +64,7 @@
       var key = event.key;
       self.down[key] = true;
       self.last = key;
-      if (self.capture && self.shouldPreventScroll(key)) event.preventDefault();
+      if (self.capture && self.shouldPreventScroll(event)) event.preventDefault();
     };
     this.onKeyUp = function (event) {
       self.down[event.key] = false;
@@ -83,8 +83,28 @@
     return this;
   };
 
-  Tracker.prototype.shouldPreventScroll = function (key) {
-    return key === ' ' || key.indexOf('Arrow') === 0;
+  /**
+   * True only when the key would scroll the page and nobody is typing.
+   *
+   * Space and the arrow keys scroll, which is why a game swallows them — but
+   * swallowing them in the code editor, in a text box or in the console
+   * would make the page impossible to use. So a field always keeps its keys.
+   */
+  Tracker.prototype.shouldPreventScroll = function (event) {
+    var key = typeof event === 'string' ? event : (event && event.key) || '';
+    if (key !== ' ' && key.indexOf('Arrow') !== 0) return false;
+    var target = event && typeof event === 'object' ? event.target : null;
+    if (this.isTypingTarget(target)) return false;
+    return true;
+  };
+
+  /** True for anything that swallows typed text. */
+  Tracker.prototype.isTypingTarget = function (target) {
+    if (!target || typeof target !== 'object') return false;
+    if (target.isContentEditable) return true;
+    var tag = String(target.tagName || '').toUpperCase();
+    if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') return true;
+    return false;
   };
 
   Tracker.prototype.reset = function () {

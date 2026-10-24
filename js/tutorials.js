@@ -24,6 +24,8 @@
 
   var EPP = global.EPP || (global.EPP = {});
 
+  // Kept from 1.2 on purpose: the card ids did not change, so upgrading
+  // must not wipe the ticks someone already earned.
   var PROGRESS_KEY = 'epp_tutorial_progress_1_2';
 
   // ------------------------------------------------------------------
@@ -451,31 +453,31 @@
           goal: 'Wait, then print exactly: Done',
           body: [
             { p: '`wait` pauses the program. Seconds can be fractional.' },
-            { code: 'add the "ImprovedWaitLite" library\nwait 0.5 seconds\nsay "Done"' }
+            { code: 'add the "{wait}" library\nwait 0.5 seconds\nsay "Done"' }
           ],
           starter: 'note [Wait half a second, then print Done]\n',
-          solution: 'add the "ImprovedWaitLite" library\nwait 0.2 seconds\nsay "Done"\n',
+          solution: 'add the "{wait}" library\nwait 0.2 seconds\nsay "Done"\n',
           hints: ['`wait 0.2 seconds` is the pause.'],
           check: { output: ['Done'] },
-          needs: ['ImprovedWaitLite']
+          needs: ['{wait}']
         },
         {
           id: 'wait-until',
           title: 'Wait for a condition',
           goal: 'Print exactly: Ready',
           body: [
-            { p: 'ImprovedWaitLite can wait until something becomes true — and `at most` keeps it from waiting forever.' },
-            { code: 'add the "ImprovedWaitLite" library\nlet \'Ready\' be 1\nwait at most 2 seconds until \'Ready\' is equal to 1\nsay "Ready"' },
+            { p: '{wait} can wait until something becomes true — and `at most` keeps it from waiting forever.' },
+            { code: 'add the "{wait}" library\nlet \'Ready\' be 1\nwait at most 2 seconds until \'Ready\' is equal to 1\nsay "Ready"' },
             { p: 'This is how a program waits for a click, a key, or another part of the game to finish.' }
           ],
-          starter: 'add the "ImprovedWaitLite" library\nlet \'Ready\' be 1\nnote [Wait at most 2 seconds until Ready is equal to 1, then print Ready]\n',
-          solution: 'add the "ImprovedWaitLite" library\nlet \'Ready\' be 1\nwait at most 0.2 seconds until \'Ready\' is equal to 1\nsay "Ready"\n',
+          starter: 'add the "{wait}" library\nlet \'Ready\' be 1\nnote [Wait at most 2 seconds until Ready is equal to 1, then print Ready]\n',
+          solution: 'add the "{wait}" library\nlet \'Ready\' be 1\nwait at most 0.2 seconds until \'Ready\' is equal to 1\nsay "Ready"\n',
           hints: [
             'The phrase is `wait at most 0.2 seconds until \'Ready\' is equal to 1`.',
             'Then print Ready on the next line.'
           ],
           check: { output: ['Ready'] },
-          needs: ['ImprovedWaitLite']
+          needs: ['{wait}']
         }
       ]
     },
@@ -682,6 +684,57 @@
   // Helpers used by the Studio and by the test-suite
   // ------------------------------------------------------------------
 
+  /**
+   * The waiting library a build ships. The Studio has the full ImprovedWait;
+   * E++.zip only has ImprovedWaitLite. Cards that teach `wait` name
+   * `{wait}` so the same card is right in both builds.
+   */
+  var WAIT_LIBRARIES = ['ImprovedWait', 'ImprovedWaitLite'];
+
+  function waitLibraryFor(isAvailable) {
+    if (typeof isAvailable !== 'function') return WAIT_LIBRARIES[0];
+    for (var i = 0; i < WAIT_LIBRARIES.length; i += 1) {
+      if (isAvailable(WAIT_LIBRARIES[i])) return WAIT_LIBRARIES[i];
+    }
+    return null;
+  }
+
+  /** Replaces {wait} (and any future {name}) in one string. */
+  function fillPlaceholders(text, context) {
+    if (typeof text !== 'string') return text;
+    return text.replace(/\{(\w+)\}/g, function (whole, name) {
+      var value = context && context[name];
+      return value === undefined || value === null ? whole : value;
+    });
+  }
+
+  /** A copy of a card with this build's library names filled in. */
+  function resolveStep(step, context) {
+    var resolved = {};
+    Object.keys(step).forEach(function (key) {
+      var value = step[key];
+      if (typeof value === 'string') resolved[key] = fillPlaceholders(value, context);
+      else if (Array.isArray(value)) {
+        if (key === 'needs') {
+          resolved[key] = value.map(function (name) { return fillPlaceholders(name, context); });
+        } else {
+          resolved[key] = value.map(function (item) {
+            if (typeof item === 'string') return fillPlaceholders(item, context);
+            if (item && typeof item === 'object' && !Array.isArray(item)) {
+              var copy = {};
+              Object.keys(item).forEach(function (inner) {
+                copy[inner] = typeof item[inner] === 'string' ? fillPlaceholders(item[inner], context) : item[inner];
+              });
+              return copy;
+            }
+            return item;
+          });
+        }
+      } else resolved[key] = value;
+    });
+    return resolved;
+  }
+
   function requirementsOf(course, step) {
     var needs = (course.needs || []).slice();
     (step.needs || []).forEach(function (name) {
@@ -693,17 +746,22 @@
   /** Every course, but with cards this build cannot run taken out. */
   function forBuild(isAvailable) {
     if (typeof isAvailable !== 'function') return COURSES;
+    var context = { wait: waitLibraryFor(isAvailable) };
     var kept = [];
     COURSES.forEach(function (course) {
-      var steps = course.steps.filter(function (step) {
-        return requirementsOf(course, step).every(function (name) { return isAvailable(name); });
-      });
+      var steps = course.steps
+        .map(function (step) { return resolveStep(step, context); })
+        .filter(function (step) {
+          return requirementsOf(course, step).every(function (name) {
+            return name && isAvailable(name);
+          });
+        });
       if (!steps.length) return;
       kept.push({
         id: course.id,
         title: course.title,
         icon: course.icon,
-        blurb: course.blurb,
+        blurb: fillPlaceholders(course.blurb, context),
         hiddenSteps: course.steps.length - steps.length,
         steps: steps
       });
@@ -733,6 +791,8 @@
     totalSteps: totalSteps,
     findStep: findStep,
     requirementsOf: requirementsOf,
+    waitLibraryFor: waitLibraryFor,
+    fillPlaceholders: fillPlaceholders,
     formatError: formatError
   };
 
