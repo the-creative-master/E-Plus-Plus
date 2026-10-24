@@ -1,10 +1,10 @@
-# The E++ Language Reference (1.2 Encryption++)
+# The E++ Language Reference (1.2)
 
 > **"Looks like English, feels like english, and is english"**
 
-This is the reference for **E++ 1.2 Encryption++**. It covers the language
-itself, the sealed project format you meet when you download or import a file,
-and the libraries that ship with this release.
+This is the reference for **E++ 1.2**. It covers the language itself, the
+project files you download and import, and the libraries that ship with this
+release.
 
 ---
 
@@ -15,16 +15,14 @@ and the libraries that ship with this release.
 | `.enpp` | A pure E++ program: no libraries. |
 | `.enppl` | A program that uses libraries (`add the "Math" library`, …). |
 | `.eppla` | The older name for a library program; still accepted everywhere. |
-| `.enpp` / `.enppl` **downloaded from the Studio** | A sealed project. It is not text: it is a block of base64 that only a saved key opens. |
+| `.enpp` / `.enppl` **downloaded from the Studio** | A project file. E++ opens it with the key it keeps for that project. |
 
-### Sealed projects
+### Project files
 
-- Every download is written with a key generated for that download. The key is
-  never stored inside the file.
-- The Studio keeps keys in the browser's key store. Importing a project tries
-  each remembered key until one opens it; if none does, the Studio says which
-  keyring you probably need.
-- **🔑 Keys** exports them as `epp-keys.json` and imports that file elsewhere.
+- **Download** writes the file; **Import** opens it again.
+- The Studio keeps one key per project in this browser, so you never type a key
+  to open your own work. **🔑 Keys** exports them as `epp-keys.json` and
+  imports that file elsewhere.
 - The command-line engines read the same keyring:
 
   ```bash
@@ -32,16 +30,16 @@ and the libraries that ship with this release.
   python3 epp.py --keyring epp-keys.json project.enppl
   ```
 
-- Importing a plain-text `.enpp` / `.enppl` file is refused (`E511`). Copy the
-  code into a new file in the Studio instead, or seal it from the CLI:
+- A file that E++ did not write is refused (`E511`) instead of half-read. Copy
+  the code into a new file in the Studio instead, or write it from the CLI:
 
   ```bash
-  ./epp --encrypt plain.enpp -o sealed.enpp
+  ./epp --save plain.enpp -o saved.enpp
   ```
 
-The repository's own sealed example is `examples/17_sealed_project.enpp`, opened
-with `examples/epp-keys.json`; the Studio picks that example keyring up on
-boot, so the demo opens in the browser as well.
+The repository's own example is `examples/17_saved_project.enpp`, opened with
+`examples/epp-keys.json`; the Studio picks that example keyring up on boot, so
+the demo opens in the browser as well.
 
 `add the "<Name>" library` opens the libraries below. A library project must be
 saved as `.enppl`.
@@ -104,10 +102,41 @@ to`, `is less than or equal to`, plus the library conditions in §9 and §10.
 
 ## 5. Loops
 
+**Repeat a fixed number of times.** The colon is optional; `end repeat` closes
+the block either way.
+
 ```text
 repeat 3 times:
     say "E++ makes programming read like a book!"
 end repeat
+
+repeat 2 times
+    say "Again"
+end repeat
+```
+
+**Repeat while something is true.** `do` (or a colon) opens the block and
+`end while` closes it. The condition is checked before every round, so a
+condition that is already false runs the body zero times.
+
+```text
+let 'n' be 1
+while 'n' is less than 4 do
+    say 'n'
+    let 'n' be 'n' plus 1
+end while
+```
+
+A counter plus a running total is the same shape:
+
+```text
+let 'Total' be 0
+let 'n' be 1
+while 'n' is less than 6 do
+    let 'Total' be 'Total' plus 'n'
+    let 'n' be 'n' plus 1
+end while
+say "The sum is ", 'Total'
 ```
 
 ---
@@ -302,7 +331,47 @@ ships inside `E++.zip`.
 
 ---
 
-## 12. Which libraries are in `E++.zip`
+## 12. Maths, randomness and words (`Math`, `Random`, `Strings`)
+
+Library words read like the rest of E++. A library has to be added before its
+words mean anything (`E301` if it is not):
+
+```text
+add the "Math" library
+say the square root of 144
+say 20 percent of 150
+say the minimum of 7 and 12
+say the maximum of 7 and 12
+say the value of pi
+```
+
+```text
+add the "Strings" library
+say the uppercase of "e++"
+say the lowercase of "E++"
+say the reverse of "abc"
+say the length of "hello"
+say the first letter of "hello"
+say the last letter of "hello"
+```
+
+```text
+add the "Random" library
+say "Rolling: ", a random number between 1 and 6
+```
+
+The Studio also accepts the article-less spelling (`square root of 144`,
+`uppercase of "e++"`, `length of "hello"`) and `power of`, as in
+`say 2 power of 3`.
+
+`say` accepts several pieces separated by commas. E++ inserts a space only
+where two pieces would otherwise run together, so `say "Hi-", 'Word'` prints
+`Hi-there`, `say "Hi", 'Word'` prints `Hi there`, and
+`say "Hello, ", 'Name'` prints `Hello, Ada` with one space.
+
+---
+
+## 13. Which libraries are in `E++.zip`
 
 | Library | `E++.zip` | Full Studio |
 | --- | --- | --- |
@@ -317,7 +386,7 @@ a suggestion (`ImprovedWaitLite`), instead of pretending the library exists.
 
 ---
 
-## 13. Diagnostics
+## 14. Diagnostics
 
 | Code | Meaning |
 | --- | --- |
@@ -331,9 +400,9 @@ a suggestion (`ImprovedWaitLite`), instead of pretending the library exists.
 | `E401` | Golden Rule 1 violation (math in quotes) |
 | `E402` | Golden Rule 3 violation (unquoted text word in string context) |
 | `E404` | File not found |
-| `E511` | Not a sealed E++ project |
-| `E512` | Truncated or damaged sealed project |
-| `E513` | Sealed with a different release |
+| `E511` | Not an E++ project file |
+| `E512` | Truncated or damaged project file |
+| `E513` | Written by a different release |
 | `E520` | The key does not open this project |
 | `E521` | No key available |
 | `E522` | Bad `--key` (needs 64 hex characters) |

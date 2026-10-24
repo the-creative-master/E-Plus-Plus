@@ -40,6 +40,8 @@
     SQUARE_ROOT: 'SquareRoot',
     CONVERSION: 'Conversion',
     TEXT_FUNCTION: 'TextFunction',
+    MATH_FUNCTION: 'MathFunction',
+    MATH_CONSTANT: 'MathConstant',
     RANDOM_NUMBER: 'RandomNumber',
     CONDITION: 'Condition',
 
@@ -77,7 +79,9 @@
     Program: function (body) { return { type: Type.PROGRAM, body: body || [], line: 1, column: 1 }; },
     Define: function (name, value, token) { return at({ type: Type.DEFINE, name: name, value: value }, token); },
     Set: function (name, value, token) { return at({ type: Type.SET, name: name, value: value }, token); },
-    Say: function (value, token) { return at({ type: Type.SAY, value: value }, token); },
+    // `say` takes either one value or a comma-separated list of values, which
+    // E++ prints as one line: say "Score: ", 'score'
+    Say: function (value, token, parts) { return at({ type: Type.SAY, value: value, parts: parts || null }, token); },
     Ask: function (prompt, name, token) { return at({ type: Type.ASK, prompt: prompt, name: name }, token); },
     Wait: function (duration, token) { return at({ type: Type.WAIT, duration: duration }, token); },
     Library: function (name, token) { return at({ type: Type.LIBRARY, name: name }, token); },
@@ -127,6 +131,8 @@
     SquareRoot: function (operand, token) { return at({ type: Type.SQUARE_ROOT, operand: operand }, token); },
     Conversion: function (kind, operand, token) { return at({ type: Type.CONVERSION, kind: kind, operand: operand }, token); },
     TextFunction: function (fn, operand, token) { return at({ type: Type.TEXT_FUNCTION, fn: fn, operand: operand }, token); },
+    MathFunction: function (fn, args, token) { return at({ type: Type.MATH_FUNCTION, fn: fn, args: args || [] }, token); },
+    MathConstant: function (name, token) { return at({ type: Type.MATH_CONSTANT, name: name }, token); },
     RandomNumber: function (low, high, token) { return at({ type: Type.RANDOM_NUMBER, low: low, high: high }, token); },
     Condition: function (operator, left, right, token) {
       return at({ type: Type.CONDITION, operator: operator, left: left, right: right || null }, token);

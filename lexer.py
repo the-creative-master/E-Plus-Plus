@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-E++ (E-Plus-Plus) 1.2 Encryption++ Lexer and Subsystem
+E++ (E-Plus-Plus) 1.2 Lexer and Subsystem
 Written in Python for direct execution and runtime integration.
 """
 
@@ -12,17 +12,17 @@ from enum import Enum, auto
 from typing import List, Optional, Tuple, Dict, Any
 
 # ==========================================
-# Release 1.2 sealed projects (Encryption++)
+# Release 1.2 project files
 # ==========================================
 #
-# A project that leaves the Studio is a sealed file. The key that opens it is
-# generated for that download and kept outside the file, in this browser's
-# key store or in an exported keyring. This module is the reference
-# implementation used by the Python engine; js/vault.js and src/vault.cpp
-# must stay byte-compatible with it (see tests/run-tests.mjs).
+# A project that leaves the Studio is written in a container of its own. The
+# key that opens it is made for that download and kept outside the file, in
+# the browser's key store or in an exported keyring. js/vault.js and
+# src/vault.cpp read and write the same bytes (tests/run-tests.mjs keeps the
+# three in step).
 #
-# This is deliberately not a documented format: nothing user-facing explains
-# how a sealed project is put together.
+# The layout is deliberately not described here: maintaining the format is
+# what the cross-engine checks are for.
 
 import hashlib
 import hmac
@@ -92,7 +92,7 @@ def chacha20_xor(key: bytes, nonce: bytes, data: bytes, counter: int = 0) -> byt
 
 def vault_subkeys(master: bytes):
     if len(master) != VAULT_KEY_LEN:
-        raise ValueError("An E++ vault key must be 32 bytes.")
+        raise ValueError("An E++ project key must be 32 bytes.")
     enc = hmac.new(master, VAULT_ENC_LABEL, hashlib.sha256).digest()
     mac = hmac.new(master, VAULT_MAC_LABEL, hashlib.sha256).digest()
     return enc, mac
@@ -122,8 +122,8 @@ def is_vault(text: str) -> bool:
     return len(raw) > VAULT_HEADER + VAULT_TAG and raw[:3] == VAULT_MAGIC
 
 
-def encrypt_epp(plaintext: str, key: bytes) -> str:
-    """Seals source code into a Release 1.2 vault with the given 32-byte key."""
+def save_epp(plaintext: str, key: bytes) -> str:
+    """Writes source code as a 1.2 project file with the given 32-byte key."""
     if isinstance(key, str):
         key = bytes.fromhex(key)
     enc_key, mac_key = vault_subkeys(key)
@@ -136,36 +136,36 @@ def encrypt_epp(plaintext: str, key: bytes) -> str:
     return "\n".join(encoded[i:i + 60] for i in range(0, len(encoded), 60)) + "\n"
 
 
-def decrypt_epp(ciphertext: str, key: bytes, filename: str = "<source>") -> str:
-    """Opens a Release 1.2 vault. Raises EppDiagnosticError with E511-E520."""
+def load_epp(ciphertext: str, key: bytes, filename: str = "<source>") -> str:
+    """Reads a 1.2 project file. Raises EppDiagnosticError with E511-E520."""
     if isinstance(key, str):
         key = bytes.fromhex(key)
     try:
         raw = base64.b64decode("".join(str(ciphertext).split()), validate=True)
     except Exception:
         raise EppDiagnosticError(
-            code="E511", name="This is not an E++ vault", filename=filename,
+            code="E511", name="This is not an E++ project", filename=filename,
             line=1, col=1, source_line="",
-            reason="The file contains characters that are not part of an encrypted E++ project.",
+            reason="The file contains characters that are not part of an E++ project file.",
             help_msg="Download the project again from the E++ Studio, or check the file was not edited by hand."
         )
     if len(raw) < VAULT_HEADER + VAULT_TAG:
         raise EppDiagnosticError(
-            code="E512", name="This E++ vault is too short", filename=filename,
+            code="E512", name="This E++ project file is too short", filename=filename,
             line=1, col=1, source_line="",
             reason="The file is smaller than its own header, so part of it is missing.",
             help_msg="Download the project again to get a complete file."
         )
     if raw[:3] != VAULT_MAGIC:
         raise EppDiagnosticError(
-            code="E511", name="This is not an E++ vault", filename=filename,
+            code="E511", name="This is not an E++ project", filename=filename,
             line=1, col=1, source_line="",
-            reason="The file does not start with the E++ vault signature.",
-            help_msg="Only files downloaded by the E++ Studio are sealed projects."
+            reason="The file does not start with the E++ project signature.",
+            help_msg="Only project files saved by the E++ Studio can be opened."
         )
     if raw[3] != VAULT_VERSION:
         raise EppDiagnosticError(
-            code="E513", name="This E++ vault was written by a different release", filename=filename,
+            code="E513", name="This project file was written by a different release", filename=filename,
             line=1, col=1, source_line="",
             reason=f"The file format version is {raw[3]}, but this engine reads version {VAULT_VERSION}.",
             help_msg="Open the file with the release of E++ that created it, then download it again."
@@ -186,7 +186,7 @@ def decrypt_epp(ciphertext: str, key: bytes, filename: str = "<source>") -> str:
         return chacha20_xor(enc_key, nonce, body).decode("utf-8")
     except UnicodeDecodeError as exc:
         raise EppDiagnosticError(
-            code="E512", name="Corrupted Encrypted Payload", filename=filename,
+            code="E512", name="Damaged Project File", filename=filename,
             line=1, col=1, source_line="",
             reason=f"The decrypted stream is not valid UTF-8: {exc}",
             help_msg="The project may have been truncated."
@@ -232,7 +232,7 @@ def _open_vault_with_keys(text: str, filename: str, keys: Optional[List[bytes]] 
     last: Optional[EppDiagnosticError] = None
     for candidate in attempts:
         try:
-            return decrypt_epp(text, candidate, filename)
+            return load_epp(text, candidate, filename)
         except EppDiagnosticError as exc:
             if exc.code == "E520":
                 last = exc
@@ -247,7 +247,7 @@ def _open_vault_with_keys(text: str, filename: str, keys: Optional[List[bytes]] 
         )
     raise EppDiagnosticError(
         code="E521", name="No Key Available", filename=filename, line=1, col=1, source_line="",
-        reason="This project is sealed and no key was found.",
+        reason="This project needs a key, and none was found.",
         help_msg="Export the keyring from the Studio (🔑 Keys) and save it as epp-keys.json next to the project, or set EPP_KEYRING."
     )
 
@@ -263,7 +263,7 @@ def open_vault(text: str, filename: str = "<source>", keyhex: Optional[str] = No
         except ValueError:
             raise EppDiagnosticError(
                 code="E522", name="Bad Key", filename=filename, line=1, col=1, source_line="",
-                reason="--key needs 64 hex characters (a 32-byte E++ vault key).",
+                reason="--key needs 64 hex characters (a 32-byte E++ project key).",
                 help_msg="Copy the key from epp-keys.json, or point --keyring at that file."
             )
     for entry in load_keyring(keyring_path):
@@ -274,7 +274,7 @@ def open_vault(text: str, filename: str = "<source>", keyhex: Optional[str] = No
     for candidate in keys:
         tried += 1
         try:
-            return decrypt_epp(text, candidate, filename)
+            return load_epp(text, candidate, filename)
         except EppDiagnosticError as exc:
             if exc.code == "E520":
                 errors.append(exc)
@@ -283,7 +283,7 @@ def open_vault(text: str, filename: str = "<source>", keyhex: Optional[str] = No
     if tried == 0:
         raise EppDiagnosticError(
             code="E521", name="No Key Available", filename=filename, line=1, col=1, source_line="",
-            reason="This project is sealed and no key was supplied.",
+            reason="This project needs a key, and none was supplied.",
             help_msg="Use --key <64 hex characters>, put epp-keys.json next to the project, or set EPP_KEYRING."
         )
     raise EppDiagnosticError(

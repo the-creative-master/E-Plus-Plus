@@ -37,6 +37,7 @@ private:
 
     bool is_at_end() const;
     Token peek() const;
+    Token peek_at(size_t offset) const;
     Token previous() const;
     Token advance();
     bool check(TokenType type) const;

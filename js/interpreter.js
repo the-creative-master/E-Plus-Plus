@@ -102,6 +102,26 @@
     return String(parseFloat(n.toPrecision(12)));
   }
 
+  /**
+   * Joins the comma-separated pieces of one `say` into a single line, using
+   * the same spacing rule as the Studio engine: the pieces are joined as
+   * written, and a space is added only where two words would otherwise run
+   * together (or where a punctuation mark is followed by something).
+   */
+  function joinSayParts(pieces) {
+    var out = '';
+    for (var i = 0; i < pieces.length; i++) {
+      var cur = String(pieces[i] === undefined || pieces[i] === null ? '' : pieces[i]);
+      if (i > 0 && out.length > 0 && cur.length > 0) {
+        var last = out.slice(-1), first = cur.slice(0, 1);
+        if (/[a-zA-Z0-9]/.test(last) && /[a-zA-Z0-9]/.test(first)) out += ' ';
+        else if (/[!?:,]/.test(last) && first !== ' ') out += ' ';
+      }
+      out += cur;
+    }
+    return out;
+  }
+
   function stringify(value) {
     if (value instanceof Fraction) return value.toString();
     if (typeof value === 'number') return formatNumber(value);
@@ -574,6 +594,15 @@
         return;
       }
       case AST.SAY: {
+        // say a, b, c prints one line, the way the Studio's examples read.
+        if (node.parts && node.parts.length) {
+          var pieces = [];
+          for (var partIndex = 0; partIndex < node.parts.length; partIndex++) {
+            pieces.push(stringify(await this.evaluate(node.parts[partIndex])));
+          }
+          this.output(joinSayParts(pieces));
+          return;
+        }
         var said = await this.evaluate(node.value);
         this.output(stringify(said));
         return;
@@ -1010,7 +1039,28 @@
         var text = stringify(await this.evaluate(node.operand));
         if (node.fn === 'uppercase') return text.toUpperCase();
         if (node.fn === 'lowercase') return text.toLowerCase();
-        return text.length; // length of
+        if (node.fn === 'length') return text.length;
+        if (node.fn === 'reverse') return text.split('').reverse().join('');
+        if (node.fn === 'first letter') return text.charAt(0);
+        if (node.fn === 'last letter') return text.slice(-1);
+        if (node.fn === 'trim') return text.trim();
+        return text;
+      }
+
+      case AST.MATH_FUNCTION: {
+        this.requireRuntimeLibrary('Math', node.fn + ' of', node);
+        var values = [];
+        for (var i = 0; i < node.args.length; i += 1) {
+          values.push(this.toNumber(await this.evaluate(node.args[i]), node, '"' + node.fn + ' of"'));
+        }
+        if (node.fn === 'maximum') return Math.max.apply(Math, values);
+        if (node.fn === 'minimum') return Math.min.apply(Math, values);
+        return Math.abs(values[0]); // absolute value of
+      }
+
+      case AST.MATH_CONSTANT: {
+        this.requireRuntimeLibrary('Math', 'the value of ' + node.name, node);
+        return node.name === 'pi' ? Math.PI : Math.E;
       }
 
       case AST.RANDOM_NUMBER: {
