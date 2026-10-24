@@ -359,4 +359,4 @@ LANGUAGE.md         the language reference
 
 ## License
 
-MIT. Write programs that read like English, and keep your keys safe.
+Apache License 2.0. Write programs that read like English, and keep your keys safe.
