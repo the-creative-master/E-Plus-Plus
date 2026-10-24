@@ -1,2 +1,12 @@
-call ENCRYPTION_KEY
-AAABoV84TzqlD++bLSnoL0NCaWGmTGocsvtFDRgw9ByMeqzbp0Wrof/xq+ps9isUCzfHOs0WWQriJTtll/28Z3EQUtDVuCwVvOaUXeCdLVkZmoxa6tapsl/RCIMs1XXcv35+dkHsnnc3/oj75TdaN0XYSBvtsi7hg/SrrFJy8xlSkp0+JC312ZDgP/UH6Cl38JoU1ekx1Ms3tjaCe8rFEHyUBx5Sgtr78hHsf+nBIF7xUeHWomxIS/6kB7zSqsWtJEnMF9cF4+6RQiY9e7zITIb7IrovD08UcT0ZldxuVF8SOnYGCYZHto81P/FdSJwdwl1aUp7gWiZnRLp8rnKNdxk3kfnKczYgzmnSjCJ9ZO7eOIB1FvImKgdGJFSb0cvoet795468ytjJPTaKHITrdowt8Khp8YoOaGW26So/zuuZk+ZCeJmJKJtHohH9
+note [06_math_library.epp: The Math Library with advanced functions]
+
+add the "Math" library
+
+say the square root of 2
+say the square root of 16
+say how much 60 percent is of 100
+say the absolute value of 0 minus 42
+say the minimum of 15 and 99
+say the maximum of 15 and 99
+say the value of pi
+say the number between 1 and 5

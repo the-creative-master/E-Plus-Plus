@@ -1,0 +1,12 @@
+{
+  "keys": [
+    {
+      "id": "example-project-key",
+      "project": "examples/17_sealed_project.enpp",
+      "key": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
+      "label": "E++ 1.2 example project",
+      "fingerprint": "78c27f",
+      "createdAt": "2026-10-23T00:00:00.000Z"
+    }
+  ]
+}

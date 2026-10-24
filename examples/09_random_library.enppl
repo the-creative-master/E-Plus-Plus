@@ -1,2 +1,13 @@
-call ENCRYPTION_KEY
-AAABoV84Tz9SmjFSj3B0Ptq5Bdt47s5Cj6YgqvOqom0J+30FpAl524iElpDKX9GTxleb6WFmfbZrvmPPqZP+3OAEWv0h7+LQaMQ8poVANM87Cq+BbDIEnxTfKrrEWkZdjO7CuW4zIIT72s4buo+kNSi//j1QACaKCY2W4zcA9gjaTVxLmfXG/L29UB+7rbXkflxEVHE6e4+nS2ycdUJT3bXImOvmnurahwcF0GwdKf4oHyyaUIp0p+PQM8clU/tX5yOPagmKaCoVE9myOJqZ9DkrkUqlLvz5dRW5Nw3bCIdYB6rqxVpOSZm3rlAp48/98uyD22GMPXqa5L8eC8as9Mcc3yGbLJsV7AOWhDPkoahONTGAWc9hJ8DZJ9c0hbCOz1FIVE4b5xvxd8KS2PyRmHZNuQf6t3rhvFaTGG75uod59TY4qxPjgkNiW3iQmncXsD40ZJruyJoW8NC2OAuL9uAA+GL4qAn8REMsJV8z1FCH+VzE5hPzVNONP0m1HNl9UCzhBx+p/7EXQJ3X6jfZGa6yy5I/WhlX6rA4d1CY0JGPR4ZzF4Nsg1orb3G20c0arZXPrYVxR0O9dcuTrsrY7pFAlCV+BHuKuBaXOh8np0PSebWwgqJoWi0OT2GzKBw9uC8UkJ00OPBpAQ==
+note [09_random_library.epp: Demonstrating the Random library]
+
+add the "Random" library
+
+note [Define a random number variable:]
+define 'Random number' as a random number between 1 and 100
+say "Here is a random number between 1 and 100! It is ", 'Random number'
+
+note [Inline it's a random number expression:]
+say "Heres your random number!", it's a random number between 1 and 100
+
+note [Say the number between 1 and 5:]
+say "Rolling a 5-sided dice: ", the number between 1 and 5

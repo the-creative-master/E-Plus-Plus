@@ -1,2 +1,14 @@
-call ENCRYPTION_KEY
-AAABoV84T00XDPEVh6DnzhXuvgSvhphAa9ELoJbfxLcturWmlVNoOOVK/dejqGKQV1xqXpMrwCElMbB9KfIL/WaxfiEHT48/Mx2aAV3RFsZRWQTb4yZUdpaKAsg2EN66gAkCDZJDFan9+XaSyPGEDV/xNxyn0bmee0uJniE7YD8ZOnLFKcpdVGCJTCG04ocmaXYxQ4hlkxLEAximR6jH68GdpG29LspVoQyOLycIKYzvOu0U0VrZLob9M+RLWp1Z1q1k1ShTDHKOQBe/tGpA9sA247kLp6TL98c8Q6JRlzfDn8EsexUymHzGBlojRzUBpmAzCYrQegCI6vKbpsPyDZWDK+rY9wazwov1hlSuxAZmJZJPmHpZyygPnw/0YYwa4slDbHZqhP6XCz8iflGbO6XI8JGZ3ONycCIKawP6MmKRqzh5m5iV2dJT13nApmREy9hOQu+VpgEoIqwEem775LCANxAQF307vXNxRUMaQiDOfZy/4bXSxLyLD38yh5ujpzCOVu9fBA53COWSVPN7QRiIGbGn6pnVABC5/1iFsAO2TPNjaYLYK5D+/sN09t23SWDLXx35mVuX0TG0G14SSZijMeqFUveOWZIvbXaplwI/8ncahJy6wzdebwgBe9QLOV4ujriNX1mpCT6BcR1pchq65QqgnoKWaxdXAvQ+cGyomVtuImkhN6mChew0y+s+hhs6IJTVT0RkR+NkTD29zNUFXyFZ9e40eKnpekTi
+note [Colors and Console Libraries Demonstration in E++ (.enppl)]
+add the "Colors" library
+add the "Console" library
+
+note [1. Colored Terminal Messages]
+say green "✓ Success: Build completed successfully!"
+say blue "ℹ Info: Initializing environment modules..."
+say yellow "⚠ Warning: High memory usage detected."
+say red "✗ Error: Connection timeout on port 8080."
+say cyan "✦ Notice: Welcome to E++ Release 1.0!"
+say magenta "★ Milestone: All 9 libraries operational."
+
+note [2. Clearing Screen]
+say "Terminal colors rendered cleanly."

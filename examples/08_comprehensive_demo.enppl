@@ -1,2 +1,27 @@
-call ENCRYPTION_KEY
-AAABoV84TzyWbWaHx3itQPMODzjKqnQ6FMvlyq2q8Dg5RpyMLhWISgIE8mXgKcSgjPaUjbR0yeUMDsOREmmdw2IZvdkG4eRdKko8HPQOPbflJi8uPaZjjcQxzBzXINeRas1w8Bm+h7RCCsM3KOvpKc2sfcHhXRf0dWlhL52f2U16rFnQTeXUl0c0vaI3SK3L10qQmBb5C/rerh6zwxwczNVLHa74xKT8iFzeu4abnubizMZCRKPDCNwy50C1fArqD9kpU9JnbvF9oqnaks1BEc2/txEriNzucOmsqEIlW4bRSmCH5QrYuyDhZiEz0/e74Y2bkIM3NFiIvoCOMo2y+P6zKDLatWxEbwlJwfDrUpybSSgKifaE6vso2f+wBdehpbRDxQ2vJsnmmlEkgT3FYOqOfCVfuJl6djOdtgcxVnsVvv7KNJWhBV/dCnKZM3dlrm0ZwP6Q4a1k613sbgdoeH94fNlTQJ1XFjQ1ckigbY5NddE8mjG0LqgoUMkbEpJGYjXGTXohmBV3vxSdByAIO9gxGw2s1k049VrHjPoOhSU0OBw5BIGSOOW+1j/8PZJkvPEXJXHT05BJI4L3qH0RkRF+w7zNAJbL3r1L23umGp4kbtdEdTgaQet/x0J1gWFhJnbV/fALUI/jjpRh/2O2TyUmOi2fvUeCxbaHBV+L2K7DOBVERcnQFXdB//++VAkImZOzxljoGvlYDXUvLqZePw5FKYr/gumsXqdm9022YvaLtwujCC6aAhn7YSusjg/Qz//SduvpQtsx4AHwhpBuWSbO/zNxYTiUi4FJFNLYkn35fnbmm9ZTPbqcE4vS7ziil9nnA2FII2CESzNOizE1JOIbw1JJw9xgQFfoBPa1QVS6WI9p3lKVxv2JfC1Iwcos9JQPVHqOqqzRO4MFxYJ5jwx22Q7bo9wKddXETdoRSx+4vLGJyYsVuNo/eUqv3uwX98Drr7BjyEV4Bovp8BAv8dDQ5vEKCUXQKuGzPtwJB5Tg3046txYm83Z9q9FdccGq8Dyg5ZdG3hZkyGxZLVww1RjiigQ5Vj8IxWmkKhmsZFm9hw5t4ljc+RZ59EkAHO2iLTYv1DIe6RCe/G/BkxCbMbVBY9yoIqiIz8w/TebllhaknGyJA7agmnTzT0kcjqHv8YkW8u5uQCX8+N7Op1NdPBq5sg9rXKwSEKeisd+vZvmkS4bQKOGJVO7HByOZw7f/IZwJkn5lCVxCV7COPj2c43KJwa5ikA72SqhRx2AUuEv8rAJRidkvrc9+ewhzo8OptcyvaK9z9yB0ZnG3GE1TRubc/V8lJg==
+note [08_comprehensive_demo.epp: Complete demonstration of E++ features]
+
+add the "Math" library
+add the "Random" library
+
+say "=== Welcome to E++ Demonstration ==="
+say "Slogan: Looks like English, feels like english, and is english"
+
+define 'Author' as "The E++ Team"
+define 'Year' as 2026
+say "Created by: ", 'Author', " in year ", 'Year'
+
+say "--- Math in Action ---"
+say "Square root of 2 is: ", the square root of 2
+say "60 percent of 250 is: ", how much 60 percent is of 250
+say "Maximum of 42 and 108 is: ", the maximum of 42 and 108
+
+say "--- Randomness in Action ---"
+define 'Lucky number' as a random number between 1 and 100
+say "Here is a random number between 1 and 100! It is ", 'Lucky number'
+say "Heres your random number!", it's a random number between 1 and 100
+say "Random choice between 1 and 5: ", the number between 1 and 5
+
+say "--- Custom Separator Demo ---"
+say "Alpha", "Beta", "Gamma" with the separation method of " <-> "
+
+say "All systems go!"

@@ -1,2 +1,15 @@
-call ENCRYPTION_KEY
-AAABoV84T0hmoahSJRh/2nyAA/YOEzoPWT4/VvGQMpTz2C9mU3Hg6Fn01RcOYppBxRUy2fnO8KGUkTyx+t1NXog8NEScAT7dRN2qs1sCLp3qolrWeowpI8/BcUOVpuYcTcUJwwfMTTRFm960T7ivCTHliDcqeLe27WPkEg7UGhy2b7bbCOHK2iHsfkE8+QdmKBETzT/XvCA5Jdu6Bi9KdwaDft8ZliFFwwSUcjB0xN8yB+6UOjUyYG3RRFnj5yB1GopEpJ9ChjoHEYKa/4nv4DWyS6bQhD6nYa2Ce3KriNakhRsevg6eSItEWPtGs4Uup213sTrY+vwFjG68PLGF8/vd+LyB0GnN0rM4jce7KTEyhVUxhAH0GaePmJTGaEoEyjMSQd4mYGOZFXJe/0D+VtFtNkoM3uyRS29kX7A1IKC4WtxeW8ruQQkzaA+o4nZikniT6Cp1M0Bb8VVd+lMDT7jvYieJprTxwNcqu7CTrfnmRJG8XITpA2DsdydoPlBSW5TzEGZjsiKgKRVVh+/A3Pl3wATGb7I+9KVFPVsDnISAy0FBV5RX0e/pStrnyFCzwkp/cfHAo7D79PaNwvBcB4LWuXn5PKLeUdINHde1s9doQViZqnfa9N4T447Pzsn5Sl3UfEjJPXmdgMpi/XpXsbcwWt/ep2weIya632ZdnLEoOinCWIs1epq/OZQHPEBvmouoQAKsF8cenQ+/TjJge5wiBWbdntu9JZnDKg==
+note [Files Library Demonstration in E++ (.enppl)]
+add the "Files" library
+
+note [1. Writing to a text file]
+write "E++ Release 1.0 is officially released and rock-solid!" to file "release_notes.txt"
+say "File written successfully."
+
+note [2. Appending data to the file]
+append "\nFeaturing 9 rich standard libraries." to file "release_notes.txt"
+say "Data appended successfully."
+
+note [3. Reading the file back into an E++ variable]
+read the file "release_notes.txt" and save the output as 'Notes'
+say "Contents read back from disk:"
+say 'Notes'

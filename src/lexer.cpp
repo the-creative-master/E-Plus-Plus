@@ -1,3 +1,4 @@
+#include "vault.hpp"
 #include "lexer.hpp"
 #include <cctype>
 #include <algorithm>
@@ -165,8 +166,9 @@ std::string Lexer::to_lower(const std::string& s) {
 }
 
 Lexer::Lexer(const std::string& source) : src(source) {
-    if (src.rfind("call ENCRYPTION_KEY", 0) == 0) {
-        src = decrypt_epp(src);
+    // Release 1.2: a sealed project is opened with the keyring before lexing.
+    if (is_vault(src)) {
+        src = open_vault(src);
     }
 }
 
@@ -574,127 +576,6 @@ std::string Lexer::token_type_name(TokenType t) {
         case TokenType::TOKEN_PYTHON_BLOCK: return "PYTHON_BLOCK";
         default: return "KEYWORD";
     }
-}
-
-// ==========================================
-// Release 1.1 Randomized Encryption Engine
-// ==========================================
-
-static const std::string b64_chars = 
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    "abcdefghijklmnopqrstuvwxyz"
-    "0123456789+/";
-
-static std::string base64_encode_bytes(const std::vector<uint8_t>& buf) {
-    std::string ret;
-    int i = 0;
-    uint8_t char_array_3[3];
-    uint8_t char_array_4[4];
-
-    for (uint8_t b : buf) {
-        char_array_3[i++] = b;
-        if (i == 3) {
-            char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-            char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-            char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-            char_array_4[3] = char_array_3[2] & 0x3f;
-            for (i = 0; i < 4; i++) ret += b64_chars[char_array_4[i]];
-            i = 0;
-        }
-    }
-    if (i != 0) {
-        for (int j = i; j < 3; j++) char_array_3[j] = '\0';
-        char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-        char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-        char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-        char_array_4[3] = char_array_3[2] & 0x3f;
-        for (int j = 0; j < i + 1; j++) ret += b64_chars[char_array_4[j]];
-        while (i++ < 3) ret += '=';
-    }
-    return ret;
-}
-
-static std::vector<uint8_t> base64_decode_bytes(const std::string& encoded_string) {
-    size_t in_len = encoded_string.size();
-    int i = 0, in_ = 0;
-    uint8_t char_array_4[4], char_array_3[3];
-    std::vector<uint8_t> ret;
-
-    while (in_len-- && (encoded_string[in_] != '=') && (isalnum(static_cast<unsigned char>(encoded_string[in_])) || (encoded_string[in_] == '+') || (encoded_string[in_] == '/'))) {
-        char_array_4[i++] = encoded_string[in_]; in_++;
-        if (i == 4) {
-            for (i = 0; i < 4; i++) char_array_4[i] = b64_chars.find(char_array_4[i]);
-            char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
-            char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
-            char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
-            for (i = 0; i < 3; i++) ret.push_back(char_array_3[i]);
-            i = 0;
-        }
-    }
-    if (i) {
-        for (int j = i; j < 4; j++) char_array_4[j] = 0;
-        for (int j = 0; j < 4; j++) char_array_4[j] = b64_chars.find(char_array_4[j]);
-        char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
-        char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
-        char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
-        for (int j = 0; j < i - 1; j++) ret.push_back(char_array_3[j]);
-    }
-    return ret;
-}
-
-std::string encrypt_epp(const std::string& plaintext) {
-    uint64_t frame_key = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::system_clock::now().time_since_epoch()).count();
-    std::vector<uint8_t> buf(8 + plaintext.size());
-    for (int i = 0; i < 8; i++) {
-        buf[i] = (frame_key >> ((7 - i) * 8)) & 0xFF;
-    }
-    uint64_t k = frame_key;
-    const uint64_t mul = 6364136223846793005ULL;
-    const uint64_t add = 1442695040888963407ULL;
-    for (size_t i = 0; i < plaintext.size(); i++) {
-        k = k * mul + add;
-        uint8_t keystream = (k >> 33) & 0xFF;
-        buf[8 + i] = static_cast<uint8_t>(plaintext[i]) ^ keystream;
-    }
-    return "call ENCRYPTION_KEY\n" + base64_encode_bytes(buf);
-}
-
-std::string decrypt_epp(const std::string& ciphertext, const std::string& filename) {
-    (void)filename;
-    std::istringstream stream(ciphertext);
-    std::string header;
-    std::getline(stream, header);
-    while (!header.empty() && (header.back() == '\r' || header.back() == ' ')) header.pop_back();
-    if (header != "call ENCRYPTION_KEY") {
-        throw std::runtime_error("[E++ Error E501: Invalid Encryption Header] File must begin with 'call ENCRYPTION_KEY'");
-    }
-    std::string line, gibberish;
-    while (std::getline(stream, line)) {
-        gibberish += line;
-    }
-    std::string clean_gib;
-    for (char c : gibberish) if (!isspace(static_cast<unsigned char>(c))) clean_gib += c;
-
-    std::vector<uint8_t> raw = base64_decode_bytes(clean_gib);
-    if (raw.size() < 8) {
-        throw std::runtime_error("[E++ Error E502: Corrupted Ciphertext] Payload too short.");
-    }
-    uint64_t frame_key = 0;
-    for (int i = 0; i < 8; i++) {
-        frame_key = (frame_key << 8) | raw[i];
-    }
-    uint64_t k = frame_key;
-    const uint64_t mul = 6364136223846793005ULL;
-    const uint64_t add = 1442695040888963407ULL;
-    std::string dec;
-    dec.reserve(raw.size() - 8);
-    for (size_t i = 8; i < raw.size(); i++) {
-        k = k * mul + add;
-        uint8_t keystream = (k >> 33) & 0xFF;
-        dec.push_back(static_cast<char>(raw[i] ^ keystream));
-    }
-    return dec;
 }
 
 } // namespace epp

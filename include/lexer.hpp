@@ -228,9 +228,8 @@ private:
     static const std::unordered_map<std::string, TokenType> keywords;
 };
 
-// Release 1.1 Randomized Encryption Engine
-std::string encrypt_epp(const std::string& plaintext);
-std::string decrypt_epp(const std::string& ciphertext, const std::string& filename = "<source>");
+// Release 1.2 encryption (Encryption++) lives in vault.hpp: encrypt_epp /
+// decrypt_epp / open_vault / is_vault, backed by ChaCha20 + HMAC-SHA256.
 
 } // namespace epp
 

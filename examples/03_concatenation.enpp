@@ -1,2 +1,7 @@
-call ENCRYPTION_KEY
-AAABoV84TzGR6HCblwHUX852lJrLeyRwFG1UiFFvING7UASZYQdxeS7oiFvIwlSZQxg8lU/lWBx+KUKCaORr45YAP7pSS4nt+CO/1MgmYRK2Uhop61C0W6TeDWgtZ9IDejYlYVfw65eDl5EUP2FxWbOZzUXqU6Yg5vfbMVmAvspkRDjVsSGrF8WqLdTKdGf7x9LjYXOZGZn2hL4tOV+LfbybnuQuTucgYD6VH7OUdiey5VCVka12b3C/aUpsxVLZJCsXL12uzeWcZuZDjKbyTogUpO7G+doiBWJm1klZr/71CXonLNwwp8Qz0wxr1YulvNJ1BL3GoY7xJnXuogjOKl1hcCQdiSp74rpvgzNoD32IpMPoMLlGkXvdgLsx+Xi+W58drhzQY0ZmIoSuNISAt2FacmQJlh5u/07qqezEZ/JRNZVxqVFMldlytKdxa8MHmmy9I1nsVSPLuLgK2XKVAhxRE9tdfdTtVBFcSHncfZhbtOO8jE8aAZc3VNwT
+note [03_concatenation.epp: Concatenation and Separation Methods]
+
+say "Hello ", and concat it with "World!"
+say 1 + 2 and concat it with 2 + 3
+say 1 + 2 and concat it with 2 + 3 with the seperation method of "-"
+say "Hello " and concat it with "World! " and concat it with "Welcome to E++!" with the seperation method of "sigma"
+say "Hello ", "World! ", "Welcome to E++!"
