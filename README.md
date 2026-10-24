@@ -1,11 +1,10 @@
-# E++ Programming Language [1.2 Encryption++]
+# E++ Programming Language [1.2]
 > **"Looks like English, feels like english, and is english"**
 
-Welcome to **E++ 1.2 "Encryption++"** — a release in three parts: projects you
-download are now sealed files that only your key opens, the **Game** library
-turns E++ into a small game engine (the pygame zero of E++), and the
-**Keyboard**, **ImprovedWait** and **ImprovedWaitLite** libraries make programs
-that react to people and to time.
+Welcome to **E++ 1.2** — a release in three parts: **guided tutorials** built
+into the Studio, the **Game** library that turns E++ into a small game engine
+(the pygame zero of E++), and the **Keyboard**, **ImprovedWait** and
+**ImprovedWaitLite** libraries that make programs react to people and to time.
 
 E++ still runs on three engines that agree with each other: a native C++
 engine, a single-file Python runtime, and the zero-dependency Studio that runs
@@ -17,7 +16,7 @@ offline in the browser.
 
 | Feature | What it gives you | In `E++.zip`? |
 | --- | --- | --- |
-| **Encryption++** | Every download is a sealed `.enpp` / `.enppl` file with its own key | ✅ |
+| **Tutorials** | Card-by-card lessons in the Studio, each one checked against real output | ✅ |
 | **Keyboard** | `if the "Up arrow" key is pressed then ...` — arrows, space, enter and every letter | ✅ |
 | **ImprovedWaitLite** | Named waits, `wait until`, `wait at most`, `wait ... and then ...`, `cancel the wait` | ✅ |
 | **Game** | A game window, actors that carry an image, movement, collisions, a game loop | ❌ Studio only |
@@ -29,40 +28,36 @@ variable that loads the image.
 
 ---
 
-## 🔒 Sealed projects (Encryption++)
+## 💾 Projects and keys
 
-A `.enpp` or `.enppl` file is no longer a text file with a new extension. When
-you download a project from the Studio, it is written as a sealed file:
+Saving and opening projects needs no ceremony: **Download** writes the project
+out, **Import** opens it again, and the Studio keeps track of which key belongs
+to which project so you never type one. Nothing about how a project file is
+built is worth knowing to use E++, so this manual does not describe it.
 
-- the file contains no readable source — only a block of base64;
-- the key that opens it is generated fresh for that download and **never
-  travels inside the file**;
-- keys live in the browser's own key store, so a reader who has many projects
-  simply has many keys;
-- opening a project tries every key that browser remembers until one works;
-- **🔑 Keys** in the Studio shows the saved keys, exports them as
-  `epp-keys.json` and imports a keyring from another machine.
+- **Download** writes the file and keeps its key in this browser.
+- **Import** opens a project saved by E++ — anywhere, as long as this browser
+  still has its key.
+- **🔑 Keys** lists the keys this browser holds, exports them as
+  `epp-keys.json`, and imports a keyring from another machine.
+- If you move a project to another computer, take the keyring with it:
 
-Plain-text `.enpp` / `.enppl` files are refused on import, and the command line
-says so too. If you move a project to another computer, take the keyring with
-it, or open it with the key on the command line:
+  ```bash
+  ./epp --keyring epp-keys.json game.enppl
+  ./epp --key 5f0c…c9 game.enppl
+  ```
 
-```bash
-./epp --keyring epp-keys.json game.enppl
-./epp --key 5f0c…c9 game.enppl
-```
+A file that E++ did not save is refused instead of half-read, and the CLI says
+the same thing.
 
-Keeping the key is the whole point: a sealed project without its key is a pile
-of base64, which is exactly what it should be.
-
-The repository ships one sealed example, `examples/17_sealed_project.enpp`, and
+The repository ships one saved example, `examples/17_saved_project.enpp`, and
 the key that opens it in `examples/epp-keys.json`. The Studio imports that
 example keyring on first boot, so the demo opens everywhere, and every engine
 reads the same file:
 
 ```bash
-./epp --keyring examples/epp-keys.json examples/17_sealed_project.enpp
-python3 epp.py --keyring examples/epp-keys.json examples/17_sealed_project.enpp
+./epp --keyring examples/epp-keys.json examples/17_saved_project.enpp
+python3 epp.py --keyring examples/epp-keys.json examples/17_saved_project.enpp
 ```
 
 ---
@@ -120,7 +115,7 @@ column, and a caret under the exact spot:
 | `E401` | Golden Rule 1 violation (math in quotes) |
 | `E402` | Golden Rule 3 violation (unquoted word used as text) |
 | `E404` | File not found |
-| `E511`–`E522` | A sealed project that will not open (not a project, damaged, wrong release, no key, wrong key, bad `--key`) |
+| `E511`–`E522` | A project file that will not open (not a project, damaged, wrong release, no key, wrong key, bad `--key`) |
 | `E601` | Missing offline runtime lexer (`epp_language.zip`) |
 | `E701` | Python `turtle` is prohibited |
 | `E702` | Python runtime exception |
@@ -256,12 +251,12 @@ make clean && make
 ./epp -e 'say 1 plus 1'
 ./epp                                    # REPL
 
-# Sealed projects
+# Saving and opening project files
 ./epp --new-key
 ./epp --key <64 hex> project.enpp
 ./epp --keyring epp-keys.json project.enpp
-./epp --encrypt project.enpp -o sealed.enpp
-./epp --decrypt sealed.enpp --key <64 hex>
+./epp --save project.enpp -o saved.enpp
+./epp --open saved.enpp --key <64 hex>
 ```
 
 ### Standalone Python runtime
@@ -277,7 +272,7 @@ report the same `E5xx` diagnostics.
 
 ### Tests and packaging
 ```bash
-npm test        # the JS engine's full suite (vault, libraries, parser, runtime)
+npm test        # the JS engine's full suite (projects, libraries, parser, tutorials)
 make test       # runs the C++ and Python engines over the examples
 make zip        # rebuilds E++.zip and epp_language.zip
 ```
@@ -295,8 +290,9 @@ python3 -m http.server 8000
 - True offline runtime: it verifies and loads the lexer from `epp_language.zip`
   using `DecompressionStream`. If the zip is missing, execution stops with
   `E601` and the badge on the page turns red.
-- **New / Import / Save / Download** for `.enpp` and `.enppl`; downloads are
-  sealed, imports are opened with the keys saved in the browser.
+- **New / Import / Save / Download** for `.enpp` and `.enppl`; downloads and
+  imports are handled by the keys saved in the browser.
+- **🎓 Learn** opens the card-by-card tutorials described below.
 - **🔑 Keys** lists saved keys and exports / imports a keyring.
 - **🖼 Image** adds an actor image to a Game project.
 - **📦 E++.zip** downloads the standalone release described above.
@@ -305,12 +301,52 @@ python3 -m http.server 8000
 
 ---
 
+## 🎓 Tutorials
+
+Press **🎓 Learn** in the Studio. Lessons are **cards**, one idea at a time, and
+a card is only finished when your program is **run and its output checked** —
+copying a sample from the card and pressing *Run & check* is never enough on
+its own.
+
+| Course | Cards |
+| --- | --- |
+| 🌱 **First words** | talking, numbers without quotes, quotes change everything, notes, reading your first error |
+| 🏷️ **Values with names** | `let`, changing a value, `ask`, building a sentence from pieces |
+| 🔀 **Decisions** | `if … then`, `otherwise`, comparing text, block `if … then:` … `end if` |
+| 🔁 **Loops** | `repeat … times`, `while … do`, a counter with a running total |
+| 📚 **Libraries** | adding a library, percentages, word tools, a random number |
+| ⌨️ **Keys and timing** | `is pressed`, the letter keys, `wait`, `wait … until` |
+| 🎮 **Games** *(full Studio only)* | the game window, an actor, the game loop, `is touching` |
+
+Every card has a goal, a short explanation, a code box, hints, and a check.
+The check runs the program in a throw-away copy of the engine and compares the
+real console output (line by line, plus any "must not print" rule or pattern),
+so a program that prints the right words by another route still passes and a
+program that only *looks* right does not.
+
+- **▶ Run & check** marks the card. The output your program printed is shown
+  under the feedback, so you can compare it with the goal yourself.
+- **💡 Hint** reveals one hint at a time; after two wrong answers the card
+  offers **👀 Show the answer** as a way out.
+- **↗ Try in the editor** copies the card's code into the main editor and runs
+  it there, which is where a project of your own belongs.
+- Progress and your in-progress code are kept in this browser, so closing the
+  tab does not lose your place. **↺ Reset** puts a card back to its start.
+- Cards that need a library this build does not ship (the Game course inside
+  `E++.zip`) are hidden instead of failing, and the sidebar says so.
+
+The Studio allows the article-less spelling of the library words, so a card can
+show `say the square root of 144` while your own program says
+`say square root of 144`; both are marked correct.
+
+---
+
 ## 📁 Project layout
 
 ```text
 include/            C++ headers (lexer, parser, interpreter, value, ast, vault)
-src/                C++ engine and the native sealed-project implementation
-js/                 Studio modules: libraries, keyboard, vault, game host
+src/                C++ engine and the native project-file implementation
+js/                 Studio modules: libraries, keyboard, vault, game host, tutorials
 tests/run-tests.mjs the JavaScript engine's test suite (npm test)
 tools/build-zip.mjs the E++.zip builder (make zip)
 examples/           runnable .enpp / .enppl / .eppla programs

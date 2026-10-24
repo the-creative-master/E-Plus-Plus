@@ -1,5 +1,5 @@
 /*
- * E++ Release 1.2 — Encryption++ native implementation.
+ * E++ Release 1.2 — project files, native implementation.
  * See include/vault.hpp for the format. No external dependencies.
  */
 #include "vault.hpp"
@@ -327,7 +327,7 @@ bool is_vault(const std::string& text) {
     }
 }
 
-std::string encrypt_epp(const std::string& plaintext, const VaultKey& key) {
+std::string save_project(const std::string& plaintext, const VaultKey& key) {
     std::vector<uint8_t> enc_label = string_bytes("E++ Vault v1 encryption");
     std::vector<uint8_t> mac_label = string_bytes("E++ Vault v1 authentication");
     std::vector<uint8_t> master(key.begin(), key.end());
@@ -361,7 +361,7 @@ std::string encrypt_epp(const std::string& plaintext, const VaultKey& key) {
     return out;
 }
 
-std::string decrypt_epp(const std::string& ciphertext, const VaultKey& key, const std::string& filename) {
+std::string load_project(const std::string& ciphertext, const VaultKey& key, const std::string& filename) {
     (void)filename;
     std::vector<uint8_t> raw;
     try {
@@ -454,7 +454,7 @@ std::string open_vault(const std::string& ciphertext, const std::string& filenam
     std::string last_error;
     for (const VaultKey& key : keys) {
         try {
-            return decrypt_epp(ciphertext, key, filename);
+            return load_project(ciphertext, key, filename);
         } catch (const std::runtime_error& error) {
             std::string message = error.what();
             if (message.find("E520") == std::string::npos) throw;

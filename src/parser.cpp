@@ -15,6 +15,11 @@ Token Parser::peek() const {
     return tokens[current];
 }
 
+Token Parser::peek_at(size_t offset) const {
+    if (current + offset >= tokens.size()) return tokens.back();
+    return tokens[current + offset];
+}
+
 Token Parser::previous() const {
     if (current == 0) return tokens[0];
     return tokens[current - 1];
@@ -811,6 +816,16 @@ std::shared_ptr<Expr> Parser::parse_factor() {
         if (match(TokenType::KW_TIMES) || match(TokenType::TOKEN_STAR_SYM)) {
             auto right = parse_power();
             expr = std::make_shared<BinaryExpr>(BinaryOp::MUL, expr, right, l, c);
+        } else if (check(TokenType::KW_PERCENT) && peek_at(1).type == TokenType::KW_OF) {
+            // "20 percent of 150" — the same answer as
+            // "how much 20 percent is of 150". The lookahead keeps the
+            // `how much ... percent is of ...` form working unchanged.
+            advance(); // percent
+            consume(TokenType::KW_OF, "Expected 'of' after 'percent', for example: 20 percent of 150");
+            auto base = parse_power();
+            expr = std::make_shared<MathFuncExpr>(MathFunc::PERCENT_OF,
+                                                  std::vector<std::shared_ptr<Expr>>{expr, base},
+                                                  l, c);
         } else if (match(TokenType::KW_MULTIPLIED)) {
             match(TokenType::KW_BY);
             auto right = parse_power();
