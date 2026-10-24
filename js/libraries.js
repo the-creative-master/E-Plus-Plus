@@ -36,11 +36,15 @@
     Text: {
       name: 'Text',
       aliases: ['text', 'strings', 'string'],
-      description: 'Working with words: uppercase of, lowercase of and length of a value.',
+      description: 'Working with words: uppercase of, lowercase of, length of, reverse of, first and last letter, trim.',
       unlocks: [
         { feature: 'uppercase of', kind: 'function' },
         { feature: 'lowercase of', kind: 'function' },
-        { feature: 'length of', kind: 'function' }
+        { feature: 'length of', kind: 'function' },
+        { feature: 'reverse of', kind: 'function' },
+        { feature: 'first letter of', kind: 'function' },
+        { feature: 'last letter of', kind: 'function' },
+        { feature: 'trim of', kind: 'function' }
       ],
       example: 'add library "Text"\nsay uppercase of "hello".'
     },

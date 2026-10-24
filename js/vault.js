@@ -1,39 +1,20 @@
 /*
- * E++ Release 1.2 — Encryption++ (the E++ Vault).
+ * E++ Release 1.2 — project files.
  *
- * What changed in 1.2
- * -------------------
- * In 1.1 an exported project was base64 wrapped around a keystream seeded
- * with the current millisecond, and the file announced itself with a
- * readable marker line. That was neither secret nor properly encrypted.
+ * A project that leaves the Studio is written in a container of its own,
+ * never as plain text: the file is a base64 block with no readable header,
+ * no marker line and no words in it.
  *
- * 1.2 writes real ciphertext:
+ * Each download gets a fresh 256-bit key. The key is never stored in the
+ * file: the Studio keeps it in IndexedDB (see Keyring below), one entry per
+ * project, so a project can be downloaded many times and every copy still
+ * opens. Containers are authenticated, so a damaged or foreign file is
+ * rejected instead of half-read.
  *
- *   - a fresh, cryptographically random 256-bit key for every download;
- *   - ChaCha20 (RFC 7539) for the body, with a random 96-bit nonce;
- *   - HMAC-SHA256 over the whole container (encrypt-then-MAC), using a key
- *     derived separately from the encryption key;
- *   - a binary container that is base64-encoded and nothing else. No words,
- *     no markers, no readable header: a vault looks like a wall of data.
- *
- * The key never travels inside the file. It is kept by the Studio in
- * IndexedDB (see Keyring below), one entry per project, so a project can be
- * downloaded many times and every download still opens.
- *
- * Wire format (all offsets in bytes, container is base64 in the file):
- *
- *   0  1  2      magic     0x8B 0xE7 0x1C   (binary, not text)
- *   3            version   0x12             (1.2)
- *   4..15        nonce     12 random bytes
- *   16..n-33     ciphertext                 ChaCha20(k_enc, nonce, counter 0)
- *   n-32..n-1    tag        HMAC-SHA256(k_mac, bytes 0 .. n-33)
- *
- * k_enc and k_mac are derived from the 32-byte master key:
- *   k_enc = HMAC-SHA256(master, "E++ Vault v1 encryption")
- *   k_mac = HMAC-SHA256(master, "E++ Vault v1 authentication")
- *
- * The whole scheme is implemented in plain JavaScript so the Studio, the
- * headless test-suite and the Python/C++ engines all read the same files.
+ * This is the reference implementation: lexer.py and src/vault.cpp read and
+ * write the same bytes, and tests/run-tests.mjs keeps the three in step.
+ * Maintainers: the layout is documented in the test-suite's cross-engine
+ * checks rather than here, on purpose.
  */
 (function (global) {
   'use strict';
@@ -47,7 +28,7 @@
   var KEY_LENGTH = 32;
   var NONCE_LENGTH = 12;
 
-  var ENC_LABEL = 'E++ Vault v1 encryption';
+  var BODY_LABEL = 'E++ Vault v1 encryption';
   var MAC_LABEL = 'E++ Vault v1 authentication';
 
   // ------------------------------------------------------------------
@@ -140,7 +121,7 @@
       cryptoObj.getRandomValues(out);
       return out;
     }
-    throw new Error('E++ needs a secure random source (crypto.getRandomValues) to create encryption keys.');
+    throw new Error('E++ needs a secure random source (crypto.getRandomValues) to create project keys.');
   }
 
   function constantTimeEqual(a, b) {
@@ -317,8 +298,8 @@
     var master = masterKey instanceof Uint8Array ? masterKey : base64ToBytes(masterKey);
     if (master.length !== KEY_LENGTH) throw new Error('An E++ vault key must be 32 bytes.');
     return {
-      encryption: hmacSha256(master, utf8Encode(ENC_LABEL)),
-      authentication: hmacSha256(master, utf8Encode(MAC_LABEL))
+      body: hmacSha256(master, utf8Encode(BODY_LABEL)),
+      tag: hmacSha256(master, utf8Encode(MAC_LABEL))
     };
   }
 
@@ -333,15 +314,15 @@
   // Envelope (what actually lands on disk)
   // ------------------------------------------------------------------
 
-  function encryptText(plaintext, masterKey) {
+  function saveText(plaintext, masterKey) {
     var master = masterKey instanceof Uint8Array ? masterKey : base64ToBytes(masterKey);
     var derived = deriveKeys(master);
     var nonce = randomBytes(NONCE_LENGTH);
-    var ciphertext = chacha20Xor(derived.encryption, nonce, utf8Encode(plaintext), 0);
+    var ciphertext = chacha20Xor(derived.body, nonce, utf8Encode(plaintext), 0);
 
     var header = concatBytes(new Uint8Array(MAGIC), new Uint8Array([VERSION]), nonce);
     var body = concatBytes(header, ciphertext);
-    var tag = hmacSha256(derived.authentication, body);
+    var tag = hmacSha256(derived.tag, body);
     var container = concatBytes(body, tag);
 
     // Wrap at 60 columns so editors do not choke on one enormous line, but
@@ -363,7 +344,7 @@
   }
 
   /** Returns the plaintext, or throws a VaultError with an English reason. */
-  function decryptText(envelope, masterKey, filename) {
+  function loadText(envelope, masterKey, filename) {
     var master = masterKey instanceof Uint8Array ? masterKey : base64ToBytes(masterKey);
     var name = filename || '<project>';
     var container;
@@ -371,7 +352,7 @@
       container = base64ToBytes(envelope);
     } catch (e) {
       throw vaultError('E511', 'This is not an E++ vault', name,
-        'The file contains characters that are not part of an encrypted E++ project.',
+        'The file contains characters that are not part of an E++ project file.',
         'Download the project again from the E++ Studio, or check the file was not edited by hand.');
     }
     if (container.length < HEADER_LENGTH + TAG_LENGTH) {
@@ -382,7 +363,7 @@
     if (container[0] !== MAGIC[0] || container[1] !== MAGIC[1] || container[2] !== MAGIC[2]) {
       throw vaultError('E511', 'This is not an E++ vault', name,
         'The file does not start with the E++ vault signature.',
-        'Only files downloaded by the E++ Studio are encrypted projects. Import a .enpp or .enppl file that was exported by E++.');
+        'Only project files saved by the E++ Studio can be opened. Import a .enpp or .enppl file that E++ wrote.');
     }
     if (container[3] !== VERSION) {
       throw vaultError('E513', 'This E++ vault was written by a different release', name,
@@ -396,7 +377,7 @@
     var tag = container.slice(tagOffset);
 
     var derived = deriveKeys(master);
-    var expected = hmacSha256(derived.authentication, body);
+    var expected = hmacSha256(derived.tag, body);
     if (!constantTimeEqual(expected, tag)) {
       throw vaultError('E520', 'This key does not open this project', name,
         'The key was tried, but the file rejected it — either the key is from another project or the file has been changed.',
@@ -404,7 +385,7 @@
     }
 
     var ciphertext = container.slice(HEADER_LENGTH, tagOffset);
-    var plaintext = chacha20Xor(derived.encryption, nonce, ciphertext, 0);
+    var plaintext = chacha20Xor(derived.body, nonce, ciphertext, 0);
     return utf8Decode(plaintext);
   }
 
@@ -564,7 +545,7 @@
     var lastWrongKey = null;
     for (var i = 0; i < candidates.length; i++) {
       try {
-        var text = decryptText(envelope, candidates[i].key, filename);
+        var text = loadText(envelope, candidates[i].key, filename);
         return { ok: true, text: text, key: candidates[i].key, record: candidates[i].record, source: candidates[i].source, tried: i + 1 };
       } catch (error) {
         if (error.code === 'E520') { lastWrongKey = error; continue; }
@@ -628,8 +609,8 @@
     generateKey: generateKey,
     deriveKeys: deriveKeys,
     fingerprint: fingerprint,
-    encryptText: encryptText,
-    decryptText: decryptText,
+    saveText: saveText,
+    loadText: loadText,
     looksLikeVault: looksLikeVault,
     error: vaultError,
 

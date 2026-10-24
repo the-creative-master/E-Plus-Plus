@@ -303,7 +303,9 @@
     var word = t.value.toLowerCase();
     switch (word) {
       case 'add': return this.parseAdd();
-      case 'define': return this.parseDefine();
+      // `let` and `define` are the same statement, and `be`, `to` and `as` are
+      // the same connector: the Studio's examples say `let 'Grade' be 29`.
+      case 'define': case 'let': return this.parseDefine();
       case 'set': case 'change': return this.parseSet();
       case 'say': case 'display': case 'show': return this.parseSay();
       case 'print':
@@ -417,7 +419,12 @@
     // Also: define '<name>' as image "<filename>"  (Image library)
     if (this.current().type === 'VARIABLE') {
       var quotedName = this.advance().value;
-      this.expectWord('as', 'in a definition, for example: define \'' + quotedName + '\' as ...');
+      var quotedConnector = 'in a definition, for example: define \'' + quotedName + '\' as ...';
+      if (!this.matchWord('as') && !this.matchWord('be') && !this.matchWord('to')) {
+        var connector = this.current();
+        throw new ParseError('Expected the word "as" after ' + quotedName + ' but found ' + this.describe(connector) + '.',
+          connector.line, connector.column, quotedConnector);
+      }
       // Check for "drawing sprite" (Draw library)
       if (this.isWord('drawing')) {
         this.advance(); // drawing
@@ -610,8 +617,12 @@
       var imgName = this.advance().value; // 'name'
       return EPP.AST.DisplayImage(imgName, kw);
     }
-    var value = this.parseExpression();
-    return EPP.AST.Say(value, kw);
+    var parts = [this.parseExpression()];
+    while (this.current() && this.current().type === 'COMMA') {
+      this.advance(); // ,
+      parts.push(this.parseExpression());
+    }
+    return EPP.AST.Say(parts[0], kw, parts.length > 1 ? parts : null);
   };
 
   Parser.prototype.parseAsk = function () {
@@ -620,8 +631,13 @@
     // and save answer as <name>   (a few words may be omitted, kept forgiving)
     this.expectWord('and', 'in an ask statement, for example: ask "Your name?" and save answer as name.');
     this.matchWord('save');
-    this.matchWord('answer');
-    this.matchWord('the');
+    // `save the output as`, `save it as`, `save answer as` and `save as` all
+    // mean the same thing; read past the filler words to the name.
+    while (!this.isWord('as') &&
+           (this.isWord('the') || this.isWord('output') || this.isWord('answer') ||
+            this.isWord('result') || this.isWord('it'))) {
+      this.advance();
+    }
     this.expectWord('as', 'before the variable name.');
     // Dev Build 5: ask also accepts a quoted variable name: ask "..." and save answer as 'name'.
     var name;
@@ -1023,6 +1039,10 @@
    */
   Parser.prototype.parseBranch = function (markerToken) {
     var next = this.current();
+    // A colon after the header (`repeat 3 times:` / `while ... do:` /
+    // `if ... then:`) just opens the block; the block still ends with `end`.
+    if (next && next.type === 'COLON') this.advance();
+    next = this.current();
     var block = this.isSeparator(next) || next.type === 'EOF' || next.line !== markerToken.line;
     if (!block) {
       return { body: [this.parseStatement()], block: false };
@@ -1096,6 +1116,9 @@
     var firstCondition = this.parseCondition();
     var condition = firstCondition;
     var thenToken = this.expectWord('then', 'after the if condition.');
+    // `if ... then:` is the block form people write in the Studio; the colon
+    // is decorative and the block is still closed by `end if`.
+    if (this.current() && this.current().type === 'COLON') this.advance();
 
     // Parse the whole chain: if / (otherwise if)* / (otherwise)? — the
     // branches may be mixed inline and block forms, in any number.
@@ -1118,6 +1141,7 @@
         this.advance(); // if
         condition = this.parseBranchCondition(firstCondition);
         thenToken = this.expectWord('then', 'after the otherwise-if condition.');
+        if (this.current() && this.current().type === 'COLON') this.advance();
         var nextPart = this.parseBranch(thenToken);
         branches.push({ condition: condition, body: nextPart.body });
         continue;
@@ -1430,6 +1454,11 @@
       this.advance();
       return EPP.AST.Unary('minus', this.parseUnary(), t);
     }
+    // `the square root of 144` and `square root of 144` both read naturally.
+    if (this.isWord('the') && this.isWord('square', this.peek(1)) && this.isWord('root', this.peek(2))) {
+      this.advance();
+      t = this.current();
+    }
     if (this.isWord('square')) {
       this.requireLibrary('square root of', t);
       this.advance();
@@ -1466,15 +1495,87 @@
         return EPP.AST.KeyPressed('*', false, t);
       }
 
+      // `the length of "hello"` and `length of "hello"` are the same thing.
+      if (word === 'the' && this.peek(1).type === 'WORD') {
+        var articleWord = this.peek(1).value.toLowerCase();
+        if (articleWord === 'uppercase' || articleWord === 'lowercase' || articleWord === 'length' ||
+            articleWord === 'reverse' || articleWord === 'trim' || articleWord === 'trimmed' ||
+            articleWord === 'first' || articleWord === 'last' ||
+            articleWord === 'maximum' || articleWord === 'minimum' || articleWord === 'absolute' ||
+            articleWord === 'value') {
+          this.advance();
+          t = this.current();
+          word = t.value.toLowerCase();
+        }
+      }
+
+      // `a random number between ...` reads as well as `random number between ...`.
+      if ((word === 'a' || word === 'the') && this.isWord('random', this.peek(1))) {
+        this.advance();
+        t = this.current();
+        word = t.value.toLowerCase();
+      }
+
       if (word === 'true' || word === 'yes') { this.advance(); return EPP.AST.Literal(true, t); }
       if (word === 'false' || word === 'no') { this.advance(); return EPP.AST.Literal(false, t); }
 
       // Text library functions.
-      if (word === 'uppercase' || word === 'lowercase' || word === 'length') {
-        this.requireLibrary(word + ' of', t);
+      if (word === 'uppercase' || word === 'lowercase' || word === 'length' ||
+          word === 'reverse' || word === 'trim' || word === 'trimmed') {
+        var textFunction = word === 'trimmed' ? 'trim' : word;
+        this.requireLibrary(textFunction + ' of', t);
         this.advance();
         this.expectWord('of', 'in "' + word + ' of".');
-        return EPP.AST.TextFunction(word, this.parseUnary(), t);
+        return EPP.AST.TextFunction(textFunction, this.parseUnary(), t);
+      }
+
+      // `first letter of` and `last letter of`.
+      if (word === 'first' || word === 'last') {
+        this.requireLibrary(word + ' letter of', t);
+        this.advance();
+        this.expectWord('letter', 'in "' + word + ' letter of".');
+        this.expectWord('of', 'in "' + word + ' letter of".');
+        return EPP.AST.TextFunction(word + ' letter', this.parseUnary(), t);
+      }
+
+      // Math library words: the maximum/minimum/absolute value of ...
+      if (word === 'maximum' || word === 'minimum') {
+        this.requireLibrary(word + ' of', t);
+        this.advance();
+        this.expectWord('of', 'in "the ' + word + ' of A and B".');
+        var firstArg = this.parseAdditive();
+        this.expectWord('and', 'between the two values, for example: the ' + word + ' of 3 and 9.');
+        var secondArg = this.parseAdditive();
+        return EPP.AST.MathFunction(word, [firstArg, secondArg], t);
+      }
+
+      if (word === 'absolute') {
+        this.requireLibrary('absolute value of', t);
+        this.advance();
+        this.expectWord('value', 'in "the absolute value of a number".');
+        this.expectWord('of', 'in "the absolute value of a number".');
+        return EPP.AST.MathFunction('absolute value', [this.parseAdditive()], t);
+      }
+
+      // `the value of pi` and a bare `pi`.
+      if (word === 'value') {
+        this.requireLibrary('value of pi', t);
+        this.advance();
+        this.expectWord('of', 'in "the value of pi".');
+        var constant = this.current();
+        var constantName = constant && constant.type === 'WORD' ? constant.value.toLowerCase() : '';
+        if (constantName !== 'pi' && constantName !== 'e') {
+          throw new ParseError('Only pi and e have a fixed value here.', constant.line, constant.column,
+            'Write: the value of pi');
+        }
+        this.advance();
+        return EPP.AST.MathConstant(constantName, t);
+      }
+
+      if (word === 'pi') {
+        this.requireLibrary('value of pi', t);
+        this.advance();
+        return EPP.AST.MathConstant('pi', t);
       }
 
       // Random library function.

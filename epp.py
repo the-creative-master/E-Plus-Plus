@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-E++ (E-Plus-Plus) 1.2 Encryption++ Direct Python Runtime & Engine
+E++ (E-Plus-Plus) 1.2 Direct Python Runtime & Engine
 Uses the native Python lexer to run E++ and Python code directly, including
-sealed (encrypted) .enpp / .enppl projects.
+project files saved by the Studio.
 """
 
 import sys
@@ -23,7 +23,7 @@ from typing import Dict, Any, List, Optional
 
 from lexer import (
     Lexer, Token, TokenType, EppDiagnosticError,
-    encrypt_epp, decrypt_epp, is_vault, open_vault, random_key,
+    save_epp, load_epp, is_vault, open_vault, random_key,
     key_from_hex, vault_fingerprint
 )
 
@@ -598,12 +598,33 @@ class Interpreter:
         if sep_str is not None:
             out_str = sep_str.join(evaluated)
         else:
-            out_str = " ".join(evaluated)
+            out_str = self.join_say_parts(evaluated)
 
         if color_code:
             print(f"{color_code}{out_str}\033[0m")
         else:
             print(out_str)
+
+    @staticmethod
+    def join_say_parts(pieces: List[str]) -> str:
+        """Joins the pieces of one `say` the way the other engines do.
+
+        The pieces are written as they are; a space is added only where two
+        words would otherwise run together, or after punctuation. So
+        `say "Hello, ", 'Name'` prints `Hello, Ada`, `say "Hi", 'Name'`
+        prints `Hi Ada`, and `say "Hi-", 'Name'` prints `Hi-there`.
+        """
+        out = ""
+        for index, piece in enumerate(pieces):
+            cur = "" if piece is None else str(piece)
+            if index > 0 and out and cur:
+                last, first = out[-1], cur[0]
+                if re.match(r'[A-Za-z0-9]', last) and re.match(r'[A-Za-z0-9]', first):
+                    out += " "
+                elif last in "!?:," and first != " ":
+                    out += " "
+            out += cur
+        return out
 
     def split_concat_tokens(self, tokens: List[Token]) -> List[List[Token]]:
         res = []
@@ -742,6 +763,16 @@ class Interpreter:
                 res = (pct / 100.0) * tot
                 return int(res) if res.is_integer() else res
 
+        # 20 percent of 150  (the same answer as `how much 20 percent is of 150`)
+        if "percent of" in tok_str and "percent is of" not in tok_str:
+            self.require_lib("Math", "Percentage calculation", line, col)
+            m = re.search(r'(.+?)\s+percent\s+of\s+(.+)$', tok_str)
+            if m:
+                pct = float(m.group(1).strip())
+                tot = float(m.group(2).strip())
+                res = (pct / 100.0) * tot
+                return int(res) if res.is_integer() else res
+
         if "absolute value of" in tok_str:
             self.require_lib("Math", "Absolute value", line, col)
             m = re.search(r'absolute value of\s+(.+)$', tok_str)
@@ -766,7 +797,11 @@ class Interpreter:
             self.require_lib("Math", "Value of pi", line, col)
             return math.pi
 
-        if "the uppercase of" in tok_str or "the trim of" in tok_str or "the lowercase of" in tok_str or "the reverse of" in tok_str:
+        # Strings: the article is optional (`the length of "x"` / `length of "x"`).
+        if any(prefix in tok_str for prefix in (
+            "uppercase of", "lowercase of", "trim of", "reverse of",
+            "length of", "first letter of", "last letter of"
+        )):
             self.require_lib("Strings", "Strings library", line, col)
             base_s = ""
             for t in tokens:
@@ -776,10 +811,13 @@ class Interpreter:
                 elif t.type == TokenType.VARIABLE:
                     base_s = str(self.get_var(t.string_value, line, t.col))
                     break
-            if "the trim of" in tok_str: base_s = base_s.strip()
-            if "the uppercase of" in tok_str: base_s = base_s.upper()
-            if "the lowercase of" in tok_str: base_s = base_s.lower()
-            if "the reverse of" in tok_str: base_s = base_s[::-1]
+            if "trim of" in tok_str: base_s = base_s.strip()
+            if "uppercase of" in tok_str: base_s = base_s.upper()
+            if "lowercase of" in tok_str: base_s = base_s.lower()
+            if "reverse of" in tok_str: base_s = base_s[::-1]
+            if "first letter of" in tok_str: base_s = base_s[:1]
+            if "last letter of" in tok_str: base_s = base_s[-1:]
+            if "length of" in tok_str: return len(base_s)
             return base_s
 
         if "number between" in tok_str:
@@ -860,7 +898,7 @@ class Interpreter:
 # ==========================================
 
 def _usage():
-    print("E++ [1.2 Encryption++] Python Direct Engine")
+    print("E++ [1.2] Python Direct Engine")
     print("Usage:")
     print("  python3 epp.py <file.enpp|file.enppl>             Run a program")
     print("  python3 epp.py -e '<code string>'                 Run inline code")
@@ -869,8 +907,8 @@ def _usage():
     print("  python3 epp.py --key <64 hex> <file.enpp>         Open with one key")
     print("  python3 epp.py --keyring <keys.json> <file>       Try every key in a keyring")
     print("  python3 epp.py --new-key                          Print a fresh key")
-    print("  python3 epp.py --encrypt <in> -o <out> [--key]    Seal a project")
-    print("  python3 epp.py --decrypt <file> [--key]           Print a sealed project")
+    print("  python3 epp.py --save <in> -o <out> [--key]       Save a project")
+    print("  python3 epp.py --open <file> [--key]              Print a saved project")
 
 
 def _split_global_flags(args):
@@ -943,8 +981,8 @@ def main():
         print("Key fingerprint: " + vault_fingerprint(key), file=sys.stderr)
         return
 
-    # Seal a project.
-    if arg == "--encrypt" and len(rest) > 1:
+    # Save a project.
+    if arg in ("--save", "--seal", "--encrypt") and len(rest) > 1:
         src_path = rest[1]
         if not os.path.exists(src_path):
             print(f"[E++ Error E404: File Not Found] File '{src_path}' does not exist.")
@@ -952,18 +990,18 @@ def main():
         with open(src_path, "r", encoding="utf-8") as handle:
             content = handle.read()
         key = key_from_hex(keyhex) if keyhex else random_key()
-        sealed = encrypt_epp(content, key)
+        sealed = save_epp(content, key)
         out_path = _output_path(rest, src_path)
         with open(out_path, "w", encoding="utf-8") as handle:
             handle.write(sealed)
-        print(f"Sealed {src_path} -> {out_path}")
+        print(f"Saved {src_path} -> {out_path}")
         print("Key (hex): " + key.hex())
         print("Fingerprint: " + vault_fingerprint(key))
         print("Keep the key: the project cannot be opened without it.")
         return
 
-    # Print a sealed project.
-    if arg == "--decrypt" and len(rest) > 1:
+    # Print a saved project.
+    if arg in ("--open", "--unseal", "--decrypt") and len(rest) > 1:
         src_path = rest[1]
         if not os.path.exists(src_path):
             print(f"[E++ Error E404: File Not Found] File '{src_path}' does not exist.")
@@ -987,7 +1025,7 @@ def main():
             sys.exit(1)
         return
 
-    # Run a file, opening it first if it is sealed.
+    # Run a file, opening it first if it belongs to E++.
     filename = arg
     if not os.path.exists(filename):
         print(f"[E++ Error E404: File Not Found] File '{filename}' does not exist.")

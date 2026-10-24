@@ -43,12 +43,12 @@ test: $(TARGET)
 	@./$(TARGET) examples/09_random_library.enppl
 	@./$(TARGET) examples/14_system_library.enppl
 	@./$(TARGET) examples/16_release_showcase.enppl
-	@./$(TARGET) --keyring examples/epp-keys.json examples/17_sealed_project.enpp
+	@./$(TARGET) --keyring examples/epp-keys.json examples/17_saved_project.enpp
 	@echo "=== Running E++ Tests (Python Runner) ==="
 	@python3 epp.py examples/04_variables.enpp
 	@python3 epp.py examples/06_math_library.enppl
 	@python3 epp.py examples/09_random_library.enppl
 	@python3 epp.py examples/14_system_library.enppl
 	@python3 epp.py examples/16_release_showcase.enppl
-	@python3 epp.py --keyring examples/epp-keys.json examples/17_sealed_project.enpp
+	@python3 epp.py --keyring examples/epp-keys.json examples/17_saved_project.enpp
 	@echo "=== All Tests Passed! ==="

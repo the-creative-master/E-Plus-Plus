@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>E++ Studio | 1.2 Encryption++ &amp; Games</title>
+<title>E++ Studio | 1.2</title>
 <link rel="stylesheet" href="css/ide.css">
 <style>
   /* Color classes for Terminal */
@@ -350,7 +350,7 @@
   <div class="brand">
     <div class="logo" aria-hidden="true">E<span>++</span></div>
     <div>
-      <h1>E++ Studio <span class="build-badge">1.2 Encryption++ &amp; Games</span></h1>
+      <h1>E++ Studio <span class="build-badge">1.2</span></h1>
       <p>Looks like English. Reads like English. Behaves like code.</p>
     </div>
   </div>
@@ -364,6 +364,7 @@
       <button id="btnExport" class="btn" type="button" title="Download this file (.enpp or .enppl)">⤓ Export</button>
       <button id="btnZip" class="btn btn-zip" type="button" title="Download E++ C++ sources &amp; runtime bundle">📦 E++.zip</button>
       <button id="btnImage" class="btn btn-small" type="button" style="display:none;" title="Add an actor image to this game">🖼 Image</button>
+      <button id="btnLearn" class="btn btn-small btn-tutorial" type="button" title="Learn E++ card by card">🎓 Learn</button>
       <button id="btnKeys" class="btn btn-small" type="button" title="Manage this browser's project keys">🔑 Keys</button>
       <button id="btnClear" class="btn" type="button">⌧ Clear</button>
       <input id="importFileInput" type="file" accept=".enpp,.enppl" style="display:none;">
@@ -422,7 +423,7 @@
 
     <!-- Available Libraries -->
     <section class="libraries-panel">
-      <h2>Libraries <span class="head-sub">(1.2 Encryption++)</span></h2>
+      <h2>Libraries <span class="head-sub">(1.2)</span></h2>
       <p class="panel-note">Humanizer syntax:<br><code>add the "Library" library</code></p>
       
       <div class="library-card">
@@ -613,7 +614,7 @@ for I in range 3:
 </main>
 
 <footer class="footer">
-  <span><strong>E++ Studio [1.2 Encryption++]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
+  <span><strong>E++ Studio [1.2]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
   <span>Shortcuts: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run · <kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span>
 </footer>
 
@@ -644,11 +645,63 @@ for I in range 3:
   </form>
 </dialog>
 
+<!-- 1.2 tutorials: a deck of cards, each one checked against real output. -->
+<div id="tutorialOverlay" class="tut-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="tutTitle">
+  <div class="tut-shell">
+    <aside class="tut-nav">
+      <div class="tut-nav-head">
+        <span class="tut-nav-title">🎓 Tutorials</span>
+        <span id="tutProgressLabel" class="tut-progress-label">0 of 0</span>
+      </div>
+      <div class="tut-progress"><div id="tutProgressBar" class="tut-progress-bar"></div></div>
+      <div id="tutCourseList" class="tut-course-list"></div>
+      <p class="tut-nav-foot">A card is finished when your program prints what the card asked for — not when it looks right.</p>
+      <button id="tutResetAll" class="tut-link" type="button" style="display:none;">↺ Start over</button>
+    </aside>
+    <section class="tut-card">
+      <header class="tut-card-head">
+        <div>
+          <span id="tutCourseName" class="tut-course-name"></span>
+          <h2 id="tutTitle">Tutorials</h2>
+        </div>
+        <button id="tutClose" class="btn-close" type="button" aria-label="Close tutorials">×</button>
+      </header>
+      <div class="tut-card-body">
+        <p class="tut-goal"><span>Goal</span><span id="tutGoal"></span></p>
+        <div id="tutBody" class="tut-text"></div>
+        <div class="tut-editor-wrap">
+          <div class="tut-editor-head"><span>Your program</span><span id="tutStepCounter" class="tut-step-counter"></span></div>
+          <textarea id="tutCode" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+        </div>
+        <div id="tutFeedback" class="tut-feedback" style="display:none;"></div>
+        <div id="tutOutput" class="tut-output" style="display:none;">
+          <div class="tut-output-head">What your program printed</div>
+          <pre id="tutOutputText"></pre>
+        </div>
+      </div>
+      <footer class="tut-card-foot">
+        <div class="tut-foot-left">
+          <button id="tutHint" class="btn btn-small" type="button">💡 Hint</button>
+          <button id="tutSolution" class="btn btn-small" type="button" style="display:none;">👀 Show the answer</button>
+          <button id="tutReset" class="btn btn-small" type="button" title="Put the starting code back">↺ Reset</button>
+        </div>
+        <div class="tut-foot-right">
+          <button id="tutBack" class="btn btn-small" type="button">← Back</button>
+          <button id="tutTry" class="btn btn-small" type="button" title="Copy this code into the editor and run it there">↗ Try in the editor</button>
+          <button id="tutCheck" class="btn btn-run btn-small" type="button">▶ Run &amp; check</button>
+          <button id="tutNext" class="btn btn-small btn-accent" type="button" disabled>Next →</button>
+        </div>
+      </footer>
+    </section>
+  </div>
+</div>
+
 <div id="toast" class="toast" style="display:none;"></div>
 
 <!-- Release 1.2 runtime modules. These are shared with the headless
      test-suite, so the Studio and `npm test` run the same engine. -->
 <script src="js/libraries.js"></script>
+<script src="js/tutorials.js"></script>
 <script src="js/keyboard.js"></script>
 <script src="js/vault.js"></script>
 <script src="js/game-library.js"></script>
@@ -681,7 +734,7 @@ say "1 + 1"`
   },
   {
     name: 'release_showcase.enppl',
-    content: `note [E++ 1.2 Encryption++ Grand Showcase (.enppl)]
+    content: `note [E++ 1.2 Grand Showcase (.enppl)]
 add the "Colors" library
 add the "Time" library
 add the "Math" library
@@ -692,7 +745,7 @@ add the "System" library
 add the "Python" library
 
 say cyan "========================================================="
-say cyan "         Welcome to E++ 1.2 Encryption++!           "
+say cyan "         Welcome to E++ 1.2!           "
 say cyan "========================================================="
 
 note [System & Time Diagnostics]
@@ -710,7 +763,7 @@ say "Trimmed:", the trim of 'Announcement'
 say "Uppercase:", the uppercase of the trim of 'Announcement'
 
 note [File Persistence in Virtual IDE]
-write "1.2 Encryption++ verified on: " to file "showcase_audit.log"
+write "E++ 1.2 verified on: " to file "showcase_audit.log"
 append the current date to file "showcase_audit.log"
 read the file "showcase_audit.log" and save the output as 'Audit'
 say "Audit log content:", 'Audit'
@@ -722,7 +775,7 @@ print(f"[Python Subsystem] Connected with E++ v{EppVersion}")
 import math
 print(f"[Python Subsystem] Computed 10! = {math.factorial(10)}")
 
-say green "✓ All 1.2 Encryption++ tests completed with 100% success!"`
+say green "✓ All E++ 1.2 tests completed with 100% success!"`
   },
   {
     name: 'python_demo.enppl',
@@ -746,7 +799,7 @@ run the python code "print('E++ says:', greeting)"`
     content: `note [Strings Library in E++ (.enppl)]
 add the "Strings" library
 
-let 'Message' be "Hello, E++ 1.2 Encryption++!"
+let 'Message' be "Hello, E++ 1.2!"
 say "Original message:", 'Message'
 say "Length of message:", the length of 'Message'
 say "Uppercase:", the uppercase of 'Message'
@@ -784,7 +837,7 @@ say "System Platform:", the platform
 say "Operating System:", the os
 
 note [Writing and reading in the IDE filesystem:]
-write "E++ 1.2 Encryption++ is lightning fast!" to file "notes.txt"
+write "E++ 1.2 is lightning fast!" to file "notes.txt"
 read the file "notes.txt" and save the output as 'ReadBack'
 say "Read back from file:", 'ReadBack'`
   },
@@ -1024,16 +1077,16 @@ async function loadFile(name) {
 
   // A project opened from disk arrives as a vault. Import already unlocks it,
   // but a file restored from an old localStorage entry may still be sealed.
-  if (isEncryptedProject(fileContent)) {
+  if (isSavedProject(fileContent)) {
     try {
-      const result = await decryptProject(fileContent, name);
+      const result = await openProjectFile(fileContent, name);
       fileContent = result.text;
       files[name] = fileContent;
       saveStorage();
     } catch (error) {
       fileContent = '';
       showDeterministicError(error);
-      showToast('This project could not be unlocked with the keys saved here.', true);
+      showToast('This project could not be opened with the keys saved here.', true);
     }
   }
 
@@ -1199,9 +1252,9 @@ function deleteCurrentFile() {
 }
 
 /**
- * Export = seal with a brand new key for this project.
- * The plaintext stays in this browser only; the file that leaves the Studio
- * is sealed: no readable code, only a block of base64 that a saved key opens.
+ * Download = write the project out with a key of its own.
+ * The key stays in this browser, so the same project can be downloaded again
+ * and again and every copy still opens here.
  */
 async function exportCurrentFile() {
   let fileNameToExport = currentFileName.replace(/\.txt$/i, '');
@@ -1213,9 +1266,9 @@ async function exportCurrentFile() {
 
   let sealed;
   try {
-    sealed = await encryptProject(fileNameToExport, rawContent);
+    sealed = await saveProjectFile(fileNameToExport, rawContent);
   } catch (error) {
-    showToast(error.message || 'Could not encrypt this project.', true);
+    showToast(error.message || 'Could not save this project.', true);
     return;
   }
 
@@ -1325,22 +1378,22 @@ async function handleFileObject(file) {
     return;
   }
 
-  if (!isEncryptedProject(text)) {
+  if (!isSavedProject(text)) {
     showDeterministicError({
       code: 'E511',
       filename: fileName,
-      reason: 'Plain .enpp and .enppl files are not accepted. In E++ 1.2 every downloadable project is encrypted.',
-      help: 'Import a project that was downloaded from the E++ Studio, or copy the code into a new file here.'
+      reason: 'That file is not an E++ project file, so there is nothing in it to open.',
+      help: 'Import a project saved by the E++ Studio, or copy the code into a new file here.'
     });
-    showToast('That file is not an encrypted E++ project.', true);
+    showToast('That file is not an E++ project file.', true);
     return;
   }
 
   let plaintext;
   try {
-    const result = await decryptProject(text, fileName);
+    const result = await openProjectFile(text, fileName);
     plaintext = result.text;
-    showToast('Unlocked ' + fileName + ' with a saved key.');
+    showToast('Opened ' + fileName + '.');
   } catch (error) {
     showDeterministicError(error);
     showToast(error.message || 'No saved key opens this project.', true);
@@ -1389,7 +1442,7 @@ function escapeHtml(str) {
 }
 
 // ==========================================
-// Release 1.2 — Encryption++ (the E++ Vault)
+// Release 1.2 — project keys
 // ==========================================
 //
 // Every download gets its own cryptographically random 256-bit key. The key
@@ -1464,29 +1517,29 @@ async function updateKeyBadge() {
  * Downloads are always written with a brand new key for this project. The
  * previous keys stay in the keyring, so older downloads still open.
  */
-async function encryptProject(name, plaintext) {
+async function saveProjectFile(name, plaintext) {
   const Vault = vaultApi();
   const ring = getKeyring();
   if (!Vault || !ring) {
-    throw new Error('The encryption runtime is missing. Keep js/vault.js next to index.html.');
+    throw new Error('The project runtime is missing. Keep js/vault.js next to index.html.');
   }
   const made = await ring.createKeyFor(name);
   updateKeyBadge();
-  return { text: Vault.encryptText(plaintext, made.key), fingerprint: made.record.fingerprint };
+  return { text: Vault.saveText(plaintext, made.key), fingerprint: made.record.fingerprint };
 }
 
 /** Tries every saved key (and the bundled example key) against a vault. */
-async function decryptProject(text, filename) {
+async function openProjectFile(text, filename) {
   const Vault = vaultApi();
   const ring = getKeyring();
   if (!Vault) {
-    throw new Error('The encryption runtime is missing. Keep js/vault.js next to index.html.');
+    throw new Error('The project runtime is missing. Keep js/vault.js next to index.html.');
   }
   if (!Vault.looksLikeVault(text)) {
-    throw Object.assign(new Error('This file is not an encrypted E++ project.'), {
+    throw Object.assign(new Error('This file is not an E++ project file.'), {
       code: 'E511',
       filename: filename,
-      reason: 'The file does not look like an E++ vault. Encrypted projects contain only a base64 block.',
+      reason: 'The file does not look like a project saved by this Studio.',
       help: 'Use a .enpp or .enppl file that was downloaded from the E++ Studio.'
     });
   }
@@ -1510,16 +1563,16 @@ async function decryptProject(text, filename) {
 }
 
 /** Back-compat shims: the rest of the Studio calls these. */
-async function encryptEpp(plaintext) {
-  const made = await encryptProject(currentFileName, plaintext);
+async function saveProject(plaintext) {
+  const made = await saveProjectFile(currentFileName, plaintext);
   return made.text;
 }
-async function decryptEpp(ciphertext, filename) {
-  const result = await decryptProject(ciphertext, filename || '<source>');
+async function openProject(ciphertext, filename) {
+  const result = await openProjectFile(ciphertext, filename || '<source>');
   return result.text;
 }
 
-function isEncryptedProject(text) {
+function isSavedProject(text) {
   const Vault = vaultApi();
   return !!(Vault && Vault.looksLikeVault(text));
 }
@@ -1565,7 +1618,7 @@ function importKeyringFile(file) {
 
 async function showKeyringPanel() {
   const ring = getKeyring();
-  if (!ring) { showToast('The encryption runtime is missing (js/vault.js).', true); return; }
+  if (!ring) { showToast('The project runtime is missing (js/vault.js).', true); return; }
   const dialog = document.getElementById('keysDialog');
   const list = document.getElementById('keysList');
   const keys = await ring.allKeys();
@@ -2218,8 +2271,8 @@ class EppEvaluator {
   async run(source, printFn, askFn) {
     // A sealed project is opened before it ever reaches the editor; this
     // guard covers text that was pasted or restored from elsewhere.
-    if (isEncryptedProject(source)) {
-      source = (await decryptProject(source, currentFileName)).text;
+    if (isSavedProject(source)) {
+      source = (await openProjectFile(source, currentFileName)).text;
     }
 
     const lines = source.split('\n');
@@ -2303,6 +2356,108 @@ class EppEvaluator {
         }
         const pySource = pyBlock.join('\n');
         executeInBrowserPython(pySource, this.vars, printFn, lineNum);
+        continue;
+      }
+
+      // ---------------- Release 1.2 — repeat and while ----------------
+      // repeat 3 times / end repeat
+      const repeatMatch = line.match(/^repeat\s+(.+?)\s+times?\s*:?$/i);
+      if (repeatMatch) {
+        const rawTimes = await this.evalExpr(repeatMatch[1], lineNum);
+        const times = Math.floor(Number(rawTimes));
+        if (!isFinite(times) || times < 0) {
+          throw {
+            code: 'E101',
+            name: 'Bad Repeat Count',
+            filename: currentFileName,
+            line: lineNum,
+            col: 1,
+            sourceLine: line,
+            reason: `"${repeatMatch[1]}" is not a number of times to repeat.`,
+            help: 'Write it like this: repeat 3 times'
+          };
+        }
+        const body = [];
+        let j = i + 1;
+        for (; j < lines.length; j++) {
+          if (/^\s*end\s+repeat\b/i.test(lines[j])) break;
+          body.push(lines[j]);
+        }
+        if (j >= lines.length) {
+          throw {
+            code: 'E101',
+            name: 'Unclosed Repeat',
+            filename: currentFileName,
+            line: lineNum,
+            col: 1,
+            sourceLine: line,
+            reason: 'This repeat never ends.',
+            help: 'Close the loop with: end repeat'
+          };
+        }
+        i = j;
+        const bodySource = body.join('\n');
+        for (let round = 0; round < times && !this.cancelled; round++) {
+          await this.run(bodySource, printFn, askFn);
+        }
+        continue;
+      }
+
+      // while <condition> do / end while
+      if (/^while\s+/i.test(line)) {
+        let condition = line.replace(/^while\s+/i, '').trim();
+        condition = condition.replace(/\s*:\s*$/, '').replace(/\s+do$/i, '').trim();
+        if (!condition) {
+          throw {
+            code: 'E101',
+            name: 'Empty While',
+            filename: currentFileName,
+            line: lineNum,
+            col: 1,
+            sourceLine: line,
+            reason: 'This while has no condition to check.',
+            help: "Write it like this: while 'count' is less than 5 do"
+          };
+        }
+        const body = [];
+        let j = i + 1;
+        for (; j < lines.length; j++) {
+          if (/^\s*end\s+while\b/i.test(lines[j])) break;
+          body.push(lines[j]);
+        }
+        if (j >= lines.length) {
+          throw {
+            code: 'E101',
+            name: 'Unclosed While',
+            filename: currentFileName,
+            line: lineNum,
+            col: 1,
+            sourceLine: line,
+            reason: 'This while never ends.',
+            help: 'Close the loop with: end while'
+          };
+        }
+        i = j;
+        const bodySource = body.join('\n');
+        let rounds = 0;
+        while (!this.cancelled) {
+          const keepGoing = await this.evalCondition(condition, lineNum, line);
+          if (!keepGoing) break;
+          await this.run(bodySource, printFn, askFn);
+          rounds += 1;
+          if (rounds > 100000) {
+            throw {
+              code: 'E101',
+              name: 'Endless Loop',
+              filename: currentFileName,
+              line: lineNum,
+              col: 1,
+              sourceLine: line,
+              reason: 'This while has run 100000 times and the condition is still true.',
+              help: "Make sure something inside the loop changes, for example: let 'count' be 'count' plus 1"
+            };
+          }
+        }
         continue;
       }
 
@@ -2801,7 +2956,9 @@ class EppEvaluator {
 
       if (rhs.startsWith('"') && rhs.endsWith('"')) {
         this.vars[varName] = rhs.slice(1, -1);
-      } else if (rhs.startsWith("'") && rhs.endsWith("'")) {
+      } else if (/^'[^']*'$/.test(rhs)) {
+        // A lone quoted word is another variable; `'Total' plus 'n'` is a sum
+        // of two variables and belongs to the expression evaluator.
         this.vars[varName] = this.getVar(rhs.slice(1, -1), lineNum);
       } else {
         try {
@@ -2992,7 +3149,7 @@ class EppEvaluator {
       this.requireLib('System', 'run system command', lineNum);
       const cmd = sysMatch[1];
       const outVar = sysMatch[2];
-      const res = `1.2 Encryption++ Runtime (cmd: ${cmd})`;
+      const res = `E++ 1.2 runtime (cmd: ${cmd})`;
       if (outVar) this.vars[this.norm(outVar)] = res;
       else printFn(res);
       return;
@@ -3198,9 +3355,15 @@ class EppEvaluator {
     expr = expr.trim();
     if (!expr) return "";
 
-    if (expr.startsWith('"') && expr.endsWith('"')) return expr.slice(1, -1);
-    if (expr.startsWith("'") && expr.endsWith("'")) return this.getVar(expr.slice(1, -1), lineNum);
+    if (/^"[^"]*"$/.test(expr)) return expr.slice(1, -1);
+    if (/^'[^']*'$/.test(expr)) return this.getVar(expr.slice(1, -1), lineNum);
     if (!isNaN(Number(expr)) && expr !== '') return Number(expr);
+
+    // `the length of "x"` and `length of "x"` are the same words. Adding the
+    // article here keeps one spelling of every library word below.
+    if (/^(?:length|uppercase|lowercase|reverse|first\s+letter|last\s+letter|trim|trimmed|square\s+root|absolute\s+value|minimum|maximum|value\s+of)\b/i.test(expr)) {
+      expr = 'the ' + expr;
+    }
 
     // Release 1.2 — Keyboard: the key pressed (a name, ready for comparisons)
     if (/^the\s+key\s+pressed$/i.test(expr)) {
@@ -3340,7 +3503,7 @@ class EppEvaluator {
     // System library functions
     if (expr.toLowerCase() === 'the platform' || expr.toLowerCase() === 'the system platform') {
       this.requireLib('System', 'the platform', lineNum);
-      return navigator.platform || 'Web System (1.2 Encryption++)';
+      return navigator.platform || 'Web System (E++ 1.2)';
     }
     if (expr.toLowerCase() === 'the os' || expr.toLowerCase() === 'the operating system') {
       this.requireLib('System', 'the os', lineNum);
@@ -3352,6 +3515,14 @@ class EppEvaluator {
       this.requireLib('Math', 'the square root of', lineNum);
       const arg = await this.evalExpr(expr.substring(19), lineNum);
       return Math.sqrt(Number(arg));
+    }
+
+    const percentOfMatch = expr.match(/^(.+?)\s+percent\s+of\s+(.+)$/i);
+    if (percentOfMatch && !/^how\s+much\b/i.test(expr)) {
+      this.requireLib('Math', 'percentage calculation', lineNum);
+      const pct = Number(await this.evalExpr(percentOfMatch[1], lineNum));
+      const total = Number(await this.evalExpr(percentOfMatch[2], lineNum));
+      return (pct / 100.0) * total;
     }
 
     if (expr.toLowerCase().startsWith('how much ') && expr.toLowerCase().includes('percent is of ')) {
@@ -3555,9 +3726,9 @@ async function runCode() {
   }
 
   let code = document.getElementById('editor').value;
-  if (isEncryptedProject(code)) {
+  if (isSavedProject(code)) {
     try {
-      code = (await decryptProject(code, currentFileName)).text;
+      code = (await openProjectFile(code, currentFileName)).text;
     } catch (e) {
       document.getElementById('consoleOutput').innerHTML += formatDeterministicError(e);
       statusEl.innerText = 'Error';
@@ -3648,10 +3819,10 @@ window.addEventListener('drop', (e) => {
 const editor = document.getElementById('editor');
 editor.addEventListener('paste', async (e) => {
   const text = (e.clipboardData || window.clipboardData)?.getData('text');
-  if (text && isEncryptedProject(text)) {
+  if (text && isSavedProject(text)) {
     e.preventDefault();
     try {
-      const dec = (await decryptProject(text.trim(), currentFileName)).text;
+      const dec = (await openProjectFile(text.trim(), currentFileName)).text;
       const start = editor.selectionStart;
       const end = editor.selectionEnd;
       const cur = editor.value;
@@ -3748,6 +3919,570 @@ function updateCursor() {
   }
 }
 
+// ------------------------------------------------------------------
+// 1.2 — Tutorials: a deck of cards, each one marked by running the code
+// ------------------------------------------------------------------
+
+const TUTORIAL_DRAFTS_KEY = 'epp_tutorial_drafts_1_2';
+let tutorialDeck = null;
+
+function tutorialCoursesForThisBuild() {
+  const T = window.EPP && window.EPP.Tutorials;
+  if (!T) return [];
+  return T.forBuild(name => !(window.EPP && window.EPP.Libraries) || window.EPP.Libraries.isAvailable(name));
+}
+
+/** Libraries this build leaves out, named once for the tutorial sidebar. */
+function tutorialMissingLibraries() {
+  const T = window.EPP && window.EPP.Tutorials;
+  if (!T || !window.EPP.Libraries) return [];
+  const hidden = [];
+  T.courses.forEach(course => {
+    const needs = (course.needs || []).concat(...course.steps.map(step => step.needs || []));
+    needs.forEach(name => {
+      if (hidden.indexOf(name) === -1 && !window.EPP.Libraries.isAvailable(name)) hidden.push(name);
+    });
+  });
+  return hidden;
+}
+
+function loadTutorialProgress() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(EPP.Tutorials.progressKey) || '[]');
+    return new Set(Array.isArray(raw) ? raw : []);
+  } catch (error) {
+    return new Set();
+  }
+}
+
+function saveTutorialProgress(deck) {
+  try {
+    localStorage.setItem(EPP.Tutorials.progressKey, JSON.stringify([...deck.passed]));
+  } catch (error) {
+    // A browser without storage just forgets; the cards still work.
+  }
+}
+
+function loadTutorialDrafts() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(TUTORIAL_DRAFTS_KEY) || '{}');
+    return raw && typeof raw === 'object' ? raw : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function saveTutorialDraft(key, code) {
+  try {
+    const drafts = loadTutorialDrafts();
+    if (code && code.trim()) drafts[key] = code;
+    else delete drafts[key];
+    localStorage.setItem(TUTORIAL_DRAFTS_KEY, JSON.stringify(drafts));
+  } catch (error) {
+    // ignore
+  }
+}
+
+function tutorialKey(course, step) {
+  return course.id + '/' + step.id;
+}
+
+function getTutorialDeck() {
+  if (!tutorialDeck) {
+    const courses = tutorialCoursesForThisBuild();
+    if (!courses.length) return null;
+    tutorialDeck = {
+      courses: courses,
+      courseIndex: 0,
+      stepIndex: 0,
+      passed: loadTutorialProgress(),
+      drafts: loadTutorialDrafts(),
+      attempts: 0,
+      hintsShown: 0,
+      checking: false
+    };
+    // Start where the reader left off: the first card that is not passed yet.
+    outer:
+    for (let c = 0; c < courses.length; c++) {
+      for (let st = 0; st < courses[c].steps.length; st++) {
+        if (!tutorialDeck.passed.has(tutorialKey(courses[c], courses[c].steps[st]))) {
+          tutorialDeck.courseIndex = c;
+          tutorialDeck.stepIndex = st;
+          break outer;
+        }
+      }
+    }
+  }
+  return tutorialDeck;
+}
+
+function currentTutorial() {
+  const deck = getTutorialDeck();
+  if (!deck) return null;
+  const course = deck.courses[deck.courseIndex];
+  const step = course.steps[deck.stepIndex];
+  return { deck, course, step, key: tutorialKey(course, step) };
+}
+
+/** Tiny inline formatting: `code` and **bold**, everything escaped. */
+function formatTutorialText(text) {
+  let html = escapeHtml(String(text));
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  return html;
+}
+
+function renderTutorialNav() {
+  const deck = getTutorialDeck();
+  if (!deck) return;
+  const T = window.EPP.Tutorials;
+  const total = T.totalSteps(deck.courses);
+  const done = deck.courses.reduce((sum, course) => {
+    return sum + course.steps.filter(step => deck.passed.has(tutorialKey(course, step))).length;
+  }, 0);
+
+  const label = document.getElementById('tutProgressLabel');
+  if (label) label.innerText = done + ' of ' + total;
+  const bar = document.getElementById('tutProgressBar');
+  if (bar) bar.style.width = total ? Math.round((done / total) * 100) + '%' : '0%';
+
+  const foot = document.querySelector('.tut-nav-foot');
+  if (foot) {
+    const missing = tutorialMissingLibraries();
+    foot.innerText = missing.length
+      ? 'The ' + missing.join(' and ') + ' lessons are not part of this build — they live in the full Studio download.'
+      : 'A card is finished when your program prints what the card asked for — not when it looks right.';
+  }
+
+  const resetAll = document.getElementById('tutResetAll');
+  if (resetAll) resetAll.style.display = done > 0 ? '' : 'none';
+
+  const list = document.getElementById('tutCourseList');
+  if (!list) return;
+  list.innerHTML = '';
+
+  deck.courses.forEach((course, courseIndex) => {
+    const group = document.createElement('div');
+    group.className = 'tut-course';
+
+    const head = document.createElement('div');
+    head.className = 'tut-course-head';
+    const finished = course.steps.filter(step => deck.passed.has(tutorialKey(course, step))).length;
+    head.innerHTML = '<span>' + course.icon + '</span><span>' + escapeHtml(course.title) + '</span>' +
+      '<span class="tut-course-count">' + finished + '/' + course.steps.length + '</span>';
+    group.appendChild(head);
+
+    course.steps.forEach((step, stepIndex) => {
+      const isDone = deck.passed.has(tutorialKey(course, step));
+      const isActive = courseIndex === deck.courseIndex && stepIndex === deck.stepIndex;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'tut-step' + (isDone ? ' done' : '') + (isActive ? ' active' : '');
+      button.setAttribute('data-course', String(courseIndex));
+      button.setAttribute('data-step', String(stepIndex));
+      button.innerHTML = '<span class="tut-step-dot">' + (isDone ? '✓' : String(stepIndex + 1)) + '</span>' +
+        '<span>' + escapeHtml(step.title) + '</span>';
+      button.addEventListener('click', () => selectTutorialCard(courseIndex, stepIndex));
+      group.appendChild(button);
+    });
+
+    list.appendChild(group);
+  });
+}
+
+function renderTutorialBody(step) {
+  const body = document.getElementById('tutBody');
+  if (!body) return;
+  body.innerHTML = '';
+  (step.body || []).forEach(block => {
+    let node;
+    if (block.code !== undefined) {
+      node = document.createElement('pre');
+      node.textContent = block.code;
+    } else if (block.tip !== undefined) {
+      node = document.createElement('div');
+      node.className = 'tut-tip';
+      node.innerHTML = formatTutorialText(block.tip);
+    } else {
+      node = document.createElement('p');
+      node.innerHTML = formatTutorialText(block.p);
+    }
+    body.appendChild(node);
+  });
+}
+
+function renderTutorialCard() {
+  const current = currentTutorial();
+  if (!current) return;
+  const { deck, course, step, key } = current;
+
+  document.getElementById('tutCourseName').innerText = course.icon + '  ' + course.title;
+  document.getElementById('tutTitle').innerText = step.title;
+  document.getElementById('tutGoal').innerHTML = formatTutorialText(step.goal);
+  document.getElementById('tutStepCounter').innerText =
+    'Card ' + (deck.stepIndex + 1) + ' of ' + course.steps.length;
+
+  renderTutorialBody(step);
+
+  const editor = document.getElementById('tutCode');
+  const draft = deck.drafts[key];
+  editor.value = draft !== undefined ? draft : step.starter;
+
+  deck.attempts = 0;
+  deck.hintsShown = 0;
+  hideTutorialFeedback();
+  document.getElementById('tutSolution').style.display = 'none';
+  document.getElementById('tutOutput').style.display = 'none';
+
+  const passed = deck.passed.has(key);
+  const nextButton = document.getElementById('tutNext');
+  const lastCard = deck.courseIndex === deck.courses.length - 1 &&
+    deck.stepIndex === course.steps.length - 1;
+  nextButton.disabled = !passed || lastCard;
+  nextButton.innerText = lastCard ? 'Finished' : 'Next →';
+  if (lastCard && passed) nextButton.innerText = '🎉 Finished';
+
+  document.getElementById('tutBack').disabled = deck.courseIndex === 0 && deck.stepIndex === 0;
+  document.getElementById('tutCheck').disabled = false;
+
+  renderTutorialNav();
+}
+
+function hideTutorialFeedback() {
+  const box = document.getElementById('tutFeedback');
+  box.style.display = 'none';
+  box.className = 'tut-feedback';
+  box.innerHTML = '';
+}
+
+function showTutorialFeedback(kind, message, detail) {
+  const box = document.getElementById('tutFeedback');
+  box.className = 'tut-feedback ' + kind;
+  box.innerHTML = escapeHtml(message).replace(/\n/g, '<br>');
+  if (detail) {
+    const pre = document.createElement('span');
+    pre.className = 'tut-detail';
+    pre.textContent = detail;
+    box.appendChild(pre);
+  }
+  box.style.display = '';
+  box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function showTutorialOutput(lines) {
+  const box = document.getElementById('tutOutput');
+  const text = document.getElementById('tutOutputText');
+  if (!lines.length) {
+    box.style.display = 'none';
+    return;
+  }
+  text.textContent = lines.join('\n');
+  box.style.display = '';
+}
+
+/**
+ * Runs the card's code in a throw-away evaluator so a tutorial can never
+ * disturb the project in the editor.
+ */
+async function runTutorialProgram(code, step) {
+  const output = [];
+  const engine = new EppEvaluator();
+  const previousEvaluator = activeEvaluator === engine ? null : activeEvaluator;
+  const gameWasOpen = document.getElementById('gamePane').style.display === 'flex';
+  let error = null;
+  let timedOut = false;
+  // A card can script the answers to `ask`, so a lesson about asking does not
+  // depend on what the reader types. Anything left over asks the reader.
+  const scripted = [...((step && step.test && step.test.answers) || [])];
+  const askFn = (prompt) => {
+    if (scripted.length) return Promise.resolve(String(scripted.shift()));
+    return Promise.resolve(window.prompt(String(prompt)) || '');
+  };
+
+  // Keyboard cards hand the program a held key, so a lesson about `is pressed`
+  // does not depend on the learner being fast enough.
+  const tracker = ensureKeyTracker();
+  const heldKeys = (step && step.test && step.test.keys) || {};
+  if (tracker) tracker.reset();
+  Object.keys(heldKeys).forEach(key => {
+    if (!tracker) return;
+    tracker.down[key] = Boolean(heldKeys[key]);
+    if (heldKeys[key]) tracker.last = key;
+  });
+
+  const timeout = new Promise(resolve => {
+    setTimeout(() => {
+      timedOut = true;
+      engine.cancel();
+      resolve();
+    }, 8000);
+  });
+
+  try {
+    await Promise.race([
+      engine.run(code, text => {
+        if (output.length < 200) output.push(String(text));
+      }, askFn),
+      timeout
+    ]);
+  } catch (thrown) {
+    error = thrown;
+  } finally {
+    if (tracker) tracker.reset();
+    engine.cancel();
+    if (activeGameHost && !gameWasOpen) {
+      activeGameHost.stop();
+      showGamePane(false);
+    }
+    activeEvaluator = previousEvaluator;
+  }
+  if (timedOut && !error) {
+    error = {
+      code: 'E101',
+      reason: 'This program was still running after 8 seconds and had to be stopped.',
+      help: 'Game loops need a stop: for example: if \'Frames\' is greater than 10 then stop the game.'
+    };
+  }
+  return { output, error };
+}
+
+async function runTutorialCard() {
+  const current = currentTutorial();
+  if (!current || current.deck.checking) return;
+  const { deck, step, key } = current;
+  const code = document.getElementById('tutCode').value;
+  const button = document.getElementById('tutCheck');
+
+  deck.checking = true;
+  button.disabled = true;
+  button.innerText = 'Running…';
+  hideTutorialFeedback();
+
+  const result = await runTutorialProgram(code, step);
+  const verdict = EPP.Tutorials.check(step, result);
+
+  if (verdict.ok) {
+    deck.passed.add(key);
+    saveTutorialProgress(deck);
+    showTutorialOutput(result.output);
+    if (deck.passed.size === EPP.Tutorials.totalSteps(deck.courses)) {
+      showTutorialFeedback('ok', '🎉 That was the last card — every tutorial is finished. The editor is yours.');
+    } else {
+      showTutorialFeedback('ok', '✓ Correct. Next card unlocked.');
+    }
+    const nextButton = document.getElementById('tutNext');
+    const lastCard = deck.courseIndex === deck.courses.length - 1 &&
+      deck.stepIndex === deck.courses[deck.courseIndex].steps.length - 1;
+    nextButton.disabled = lastCard;
+    nextButton.innerText = lastCard ? '🎉 Finished' : 'Next →';
+  } else {
+    deck.attempts += 1;
+    showTutorialOutput(result.output);
+    showTutorialFeedback('bad', verdict.message || 'Not quite yet.', verdict.detail);
+    if (deck.attempts >= 2) document.getElementById('tutSolution').style.display = '';
+  }
+
+  deck.checking = false;
+  button.disabled = false;
+  button.innerText = '▶ Run & check';
+  renderTutorialNav();
+}
+
+function showTutorialHint() {
+  const current = currentTutorial();
+  if (!current) return;
+  const { deck, step } = current;
+  const hints = step.hints || [];
+  if (!hints.length) {
+    showTutorialFeedback('info', 'There is no hint for this card — read the goal again, then try something.');
+    return;
+  }
+  const hint = hints[Math.min(deck.hintsShown, hints.length - 1)];
+  deck.hintsShown += 1;
+  const remaining = Math.max(0, hints.length - deck.hintsShown);
+  const coach = remaining === 0 ? 'That was the last hint.' : 'Hint ' + deck.hintsShown + ' of ' + hints.length + '.';
+  showTutorialFeedback('info', coach, hint);
+}
+
+function revealTutorialSolution() {
+  const current = currentTutorial();
+  if (!current) return;
+  document.getElementById('tutCode').value = current.step.solution;
+  saveTutorialDraft(current.key, current.step.solution);
+  showTutorialFeedback('info', 'Here is one way to do it. Press Run & check to see it pass — then put it in your own words.');
+}
+
+function resetTutorialCard() {
+  const current = currentTutorial();
+  if (!current) return;
+  document.getElementById('tutCode').value = current.step.starter;
+  saveTutorialDraft(current.key, '');
+  hideTutorialFeedback();
+  document.getElementById('tutOutput').style.display = 'none';
+}
+
+function selectTutorialCard(courseIndex, stepIndex) {
+  const deck = getTutorialDeck();
+  if (!deck) return;
+  const course = deck.courses[courseIndex];
+  if (!course || !course.steps[stepIndex]) return;
+  deck.courseIndex = courseIndex;
+  deck.stepIndex = stepIndex;
+  renderTutorialCard();
+  document.getElementById('tutCode').focus();
+}
+
+function moveTutorialCard(direction) {
+  const deck = getTutorialDeck();
+  if (!deck) return;
+  let courseIndex = deck.courseIndex;
+  let stepIndex = deck.stepIndex;
+  if (direction > 0) {
+    if (stepIndex + 1 < deck.courses[courseIndex].steps.length) {
+      stepIndex += 1;
+    } else if (courseIndex + 1 < deck.courses.length) {
+      courseIndex += 1;
+      stepIndex = 0;
+    } else {
+      return;
+    }
+  } else {
+    if (stepIndex > 0) {
+      stepIndex -= 1;
+    } else if (courseIndex > 0) {
+      courseIndex -= 1;
+      stepIndex = deck.courses[courseIndex].steps.length - 1;
+    } else {
+      return;
+    }
+  }
+  selectTutorialCard(courseIndex, stepIndex);
+}
+
+function openTutorials(courseId, stepId) {
+  const deck = getTutorialDeck();
+  if (!deck) {
+    showToast('Tutorials are missing (js/tutorials.js).', true);
+    return;
+  }
+  if (courseId) {
+    const courseIndex = deck.courses.findIndex(course => course.id === courseId);
+    if (courseIndex !== -1) {
+      const stepIndex = Math.max(0, deck.courses[courseIndex].steps.findIndex(step => step.id === stepId));
+      deck.courseIndex = courseIndex;
+      deck.stepIndex = stepIndex;
+    }
+  }
+  const overlay = document.getElementById('tutorialOverlay');
+  overlay.style.display = 'flex';
+  renderTutorialCard();
+  document.getElementById('tutCode').focus();
+}
+
+function closeTutorials() {
+  const overlay = document.getElementById('tutorialOverlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+/** Copies the card's code into the real editor and runs it there. */
+async function tryTutorialInEditor() {
+  const current = currentTutorial();
+  if (!current) return;
+  const code = document.getElementById('tutCode').value;
+  if (currentFileName.endsWith('.enpp') && /add\s+(?:the\s+)?["']?\w+["']?\s+library/i.test(code)) {
+    renameCurrentFile(currentFileName.replace(/\.enpp$/, '.enppl'));
+  }
+  document.getElementById('editor').value = code;
+  files[currentFileName] = code;
+  saveStorage();
+  updateDashboard();
+  updateLineNumbers();
+  closeTutorials();
+  await runCode();
+}
+
+function resetTutorialProgress() {
+  const deck = getTutorialDeck();
+  if (!deck) return;
+  const answer = window.confirm('Start over? Every card goes back to un-finished and your saved code is cleared.');
+  if (!answer) return;
+  deck.passed.clear();
+  deck.drafts = {};
+  deck.courseIndex = 0;
+  deck.stepIndex = 0;
+  saveTutorialProgress(deck);
+  try { localStorage.removeItem(TUTORIAL_DRAFTS_KEY); } catch (error) { /* ignore */ }
+  renderTutorialCard();
+  showTutorialFeedback('info', 'Fresh start — every card is unlocked again.');
+}
+
+function wireTutorials() {
+  const learnButton = document.getElementById('btnLearn');
+  if (learnButton) learnButton.addEventListener('click', () => openTutorials());
+
+  const close = document.getElementById('tutClose');
+  if (close) close.addEventListener('click', closeTutorials);
+
+  const check = document.getElementById('tutCheck');
+  if (check) check.addEventListener('click', runTutorialCard);
+
+  const hint = document.getElementById('tutHint');
+  if (hint) hint.addEventListener('click', showTutorialHint);
+
+  const solution = document.getElementById('tutSolution');
+  if (solution) solution.addEventListener('click', revealTutorialSolution);
+
+  const reset = document.getElementById('tutReset');
+  if (reset) reset.addEventListener('click', resetTutorialCard);
+
+  const back = document.getElementById('tutBack');
+  if (back) back.addEventListener('click', () => moveTutorialCard(-1));
+
+  const next = document.getElementById('tutNext');
+  if (next) next.addEventListener('click', () => moveTutorialCard(1));
+
+  const resetAll = document.getElementById('tutResetAll');
+  if (resetAll) resetAll.addEventListener('click', resetTutorialProgress);
+
+  const tryButton = document.getElementById('tutTry');
+  if (tryButton) tryButton.addEventListener('click', tryTutorialInEditor);
+
+  const editor = document.getElementById('tutCode');
+  if (editor) {
+    let saveTimer = null;
+    editor.addEventListener('input', () => {
+      const current = currentTutorial();
+      if (!current) return;
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => saveTutorialDraft(current.key, editor.value), 400);
+    });
+    editor.addEventListener('keydown', (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault();
+        runTutorialCard();
+      }
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        const start = editor.selectionStart;
+        editor.value = editor.value.slice(0, start) + '    ' + editor.value.slice(editor.selectionEnd);
+        editor.selectionStart = editor.selectionEnd = start + 4;
+      }
+    });
+  }
+
+  const overlay = document.getElementById('tutorialOverlay');
+  if (overlay) {
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) closeTutorials();
+    });
+  }
+
+  document.addEventListener('keydown', (event) => {
+    const open = overlay && overlay.style.display !== 'none';
+    if (open && event.key === 'Escape') closeTutorials();
+  });
+}
+
 /**
  * tools/build-zip.mjs marks the E++.zip copy of this page. Remove the library
  * cards for anything the bundle does not contain, so nobody is offered a
@@ -3765,6 +4500,7 @@ function applyDistributionBuild() {
 
 // Initialize
 applyDistributionBuild();
+wireTutorials();
 initStorage();
 renderFileList();
 loadFile(currentFileName);

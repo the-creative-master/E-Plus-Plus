@@ -10,7 +10,7 @@
 
 void print_banner() {
     std::cout << "=========================================================\n";
-    std::cout << "   E++ Programming Language [1.2 Encryption++]     \n";
+    std::cout << "   E++ Programming Language [1.2]                 \n";
     std::cout << "   \"Looks like English, feels like english, and is english\"\n";
     std::cout << "=========================================================\n";
 }
@@ -27,8 +27,8 @@ void print_help() {
     std::cout << "  epp --key <64 hex> <file.enpp>       Open with one key\n";
     std::cout << "  epp --keyring <keys.json> <file>     Try every key in a keyring\n";
     std::cout << "  epp --new-key                        Print a fresh vault key\n";
-    std::cout << "  epp --encrypt <in> -o <out> [--key]  Seal a project\n";
-    std::cout << "  epp --decrypt <file> [--key]         Print a sealed project\n";
+    std::cout << "  epp --save <in> -o <out> [--key]     Save a project\n";
+    std::cout << "  epp --open <file> [--key]            Print a saved project\n";
     std::cout << "\nExamples:\n";
     std::cout << "  say \"Hello, World!\"\n";
     std::cout << "  say 1 plus 1\n";
@@ -178,8 +178,8 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    // Encryption tool
-    if (arg1 == "--encrypt" && args.size() >= 3) {
+    // Save a project
+    if ((arg1 == "--save" || arg1 == "--encrypt") && args.size() >= 3) {
         std::string src_path = args[2];
         std::ifstream f(src_path);
         if (!f.is_open()) {
@@ -188,20 +188,20 @@ int main(int argc, char* argv[]) {
         }
         std::stringstream buf; buf << f.rdbuf();
         epp::VaultKey key = have_single_key ? single_key : epp::random_key();
-        std::string encrypted = epp::encrypt_epp(buf.str(), key);
+        std::string sealed_text = epp::save_project(buf.str(), key);
         std::string out_path = src_path;
         if (args.size() >= 5 && (args[3] == "-o" || args[3] == "--output")) out_path = args[4];
         std::ofstream out(out_path);
-        out << encrypted;
-        std::cout << "Sealed " << src_path << " -> " << out_path
+        out << sealed_text;
+        std::cout << "Saved " << src_path << " -> " << out_path
                   << "\nKey (hex): " << epp::to_hex(std::vector<uint8_t>(key.begin(), key.end()))
                   << "\nFingerprint: " << epp::fingerprint(key)
                   << "\nKeep the key: the project cannot be opened without it.\n";
         return 0;
     }
 
-    // Decryption tool
-    if (arg1 == "--decrypt" && args.size() >= 3) {
+    // Print a saved project
+    if ((arg1 == "--open" || arg1 == "--decrypt") && args.size() >= 3) {
         std::string src_path = args[2];
         std::ifstream f(src_path);
         if (!f.is_open()) {
@@ -210,8 +210,8 @@ int main(int argc, char* argv[]) {
         }
         std::stringstream buf; buf << f.rdbuf();
         try {
-            std::string decrypted = epp::open_vault(buf.str(), src_path);
-            std::cout << decrypted << "\n";
+            std::string plaintext = epp::open_vault(buf.str(), src_path);
+            std::cout << plaintext << "\n";
             return 0;
         } catch (const std::exception& e) {
             std::cerr << e.what() << "\n";

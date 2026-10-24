@@ -1,5 +1,5 @@
 /*
- * E++ Release 1.2 — sealed projects (Encryption++), native implementation.
+ * E++ Release 1.2 — project files, native implementation.
  *
  * js/vault.js is the reference implementation; this file has to stay
  * byte-compatible with it and with lexer.py, and tests/run-tests.mjs
@@ -39,8 +39,8 @@ std::string fingerprint(const VaultKey& key);
 bool is_vault(const std::string& text);
 VaultKey random_key();
 bool key_from_hex(const std::string& hex, VaultKey& out);
-std::string encrypt_epp(const std::string& plaintext, const VaultKey& key);
-std::string decrypt_epp(const std::string& ciphertext, const VaultKey& key,
+std::string save_project(const std::string& plaintext, const VaultKey& key);
+std::string load_project(const std::string& ciphertext, const VaultKey& key,
                         const std::string& filename = "<source>");
 
 // ---- keyring ----
