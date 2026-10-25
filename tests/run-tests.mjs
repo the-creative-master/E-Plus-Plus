@@ -26,7 +26,7 @@ context.globalThis = context;
 for (const file of [
   'errors.js', 'lexer.js', 'ast.js', 'libraries.js', 'keyboard.js', 'parser.js',
   'python-runner.js', 'interpreter.js', 'files.js', 'highlight.js', 'standalone-generator.js',
-  'vault.js', 'ideas.js', 'a11y.js', 'tutorials.js'
+  'vault.js', 'ideas.js', 'a11y.js', 'pictures.js', 'game-library.js', 'tutorials.js'
 ]) {
   vm.runInContext(readFileSync(join(root, 'js', file), 'utf8'), context, { filename: file });
 }
@@ -1516,7 +1516,8 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
   // The version the page announces matches this release everywhere it shows.
   assert.ok(page.includes('<title>E++ Studio | 1.2.1</title>'), 'the tab title is 1.2.1');
   assert.ok(page.includes('class="build-badge">1.2.1<'), 'the header badge is 1.2.1');
-  assert.ok(page.includes("const DEFAULTS_VERSION = '1.2.1'"), 'the defaults stamp is 1.2.1');
+  assert.ok(page.includes("const DEFAULTS_VERSION = '1.2.1-lp1'"),
+    'the defaults stamp is 1.2.1 Language Patch 1, so an older 1.2.1 refreshes its files');
   assert.ok(page.includes("epp_idea_draft_1_2_1"), 'the idea draft key is per release');
   ok('the page announces 1.2.1 and the new keys are versioned');
 
@@ -1594,6 +1595,268 @@ console.log('\nPanels: focus and Tab');
   assert.ok(/body\.modal-open\s*\{\s*overflow:\s*hidden/.test(css), 'the page behind a panel does not scroll');
   assert.ok(page.includes('showToast'), 'toasts still exist');
   ok('every panel opens, traps Tab and closes through the same helpers');
+}
+
+// ============================================================
+// 1.2.1 Language Patch 1: a name that means a picture
+// ============================================================
+console.log('\n1.2.1 LP1: the picture book');
+
+{
+  const P = EPP.Pictures;
+  assert.ok(P, 'js/pictures.js publishes EPP.Pictures');
+
+  assert.strictEqual(P.cleanName("  'hero'  "), 'hero', 'quotes and spaces are not part of a name');
+  assert.strictEqual(P.isValidName('hero'), true);
+  assert.strictEqual(P.isValidName('big hero 2'), true);
+  assert.strictEqual(P.isValidName('2fast'), false, 'a name starts with a letter');
+  assert.strictEqual(P.isValidName(''), false);
+  ok('names are cleaned and checked in one place');
+
+  assert.strictEqual(P.isImageSource('data:image/png;base64,AAA'), true);
+  assert.strictEqual(P.isImageSource('hero.png'), true);
+  assert.strictEqual(P.isImageSource('./art/hero.svg'), true);
+  assert.strictEqual(P.isImageSource('https://example.com/a.png'), true);
+  assert.strictEqual(P.isImageSource('hero'), false, 'a bare word is a name, not a picture');
+  assert.strictEqual(P.isImageSource(''), false);
+  ok('only real picture sources are accepted');
+
+  const book = P.emptyBook();
+  const entry = P.put(book, 'hero', 'data:image/png;base64,AAA', { width: 32, height: 32, added: '2026-10-01' });
+  assert.strictEqual(entry.name, 'hero');
+  assert.strictEqual(P.get(book, 'HERO').width, 32, 'lookups ignore case');
+  assert.strictEqual(P.list(book).length, 1);
+  assert.strictEqual(P.isEmpty(book), false);
+  assert.strictEqual(P.put(book, 'hero', 'nope'), null, 'a bad picture is refused');
+  assert.strictEqual(P.put(book, '9 lives', 'hero.png'), null, 'a bad name is refused');
+  assert.strictEqual(P.remove(book, 'hero'), true);
+  assert.strictEqual(P.isEmpty(book), true);
+  ok('linking, looking up, listing and unlinking a picture');
+
+  // Relinking replaces the picture but keeps the name.
+  const again = P.emptyBook();
+  P.put(again, 'hero', 'hero.png', { added: '2026-10-01' });
+  P.put(again, 'hero', 'hero2.png', { added: '2026-10-02' });
+  assert.strictEqual(P.list(again).length, 1);
+  assert.strictEqual(P.get(again, 'hero').data, 'hero2.png', 'the newest link wins');
+  ok('linking a name again replaces its picture');
+
+  // A book survives a round trip through storage.
+  const saved = P.toJSON(again);
+  const reloaded = P.fromJSON(JSON.stringify(saved));
+  assert.strictEqual(P.get(reloaded, 'hero').data, 'hero2.png');
+  assert.deepEqual(P.fromJSON('not json')[Object.keys(P.fromJSON('not json'))[0]] || null, null);
+  assert.strictEqual(P.isEmpty(P.fromJSON('{"nope":{}}')), true, 'broken entries are dropped');
+  ok('a book survives being stored and read back');
+
+  // Which names does a program use?
+  const code = [
+    'add the "Game" library',
+    "create the actor 'hero'",
+    "put the actor 'hero' at 0 and 0",
+    "link the image \"gem.png\" to the actor 'gem'",
+    "set the image of the actor 'hero' to \"hero2.png\""
+  ].join('\n');
+  assert.deepEqual([...P.namesIn(code)], ['hero', 'gem'], 'names are collected once each');
+  assert.deepEqual([...P.missing(code, again)], ['gem'], 'hero is linked, gem is not');
+  ok('the page can tell which actor names have no picture yet');
+
+  // Projects travel as an envelope only when they have pictures.
+  assert.strictEqual(P.envelope('say "hi"', P.emptyBook()), 'say "hi"', 'no pictures, plain code');
+  const packed = P.envelope(code, again);
+  assert.strictEqual(P.looksLikeEnvelope(packed), true);
+  const opened = P.unwrap(packed);
+  assert.strictEqual(opened.code, code);
+  assert.strictEqual(P.get(opened.pictures, 'hero').data, 'hero2.png');
+  assert.strictEqual(P.unwrap('say "hi"').code, 'say "hi"', 'plain code is untouched');
+  assert.strictEqual(P.unwrap('{"hello": 1}').code, '{"hello": 1}', 'JSON that is not ours is left alone');
+  ok('a project file carries its pictures, and plain code stays plain');
+}
+
+{
+  // The language: create without an image, link, and set the image.
+  EPP.Libraries.applyBuild('studio');
+
+  const provider = (name) => (String(name).toLowerCase() === 'hero'
+    ? { name: 'hero', data: 'data:image/png;base64,PROJECT' }
+    : null);
+  EPP.Pictures.setProvider(provider);
+
+  const { output, events } = await run([
+    'add the "Game" library',
+    "create the actor 'hero'",
+    "put the actor 'hero' at 10 and 20",
+    'say "created"'
+  ].join('\n'));
+  assert.deepEqual([...output], ['created']);
+  const created = events.find((event) => event.action === 'create');
+  assert.ok(created, 'the game event says an actor was created');
+  assert.strictEqual(created.actor.image, 'data:image/png;base64,PROJECT',
+    "the name's picture from the project is used");
+  ok('create the actor uses the picture linked to that name');
+
+  EPP.Pictures.setProvider(null);
+  const plain = await run(['add the "Game" library', "create the actor 'nobody'"].join('\n'));
+  assert.ok(plain.events.some((event) => event.action === 'create'), 'an unlinked name is still an actor');
+  assert.strictEqual(plain.events.find((event) => event.action === 'create').actor.image, '',
+    'it simply has no picture');
+  ok('an actor with no linked picture still runs');
+
+  const linked = await run([
+    'add the "Game" library',
+    'link the image "gem.png" to the actor \'gem\'',
+    "create the actor 'gem'",
+    'say "gem"'
+  ].join('\n'));
+  assert.deepEqual([...linked.output], ['gem']);
+  assert.strictEqual(linked.interpreter.pictures.get('gem').source, 'gem.png',
+    'the program keeps the link it made');
+  assert.strictEqual(linked.events.find((event) => event.action === 'create').actor.image, 'gem.png');
+  ok('link the image ... to the actor ... then create');
+
+  const swapped = await run([
+    'add the "Game" library',
+    "create the actor 'hero' with the image \"a.png\"",
+    "set the image of the actor 'hero' to \"b.png\"",
+    'say "swapped"'
+  ].join('\n'));
+  assert.deepEqual([...swapped.output], ['swapped']);
+  const lastImage = swapped.events.filter((event) => event.action === 'image').pop();
+  assert.ok(lastImage && lastImage.actor.image === 'b.png', 'set the image changes the picture');
+  assert.strictEqual(swapped.interpreter.pictures.get('hero').source, 'b.png', 'and relinks the name');
+  ok('set the image of the actor ... to ... changes the picture');
+
+  // Creating with an explicit picture links the name too, so a later create
+  // needs nothing else.
+  const remembered = await run([
+    'add the "Game" library',
+    "create the actor 'hero' with the image \"a.png\"",
+    "create the actor 'copy'",
+    'say "ok"'
+  ].join('\n'));
+  assert.deepEqual([...remembered.output], ['ok']);
+  assert.strictEqual(remembered.interpreter.pictures.get('hero').source, 'a.png');
+  assert.strictEqual(remembered.interpreter.pictures.has('copy'), false);
+  ok('the picture a create line names is remembered for that name');
+
+  await expectError('an empty picture is refused',
+    'add the "Game" library\nlink the image "" to the actor \'hero\'', /empty/i);
+  await expectError('a source that is not a picture is refused',
+    'add the "Game" library\nlink the image "not a picture" to the actor \'hero\'', /not a picture/i);
+  await expectError('the image of an actor that does not exist is refused',
+    'add the "Game" library\nset the image of the actor \'ghost\' to "a.png"', /no actor called/i);
+  ok('bad links are explained instead of quietly failing');
+
+  EPP.Pictures.setProvider(null);
+  EPP.Libraries.showAll();
+}
+
+// ============================================================
+// 1.2.1 LP1 — the canvas is painted while the program runs
+// ============================================================
+console.log('\n1.2.1 LP1: drawing during a run');
+
+{
+  // A browser answers <img> asynchronously: that delay is exactly what made
+  // actors appear only once the program had stopped.
+  const painted = { images: 0, ready: [], labels: [] };
+  const surface = new Proxy({}, {
+    get(target, prop) {
+      if (prop === 'drawImage') {
+        return (image) => { painted.images += 1; painted.ready.push(!!(image && image.__eppReady)); };
+      }
+      if (prop === 'fillText') return (text) => painted.labels.push(String(text));
+      if (prop === 'canvas') return target.canvas;
+      return () => {};
+    },
+    set(target, prop, value) { target[prop] = value; return true; }
+  });
+  const canvas = { width: 800, height: 600, getContext: () => surface };
+  surface.canvas = canvas;
+
+  const RealEpp = EPP;
+  assert.ok(RealEpp.GameHost, 'js/game-library.js publishes GameHost');
+
+  // Load pictures the way a browser does: a moment later, never immediately.
+  class SlowImage {
+    constructor() { this.__eppReady = false; this.__eppDecoded = false; }
+    set src(value) {
+      this.__src = value;
+      this.naturalWidth = 64;
+      this.naturalHeight = 64;
+      setTimeout(() => {
+        this.__eppReady = true;
+        if (typeof this.onload === 'function') this.onload();
+      }, 15);
+    }
+    get src() { return this.__src; }
+    decode() { return Promise.resolve(); }
+  }
+  const hadImage = 'Image' in context;
+  const previousImage = context.Image;
+  context.Image = SlowImage;
+
+  try {
+    const host = new RealEpp.GameHost(canvas);
+    assert.strictEqual(await host.preload(''), null, 'nothing to load, nothing to wait for');
+
+    const started = Date.now();
+    await host.preload('data:image/png;base64,ONE');
+    assert.ok(Date.now() - started >= 10, 'preload waits for the picture');
+    const image = host.images['data:image/png;base64,ONE'];
+    assert.strictEqual(image.__eppReady, true, 'the picture is ready when preload finishes');
+    assert.strictEqual(image.__eppDecoded, true);
+
+    // The point of all this: the very first draw already has the picture.
+    painted.images = 0;
+    painted.ready = [];
+    painted.labels = [];
+    host.createActor('hero', 'data:image/png;base64,ONE');
+    assert.ok(painted.images >= 1, 'creating an actor paints it');
+    assert.ok(painted.ready.every(Boolean), 'every draw used a loaded picture');
+    assert.deepEqual([...painted.labels], [], 'no placeholder tile was drawn');
+    ok('a picture is loaded before the actor is drawn, so frame one has it');
+
+    // A picture that fails to load must release the program, not hang it.
+    const broken = { __eppDecoded: false, __eppFailed: false };
+    host.images['data:image/png;base64,BROKEN'] = broken;
+    const pending = host.preload('data:image/png;base64,BROKEN');
+    setTimeout(() => { broken.__eppFailed = true; }, 30);
+    const settled = await Promise.race([
+      pending.then(() => 'resolved'),
+      new Promise((resolve) => setTimeout(() => resolve('hung'), 1500))
+    ]);
+    assert.strictEqual(settled, 'resolved', 'a broken picture still lets the program run');
+    ok('a picture that fails to load cannot freeze a program');
+
+    // flush() paints and gives the page a frame; calls in one frame share it.
+    painted.images = 0;
+    const a = host.flush();
+    const b = host.flush();
+    assert.strictEqual(a, b, 'two flushes in the same frame are one frame');
+    await a;
+    assert.ok(painted.images >= 1, 'flush paints');
+    const c = host.flush();
+    assert.notStrictEqual(a, c, 'a later flush is a new frame');
+    await c;
+    ok('flush paints now and yields exactly one frame per burst');
+  } finally {
+    if (hadImage) context.Image = previousImage;
+    else delete context.Image;
+  }
+}
+
+{
+  // The page must wait for the picture and hand the canvas frames while a
+  // program runs — that is the fix for "actors only show when I stop".
+  const page = readFileSync(join(root, 'index.html'), 'utf8');
+  assert.ok(/await host\.preload\(source\)/.test(page), 'the Studio waits for the picture');
+  assert.ok(page.includes('async paint(host)'), 'the Studio has one way to hand over a frame');
+  const paints = (page.match(/await this\.paint\(/g) || []).length;
+  assert.ok(paints >= 6, 'every statement that changes the picture yields a frame (' + paints + ')');
+  assert.ok(/showGamePane\(true\);\s*\n\s*const host = this\.requireGame\(\);/.test(page),
+    'the game pane is shown before the actor is created');
+  ok('the page paints during a run instead of only at the end');
 }
 
 // Restore the full library set for any later test.

@@ -618,6 +618,93 @@ body.modal-open { overflow: hidden; }
 .ask-field input:focus { outline: none; border-color: rgba(52, 211, 153, .6); box-shadow: 0 0 0 3px rgba(52, 211, 153, .12); }
 .ask-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
+/* ---------- 1.2.1 Language Patch 1: pictures, linked to a name ---------- */
+.pic-overlay {
+  position: fixed; inset: 0; z-index: 76;
+  background: rgba(3, 7, 18, .8); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center; padding: 18px;
+}
+.pic-shell {
+  width: min(880px, 100%); max-height: min(90vh, 820px);
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, .65);
+}
+.pic-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  padding: 18px 20px; border-bottom: 1px solid var(--border); background: var(--panel-2);
+}
+.pic-kicker { font-size: 11px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: #7dd3fc; }
+.pic-head h2 { margin: 3px 0 0; font-size: 19px; }
+.pic-body {
+  display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 0; min-height: 0; overflow: hidden;
+}
+.pic-left { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+.pic-right {
+  padding: 18px 20px; border-left: 1px solid var(--border); background: #0a1220;
+  display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto;
+}
+.pic-drop {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  padding: 26px 16px; text-align: center; cursor: pointer;
+  border: 2px dashed rgba(56, 189, 248, .35); border-radius: 14px; background: rgba(56, 189, 248, .05);
+  transition: border-color .15s, background .15s;
+}
+.pic-drop:hover, .pic-drop:focus-visible, .pic-drop-active {
+  border-color: rgba(56, 189, 248, .8); background: rgba(56, 189, 248, .12); outline: none;
+}
+.pic-drop-icon { font-size: 26px; line-height: 1; }
+.pic-drop-main { font-size: 14px; font-weight: 600; }
+.pic-drop-hint { font-size: 11.5px; color: var(--muted); }
+.pic-field { display: flex; flex-direction: column; gap: 6px; font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.pic-field input {
+  background: #0b1322; border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 12px; color: var(--text); font-size: 14px; font-weight: 600;
+  letter-spacing: normal; text-transform: none;
+}
+.pic-field input:focus { outline: none; border-color: rgba(56, 189, 248, .6); box-shadow: 0 0 0 3px rgba(56, 189, 248, .12); }
+.pic-preview {
+  display: flex; align-items: center; gap: 12px; min-height: 96px;
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: #070c16;
+}
+.pic-preview img {
+  width: 76px; height: 76px; object-fit: contain; border-radius: 8px;
+  background: repeating-conic-gradient(#1b2537 0% 25%, #131c2c 0% 50%) 50% / 16px 16px;
+}
+.pic-preview-empty, .pic-preview-info { color: var(--muted); font-size: 12.5px; }
+.pic-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.pic-note { margin: 0; font-size: 12px; line-height: 1.55; color: var(--muted); min-height: 18px; }
+.pic-book-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.pic-book-head h3 { margin: 0; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.pic-count { font-size: 11px; font-family: var(--mono); color: #64748b; }
+.pic-list { display: flex; flex-direction: column; gap: 8px; }
+.pic-empty { margin: 0; padding: 14px; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); font-size: 12.5px; text-align: center; }
+.pic-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border: 1px solid var(--border); border-radius: 11px; background: #0c1424;
+}
+.pic-thumb {
+  width: 42px; height: 42px; object-fit: contain; border-radius: 8px; flex: 0 0 auto;
+  background: repeating-conic-gradient(#1b2537 0% 25%, #131c2c 0% 50%) 50% / 12px 12px;
+}
+.pic-item-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.pic-item-name { font-family: var(--mono); font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
+.pic-item-meta { font-size: 11px; color: var(--muted); }
+.pic-tip { margin: 0; font-size: 11.5px; line-height: 1.6; color: #64748b; }
+.pic-tip code { color: var(--accent); }
+
+@media (max-width: 760px) {
+  .pic-body { grid-template-columns: minmax(0, 1fr); overflow-y: auto; }
+  .pic-right { border-left: none; border-top: 1px solid var(--border); }
+  .pic-preview { min-height: 84px; }
+}
+
+body.light-theme .pic-shell { background: #fff; }
+body.light-theme .pic-head { background: #f8fafc; }
+body.light-theme .pic-right, body.light-theme .pic-preview, body.light-theme .pic-item { background: #f8fafc; }
+body.light-theme .pic-field input { background: #fff; color: #0f172a; }
+
 /* ---------- 1.2.1 community ideas (suggest a feature) ---------- */
 .sug-overlay {
   position: fixed; inset: 0; z-index: 75;

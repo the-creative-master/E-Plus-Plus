@@ -318,6 +318,8 @@
       case 'ask': return this.parseAsk();
       case 'wait': return this.parseWait();
       case 'create': return this.parseCreateActor();
+      // link the image "hero.png" to the actor 'hero'
+      case 'link': return this.parseActorImage();
       case 'put': return this.parsePlaceActor();
       case 'play': return this.parsePlayGame();
       case 'pause': return this.parseActorControl('pause');
@@ -532,6 +534,11 @@
 
   Parser.prototype.parseSet = function () {
     var kw = this.advance(); // Set / Change
+
+    // set the image of the actor 'hero' to "<source>"
+    if (this.isWord('the') && this.isWord('image', this.peek(1))) {
+      return this.parseActorImage(kw);
+    }
 
     // Release 1.2: settings that belong to the Game library.
     if (this.isWord('the') && this.isWord('game', this.peek(1))) {
@@ -852,12 +859,14 @@
         'Write it like this: create the actor \'hero\' with the image "hero.png"');
     }
     this.advance();
-    if (!this.matchWord('with')) {
-      var badWith = this.current();
-      throw new ParseError('Expected the word "with" after the actor name but found ' + this.describe(badWith) + '.',
-        badWith.line, badWith.column,
-        'Write it like this: create the actor \'hero\' with the image "hero.png"');
+    // The picture can come from the project's picture book instead:
+    //   link the image "hero.png" to the actor 'hero'
+    //   create the actor 'hero'
+    // so `create` on its own means "use the picture this name is linked to".
+    if (!this.isWord('with')) {
+      return EPP.AST.DefineActor(nameToken.value, null, kw);
     }
+    this.advance(); // with
     this.matchWord('the');
     if (!this.matchWord('image')) {
       var badImage = this.current();
@@ -867,6 +876,79 @@
     }
     var source = this.parseExpression();
     return EPP.AST.DefineActor(nameToken.value, source, kw);
+  };
+
+  /**
+   * set the image of the actor 'hero' to "<source>"
+   * link the image "<source>" to the actor 'hero'   (or: to the name 'hero')
+   *
+   * Both bind a picture to a name. `link` is the one to reach for: it makes
+   * the name mean that picture from then on, so `create the actor 'hero'`
+   * never needs to repeat the image.
+   */
+  Parser.prototype.parseActorImage = function (alreadyRead) {
+    var kw = alreadyRead || this.advance(); // set / link
+
+    if (kw.value.toLowerCase() === 'link') {
+      this.requireLibrary('link the image', kw);
+      this.matchWord('the');
+      if (!this.matchWord('image')) {
+        var badImage = this.current();
+        throw new ParseError('Expected the word "image" after "link" but found ' + this.describe(badImage) + '.',
+          badImage.line, badImage.column,
+          'Write it like this: link the image "hero.png" to the actor \'hero\'');
+      }
+      var linkSource = this.parseExpression();
+      this.expectWord('to', 'in "link the image \"hero.png\" to the actor \'hero\'".');
+      this.matchWord('the');
+      if (!this.matchWord('actor') && !this.matchWord('name')) {
+        var badTarget = this.current();
+        throw new ParseError('Expected "actor" or "name" after "to" but found ' + this.describe(badTarget) + '.',
+          badTarget.line, badTarget.column,
+          'Write it like this: link the image "hero.png" to the actor \'hero\'');
+      }
+      var linkName = this.current();
+      if (linkName.type !== 'VARIABLE') {
+        throw new ParseError('An actor needs a name in single quotes, but found ' + this.describe(linkName) + '.',
+          linkName.line, linkName.column,
+          'Write it like this: link the image "hero.png" to the actor \'hero\'');
+      }
+      this.advance();
+      return EPP.AST.LinkImage(linkName.value, linkSource, kw);
+    }
+
+    // set the image of the actor 'hero' to "<source>"
+    if (!this.matchWord('the')) {
+      var badThe = this.current();
+      throw new ParseError('Expected "the" after "set" but found ' + this.describe(badThe) + '.',
+        badThe.line, badThe.column,
+        'Write it like this: set the image of the actor \'hero\' to "hero.png"');
+    }
+    if (!this.matchWord('image')) {
+      var badSetImage = this.current();
+      throw new ParseError('Expected "image" after "set the" but found ' + this.describe(badSetImage) + '.',
+        badSetImage.line, badSetImage.column,
+        'Write it like this: set the image of the actor \'hero\' to "hero.png"');
+    }
+    this.expectWord('of', 'in "set the image of the actor \'hero\' to ...".');
+    this.matchWord('the');
+    if (!this.matchWord('actor') && !this.matchWord('name')) {
+      var badActor = this.current();
+      throw new ParseError('Expected "actor" after "the image of" but found ' + this.describe(badActor) + '.',
+        badActor.line, badActor.column,
+        'Write it like this: set the image of the actor \'hero\' to "hero.png"');
+    }
+    var actorToken = this.current();
+    if (actorToken.type !== 'VARIABLE') {
+      throw new ParseError('An actor needs a name in single quotes, but found ' + this.describe(actorToken) + '.',
+        actorToken.line, actorToken.column,
+        'Write it like this: set the image of the actor \'hero\' to "hero.png"');
+    }
+    this.advance();
+    this.expectWord('to', 'before the picture, for example: set the image of the actor \'hero\' to "hero.png".');
+    this.requireLibrary('set the image of the actor', kw);
+    var newSource = this.parseExpression();
+    return EPP.AST.SetActorImage(actorToken.value, newSource, kw);
   };
 
   /** put the actor 'hero' at 100 and 200 */

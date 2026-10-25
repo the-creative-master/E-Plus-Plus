@@ -86,6 +86,15 @@
     return this;
   };
 
+  /**
+   * The image object for a source, or null when the source is empty.
+   *
+   * Loading is asynchronous in every browser, which is why a program that
+   * creates an actor and immediately runs a game loop used to draw a labelled
+   * tile for a while — and, in a short program, only ever at the very end:
+   * the whole program ran before the picture had decoded. `preload()` is the
+   * fix: the interpreter waits for the picture, so frame one already has it.
+   */
   GameHost.prototype.imageFor = function (source) {
     var src = String(source || '').trim();
     if (!src) return null;
@@ -93,12 +102,71 @@
     if (typeof Image === 'undefined') { this.images[src] = null; return null; }
     var image = new Image();
     image.__eppReady = false;
+    image.__eppDecoded = false;
     var self = this;
-    image.onload = function () { image.__eppReady = true; self.draw(); };
-    image.onerror = function () { image.__eppFailed = true; self.draw(); };
+    var settle = function () {
+      image.__eppDecoded = true;
+      self.draw();
+    };
+    image.onload = function () {
+      image.__eppReady = true;
+      // decode() lets the browser finish preparing the bitmap, so the first
+      // draw does not block on it mid-frame.
+      if (typeof image.decode === 'function') {
+        image.decode().then(settle, settle);
+      } else {
+        settle();
+      }
+    };
+    image.onerror = function () {
+      image.__eppFailed = true;
+      settle();
+    };
     image.src = src;
     this.images[src] = image;
     return image;
+  };
+
+  /**
+   * Resolves once the picture is ready to draw (or has failed). A program that
+   * creates an actor waits on this, so the first frame shows the real picture.
+   */
+  GameHost.prototype.preload = function (source) {
+    var src = String(source || '').trim();
+    if (!src) return Promise.resolve(null);
+    var image = this.imageFor(src);
+    if (!image || image.__eppDecoded || image.__eppFailed) return Promise.resolve(image);
+    var self = this;
+    return new Promise(function (resolve) {
+      var settled = false;
+      var poll = null;
+      var finish = function () {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (poll) clearTimeout(poll);
+        self.draw();
+        resolve(image);
+      };
+      // A picture that never arrives must not freeze the program: after a few
+      // seconds the actor draws as a tile and the game carries on.
+      var timer = setTimeout(finish, 4000);
+      var watch = function () {
+        if (image.__eppDecoded || image.__eppFailed) { finish(); return; }
+        poll = setTimeout(watch, 16);
+      };
+      watch();
+    });
+  };
+
+  /** Re-points an existing actor at a different picture. */
+  GameHost.prototype.setActorImage = function (name, source) {
+    var actor = this.actor(name);
+    if (!actor) return null;
+    actor.source = String(source || '');
+    actor.image = source ? this.imageFor(source) : null;
+    this.draw();
+    return actor;
   };
 
   GameHost.prototype.createActor = function (name, source) {
@@ -263,6 +331,27 @@
         context.restore();
       }
     });
+  };
+
+  /**
+   * Paint now, and hand the browser one frame to actually show it.
+   *
+   * A program is one long task from the browser's point of view: it can draw a
+   * hundred times and still show nothing until the task ends. Yielding a frame
+   * after the statements that change the picture is what makes a game visible
+   * *while* it runs instead of only once it has stopped. Calls that land in the
+   * same frame share one yield.
+   */
+  GameHost.prototype.flush = function () {
+    this.draw();
+    if (this.flushPromise) return this.flushPromise;
+    var self = this;
+    this.flushPromise = new Promise(function (resolve) {
+      var done = function () { self.flushPromise = null; resolve(self); };
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(done);
+      else setTimeout(done, 16);
+    });
+    return this.flushPromise;
   };
 
   /** Runs one frame of the game; the Studio's evaluator calls this per frame. */

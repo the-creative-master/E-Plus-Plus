@@ -3,7 +3,7 @@
  * Builds the release bundle: E++.zip (and its twin epp_language.zip, which the
  * Studio reads for the offline runtime check).
  *
- * E++.zip is the *standalone* build of E++ 1.2.1. The Studio and the zip carry
+ * E++.zip is the *standalone* build of E++ 1.2.1 (Language Patch 1). The Studio and the zip carry
  * different halves of the game tooling, and only one of them at a time:
  *
  *   Studio (E++ Studio)          Game, ImprovedWait
@@ -172,7 +172,8 @@ function verifyArchive() {
     'js/vault.js',
     'js/keyboard.js',
     'js/ideas.js',
-    'js/a11y.js'
+    'js/a11y.js',
+    'js/pictures.js'
   ];
   const mustNotHave = ['js/game-library.js'];
 

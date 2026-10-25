@@ -12,14 +12,24 @@ offline in the browser.
 
 ---
 
-## 🆕 What is new in 1.2.1
+## 🆕 What is new in 1.2.1 — Language Patch 1
+
+| Change | What it means |
+| --- | --- |
+| **Names mean pictures** | A project now keeps a picture book. Link a picture to a name once — `hero` — and `create the actor 'hero'` uses it, every run, with no image data in the program at all. |
+| **New words** | `link the image "hero.png" to the actor 'hero'` binds a name inside the program, and `set the image of the actor 'hero' to "gem.png"` swaps a picture while it runs. `create the actor 'hero'` no longer needs `with the image`. |
+| **Actors show while the game runs** | The picture is loaded *before* the actor is drawn, and the canvas is given a frame after the statements that change it, so a game is visible while it runs instead of only after it stops. |
+| **A real picture panel** | The 🖼 Image button opens a panel with a drop zone, a preview, the name field and every picture linked in this project. Drag a file in, name it, press Link — no prompt, no pasted blob. |
+| **Pictures travel** | A project with pictures keeps them in its own file, so a downloaded game opens with its sprites. Projects without pictures are plain code, exactly as before. |
+
+### Also in 1.2.1: the Studio fixes
 
 A small release that fixes what 1.2 got wrong and tidies what it left rough.
 
 | Change | What it means |
 | --- | --- |
 | **ImprovedWaitLite moved to `E++.zip` only** | The Studio now offers **ImprovedWait** (which already includes every lite feature) and no longer lists ImprovedWaitLite at all. No page shows two ways to wait. |
-| **Actor images work** | Adding a picture now writes `create the actor 'hero' with the image "…"` *and* `put the actor 'hero' at 0 and 0`, so `'hero'` really is the actor afterwards. Images with `//` inside (every data URL) are no longer mistaken for comments. |
+| **Actor images work** | Adding a picture writes a program that runs (`create the actor 'hero'` plus `put the actor 'hero' at 0 and 0`), so `'hero'` really is the actor afterwards. Images with `//` inside (every data URL) are no longer mistaken for comments. |
 | **A 💡 Suggest button** | Ideas are posted to the project's public issue tracker, so the whole community can see, reply to and vote on them — not just the person who typed them. The panel also lists what everyone else has suggested. |
 | **Cleaner layout** | The toolbar is grouped (files · learn · tools · run) with dividers, the stats bar is split into labelled groups with the golden rules as fine print, and the small panels line up. |
 | **Quieter editor** | Space and the arrow keys scroll the page again instead of being swallowed, and the Studio asks with its own dialogs instead of the browser's `prompt`/`confirm`. |
@@ -172,7 +182,8 @@ add the "Keyboard" library
 set the game window to 640 by 480
 set the game background to "night"
 
-create the actor 'hero' with the image "hero.png"
+note [Link a picture to the name hero with the 🖼 Image button first]
+create the actor 'hero'
 put the actor 'hero' at 0 and 120
 note [An actor size is a multiplier: 1 is normal, 2 is twice as big]
 set the size of the actor 'hero' to 2
@@ -183,8 +194,13 @@ play the game
 end the game
 ```
 
-- `create the actor 'hero' with the image "<picture>"` — the actor's name then
-  behaves like a variable that loads that image.
+- `create the actor 'hero'` — the name `hero` is already linked to a picture in
+  the project, so the code stays short. The actor's name then behaves like a
+  variable that loads that image.
+- `create the actor 'hero' with the image "<picture>"` still works when the
+  picture is written in the line itself (a file name or `data:` URL).
+- `link the image "hero.png" to the actor 'hero'` links a name from inside the
+  program; `set the image of the actor 'hero' to "gem.png"` changes it later.
 - `put the actor 'hero' at X and Y` — `0 and 0` is the middle of the window.
 - `show` / `hide` / `pause` / `resume` / `stop` the actor, `stop every actor`.
 - `if 'hero' is touching 'gem' then ...` tests two actors' boxes.

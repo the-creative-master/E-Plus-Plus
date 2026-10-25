@@ -1,8 +1,8 @@
-# The E++ Language Reference (1.2)
+# The E++ Language Reference (1.2.1 — Language Patch 1)
 
 > **"Looks like English, feels like english, and is english"**
 
-This is the reference for **E++ 1.2**. It covers the language itself, the
+This is the reference for **E++ 1.2.1**, Language Patch 1. It covers the language itself, the
 project files you download and import, and the libraries that ship with this
 release.
 
@@ -210,7 +210,7 @@ Colours can be words (`night`, `sky`, `grass`, `sunset`, `space`, …), hex
 ### Actors
 
 ```text
-create the actor 'hero' with the image "hero.png"
+create the actor 'hero'
 put the actor 'hero' at 0 and 120
 note [An actor size is a multiplier: 1 is normal, 2 is twice as big]
 set the size of the actor 'hero' to 2
@@ -222,8 +222,29 @@ hide the actor 'hero'
 - An actor's **name behaves like a variable that loads its image**.
 - `put ... at X and Y` measures from the middle of the window: `0 and 0` is the
   centre, so a game looks the same at any window size.
-- The Studio's **🖼 Image** button writes the `create the actor` line for you:
-  type the actor name, pick the picture.
+- A **picture book** belongs to the project: link a picture to a name once and
+  that name is that picture from then on. The Studio's **🖼 Image** panel (drop a
+  file, name it, press Link) adds the link *and* writes `create the actor 'hero'`
+  for you — the picture itself stays out of the program.
+
+### Linking pictures in the program
+
+```text
+link the image "hero.png" to the actor 'hero'
+link the image "data:image/png;base64,..." to the name 'gem'
+
+create the actor 'hero'
+set the image of the actor 'hero' to "hero-alt.png"
+```
+
+- `link the image ... to the actor '…'` (or `to the name '…'`) binds a picture to
+  a name. `create` and any later `create` of that name use it.
+- `set the image of the actor '…' to ...` changes the picture of an actor that
+  already exists, and updates the link for that name.
+- `create the actor 'hero' with the image "<source>"` still works, and links the
+  name as a side effect.
+- An actor whose name has no picture yet still runs: it draws a labelled tile,
+  and the Studio says how to link one.
 
 ### Movement and collisions
 
