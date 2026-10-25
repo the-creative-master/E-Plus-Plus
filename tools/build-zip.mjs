@@ -170,7 +170,9 @@ function verifyArchive() {
     'src/vault.cpp',
     'js/libraries.js',
     'js/vault.js',
-    'js/keyboard.js'
+    'js/keyboard.js',
+    'js/ideas.js',
+    'js/a11y.js'
   ];
   const mustNotHave = ['js/game-library.js'];
 

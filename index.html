@@ -768,6 +768,7 @@ for I in range 3:
      test-suite, so the Studio and `npm test` run the same engine. -->
 <script src="js/libraries.js"></script>
   <script src="js/ideas.js"></script>
+  <script src="js/a11y.js"></script>
 <script src="js/tutorials.js"></script>
 <script src="js/keyboard.js"></script>
 <script src="js/vault.js"></script>
@@ -1569,14 +1570,14 @@ function askDialog(options = {}) {
   okButton.innerText = options.confirmLabel || 'OK';
   okButton.className = 'btn btn-small ' + (options.danger ? 'btn-danger' : 'btn-accent');
   cancelButton.innerText = options.cancelLabel || 'Cancel';
-  overlay.style.display = 'flex';
+  openModal(overlay, wantsInput ? input : okButton);
 
   return new Promise(resolve => {
     let done = false;
     const finish = (value) => {
       if (done) return;
       done = true;
-      overlay.style.display = 'none';
+      closeModal(overlay);
       document.removeEventListener('keydown', onKey, true);
       okButton.removeEventListener('click', accept);
       cancelButton.removeEventListener('click', cancel);
@@ -1598,9 +1599,7 @@ function askDialog(options = {}) {
     overlay.addEventListener('click', onBackdrop);
     input.addEventListener('keydown', onFieldKey);
     document.addEventListener('keydown', onKey, true);
-    setTimeout(() => {
-      if (wantsInput) { input.focus(); input.select(); } else okButton.focus();
-    }, 0);
+    if (wantsInput) setTimeout(() => { if (overlay.style.display !== 'none') input.select(); }, 25);
   });
 }
 
@@ -1622,6 +1621,92 @@ function showToast(msg, isErr = false) {
   t.style.display = 'block';
   t.style.borderColor = isErr ? 'var(--danger)' : 'var(--accent)';
   setTimeout(() => { t.style.display = 'none'; }, 2600);
+}
+
+// ------------------------------------------------------------------
+// Panels that sit on top of the page: tutorials, ideas, the ask dialog.
+// They share one set of rules, so Tab never wanders into the editor behind
+// an open panel and closing a panel puts the caret back where it was.
+// ------------------------------------------------------------------
+
+const MODAL_IDS = ['tutorialOverlay', 'suggestOverlay', 'askOverlay'];
+
+function a11yApi() {
+  return (window.EPP && window.EPP.A11y) || null;
+}
+
+function modalIsOpen(node) {
+  return !!node && node.style.display !== 'none' && node.style.display !== '';
+}
+
+/** The panel on top: the last one open, which is the one that has focus. */
+function topModal() {
+  const open = MODAL_IDS
+    .map(id => document.getElementById(id))
+    .filter(node => modalIsOpen(node));
+  return open.length ? open[open.length - 1] : null;
+}
+
+function modalFocusables(overlay) {
+  const api = a11yApi();
+  if (!overlay || !api) return [];
+  return api.focusables(Array.prototype.slice.call(
+    overlay.querySelectorAll('a[href], button, input, select, textarea, [tabindex]')
+  )).filter(node => !node.disabled);
+}
+
+function openModal(overlay, focusTarget) {
+  if (!overlay) return;
+  if (!modalIsOpen(overlay)) overlay.__eppOpener = document.activeElement;
+  overlay.style.display = 'flex';
+  document.body.classList.add('modal-open');
+  const target = focusTarget || modalFocusables(overlay)[0] || null;
+  setTimeout(() => {
+    if (target && typeof target.focus === 'function' && document.contains(target)) target.focus();
+  }, 20);
+}
+
+function closeModal(overlay) {
+  if (!overlay) return;
+  overlay.style.display = 'none';
+  if (!topModal()) document.body.classList.remove('modal-open');
+  const opener = overlay.__eppOpener;
+  overlay.__eppOpener = null;
+  if (opener && typeof opener.focus === 'function' && document.contains(opener)) {
+    try { opener.focus(); } catch (error) { /* the opener may be gone */ }
+  }
+}
+
+/**
+ * Keeps Tab inside the panel on top. Runs in the capture phase so a panel's
+ * own handlers (the tutorial code box inserts a tab character) keep working.
+ */
+function trapModalTab(event) {
+  if (event.key !== 'Tab') return false;
+  const overlay = topModal();
+  if (!overlay) return false;
+  const api = a11yApi();
+  const list = modalFocusables(overlay);
+  if (!api || !list.length) return false;
+
+  const last = list.length - 1;
+  const at = list.indexOf(document.activeElement);
+
+  // Focus escaped the panel (or never entered it): pull it back in.
+  if (at === -1) {
+    event.preventDefault();
+    list[event.shiftKey ? last : 0].focus();
+    return true;
+  }
+
+  // Only the two ends need help. Everywhere else the browser's own Tab is
+  // better than anything this page could do.
+  const wrap = event.shiftKey ? at === 0 : at === last;
+  if (!wrap) return false;
+
+  event.preventDefault();
+  list[api.nextIndex(list.length, at, event.shiftKey)].focus();
+  return true;
 }
 
 function escapeHtml(str) {
@@ -4305,14 +4390,12 @@ function openIdeas() {
     // ignore
   }
   syncIdeasDraft();
-  overlay.style.display = 'flex';
+  openModal(overlay, text);
   loadIdeas();
-  setTimeout(() => text.focus(), 30);
 }
 
 function closeIdeas() {
-  const overlay = document.getElementById('suggestOverlay');
-  if (overlay) overlay.style.display = 'none';
+  closeModal(document.getElementById('suggestOverlay'));
 }
 
 function wireIdeas() {
@@ -4323,7 +4406,15 @@ function wireIdeas() {
   if (close) close.addEventListener('click', closeIdeas);
 
   const text = document.getElementById('sugText');
-  if (text) text.addEventListener('input', syncIdeasDraft);
+  if (text) {
+    text.addEventListener('input', syncIdeasDraft);
+    text.addEventListener('keydown', (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault();
+        if (send) send.click();
+      }
+    });
+  }
 
   const refresh = document.getElementById('sugRefresh');
   if (refresh) refresh.addEventListener('click', loadIdeas);
@@ -4815,14 +4906,12 @@ function openTutorials(courseId, stepId) {
     }
   }
   const overlay = document.getElementById('tutorialOverlay');
-  overlay.style.display = 'flex';
+  openModal(overlay, document.getElementById('tutCode'));
   renderTutorialCard();
-  document.getElementById('tutCode').focus();
 }
 
 function closeTutorials() {
-  const overlay = document.getElementById('tutorialOverlay');
-  if (overlay) overlay.style.display = 'none';
+  closeModal(document.getElementById('tutorialOverlay'));
 }
 
 /** Copies the card's code into the real editor and runs it there. */
@@ -4954,8 +5043,14 @@ function applyBuildLibraries() {
   if (studioNotice) studioNotice.style.display = isDistribution ? 'none' : '';
 }
 
+/** Arms the shared modal behaviour once, for every panel on the page. */
+function wireModals() {
+  document.addEventListener('keydown', trapModalTab, true);
+}
+
 // Initialize
 applyBuildLibraries();
+wireModals();
 wireTutorials();
 wireIdeas();
 initStorage();
