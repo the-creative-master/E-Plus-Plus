@@ -592,6 +592,9 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   .logo { padding: 6px 8px; }
 }
 
+/* A panel is open: the page behind it must not scroll under the pointer. */
+body.modal-open { overflow: hidden; }
+
 /* ---------- 1.2.1 the Studio's own ask dialog ---------- */
 .ask-overlay {
   position: fixed; inset: 0; z-index: 80;

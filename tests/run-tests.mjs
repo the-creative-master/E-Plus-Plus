@@ -26,7 +26,7 @@ context.globalThis = context;
 for (const file of [
   'errors.js', 'lexer.js', 'ast.js', 'libraries.js', 'keyboard.js', 'parser.js',
   'python-runner.js', 'interpreter.js', 'files.js', 'highlight.js', 'standalone-generator.js',
-  'vault.js', 'ideas.js', 'tutorials.js'
+  'vault.js', 'ideas.js', 'a11y.js', 'tutorials.js'
 ]) {
   vm.runInContext(readFileSync(join(root, 'js', file), 'utf8'), context, { filename: file });
 }
@@ -1530,6 +1530,70 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
 
   assert.ok(readFileSync(join(root, 'js', 'tutorials.js'), 'utf8').includes("PROGRESS_KEY = 'epp_tutorial_progress_1_2'"),
     'tutorial progress keeps its 1.2 key, so upgrading does not wipe it');
+}
+
+// ============================================================
+// 1.2.1 follow-up — focus stays inside an open panel
+// ============================================================
+console.log('\nPanels: focus and Tab');
+
+{
+  const A = EPP.A11y;
+  assert.ok(A, 'js/a11y.js publishes EPP.A11y');
+
+  const el = (tagName, extra) => Object.assign({ tagName: tagName }, extra || {});
+  assert.strictEqual(A.isFocusable(el('BUTTON')), true, 'a button is a Tab stop');
+  assert.strictEqual(A.isFocusable(el('A', { href: '#x' })), true, 'a link with an href is one');
+  assert.strictEqual(A.isFocusable(el('A')), false, 'a link without an href is not');
+  assert.strictEqual(A.isFocusable(el('BUTTON', { disabled: true })), false, 'a disabled button is skipped');
+  assert.strictEqual(A.isFocusable(el('INPUT', { type: 'hidden' })), false, 'a hidden input is skipped');
+  assert.strictEqual(A.isFocusable(el('INPUT', { type: 'file' })), false, 'a file picker is skipped');
+  assert.strictEqual(A.isFocusable(el('DIV')), false, 'a plain div is not a stop');
+  assert.strictEqual(A.isFocusable(el('DIV', { tabIndex: 0 })), true, 'unless it is given a tabindex');
+  assert.strictEqual(A.isFocusable(el('TEXTAREA', { hidden: true })), false, 'a hidden field is skipped');
+  assert.strictEqual(A.isFocusable(null), false);
+  ok('only things a keyboard can actually reach are Tab stops');
+
+  const list = [
+    el('H2'),
+    el('TEXTAREA'),
+    el('BUTTON', { disabled: true }),
+    el('A', { href: '#post' }),
+    el('INPUT', { type: 'text' })
+  ];
+  const kept = A.focusables(list);
+  assert.strictEqual(kept.length, 3, 'the panel leaves the title and the disabled button out');
+  assert.strictEqual(kept[0], list[1], 'order is preserved');
+  assert.strictEqual(A.firstFocusable(list), list[1], 'opening the panel lands on the first stop');
+  assert.strictEqual(A.firstFocusable([el('H2')]), null, 'a panel with nothing to focus says so');
+  ok('a fresh panel focuses its first real field');
+
+  // The ring: forward from the last stop wraps to the first, and back again.
+  assert.strictEqual(A.nextIndex(3, 0, false), 1);
+  assert.strictEqual(A.nextIndex(3, 2, false), 0, 'Tab on the last stop comes back to the first');
+  assert.strictEqual(A.nextIndex(3, 0, true), 2, 'Shift+Tab on the first stop goes to the last');
+  assert.strictEqual(A.nextIndex(3, -1, false), 0, 'focus outside the ring enters at the front');
+  assert.strictEqual(A.nextIndex(3, -1, true), 2, 'or at the back, going backwards');
+  assert.strictEqual(A.nextIndex(0, 0, false), -1, 'an empty panel has nowhere to go');
+  ok('Tab wraps at both ends and never escapes the panel');
+}
+
+{
+  // The page must use that helper for all three panels, and keep the page
+  // behind a panel from scrolling under the pointer.
+  const page = readFileSync(join(root, 'index.html'), 'utf8');
+  const css = readFileSync(join(root, 'css', 'ide.css'), 'utf8');
+  assert.ok(page.includes('js/a11y.js'), 'the Studio loads the focus helper');
+  assert.ok(page.includes('function openModal(') && page.includes('function closeModal('),
+    'panels open and close through one pair of helpers');
+  for (const id of ['tutorialOverlay', 'suggestOverlay', 'askOverlay']) {
+    assert.ok(page.includes("'" + id + "'"), 'the ' + id + ' is covered by the shared rules');
+  }
+  assert.ok(page.includes('document.addEventListener(\'keydown\', trapModalTab, true)'),
+    'the Tab trap is armed once, in the capture phase');
+  assert.ok(/body\.modal-open\s*\{\s*overflow:\s*hidden/.test(css), 'the page behind a panel does not scroll');
+  assert.ok(page.includes('showToast'), 'toasts still exist');
+  ok('every panel opens, traps Tab and closes through the same helpers');
 }
 
 // Restore the full library set for any later test.
