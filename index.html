@@ -410,7 +410,7 @@
   </div>
   <div class="dash-group dash-group-end">
     <span id="zipRuntimeBadge" class="badge-zip-active">⚡ Native Zip Lexer: Active</span>
-    <span class="dash-badge-pill badge-version" id="buildVersion">v1.2.1</span>
+    <span class="dash-badge-pill badge-version" id="buildVersion">v1.2.1 · Language Patch 1</span>
   </div>
   <div class="dash-rules">
     <span class="dash-rules-label">Rules</span>
@@ -520,7 +520,7 @@
           <h3>Game <span>add library "Game"</span></h3>
           <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Game')">+ Insert</button>
         </div>
-        <p>The pygame zero of E++: a game window, actors with images, movement, collisions and a game loop. Not inside E++.zip.</p>
+        <p>The pygame zero of E++: a game window, actors with pictures, movement, collisions and a game loop. Link a picture to a name with the 🖼 Image button, then <code>create the actor 'hero'</code>. Not inside E++.zip.</p>
       </div>
 
       <div class="library-card" data-library="Keyboard">
@@ -560,7 +560,14 @@ note [.enppl files (with Python &amp; Math)]
 add the "Python" library
 run the python code:
 for I in range 3:
-   print("Hello", I)</pre>
+   print("Hello", I)
+
+note [Games: link a picture to a name, then use the name]
+add the "Game" library
+create the actor 'hero'
+put the actor 'hero' at 0 and 0
+link the image "gem.png" to the actor 'gem'
+set the image of the actor 'hero' to "hero2.png"</pre>
     </section>
   </aside>
 
@@ -711,6 +718,56 @@ for I in range 3:
 </div>
 
 <!-- Community ideas: posted as public issues, so everyone can read them. -->
+<!-- Pictures: a real panel, not a prompt. Drop a picture, name the thing it
+     belongs to, and the name means that picture from then on. -->
+<div id="imageOverlay" class="pic-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="picTitle">
+  <div class="pic-shell">
+    <header class="pic-head">
+      <div>
+        <span class="pic-kicker">Pictures</span>
+        <h2 id="picTitle">Link a picture to a name</h2>
+      </div>
+      <button id="picClose" class="btn-close" type="button" aria-label="Close pictures">×</button>
+    </header>
+
+    <div class="pic-body">
+      <section class="pic-left">
+        <div id="picDrop" class="pic-drop" tabindex="0" role="button" aria-label="Choose a picture">
+          <span class="pic-drop-icon" aria-hidden="true">🖼</span>
+          <span class="pic-drop-main" id="picDropText">Drop a picture here, or click to choose one</span>
+          <span class="pic-drop-hint">PNG, JPG, GIF, WEBP or SVG · kept in this project, shrunk to fit</span>
+        </div>
+
+        <label class="pic-field" for="picName">
+          <span>The name in your program</span>
+          <input id="picName" type="text" autocomplete="off" spellcheck="false" value="hero" placeholder="hero">
+        </label>
+
+        <div id="picPreview" class="pic-preview"><span class="pic-preview-empty">No picture chosen yet</span></div>
+
+        <div class="pic-actions">
+          <button id="picLink" class="btn btn-small btn-accent" type="button">Link picture to name</button>
+          <button id="picInsert" class="btn btn-small" type="button">Insert code</button>
+          <button id="picClear" class="btn btn-small btn-danger-outline" type="button">Remove link</button>
+        </div>
+        <p id="picNote" class="pic-note" role="status"></p>
+      </section>
+
+      <section class="pic-right">
+        <div class="pic-book-head">
+          <h3>Linked in this project</h3>
+          <span id="picCount" class="pic-count">0 pictures</span>
+        </div>
+        <div id="picList" class="pic-list"></div>
+        <p class="pic-tip">
+          Once a name is linked, <code>create the actor 'hero'</code> uses that picture — no long line of
+          image data in the program, and the name still means the same picture next time you open the project.
+        </p>
+      </section>
+    </div>
+  </div>
+</div>
+
 <div id="suggestOverlay" class="sug-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="sugTitle">
   <div class="sug-shell">
     <header class="sug-head">
@@ -767,6 +824,7 @@ for I in range 3:
 <!-- Release 1.2 runtime modules. These are shared with the headless
      test-suite, so the Studio and `npm test` run the same engine. -->
 <script src="js/libraries.js"></script>
+  <script src="js/pictures.js"></script>
   <script src="js/ideas.js"></script>
   <script src="js/a11y.js"></script>
 <script src="js/tutorials.js"></script>
@@ -964,8 +1022,8 @@ say "Hello ", 'name', ", Welcome to E++!"`
     name: 'game_showcase.enppl',
     hideInDistribution: true,
     content: `note [E++ 1.2 — the Game library: the pygame zero of E++.]
-note [Press the Image button, type an actor name, pick a picture — the name]
-note [then behaves like a variable that loads that image.]
+note [This file comes with two pictures already linked: hero and gem.]
+note [Press the Image button to add your own, or to change these.]
 add the "Game" library
 add the "Keyboard" library
 add the "ImprovedWaitLite" library
@@ -973,8 +1031,9 @@ add the "ImprovedWaitLite" library
 set the game window to 640 by 480
 set the game background to "night"
 
-create the actor 'hero' with the image "hero.png"
-create the actor 'gem' with the image "gem.png"
+note [The picture is linked to the name, so this line stays short.]
+create the actor 'hero'
+create the actor 'gem'
 put the actor 'hero' at 0 and 120
 put the actor 'gem' at 0 and -120
 set the size of the actor 'hero' to 2
@@ -1036,7 +1095,7 @@ say "Done — the Left arrow finished the program."`
 ];
 
 // File Storage (.enpp & .enppl)
-const DEFAULTS_VERSION = '1.2.1';
+const DEFAULTS_VERSION = '1.2.1-lp1';
 let files = {};
 let currentFileName = 'hello.enpp';
 let fileDialogMode = 'new';
@@ -1151,6 +1210,8 @@ async function loadFile(name) {
   }
   currentFileName = name;
   let fileContent = files[name] || '';
+  // A project's pictures belong to the project, not to the tab that linked them.
+  installPictureProvider();
 
   // A project opened from disk arrives as a vault. Import already unlocks it,
   // but a file restored from an old localStorage entry may still be sealed.
@@ -1309,6 +1370,14 @@ function renameCurrentFile(newName) {
   if (newName === currentFileName) return;
   files[newName] = document.getElementById('editor').value;
   delete files[currentFileName];
+  // The project's pictures belong to the project, so renaming a file (a pure
+  // program becoming .enppl, say) must not lose the links it has.
+  const store = loadPictureStore();
+  if (store[currentFileName] && picturesApi() && !picturesApi().isEmpty(store[currentFileName])) {
+    store[newName] = store[currentFileName];
+    delete store[currentFileName];
+    savePictureStore();
+  }
   currentFileName = newName;
   saveStorage();
   renderFileList();
@@ -1326,6 +1395,11 @@ async function deleteCurrentFile() {
   });
   if (!sure) return;
   delete files[currentFileName];
+  const store = loadPictureStore();
+  if (store[currentFileName]) {
+    delete store[currentFileName];
+    savePictureStore();
+  }
   currentFileName = Object.keys(files)[0];
   saveStorage();
   renderFileList();
@@ -1383,7 +1457,9 @@ function imageFileToDataUrl(file, maxSide = 256) {
       const finish = (value) => {
         if (settled) return;
         settled = true;
-        resolve(value);
+        // A browser that cannot encode the picture still has the original
+        // file, and the original is always a usable source — never nothing.
+        resolve(typeof value === 'string' && value ? value : original);
       };
       // If the browser never fires load or error (an odd format, a very slow
       // decoder), the original file is still a perfectly good image source.
@@ -1412,40 +1488,143 @@ function imageFileToDataUrl(file, maxSide = 256) {
   });
 }
 
-/** The 🖼 Image button: name the actor, pick the picture, insert the line. */
-let pendingActorName = '';
+// ------------------------------------------------------------------
+// 1.2.1 Language Patch 1 — the picture book: once a name is linked, that
+// name IS the picture.
+//
+// The old Image button asked for a name and then wrote the whole picture into
+// the program as one enormous line. That line worked once: every new `create`
+// needed the blob again, and there was nothing to look at, change or remove.
+//
+// Now a project keeps a small book of name -> picture. Linking happens in the
+// 🖼 panel (drop a file, name it, done), the binding is remembered per project
+// and it travels inside the downloaded file, so:
+//
+//   link the image (in the panel)  ->  create the actor 'hero'
+//
+// reads as plainly as it sounds, and 'hero' is that picture every time.
+// ------------------------------------------------------------------
 
-async function addActorImage() {
-  const fileInput = document.getElementById('imageFileInput');
-  const file = fileInput && fileInput.files ? fileInput.files[0] : null;
-  const typed = pendingActorName || await askDialog({
-    title: 'Name this actor',
-    message: 'The name becomes part of the program, so it can be anything readable.',
-    label: 'Actor name',
-    value: 'hero',
-    confirmLabel: 'Use this name'
+const PICTURE_STORE_KEY = 'epp_pictures_v1';
+const PICTURE_PANEL_LIMIT = 24;
+
+let pictureStore = null;      // { [project file]: book }
+let pictureDraft = null;      // the picture waiting to be linked
+let pendingActorName = '';    // set by the old one-shot flow
+
+function picturesApi() {
+  return (window.EPP && window.EPP.Pictures) || null;
+}
+
+// Two pictures that ship with the example game, so it shows sprites instead of
+// labelled tiles the first time it is opened.
+const STARTER_PICTURES = {
+  hero: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDY0IDY0Ij4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIyOCIgZmlsbD0iIzM4YmRmOCIgc3Ryb2tlPSIjMGVhNWU5IiBzdHJva2Utd2lkdGg9IjQiLz4KICA8Y2lyY2xlIGN4PSIyMyIgY3k9IjI2IiByPSI0IiBmaWxsPSIjMDgyZjQ5Ii8+CiAgPGNpcmNsZSBjeD0iNDEiIGN5PSIyNiIgcj0iNCIgZmlsbD0iIzA4MmY0OSIvPgogIDxwYXRoIGQ9Ik0yMiA0MCBxMTAgOSAyMCAwIiBzdHJva2U9IiMwODJmNDkiIHN0cm9rZS13aWR0aD0iNCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+Cjwvc3ZnPg==',
+  gem: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDY0IDY0Ij4KICA8cGF0aCBkPSJNMzIgNCA1OCAyNiAzMiA2MCA2IDI2WiIgZmlsbD0iI2ZiYmYyNCIgc3Ryb2tlPSIjZjU5ZTBiIiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8cGF0aCBkPSJNNiAyNmg1Mk0zMiA0IDIyIDI2bDEwIDM0IDEwLTM0WiIgc3Ryb2tlPSIjZmRlNjhhIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiLz4KPC9zdmc+'
+};
+
+/** Gives the built-in example its two sprites, once, and never over a link. */
+function seedStarterPictures() {
+  const api = picturesApi();
+  if (!api) return;
+  const project = 'game_showcase.enppl';
+  const book = pictureBook(project);
+  if (!api.isEmpty(book)) return;
+  let changed = false;
+  Object.keys(STARTER_PICTURES).forEach(name => {
+    const entry = api.put(book, name, STARTER_PICTURES[name], { added: '2026-01-01', width: 64, height: 64 });
+    if (entry) changed = true;
   });
-  pendingActorName = '';
-  if (!typed) return;
-  if (!file) {
-    showToast('Pick an image file as well — the actor loads that picture.', true);
-    return;
-  }
-  const actorName = typed.trim().replace(/^'+|'+$/g, '');
-  if (!/^[A-Za-z][A-Za-z0-9 _-]*$/.test(actorName)) {
-    showToast('An actor name has to start with a letter (letters, numbers, spaces, - and _ are fine).', true);
-    return;
-  }
-  const dataUrl = await imageFileToDataUrl(file);
-  const ed = document.getElementById('editor');
-  const code = ed.value;
+  if (changed) savePictureStore();
+}
 
-  // The picture only means something inside a game, so the button writes the
-  // three lines an actor needs — and the two setup lines if they are missing.
-  const actorLines = [
-    `create the actor '${actorName}' with the image "${dataUrl}"`,
+function loadPictureStore() {
+  if (pictureStore) return pictureStore;
+  const api = picturesApi();
+  pictureStore = Object.create(null);
+  if (!api) return pictureStore;
+  try {
+    const raw = JSON.parse(localStorage.getItem(PICTURE_STORE_KEY) || '{}');
+    Object.keys(raw || {}).forEach(project => {
+      pictureStore[project] = api.fromJSON(raw[project]);
+    });
+  } catch (error) {
+    pictureStore = Object.create(null);
+  }
+  return pictureStore;
+}
+
+function savePictureStore() {
+  const api = picturesApi();
+  if (!api) return;
+  const plain = {};
+  Object.keys(pictureStore || {}).forEach(project => {
+    plain[project] = api.toJSON(pictureStore[project]);
+  });
+  try {
+    localStorage.setItem(PICTURE_STORE_KEY, JSON.stringify(plain));
+  } catch (error) {
+    showToast('This browser is out of storage for pictures — remove one you no longer need.', true);
+  }
+}
+
+/** The book of the project that is open right now. */
+function pictureBook(project) {
+  const api = picturesApi();
+  if (!api) return api ? api.emptyBook() : Object.create(null);
+  const key = project || currentFileName || 'untitled.enppl';
+  const store = loadPictureStore();
+  if (!store[key]) store[key] = api.emptyBook();
+  return store[key];
+}
+
+function pictureForName(name) {
+  const api = picturesApi();
+  return api ? api.get(pictureBook(), name) : null;
+}
+
+/** Links a picture to a name in this project, and keeps it. */
+function linkPicture(name, data, extra) {
+  const api = picturesApi();
+  if (!api) return null;
+  const entry = api.put(pictureBook(), name, data, extra);
+  if (!entry) return null;
+  savePictureStore();
+  return entry;
+}
+
+function unlinkPicture(name) {
+  const api = picturesApi();
+  if (!api) return false;
+  const removed = api.remove(pictureBook(), name);
+  if (removed) savePictureStore();
+  return removed;
+}
+
+/** The interpreter asks here for "the picture called hero". */
+function installPictureProvider() {
+  const api = picturesApi();
+  if (!api) return;
+  api.setProvider(name => {
+    const entry = pictureForName(name);
+    return entry ? entry : null;
+  });
+}
+
+/** The lines an actor needs, with the picture coming from the book. */
+function actorLinesFor(actorName) {
+  return [
+    `create the actor '${actorName}'`,
     `put the actor '${actorName}' at 0 and 0`
   ];
+}
+
+/** Writes the actor into the program (setup lines too, when they are missing). */
+function insertActorCode(actorName) {
+  const ed = document.getElementById('editor');
+  if (!ed || !actorName) return '';
+  const code = ed.value;
+  const actorLines = actorLinesFor(actorName);
   const setupLines = [];
   if (!/^\s*add\s+(?:the\s+)?["']?game["']?\s+library\s*$/im.test(code)) {
     setupLines.push('add the "Game" library');
@@ -1454,6 +1633,7 @@ async function addActorImage() {
     setupLines.push('set the game window to 800 by 600');
   }
 
+  let written;
   if (setupLines.length) {
     // A file without the Game setup gets a complete, runnable program at the
     // top: library, window, actor.
@@ -1461,6 +1641,7 @@ async function addActorImage() {
     const rest = code.trim() ? (code.startsWith('\n') ? code : '\n' + code) : '';
     ed.value = block + rest;
     ed.selectionStart = ed.selectionEnd = block.length;
+    written = block;
   } else {
     // A game that already runs gets the actor where the caret is, on its own
     // lines, so nothing around it is broken.
@@ -1469,6 +1650,7 @@ async function addActorImage() {
     const block = actorLines.join('\n') + '\n';
     ed.value = code.slice(0, lineStart) + block + code.slice(lineStart);
     ed.selectionStart = ed.selectionEnd = lineStart + block.length;
+    written = block;
   }
 
   // A game project is a library project, so it has to be .enppl.
@@ -1478,7 +1660,332 @@ async function addActorImage() {
   updateDashboard();
   updateLineNumbers();
   saveStorage();
-  showToast(`Actor '${actorName}' added — run the program to see it on the stage.`);
+  return written;
+}
+
+function renderPictureList() {
+  const api = picturesApi();
+  const list = document.getElementById('picList');
+  const count = document.getElementById('picCount');
+  if (!list || !api) return;
+  const entries = api.list(pictureBook());
+  list.innerHTML = '';
+  if (count) count.textContent = entries.length + (entries.length === 1 ? ' picture' : ' pictures');
+
+  if (!entries.length) {
+    const empty = document.createElement('p');
+    empty.className = 'pic-empty';
+    empty.textContent = 'Nothing linked yet. Drop a picture on the left, give it a name, and press Link.';
+    list.appendChild(empty);
+    return;
+  }
+
+  entries.forEach(entry => {
+    const row = document.createElement('div');
+    row.className = 'pic-item';
+
+    const thumb = document.createElement('img');
+    thumb.className = 'pic-thumb';
+    thumb.src = entry.data;
+    thumb.alt = '';
+    row.appendChild(thumb);
+
+    const main = document.createElement('div');
+    main.className = 'pic-item-main';
+    const name = document.createElement('span');
+    name.className = 'pic-item-name';
+    name.textContent = entry.name;
+    main.appendChild(name);
+    const meta = document.createElement('span');
+    meta.className = 'pic-item-meta';
+    const size = entry.width && entry.height ? entry.width + '×' + entry.height + ' · ' : '';
+    meta.textContent = size + Math.max(1, Math.round(entry.data.length / 1024)) + ' KB';
+    main.appendChild(meta);
+    row.appendChild(main);
+
+    const insert = document.createElement('button');
+    insert.type = 'button';
+    insert.className = 'btn btn-small';
+    insert.textContent = 'Use in code';
+    insert.addEventListener('click', () => {
+      insertActorCode(entry.name);
+      showToast(`Added '${entry.name}' to the program.`);
+      closePictures();
+    });
+    row.appendChild(insert);
+
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'btn btn-small btn-danger-outline';
+    del.textContent = 'Unlink';
+    del.title = `Remove the picture linked to '${entry.name}'`;
+    del.addEventListener('click', async () => {
+      const yes = await confirmDialog(
+        `Unlink '${entry.name}'? The name stays in the program, but it will draw a placeholder tile until you link a picture again.`,
+        { title: 'Unlink this picture?', danger: true, confirmLabel: 'Unlink' }
+      );
+      if (!yes) return;
+      unlinkPicture(entry.name);
+      renderPictureList();
+      showToast(`'${entry.name}' is no longer linked to a picture.`);
+    });
+    row.appendChild(del);
+
+    list.appendChild(row);
+  });
+}
+
+function renderPicturePreview() {
+  const preview = document.getElementById('picPreview');
+  const note = document.getElementById('picNote');
+  const link = document.getElementById('picLink');
+  const insert = document.getElementById('picInsert');
+  const clear = document.getElementById('picClear');
+  const api = picturesApi();
+  if (!preview) return;
+
+  preview.innerHTML = '';
+  if (pictureDraft && pictureDraft.data) {
+    const img = document.createElement('img');
+    img.src = pictureDraft.data;
+    img.alt = 'The picture you picked';
+    preview.appendChild(img);
+    const info = document.createElement('span');
+    info.className = 'pic-preview-info';
+    info.textContent = pictureDraft.width && pictureDraft.height
+      ? pictureDraft.width + '×' + pictureDraft.height + ' · ' + Math.max(1, Math.round(pictureDraft.data.length / 1024)) + ' KB'
+      : Math.max(1, Math.round(pictureDraft.data.length / 1024)) + ' KB';
+    preview.appendChild(info);
+  } else {
+    const empty = document.createElement('span');
+    empty.className = 'pic-preview-empty';
+    empty.textContent = 'No picture chosen yet';
+    preview.appendChild(empty);
+  }
+
+  const hasDraft = !!(pictureDraft && pictureDraft.data);
+  const name = api ? api.cleanName(document.getElementById('picName').value) : '';
+  const existing = name ? pictureForName(name) : null;
+  const valid = api && api.isValidName(name);
+  if (link) link.disabled = !hasDraft || !valid;
+  if (insert) insert.disabled = !valid || !existing;
+  if (clear) clear.disabled = !valid || !existing;
+
+  if (note) {
+    if (!name) note.textContent = 'Give the picture a name — for example hero.';
+    else if (!valid) note.textContent = 'A name starts with a letter; letters, numbers, spaces, - and _ are fine.';
+    else if (existing) note.textContent = `'${name}' is already linked to a picture. Linking again replaces it.`;
+    else note.textContent = `'${name}' will mean this picture everywhere in this project.`;
+  }
+}
+
+function refreshPicturePanel() {
+  renderPicturePreview();
+  renderPictureList();
+}
+
+function openPictures(options = {}) {
+  const overlay = document.getElementById('imageOverlay');
+  if (!overlay) return;
+  const nameField = document.getElementById('picName');
+  if (options.name && nameField) nameField.value = options.name;
+  else if (nameField && !nameField.value) nameField.value = 'hero';
+  pictureDraft = options.draft || null;
+  refreshPicturePanel();
+  openModal(overlay, document.getElementById('picDrop'));
+}
+
+function closePictures() {
+  closeModal(document.getElementById('imageOverlay'));
+}
+
+/** Turns a chosen file into the draft picture the panel shows. */
+async function pickPictureFile(file) {
+  if (!file) return;
+  if (!/^image\//i.test(file.type || '') && !/\.(png|jpe?g|gif|webp|avif|svg|bmp|ico)$/i.test(file.name || '')) {
+    showToast('That is not a picture. Choose a PNG, JPG, GIF, WEBP or SVG.', true);
+    return;
+  }
+  let data = '';
+  try {
+    data = await imageFileToDataUrl(file);
+  } catch (error) {
+    data = '';
+  }
+  if (!data || typeof data !== 'string') {
+    showToast('That picture could not be read. Try another file.', true);
+    return;
+  }
+  pictureDraft = {
+    data,
+    width: 0,
+    height: 0,
+    file: file.name || ''
+  };
+  // Measure it, so the panel can say how big it really is.
+  try {
+    const probe = await new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = data;
+    });
+    if (probe) {
+      pictureDraft.width = probe.naturalWidth || probe.width || 0;
+      pictureDraft.height = probe.naturalHeight || probe.height || 0;
+    }
+  } catch (error) {
+    // A picture we cannot measure is still a picture.
+  }
+  const nameField = document.getElementById('picName');
+  if (nameField && (!nameField.value || nameField.value === 'hero')) {
+    const api = picturesApi();
+    const guess = api ? api.cleanName(String(file.name || '').replace(/\.[^.]+$/, '')) : '';
+    if (guess) nameField.value = guess;
+  }
+  refreshPicturePanel();
+}
+
+/** Links the chosen picture, then optionally writes the actor into the code. */
+async function linkDraftPicture(options = {}) {
+  const api = picturesApi();
+  const nameField = document.getElementById('picName');
+  if (!api || !pictureDraft || !pictureDraft.data || !nameField) return null;
+  const name = api.cleanName(nameField.value);
+  if (!api.isValidName(name)) {
+    showToast('A name starts with a letter — letters, numbers, spaces, - and _ are fine.', true);
+    return null;
+  }
+  const entry = linkPicture(name, pictureDraft.data, {
+    added: new Date().toISOString(),
+    width: pictureDraft.width,
+    height: pictureDraft.height
+  });
+  if (!entry) {
+    showToast('That picture could not be linked.', true);
+    return null;
+  }
+  if (options.insert !== false) insertActorCode(entry.name);
+  pictureDraft = null;
+  refreshPicturePanel();
+  showToast(`'${entry.name}' is now that picture — everywhere in this project.`);
+  // Linking to write code finishes the job, so the panel gets out of the way.
+  if (options.insert !== false && options.keepOpen !== true) closePictures();
+  return entry;
+}
+
+/**
+ * The one-shot flow the toolbar used before the panel existed: a file is
+ * already chosen, so link it under the given name and write the code.
+ */
+async function addActorImage() {
+  const fileInput = document.getElementById('imageFileInput');
+  const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+  let name = pendingActorName;
+  pendingActorName = '';
+  if (!name) {
+    const field = document.getElementById('picName');
+    name = field ? field.value : 'hero';
+  }
+  if (!file) {
+    openPictures({ name });
+    return;
+  }
+  await pickPictureFile(file);
+  const field = document.getElementById('picName');
+  if (field && name) field.value = name;
+  renderPicturePreview();
+  await linkDraftPicture();
+}
+
+function wirePictures() {
+  const overlay = document.getElementById('imageOverlay');
+  if (!overlay) return;
+
+  const close = document.getElementById('picClose');
+  if (close) close.addEventListener('click', closePictures);
+
+  const drop = document.getElementById('picDrop');
+  const fileInput = document.getElementById('imageFileInput');
+  if (drop && fileInput) {
+    drop.addEventListener('click', () => fileInput.click());
+    drop.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        fileInput.click();
+      }
+    });
+    ['dragenter', 'dragover'].forEach(type => {
+      drop.addEventListener(type, (event) => {
+        event.preventDefault();
+        drop.classList.add('pic-drop-active');
+      });
+    });
+    ['dragleave', 'dragend'].forEach(type => {
+      drop.addEventListener(type, () => drop.classList.remove('pic-drop-active'));
+    });
+    drop.addEventListener('drop', (event) => {
+      event.preventDefault();
+      drop.classList.remove('pic-drop-active');
+      const files = event.dataTransfer && event.dataTransfer.files;
+      if (files && files[0]) pickPictureFile(files[0]);
+    });
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files && fileInput.files[0];
+      fileInput.value = '';
+      if (file) pickPictureFile(file);
+    });
+  }
+
+  // A picture dropped anywhere on the panel is a picture for this project.
+  overlay.addEventListener('dragover', (event) => event.preventDefault());
+  overlay.addEventListener('drop', (event) => {
+    event.preventDefault();
+    const files = event.dataTransfer && event.dataTransfer.files;
+    if (files && files[0]) pickPictureFile(files[0]);
+  });
+
+  const nameField = document.getElementById('picName');
+  if (nameField) {
+    nameField.addEventListener('input', () => {
+      if (picturesApi()) nameField.value = picturesApi().cleanName(nameField.value);
+      renderPicturePreview();
+    });
+  }
+
+  const link = document.getElementById('picLink');
+  if (link) link.addEventListener('click', () => linkDraftPicture());
+
+  const insert = document.getElementById('picInsert');
+  if (insert) insert.addEventListener('click', () => {
+    const api = picturesApi();
+    const name = api ? api.cleanName(document.getElementById('picName').value) : '';
+    if (!name) return;
+    insertActorCode(name);
+    showToast(`Added '${name}' to the program.`);
+    closePictures();
+  });
+
+  const clear = document.getElementById('picClear');
+  if (clear) clear.addEventListener('click', async () => {
+    const api = picturesApi();
+    const name = api ? api.cleanName(document.getElementById('picName').value) : '';
+    if (!name) return;
+    const yes = await confirmDialog(`Unlink '${name}' from its picture?`, {
+      title: 'Unlink this picture?', danger: true, confirmLabel: 'Unlink'
+    });
+    if (!yes) return;
+    unlinkPicture(name);
+    refreshPicturePanel();
+    showToast(`'${name}' is no longer linked to a picture.`);
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && overlay.style.display !== 'none') closePictures();
+  });
 }
 
 async function handleFileObject(file) {
@@ -1629,7 +2136,7 @@ function showToast(msg, isErr = false) {
 // an open panel and closing a panel puts the caret back where it was.
 // ------------------------------------------------------------------
 
-const MODAL_IDS = ['tutorialOverlay', 'suggestOverlay', 'askOverlay'];
+const MODAL_IDS = ['tutorialOverlay', 'suggestOverlay', 'imageOverlay', 'askOverlay'];
 
 function a11yApi() {
   return (window.EPP && window.EPP.A11y) || null;
@@ -1802,7 +2309,11 @@ async function saveProjectFile(name, plaintext) {
   }
   const made = await ring.createKeyFor(name);
   updateKeyBadge();
-  return { text: Vault.saveText(plaintext, made.key), fingerprint: made.record.fingerprint };
+  // Pictures travel with the project: a downloaded game opens with its sprites
+  // and not a set of empty tiles.
+  const api = picturesApi();
+  const payload = api ? api.envelope(plaintext, pictureBook(name)) : plaintext;
+  return { text: Vault.saveText(payload, made.key), fingerprint: made.record.fingerprint };
 }
 
 /** Tries every saved key (and the bundled example key) against a vault. */
@@ -1823,6 +2334,18 @@ async function openProjectFile(text, filename) {
   const result = await ring.openVault(text, filename);
   if (result.ok) {
     updateKeyBadge();
+    // The payload is either plain code or code plus the project's pictures.
+    const api = picturesApi();
+    if (api) {
+      const opened = api.unwrap(result.text);
+      if (!api.isEmpty(opened.pictures)) {
+        const store = loadPictureStore();
+        store[filename || currentFileName] = opened.pictures;
+        savePictureStore();
+        installPictureProvider();
+      }
+      return Object.assign({}, result, { text: opened.code, pictures: opened.pictures });
+    }
     return result;
   }
   const tried = result.tried || 0;
@@ -2562,13 +3085,40 @@ class EppEvaluator {
         col: 1,
         sourceLine: `'${name}'`,
         reason: `There is no actor called '${name}' yet.`,
-        help: `Create it first: create the actor '${name}' with the image "picture.png" — or press the 🖼 Image button.`
+        help: `Create it first: create the actor '${name}' — the picture comes from the name you link with the 🖼 Image button.`
       };
     }
     return this.actors[key];
   }
 
   gameHost() { return activeGameHost; }
+
+  /** One console line when an actor has no picture to draw. */
+  hintMissingPicture(name) {
+    if (!this.hintedPictures) this.hintedPictures = new Set();
+    const key = this.norm(name);
+    if (this.hintedPictures.has(key)) return;
+    this.hintedPictures.add(key);
+    appendConsoleLine(
+      `'${name}' has no picture linked yet — it draws as a tile. Press 🖼 Image to link one.`,
+      'system'
+    );
+  }
+
+  /**
+   * Hands the browser a frame.
+   *
+   * A program is one long task as far as the browser is concerned: the canvas
+   * can be drawn a hundred times and still show nothing until the task ends.
+   * Yielding a frame after the statements that change the picture is what
+   * makes a game visible *while* it runs — the reason actors used to appear
+   * only once the program had stopped.
+   */
+  async paint(host) {
+    const target = host || activeGameHost;
+    if (!target || typeof target.flush !== 'function') return;
+    await target.flush();
+  }
 
   async run(source, printFn, askFn) {
     // A sealed project is opened before it ever reaches the editor; this
@@ -2892,6 +3442,7 @@ class EppEvaluator {
         const host = this.requireGame();
         showGamePane(true);
         host.setWindow(this.game.width, this.game.height);
+        await this.paint(host);
         host.start(this.game);
         this.game.running = true;
         let frames = 0;
@@ -3092,7 +3643,9 @@ class EppEvaluator {
     if (mGame) {
       this.requireLib('Game', 'set the game background', lineNum);
       this.game.background = String(await this.evalExpr(mGame[1], lineNum));
-      this.requireGame().setBackground(this.game.background);
+      const backgroundHost = this.requireGame();
+      backgroundHost.setBackground(this.game.background);
+      await this.paint(backgroundHost);
       return;
     }
 
@@ -3119,23 +3672,80 @@ class EppEvaluator {
         };
       }
       actor.scale = Math.max(0.05, size);
-      const host = this.requireGame();
-      host.setScale(actor.name, actor.scale);
+      const sizeHost = this.requireGame();
+      sizeHost.setScale(actor.name, actor.scale);
+      await this.paint(sizeHost);
       return;
     }
 
-    // create the actor 'hero' with the image "<source>"
-    mGame = line.match(/^create\s+the\s+actor\s+'([^']+)'\s+with\s+the\s+image\s+"([\s\S]*)"$/i);
+    // create the actor 'hero'  /  create the actor 'hero' with the image "<source>"
+    //
+    // Without `with the image`, the picture comes from the project's picture
+    // book — the same picture every run, because the link is the project's,
+    // not this line's. The picture is loaded *before* the actor is drawn, so a
+    // game loop shows the real sprite on its first frame instead of a tile
+    // that only turns into a picture once the program has stopped.
+    mGame = line.match(/^create\s+the\s+actor\s+'([^']+)'(?:\s+with\s+the\s+image\s+"([\s\S]*)")?\s*$/i);
     if (mGame) {
       this.requireLib('Game', 'create the actor', lineNum);
       const actorName = mGame[1];
-      const source = mGame[2];
+      const linked = pictureForName(actorName);
+      const source = (mGame[2] !== undefined ? mGame[2] : (linked ? linked.data : ''));
+      if (!source) {
+        this.hintMissingPicture(actorName);
+      }
+      showGamePane(true);
       const host = this.requireGame();
+      if (source) await host.preload(source);
+      // An explicit picture links the name for the rest of the project.
+      if (mGame[2] !== undefined && source && !this.ephemeral) {
+        linkPicture(actorName, source, { added: new Date().toISOString() });
+      }
       const actor = host.createActor(actorName, source);
       this.actors[this.norm(actorName)] = actor || { name: actorName, source, x: 0, y: 0, scale: 1, visible: true };
       // The actor's name behaves like a variable that loads its image.
       this.vars[this.norm(actorName)] = actorName;
-      showGamePane(true);
+      await host.flush();
+      return;
+    }
+
+    // link the image "<source>" to the actor 'hero'  (or: to the name 'hero')
+    mGame = line.match(/^link\s+the\s+image\s+"([\s\S]*)"\s+to\s+the\s+(?:actor|name)\s+'([^']+)'\s*$/i);
+    if (mGame) {
+      this.requireLib('Game', 'link the image', lineNum);
+      const source = mGame[1];
+      const actorName = mGame[2];
+      if (!source.trim()) {
+        throw {
+          code: 'E101', name: 'Empty Picture', filename: currentFileName, line: lineNum, col: 1,
+          sourceLine: line,
+          reason: `The picture linked to '${actorName}' is empty.`,
+          help: `Write it like this: link the image "hero.png" to the actor '${actorName}'`
+        };
+      }
+      if (!this.ephemeral) linkPicture(actorName, source, { added: new Date().toISOString() });
+      const actor = this.actors[this.norm(actorName)];
+      if (actor) {
+        actor.source = source;
+        const host = ensureGameHost();
+        if (host) { await host.preload(source); host.setActorImage(actorName, source); await host.flush(); }
+      }
+      return;
+    }
+
+    // set the image of the actor 'hero' to "<source>"
+    mGame = line.match(/^set\s+the\s+image\s+of\s+the\s+(?:actor|name)\s+'([^']+)'\s+to\s+"([\s\S]*)"\s*$/i);
+    if (mGame) {
+      this.requireLib('Game', 'set the image of the actor', lineNum);
+      const actorName = mGame[1];
+      const source = mGame[2];
+      const actor = this.actorOf(actorName, lineNum);
+      actor.source = source;
+      if (!this.ephemeral) linkPicture(actorName, source, { added: new Date().toISOString() });
+      const host = this.requireGame();
+      await host.preload(source);
+      host.setActorImage(actorName, source);
+      await host.flush();
       return;
     }
 
@@ -3147,7 +3757,9 @@ class EppEvaluator {
       const x = Number(await this.evalExpr(mGame[2], lineNum)) || 0;
       const y = Number(await this.evalExpr(mGame[3], lineNum)) || 0;
       actor.x = x; actor.y = y;
-      this.requireGame().placeActor(actor.name, x, y);
+      const placeHost = this.requireGame();
+      placeHost.placeActor(actor.name, x, y);
+      await this.paint(placeHost);
       return;
     }
 
@@ -3157,7 +3769,9 @@ class EppEvaluator {
       this.requireLib('Game', mGame[1].toLowerCase() + ' the actor', lineNum);
       const actor = this.actorOf(mGame[2], lineNum);
       actor.visible = mGame[1].toLowerCase() === 'show';
-      this.requireGame().setVisible(actor.name, actor.visible);
+      const visibilityHost = this.requireGame();
+      visibilityHost.setVisible(actor.name, actor.visible);
+      await this.paint(visibilityHost);
       return;
     }
 
@@ -3170,7 +3784,9 @@ class EppEvaluator {
       if (action === 'pause') actor.paused = true;
       else if (action === 'resume') { actor.paused = false; actor.stopped = false; }
       else { actor.paused = true; actor.stopped = true; }
-      this.requireGame().controlActor(actor.name, action);
+      const controlHost = this.requireGame();
+      controlHost.controlActor(actor.name, action);
+      await this.paint(controlHost);
       return;
     }
     if (/^stop\s+every\s+actor$/i.test(line)) {
@@ -3200,7 +3816,11 @@ class EppEvaluator {
         };
       }
       if (actor.paused || actor.stopped) return;
-      this.requireGame().moveActor(actor.name, mGame[2].toLowerCase(), pixels);
+      const moveHost = this.requireGame();
+      moveHost.moveActor(actor.name, mGame[2].toLowerCase(), pixels);
+      // Movement is the one statement a learner repeats every frame, so it is
+      // also the one that most needs the browser to actually paint it.
+      await this.paint(moveHost);
       return;
     }
 
@@ -4174,24 +4794,9 @@ function updateCursor() {
 // ------------------------------------------------------------------
 {
   const imageButton = document.getElementById('btnImage');
-  const imageInput = document.getElementById('imageFileInput');
-  if (imageButton && imageInput) {
-    // Name first, picture second: the name becomes the variable.
-    imageButton.addEventListener('click', async () => {
-      const typed = await askDialog({
-        title: 'Add an actor image',
-        message: 'Pick the picture next. The actor appears where you put it, and its name becomes part of the program.',
-        label: 'Actor name',
-        value: 'hero',
-        confirmLabel: 'Pick a picture'
-      });
-      if (!typed) return;
-      pendingActorName = typed;
-      imageInput.click();
-    });
-    imageInput.addEventListener('change', () => {
-      addActorImage().finally(() => { imageInput.value = ''; });
-    });
+  if (imageButton) {
+    // The panel does everything: choose, name, preview, link, insert.
+    imageButton.addEventListener('click', () => openPictures());
   }
 
   const keysButton = document.getElementById('btnKeys');
@@ -4714,6 +5319,8 @@ function showTutorialOutput(lines) {
 async function runTutorialProgram(code, step) {
   const output = [];
   const engine = new EppEvaluator();
+  // A card may link a picture; that link belongs to the card, not the project.
+  engine.ephemeral = true;
   const previousEvaluator = activeEvaluator === engine ? null : activeEvaluator;
   const gameWasOpen = document.getElementById('gamePane').style.display === 'flex';
   let error = null;
@@ -5051,6 +5658,9 @@ function wireModals() {
 // Initialize
 applyBuildLibraries();
 wireModals();
+installPictureProvider();
+seedStarterPictures();
+wirePictures();
 wireTutorials();
 wireIdeas();
 initStorage();

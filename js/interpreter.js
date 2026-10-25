@@ -294,6 +294,7 @@
     this.timers = new Map();          // Release 1.2 — named waits
     this.lastKey = '';                // Release 1.2 — most recent key pressed
     this.images = new Map();          // Dev Build 5: lowercased name -> { name, source }
+    this.pictures = new Map();        // 1.2.1 LP1 — lowercased name -> linked picture
     this.lastIf = null;               // nearest previous if (for loopback)
     this.pythonGlobals = Object.create(null);
     this.pythonRunner = null;
@@ -331,12 +332,52 @@
 
   // ---------------- Release 1.2 helpers ----------------
 
+  /**
+   * The picture a name is linked to.
+   *
+   * A program can link pictures itself, and the page can hand the interpreter a
+   * book as well (the Studio's project pictures), so both are consulted: the
+   * program wins, the project answers next.
+   */
+  Interpreter.prototype.pictureFor = function (name) {
+    var key = String(name).toLowerCase();
+    var own = this.pictures.get(key);
+    if (own) return own.source;
+    var Pictures = EPP.Pictures;
+    if (Pictures && typeof Pictures.resolve === 'function') {
+      var fromProject = Pictures.resolve(name);
+      if (fromProject) return fromProject;
+    }
+    return null;
+  };
+
+  /** Links a picture to a name, and refuses a source that is not a picture. */
+  Interpreter.prototype.bindPicture = function (node, name, source) {
+    var clean = String(name || '').trim();
+    var data = String(source === undefined || source === null ? '' : source).trim();
+    if (!data) {
+      throw new RuntimeError('The picture for \'' + clean + '\' is empty.',
+        node.line, node.column,
+        'Give it a picture, for example: link the image "hero.png" to the actor \'' + clean + '\'.');
+    }
+    var Pictures = EPP.Pictures;
+    if (Pictures && typeof Pictures.isImageSource === 'function' && !Pictures.isImageSource(data)) {
+      throw new RuntimeError('"' + data + '" is not a picture.',
+        node.line, node.column,
+        'Use a picture file such as "hero.png", or pick one with the 🖼 Image button.');
+    }
+    var entry = { name: clean, source: data };
+    this.pictures.set(clean.toLowerCase(), entry);
+    this.images.set(clean.toLowerCase(), { name: clean, source: data });
+    return entry;
+  };
+
   Interpreter.prototype.requireActor = function (node, name) {
     var actorKey = String(name).toLowerCase();
     if (!this.actors.has(actorKey)) {
       throw new RuntimeError('There is no actor called \'' + name + '\'.',
         node.line, node.column,
-        'Create it first, for example: create the actor \'' + name + '\' with the image "picture.png"');
+        'Create it first: create the actor \'' + name + '\' — or link a picture to that name with: link the image "picture.png" to the actor \'' + name + '\'.');
     }
     return this.actors.get(actorKey);
   };
@@ -447,8 +488,11 @@
         return;
       }
       case AST.DEFINE_ACTOR: {
-        var actorSource = stringify(await this.evaluate(node.image));
+        // No image on the line means "the picture this name is linked to".
+        var linkedPicture = this.pictureFor(node.name);
+        var actorSource = node.image ? stringify(await this.evaluate(node.image)) : (linkedPicture || '');
         var newActor = new Actor(node.name, actorSource);
+        if (actorSource) this.pictures.set(node.name.toLowerCase(), { name: node.name, source: actorSource });
         this.actors.set(node.name.toLowerCase(), newActor);
         // The actor's name works like any other variable from here on, which
         // is what "that name is treated like a variable which loads the
@@ -456,6 +500,26 @@
         this.variables.set(node.name.toLowerCase(), node.name);
         this.images.set(node.name.toLowerCase(), { name: node.name, source: actorSource });
         this.emitGame('create', newActor);
+        return;
+      }
+      case AST.LINK_IMAGE: {
+        var linkSource = stringify(await this.evaluate(node.image));
+        var linked = this.bindPicture(node, node.name, linkSource);
+        var existing = this.actors.get(node.name.toLowerCase());
+        if (existing) {
+          existing.image = linkSource;
+          this.emitGame('image', existing);
+        } else {
+          this.emitGame('link', linked);
+        }
+        return;
+      }
+      case AST.SET_ACTOR_IMAGE: {
+        var setActor = this.requireActor(node, node.name);
+        var picture = stringify(await this.evaluate(node.image));
+        this.bindPicture(node, node.name, picture);
+        setActor.image = picture;
+        this.emitGame('image', setActor);
         return;
       }
       case AST.PLACE_ACTOR: {

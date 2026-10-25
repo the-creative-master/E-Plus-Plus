@@ -52,6 +52,8 @@
     PLACE_ACTOR: 'PlaceActor',
     ACTOR_ACTION: 'ActorAction',
     ACTOR_SIZE: 'ActorSize',
+    SET_ACTOR_IMAGE: 'SetActorImage',
+    LINK_IMAGE: 'LinkImage',
     GAME_LOOP: 'GameLoop',
     STOP_GAME: 'StopGame',
     TOUCHING: 'Touching',
@@ -154,6 +156,14 @@
     },
     ActorAction: function (name, action, token) {
       return at({ type: Type.ACTOR_ACTION, name: name, action: action }, token);
+    },
+    /** set the image of the actor 'hero' to "<source>" */
+    SetActorImage: function (name, image, token) {
+      return at({ type: Type.SET_ACTOR_IMAGE, name: name, image: image }, token);
+    },
+    /** link the image "<source>" to the actor 'hero' */
+    LinkImage: function (name, image, token) {
+      return at({ type: Type.LINK_IMAGE, name: name, image: image }, token);
     },
     ActorSize: function (name, size, token) {
       return at({ type: Type.ACTOR_SIZE, name: name, size: size }, token);

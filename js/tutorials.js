@@ -511,14 +511,14 @@
           title: 'Put an actor on the stage',
           goal: 'Create an actor called hero and print exactly: Hero is on the stage.',
           body: [
-            { p: 'An actor is a thing in the game: a picture with a name. The picture can be a file name or an image you added with the 🖼 Image button.' },
-            { code: 'add the "Game" library\ncreate the actor \'hero\' with the image "hero.png"\nput the actor \'hero\' at 0 and 0\nsay "Hero is on the stage."' },
-            { p: 'After that, the name `\'hero\'` behaves like a variable that holds the actor.' }
+            { p: 'An actor is a thing in the game: a picture with a name. Press the 🖼 Image button once, drop a picture on it and call it `hero` — from then on the name `hero` *is* that picture, in this project.' },
+            { code: 'add the "Game" library\ncreate the actor \'hero\'\nput the actor \'hero\' at 0 and 0\nsay "Hero is on the stage."' },
+            { p: 'The picture is not in this code at all: it is linked to the name. A picture written straight into the line still works — `create the actor \'hero\'` — but the short form is the one to use.' }
           ],
-          starter: 'add the "Game" library\nnote [Create the actor hero with the image "hero.png", then say Hero is on the stage.]\n',
-          solution: 'add the "Game" library\ncreate the actor \'hero\' with the image "hero.png"\nput the actor \'hero\' at 0 and 0\nsay "Hero is on the stage."\n',
+          starter: 'add the "Game" library\nnote [Create the actor hero, put it at 0 and 0, then say Hero is on the stage.]\n',
+          solution: 'add the "Game" library\ncreate the actor \'hero\'\nput the actor \'hero\' at 0 and 0\nsay "Hero is on the stage."\n',
           hints: [
-            '`create the actor \'hero\' with the image "hero.png"`',
+            '`create the actor \'hero\'` — the picture comes from the name you linked with 🖼 Image',
             '`put the actor \'hero\' at 0 and 0` puts it in the middle of the window.'
           ],
           check: { output: ['Hero is on the stage.'] },
@@ -530,11 +530,11 @@
           goal: 'Move the actor every frame, stop after a few frames, then print exactly: Game over',
           body: [
             { p: 'Everything between `play the game` and `end the game` runs once per frame — that is what makes things move.' },
-            { code: 'add the "Game" library\ncreate the actor \'hero\' with the image "hero.png"\nlet \'Frames\' be 0\nplay the game\n    \'hero\' move right "2"\n    let \'Frames\' be \'Frames\' plus 1\n    if \'Frames\' is greater than 10 then stop the game\nend the game\nsay "Game over"' },
+            { code: 'add the "Game" library\ncreate the actor \'hero\'\nlet \'Frames\' be 0\nplay the game\n    \'hero\' move right "2"\n    let \'Frames\' be \'Frames\' plus 1\n    if \'Frames\' is greater than 10 then stop the game\nend the game\nsay "Game over"' },
             { tip: 'Press the ⏹ Stop button on the game pane any time — or let the counter stop the loop, as this card does.' }
           ],
-          starter: 'add the "Game" library\ncreate the actor \'hero\' with the image "hero.png"\nnote [Move the hero every frame, count the frames, and stop after 10]\n',
-          solution: 'add the "Game" library\ncreate the actor \'hero\' with the image "hero.png"\nlet \'Frames\' be 0\nplay the game\n    \'hero\' move right "2"\n    let \'Frames\' be \'Frames\' plus 1\n    if \'Frames\' is greater than 10 then stop the game\nend the game\nsay "Game over"\n',
+          starter: 'add the "Game" library\ncreate the actor \'hero\'\nnote [Move the hero every frame, count the frames, and stop after 10]\n',
+          solution: 'add the "Game" library\ncreate the actor \'hero\'\nlet \'Frames\' be 0\nplay the game\n    \'hero\' move right "2"\n    let \'Frames\' be \'Frames\' plus 1\n    if \'Frames\' is greater than 10 then stop the game\nend the game\nsay "Game over"\n',
           hints: [
             'Inside the loop, move the actor and add 1 to `\'Frames\'`.',
             'Stop with `if \'Frames\' is greater than 10 then stop the game`.'
@@ -548,10 +548,10 @@
           goal: 'Print exactly: Caught!',
           body: [
             { p: '`is touching` compares two actors. This is the whole idea behind catching, bumping and collecting.' },
-            { code: 'add the "Game" library\ncreate the actor \'hero\' with the image "hero.png"\ncreate the actor \'gem\' with the image "gem.png"\nput the actor \'hero\' at 0 and 0\nput the actor \'gem\' at 0 and 0\nif \'hero\' is touching \'gem\' then say "Caught!"' }
+            { code: 'add the "Game" library\ncreate the actor \'hero\'\ncreate the actor \'gem\'\nput the actor \'hero\' at 0 and 0\nput the actor \'gem\' at 0 and 0\nif \'hero\' is touching \'gem\' then say "Caught!"' }
           ],
-          starter: 'add the "Game" library\ncreate the actor \'hero\' with the image "hero.png"\ncreate the actor \'gem\' with the image "gem.png"\nnote [Put both actors at 0 and 0, then print Caught! when they touch]\n',
-          solution: 'add the "Game" library\ncreate the actor \'hero\' with the image "hero.png"\ncreate the actor \'gem\' with the image "gem.png"\nput the actor \'hero\' at 0 and 0\nput the actor \'gem\' at 0 and 0\nif \'hero\' is touching \'gem\' then say "Caught!"\n',
+          starter: 'add the "Game" library\ncreate the actor \'hero\'\ncreate the actor \'gem\'\nnote [Put both actors at 0 and 0, then print Caught! when they touch]\n',
+          solution: 'add the "Game" library\ncreate the actor \'hero\'\ncreate the actor \'gem\'\nput the actor \'hero\' at 0 and 0\nput the actor \'gem\' at 0 and 0\nif \'hero\' is touching \'gem\' then say "Caught!"\n',
           hints: [
             'Put both actors in the same place with `put the actor ... at 0 and 0`.',
             'The test is `if \'hero\' is touching \'gem\' then ...`.'
