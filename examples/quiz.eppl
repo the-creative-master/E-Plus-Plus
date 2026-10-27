@@ -1,11 +1,11 @@
-note: A tiny quiz. The typed answer is text, but E++ compares
-note: numeric answers as numbers automatically.
-ask "What is 5 plus 6?" and save answer as output
-if 'output' is equal to 11 then say "Correct!" otherwise say "Wrong!"
+note [A tiny quiz. Numeric answers are compared as numbers.]
+ask "What is 5 plus 6?" and save the output as 'answer'
+if 'answer' is equal to 11 then say "Correct!"
+otherwise say "Wrong!"
 
-ask "What is 9 minus 4?" and save answer as second
-if 'second' is equal to 5 then
+ask "What is 9 minus 4?" and save the output as 'second'
+if 'second' is equal to 5 then:
   say "Correct again!"
-otherwise
+else:
   say "Not quite."
 end if

@@ -3,9 +3,10 @@ CXXFLAGS = -std=c++17 -Wall -Wextra -O2 -Iinclude
 
 SRCS = src/lexer.cpp src/parser.cpp src/interpreter.cpp src/vault.cpp src/main.cpp
 OBJS = $(SRCS:.cpp=.o)
+DEPS = $(OBJS:.o=.d)
 TARGET = epp
 
-.PHONY: all clean test zip
+.PHONY: all clean test zip wasm-lexer
 
 all: $(TARGET)
 
@@ -13,13 +14,19 @@ $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 src/%.o: src/%.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -MMD -MP -c $< -o $@
+
+-include $(DEPS)
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) $(DEPS) $(TARGET)
 
 zip: $(TARGET)
 	@node tools/build-zip.mjs
+
+# Requires Zig with the WASI target. Override with ZIG=/path/to/zig.
+wasm-lexer:
+	@node tools/build-lexer-wasm.mjs
 
 test: $(TARGET)
 	@echo "=== Running E++ Tests (C++ Engine) ==="
@@ -51,4 +58,8 @@ test: $(TARGET)
 	@python3 epp.py examples/14_system_library.enppl
 	@python3 epp.py examples/16_release_showcase.enppl
 	@python3 epp.py --keyring examples/epp-keys.json examples/17_saved_project.enpp
+	@python3 tests/cli-1.3.py
+	@tmp=$$(mktemp); trap 'rm -f "$$tmp"' EXIT; \
+	  $(CXX) $(CXXFLAGS) -DEPP_BROWSER_PLAINTEXT -DEPP_LEXER_TEST_MAIN src/lexer.cpp src/wasm_lexer.cpp -o "$$tmp" && \
+	  node tests/native-lexer.mjs --probe "$$tmp"
 	@echo "=== All Tests Passed! ==="

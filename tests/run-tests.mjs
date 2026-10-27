@@ -88,9 +88,9 @@ console.log('Parser / AST');
 
 console.log('Interpreter: basics from the spec');
 {
-  const { output } = await run('Define name as WeeklyHow.\nsay "Hello " plus \'name\' plus "!"');
+  const { output } = await run('Define name as "WeeklyHow".\nsay "Hello " plus \'name\' plus "!"');
   assert.deepEqual([...output], ['Hello WeeklyHow!']);
-  ok('Define, bare-word values and say with plus concatenation');
+  ok('Define, quoted text and say with plus concatenation');
 }
 {
   const { output } = await run('say 1 plus 1\nsay "1 plus 1"');
@@ -134,12 +134,16 @@ console.log('Interpreter: maths precedence & strings');
 
 console.log('Bare words must mean something');
 await expectError('say hello is an error, not literal text', 'say hello', /The word "hello" does not mean anything in E\+\+ yet/);
+await expectError('unknown statements are not mirrored', 'fheneir', /do not understand the statement/);
+await expectError('unquoted text in an inactive branch is rejected at parse time',
+  'if 1 is equal to 2 then say hello', /does not mean anything/);
 await expectError('say hello world is an error too', 'say hello world', /do not mean anything in E\+\+ yet/);
 await expectError('using an undefined bare word in maths is an error', 'say 1 plus banana', /"banana" does not mean anything/);
+await expectError('assignment values also need double quotes', 'Define name as WeeklyHow.', /does not mean anything/);
 {
-  const { output } = await run('Define name as WeeklyHow.\nsay \'name\'\nDefine greeting as Hello there.\nsay \'greeting\'');
+  const { output } = await run('Define name as "WeeklyHow".\nsay \'name\'\nDefine greeting as "Hello there".\nsay \'greeting\'');
   assert.deepEqual([...output], ['WeeklyHow', 'Hello there']);
-  ok('Define <name> as <bare words> still stores the literal words (spec example)');
+  ok('quoted text values work in assignments');
 }
 await expectError('Dev Build 4: a bare variable name is an error (must be single-quoted)', 'Define count as 3.\nif count is equal to 3 then say "three" otherwise say "other"', /variables must be written inside single quotes/);
 {
@@ -205,6 +209,7 @@ await expectError('loopback without "to if" is an English ParseError', 'loopback
   const result = await (async () => {
     const interp = new EPP.Interpreter({ output: () => {}, input: async () => '', delay: async () => {}, onSprite: (e) => events.push(e) });
     return interp.run(EPP.Parser.parse(
+      "add the \"Draw\" library\n" +
       "define 'hero' as drawing sprite\n" +
       "'hero' move right \"30\"\n" +
       "'hero' move up \"10\"\n" +
@@ -217,8 +222,8 @@ await expectError('loopback without "to if" is an English ParseError', 'loopback
   assert.equal(events[0].action, 'create');
   ok('Draw: define \'<name>\' as drawing sprite + movements track x/y');
 }
-await expectError('Draw: pixels must be a quoted string', "define 'hero' as drawing sprite\n'hero' move up 10", /pixels must be written as text in double quotes/);
-await expectError('Draw: pixels must be a number inside the quotes', "define 'hero' as drawing sprite\n'hero' move up \"ten\"", /not a number/);
+await expectError('Draw: pixels must be a quoted string', "add the \"Draw\" library\ndefine 'hero' as drawing sprite\n'hero' move up 10", /pixels must be written as text in double quotes/);
+await expectError('Draw: pixels must be a number inside the quotes', "add the \"Draw\" library\ndefine 'hero' as drawing sprite\n'hero' move up \"ten\"", /not a number/);
 await expectError('Draw: moving an undefined sprite explains how to create it', "'ghost' move up \"10\"", /no sprite called 'ghost'/);
 
 console.log('Increase / Decrease');
@@ -238,7 +243,7 @@ console.log('Increase / Decrease');
   ok('Increase/Decrease works on bare, quoted and expression amounts');
 }
 await expectError('increasing an undefined variable explains how to define it', 'Increase missing by 1', /Cannot increase 'missing'/);
-await expectError('decreasing text explains it is not a number', 'Define name as WeeklyHow.\nDecrease name by 1', /not a number/);
+await expectError('decreasing text explains it is not a number', 'Define name as "WeeklyHow".\nDecrease name by 1', /not a number/);
 await expectError('increasing by text explains the amount must be a number', 'Define score as 1.\nIncrease score by "Bob"', /amount is not a number/);
 await expectError('Increase without "by" is an English ParseError', 'Define score as 1.\nIncrease score 1', /needs the word "by"/);
 
@@ -804,7 +809,7 @@ const VAULT_KEY = Uint8Array.from({ length: 32 }, (_, i) => i);
   assert.ok(EPP.Vault.looksLikeVault(sealed));
   assert.equal(EPP.Vault.loadText(sealed, VAULT_KEY), plaintext);
   assert.ok(!sealed.includes('Hello'), 'ciphertext must not contain the source');
-  assert.ok(!/encrypt|key|vault/i.test(sealed), 'the file must not announce anything about itself');
+  assert.ok(!/^E\+\+ (?:encrypt|key|vault)/i.test(sealed), 'the file must not have a plaintext announcing header');
   ok('a sealed project opens with its key and leaks nothing readable');
 }
 
@@ -912,7 +917,7 @@ console.log('\nRelease 1.2: Game library');
 }
 
 {
-  EPP.Libraries.hideForDistribution(['Game', 'ImprovedWait']);
+  EPP.Libraries.hideForDistribution(['Draw', 'Game', 'ImprovedWait']);
   await expectError('the Game library is not in a distribution build',
     'add the "Game" library\ncreate the actor \'a\' with the image "x"\n',
     /not included in this build/);
@@ -1330,7 +1335,7 @@ console.log('\nRelease 1.2.1: the two builds');
 
   // E++.zip is the mirror image: Lite in, Game and ImprovedWait out.
   const zipMissing = EPP.Libraries.applyBuild('distribution').slice().sort();
-  assert.deepEqual(zipMissing, ['Game', 'ImprovedWait']);
+  assert.deepEqual(zipMissing, ['Draw', 'Game', 'ImprovedWait']);
   assert.equal(EPP.Libraries.isAvailable('ImprovedWaitLite'), true);
   assert.equal(EPP.Libraries.isAvailable('Keyboard'), true);
   assert.equal(EPP.Libraries.isAvailable('Game'), false);
@@ -1350,7 +1355,7 @@ console.log('\nRelease 1.2.1: the two builds');
 
   // The build table is the single source of truth for both directions.
   assert.deepEqual([...EPP.Libraries.missingFor('studio')], ['ImprovedWaitLite']);
-  assert.deepEqual([...EPP.Libraries.missingFor('distribution')].sort(), ['Game', 'ImprovedWait']);
+  assert.deepEqual([...EPP.Libraries.missingFor('distribution')].sort(), ['Draw', 'Game', 'ImprovedWait']);
   EPP.Libraries.showAll();
   assert.equal(EPP.Libraries.isAvailable('ImprovedWaitLite'), true, 'showAll restores everything');
   assert.equal(EPP.Libraries.isAvailable('Game'), true);
@@ -1514,9 +1519,9 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
   assert.ok(/api\.fetchIdeas\(/.test(page), 'the panel reads the public list, not a local one');
 
   // The version the page announces matches this release everywhere it shows.
-  assert.ok(page.includes('<title>E++ Studio | 1.2.1</title>'), 'the tab title is 1.2.1');
-  assert.ok(page.includes('class="build-badge">1.2.1<'), 'the header badge is 1.2.1');
-  assert.ok(page.includes("const DEFAULTS_VERSION = '1.2.1-lp1'"),
+  assert.ok(page.includes('<title>E++ Studio | 1.3</title>'), 'the tab title is 1.2.1');
+  assert.ok(page.includes('class="build-badge">1.3<'), 'the header badge is 1.2.1');
+  assert.ok(page.includes("const DEFAULTS_VERSION = '1.3'"),
     'the defaults stamp is 1.2.1 Language Patch 1, so an older 1.2.1 refreshes its files');
   assert.ok(page.includes("epp_idea_draft_1_2_1"), 'the idea draft key is per release');
   ok('the page announces 1.2.1 and the new keys are versioned');

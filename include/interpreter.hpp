@@ -15,8 +15,9 @@ class LibraryError : public std::runtime_error {
 public:
     int line;
     int col;
-    LibraryError(const std::string& msg, int l, int c)
-        : std::runtime_error(msg), line(l), col(c) {}
+    std::string code;
+    LibraryError(const std::string& msg, int l, int c, const std::string& error_code = "E301")
+        : std::runtime_error(msg), line(l), col(c), code(error_code) {}
 };
 
 class RuntimeError : public std::runtime_error {

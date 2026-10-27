@@ -135,7 +135,7 @@
         { feature: 'drawing sprite', kind: 'statement' },
         { feature: 'move up/down/left/right', kind: 'statement' }
       ],
-      example: 'define \'hero\' as drawing sprite\n\'hero\' move right "40"\n\'hero\' move down "20"'
+      example: 'add the "Draw" library\ndefine \'hero\' as drawing sprite\n\'hero\' move right "40"\n\'hero\' move down "20"'
     },
     Image: {
       name: 'Image',
@@ -246,6 +246,7 @@
    * "no such library".
    */
   var UNAVAILABLE_REASONS = {
+    Draw: 'The Draw library is available in E++ Studio, not inside E++.zip. Open the full Studio to draw with sprites.',
     Game: 'The Game library is not part of this build. It ships with the E++ Studio, not inside E++.zip — open index.html from the release page to build games.',
     ImprovedWait: 'The ImprovedWait library is not part of this build. ImprovedWaitLite ships inside E++.zip and has every non-game waiting feature; add library "ImprovedWaitLite" instead.',
     ImprovedWaitLite: 'ImprovedWaitLite is only in E++.zip, where it keeps the offline waiting engine small. The Studio has the full ImprovedWait library, which already includes every wait feature; add library "ImprovedWait" instead.'
@@ -257,7 +258,7 @@
    */
   var BUILD_LIBRARIES = {
     studio: ['ImprovedWaitLite'],
-    distribution: ['Game', 'ImprovedWait']
+    distribution: ['Game', 'ImprovedWait', 'Draw']
   };
 
   // Empty by default: a full build has every library until it says otherwise.
@@ -363,7 +364,7 @@
     /**
      * Switches the registry to one of the two builds:
      *   applyBuild()                 the full Studio (ImprovedWaitLite hidden)
-     *   applyBuild('distribution')   E++.zip (Game and ImprovedWait hidden)
+     *   applyBuild('distribution')   E++.zip (Draw, Game and ImprovedWait hidden)
      * Returns the names that are not part of the chosen build.
      */
     applyBuild: function (kind) {

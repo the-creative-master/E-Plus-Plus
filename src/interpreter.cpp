@@ -529,6 +529,14 @@ void Interpreter::visitAskStmt(AskStmt* stmt) {
 
 void Interpreter::visitAddLibraryStmt(AddLibraryStmt* stmt) {
     std::string norm = normalize_name(stmt->library_name);
+    if (norm == "draw" || norm == "drawing" || norm == "sprites" || norm == "game" || norm == "improvedwait") {
+        throw LibraryError("The '" + stmt->library_name + "' library is only available in E++ Studio, not in E++.zip.", stmt->line, stmt->col, "E302");
+    }
+    static const std::unordered_set<std::string> known = {"python", "math", "random", "strings", "text", "colors", "time", "files", "system", "console", "keyboard", "improvedwaitlite"};
+    if (known.find(norm) == known.end()) {
+        throw LibraryError("There is no library called '" + stmt->library_name + "'.", stmt->line, stmt->col, "E303");
+    }
+    if (norm == "text") norm = "strings";
     loaded_libraries.insert(norm);
 }
 

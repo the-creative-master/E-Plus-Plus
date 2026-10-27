@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-E++ (E-Plus-Plus) 1.2 Lexer and Subsystem
+E++ (E-Plus-Plus) 1.3 Lexer and Subsystem
 Written in Python for direct execution and runtime integration.
 """
 
@@ -875,6 +875,10 @@ class Lexer:
 
         self.advance() # closing '
         var_name = "".join(text)
+        if not var_name.strip():
+            raise EppDiagnosticError(code="E202", name="Empty Variable Name", filename=self.filename,
+                                     line=start_line, col=start_col, source_line=self.get_source_line(start_line),
+                                     reason="A variable name cannot be empty.", help_msg="Put a name between the single quotes.")
         return Token(TokenType.VARIABLE, f"'{var_name}'", start_line, start_col, string_value=var_name)
 
     def scan_number(self, start_line: int, start_col: int) -> Token:
@@ -927,4 +931,4 @@ if __name__ == "__main__":
         for t in tokens:
             print(t)
     else:
-        print("E++ 1.1 Workspace Patch 2 Lexer module loaded.")
+        print("E++ 1.3 Lexer module loaded.")

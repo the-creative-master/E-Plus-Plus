@@ -1,4 +1,4 @@
-note [E++ 1.2 Encryption++ Grand Showcase (.enppl)]
+note [E++ 1.3 Encryption++ Grand Showcase (.enppl)]
 add the "Colors" library
 add the "Time" library
 add the "Math" library
@@ -9,7 +9,7 @@ add the "System" library
 add the "Python" library
 
 say cyan "========================================================="
-say cyan "         Welcome to E++ 1.2 Encryption++!           "
+say cyan "         Welcome to E++ 1.3 Encryption++!           "
 say cyan "========================================================="
 
 note [System & Time Diagnostics]
@@ -27,16 +27,16 @@ say "Trimmed:", the trim of 'Announcement'
 say "Uppercase:", the uppercase of the trim of 'Announcement'
 
 note [File Persistence]
-write "E++ 1.2 verified on: " to file "showcase_audit.log"
+write "E++ 1.3 verified on: " to file "showcase_audit.log"
 append the current date to file "showcase_audit.log"
 read the file "showcase_audit.log" and save the output as 'Audit'
 say "Audit log content:", 'Audit'
 
 note [Python Engine Bridge]
-let 'EppVersion' be "1.2"
+let 'EppVersion' be "1.3"
 run the python code:
 print(f"[Python Subsystem] Connected with E++ v{EppVersion}")
 import math
 print(f"[Python Subsystem] Computed 10! = {math.factorial(10)}")
 
-say green "✓ All E++ 1.2 tests completed with 100% success!"
+say green "✓ All E++ 1.3 tests completed with 100% success!"

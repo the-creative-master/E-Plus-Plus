@@ -1,12 +1,10 @@
-note: Increase and Decrease change a number variable.
-Define score as 10.
-Increase score by 5
+note [Change a score by assigning a new value.]
+let 'score' be 10
+let 'score' be 'score' plus 5
 say 'score'
-Decrease score by 3
+let 'score' be 'score' minus 3
 say 'score'
 
-ask "Guess a number" and save answer as guess
-if 'guess' is equal to 7 then say "That is the one!" and
-otherwise if not a number then say "That was not a number at all." and
-otherwise if 'guess' is lesser than 7 then ask "Too low — try again" and save answer as guess and
-otherwise ask "Too high — try again" and save answer as guess
+ask "Guess a number" and save the output as 'guess'
+if 'guess' is equal to 7 then say "That is the one!"
+otherwise say "That is not seven."

@@ -1,6 +1,7 @@
 # Build artifacts
 epp
 *.o
+*.d
 src/*.o
 build/
 

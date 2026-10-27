@@ -17,10 +17,10 @@
       'note: Welcome to E++ Standalone Runtime (Dev Build 5)!\n' +
       'note: Type "save project as name.eppl" in the command bar to save.\n' +
       'note: Libraries are not supported in E++.zip — pure .eppl code only.\n\n' +
-      'Define greeting as Hello from E++!\n' +
+      'Define \'greeting\' as "Hello from E++!"\n' +
       'say \'greeting\'\n' +
       'say "Maths in plain English: " plus (5 times 4 plus 2)\n\n' +
-      'ask "What is your name?" and save answer as user\n' +
+      'ask "What is your name?" and save answer as \'user\'\n' +
       'say "Welcome to E++, " plus \'user\' plus "!"\n'
     );
 
@@ -358,8 +358,7 @@
 '    if (t.type === "VARIABLE") { this.adv(); return { type: "Variable", name: t.value }; }\n' +
 '    if (t.type === "LPAREN") { this.adv(); var e = this.parseExpr(); this.adv(); return e; }\n' +
 '    if (t.type === "WORD") {\n' +
-'      this.adv();\n' +
-'      return { type: "BareWord", value: t.value };\n' +
+'      throw new EPP.ParseError("Unquoted text is not a value. Put text in double quotes.", t.line, t.column);\n' +
 '    }\n' +
 '    throw new EPP.ParseError("Expected a value but found " + JSON.stringify(t.value), t.line, t.column, "Values can be numbers, \\\"strings\\\", or \'variables\'.");\n' +
 '  };\n' +
@@ -384,7 +383,7 @@
 '      if (!this.vars.has(k)) throw new EPP.RuntimeError("Variable \'" + node.name + "\' has not been defined yet.");\n' +
 '      return this.vars.get(k);\n' +
 '    }\n' +
-'    if (node.type === "BareWord") return node.value;\n' +
+'    if (node.type === "BareWord") throw new EPP.RuntimeError("Unquoted text is not a value. Put text in double quotes.");\n' +
 '    if (node.type === "Binary") {\n' +
 '      var l = await this.eval(node.left);\n' +
 '      var r = await this.eval(node.right);\n' +

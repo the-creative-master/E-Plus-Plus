@@ -10,7 +10,7 @@
 
 void print_banner() {
     std::cout << "=========================================================\n";
-    std::cout << "   E++ Programming Language [1.2]                 \n";
+    std::cout << "   E++ Programming Language [1.3]                 \n";
     std::cout << "   \"Looks like English, feels like english, and is english\"\n";
     std::cout << "=========================================================\n";
 }
@@ -74,27 +74,40 @@ bool run_code(const std::string& source, epp::Interpreter& interpreter, const st
 
         interpreter.execute(statements);
         return true;
+    } catch (const epp::LexError& e) {
+        print_deterministic_error(e.code, e.code == "E101" ? "Invalid Syntax" : "Quote Error", filename, e.line, e.col, e.what(), e.code == "E101" ? "Use note [text] for comments and close every note." : "Close quotes on the same line and give variables a name.", source);
+        return false;
     } catch (const epp::LogicError& e) {
         print_deterministic_error("E402", "Logic Error", filename, e.line, e.col, e.what(), "Check the 3 Golden Rules: no quotes for math, single quotes for variables, double quotes for strings.", source);
         return false;
     } catch (const epp::ParseError& e) {
         std::string reason = e.what();
-        std::string err_code = "E101";
-        std::string help = "Verify statement syntax and matching keywords.";
-        if (reason.find("otherwise") != std::string::npos) {
+        std::string err_code = e.code;
+        std::string help = err_code == "E302" ? "Open the full E++ Studio to use drawing sprites." : "Verify statement syntax and matching keywords.";
+        if (reason.find("otherwise") != std::string::npos && err_code == "E101") {
             err_code = "E103";
             help = "In E++, 'otherwise' must be on the line immediately following the 'if' statement.";
         }
         print_deterministic_error(err_code, "Syntax Error", filename, e.line, e.col, reason, help, source);
         return false;
     } catch (const epp::LibraryError& e) {
-        print_deterministic_error("E301", "Library Not Added", filename, e.line, e.col, e.what(), "Add the library at the top of your program: add the \"<Library>\" library", source);
+        print_deterministic_error(e.code, "Library Error", filename, e.line, e.col, e.what(),
+                                  e.code == "E301" ? "Add the library at the top of your program: add the \"<Library>\" library" : "Check the library name or open the full E++ Studio.", source);
         return false;
     } catch (const epp::RuntimeError& e) {
         std::string reason = e.what();
         std::string err_code = "E702";
         std::string help = "Review the execution logic.";
-        if (reason.find("turtle") != std::string::npos) {
+        if (reason.find("has not been defined") != std::string::npos) {
+            err_code = "E201";
+            help = "Define the variable before using it.";
+        } else if (reason.find("zero") != std::string::npos) {
+            err_code = "E403";
+            help = "Use a divisor other than zero.";
+        } else if (reason.find("Type Error") != std::string::npos || reason.find("Math Error") != std::string::npos) {
+            err_code = "E405";
+            help = "Use valid numbers for this operation.";
+        } else if (reason.find("turtle") != std::string::npos) {
             err_code = "E701";
             help = "The 'turtle' library is not supported in E++. Use standard data and math libraries instead.";
         }

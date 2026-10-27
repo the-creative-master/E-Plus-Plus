@@ -1,7 +1,7 @@
 note [04_variables.epp: Variables in E++ are always enclosed in single quotes!]
 
 let 'Grade' be 29
-let 'Student' be Sam
-let 'Comment' be What a Disgrace!
+let 'Student' be "Sam"
+let 'Comment' be "What a Disgrace!"
 
 say 'Student', "got a grade of ", 'grade', ". Comments on this grade are: ", 'Comment'

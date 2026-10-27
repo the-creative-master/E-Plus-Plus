@@ -1,8 +1,7 @@
-note: Your first E++ program (Dev Build 4).
-note: This project is based on WeeklyHow's AI programming language video.
-Define name as WeeklyHow.
-say "Hello " plus 'name' plus "!"
+note [Your first E++ program. Text belongs in double quotes.]
+define 'name' as "WeeklyHow"
+say "Hello ", 'name', "!"
 say "E++ looks like English, reads like English, and behaves like code."
 
-ask "What is your name?" and save answer as visitor
-say "Nice to meet you, " plus 'visitor' plus "."
+ask "What is your name?" and save the output as 'visitor'
+say "Nice to meet you, ", 'visitor', "."

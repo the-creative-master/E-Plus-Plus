@@ -646,14 +646,8 @@
 
       case AST.DEFINE:
       case AST.SET: {
-        // Bare words on the right-hand side of Define/Set are the literal
-        // words themselves (e.g. `Define name as WeeklyHow.`). Writing
-        // 'name' with single quotes is how you copy another variable.
-        // Everywhere else, a bare word must be the name of a variable
-        // that exists — see BareWord below.
-        var value = node.value.type === AST.BARE_WORD
-          ? node.value.text
-          : await this.evaluate(node.value);
+        // Bare words are not implicit strings, even in assignments.
+        var value = await this.evaluate(node.value);
         this.variables.set(node.name.toLowerCase(), value);
         return;
       }
@@ -1038,12 +1032,7 @@
       }
 
       case AST.BARE_WORD: {
-        // Dev Build 4: a bare word is never a variable reference
-        // (variables must be written inside single quotes). If no such
-        // variable exists it is an error — bare words are
-        // maths or keywords, and this is neither. (The one exception is
-        // the right-hand side of Define/Set, handled above, where bare
-        // words are the literal value: Define name as WeeklyHow.)
+        // Older ASTs can still contain a BareWord; reject them as well.
         var bareKey = node.text.toLowerCase();
         if (this.variables.has(bareKey)) {
           // Dev Build 4: variables MUST be written inside single quotes,

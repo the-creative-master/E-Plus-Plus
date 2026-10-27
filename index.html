@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>E++ Studio | 1.2.1</title>
+<title>E++ Studio | 1.3</title>
 <link rel="stylesheet" href="css/ide.css">
 <style>
   /* Color classes for Terminal */
@@ -343,6 +343,7 @@
     color: #7dd3fc;
   }
 </style>
+<link rel="stylesheet" href="css/studio.css">
 </head>
 <body>
 
@@ -350,35 +351,43 @@
   <div class="brand">
     <div class="logo" aria-hidden="true">E<span>++</span></div>
     <div>
-      <h1>E++ Studio <span class="build-badge">1.2.1</span></h1>
-      <p>Looks like English. Reads like English. Behaves like code.</p>
+      <h1>E++ <span>Studio</span> <span class="build-badge">1.3</span></h1>
+      <p>YOUR SPACE TO CREATE</p>
     </div>
   </div>
 
   <div class="top-actions">
-    <span id="saveStatus" class="save-status">Saved</span>
-    <div class="action-bar">
-      <div class="action-group file-actions">
+    <span id="saveStatus" class="save-status" role="status">Saved locally</span>
+    <button id="btnTools" class="toolbar-toggle" type="button" aria-label="Open studio tools" aria-controls="studioActions" aria-expanded="false">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M5 7h14M5 12h14M5 17h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>Tools</span>
+    </button>
+    <div class="action-bar" id="studioActions">
+      <div class="action-group file-actions" role="group" aria-label="Project actions">
+        <span class="action-group-label">Project</span>
         <button id="btnNew" class="btn btn-small btn-accent" type="button" title="New file">+ New</button>
-        <button id="btnSave" class="btn btn-small" type="button" title="Save file">💾 Save</button>
-        <button id="btnImport" class="btn btn-small" type="button" title="Open or import a .enpp or .enppl file">⤒ Import</button>
-        <button id="btnExport" class="btn btn-small" type="button" title="Download this file (.enpp or .enppl)">⤓ Export</button>
-        <button id="btnClear" class="btn btn-small" type="button" title="Clear the editor">⌧ Clear</button>
+        <button id="btnSave" class="btn btn-small" type="button" title="Save file">Save</button>
+        <button id="btnImport" class="btn btn-small" type="button" title="Open or import a .enpp or .enppl file">Import</button>
+        <button id="btnExport" class="btn btn-small" type="button" title="Download this file (.enpp or .enppl)">Export</button>
+        <button id="btnClear" class="btn btn-small" type="button" title="Clear the editor">Clear code</button>
       </div>
       <span class="action-divider" aria-hidden="true"></span>
-      <div class="action-group learn-actions">
-        <button id="btnLearn" class="btn btn-small btn-tutorial" type="button" title="Learn E++ card by card">🎓 Learn</button>
-        <button id="btnSuggest" class="btn btn-small btn-suggest" type="button" title="Suggest a feature — everyone can see it">💡 Suggest</button>
+      <div class="action-group learn-actions" role="group" aria-label="Learn and share">
+        <span class="action-group-label">Learn &amp; share</span>
+        <button id="btnLearn" class="btn btn-small btn-tutorial" type="button" title="Learn E++ card by card">Learn</button>
+        <button id="btnSuggest" class="btn btn-small btn-suggest" type="button" title="Suggest a feature — everyone can see it">Suggest</button>
       </div>
       <span class="action-divider" aria-hidden="true"></span>
-      <div class="action-group tool-actions">
-        <button id="btnImage" class="btn btn-small" type="button" style="display:none;" title="Add an actor image to this game">🖼 Image</button>
-        <button id="btnZip" class="btn btn-small btn-zip" type="button" title="Download E++ C++ sources &amp; runtime bundle">📦 E++.zip</button>
-        <button id="btnKeys" class="btn btn-small" type="button" title="Manage this browser's project keys">🔑 Keys</button>
+      <div class="action-group tool-actions" role="group" aria-label="Studio tools">
+        <span class="action-group-label">Studio tools</span>
+        <button id="btnImage" class="btn btn-small" type="button" style="display:none;" title="Add an actor image to this game">Image</button>
+        <button id="btnZip" class="btn btn-small btn-zip" type="button" title="Download E++ C++ sources &amp; runtime bundle">E++.zip</button>
+        <button id="btnKeys" class="btn btn-small" type="button" title="Manage this browser's project keys">Keys</button>
       </div>
     </div>
     <div class="action-group run-actions">
-      <button id="btnRun" class="btn btn-run" type="button" title="Run (Ctrl+Enter)">▶ Run</button>
+      <button id="btnStop" class="btn btn-stop" type="button" title="Stop the current program" disabled>■ <span>Stop</span></button>
+      <button id="btnRun" class="btn btn-run" type="button" title="Run (Ctrl+Enter)">▶ <span>Run code</span></button>
     </div>
     <input id="importFileInput" type="file" accept=".enpp,.enppl" style="display:none;">
     <input id="imageFileInput" type="file" accept="image/*" style="display:none;">
@@ -409,9 +418,10 @@
     </div>
   </div>
   <div class="dash-group dash-group-end">
-    <span id="zipRuntimeBadge" class="badge-zip-active">⚡ Native Zip Lexer: Active</span>
-    <span class="dash-badge-pill badge-version" id="buildVersion">v1.2.1 · Language Patch 1</span>
+    <span id="zipRuntimeBadge" class="badge-zip-locked">C++ lexer loading…</span>
+    <span class="dash-badge-pill badge-version" id="buildVersion">v1.3 · Project No Wrongs</span>
   </div>
+  <span id="mobileSaveStatus" class="mobile-save-status" role="status">Saved locally</span>
   <div class="dash-rules">
     <span class="dash-rules-label">Rules</span>
     <span>No quotes for math</span>
@@ -420,23 +430,57 @@
   </div>
 </div>
 
+<nav class="mobile-view-nav" aria-label="Workspace panels">
+  <button class="mobile-view-btn" data-view="files" type="button" aria-controls="sidebar" aria-pressed="false">
+    <svg class="mobile-view-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M3.5 6.5h6l2 2H20a1 1 0 0 1 1 1v8.5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-10a1.5 1.5 0 0 1 .5-1.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+    <span>Workspace</span>
+  </button>
+  <button class="mobile-view-btn active" data-view="editor" type="button" aria-controls="editorCard" aria-pressed="true">
+    <svg class="mobile-view-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m8 7-5 5 5 5m8-10 5 5-5 5m-2-12-4 14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Code</span>
+  </button>
+  <button class="mobile-view-btn" data-view="console" type="button" aria-controls="consoleCard" aria-pressed="false">
+    <svg class="mobile-view-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="3" y="4.5" width="18" height="15" rx="3" stroke="currentColor" stroke-width="1.7"/><path d="m7 9 3 3-3 3m6 0h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Output</span>
+  </button>
+</nav>
+
 <main class="layout">
   <!-- Sidebar: Files, Libraries, Quick Reference -->
   <aside class="sidebar" id="sidebar">
+    <div class="sidebar-topline">
+      <div class="sidebar-heading"><span class="sidebar-kicker">YOUR CREATIVE SPACE</span><strong>Workspace</strong></div>
+      <span class="sidebar-online"><span aria-hidden="true">●</span> Local</span>
+    </div>
+    <div class="workspace-summary">
+      <div class="summary-art" aria-hidden="true"><span>✳</span></div>
+      <div class="summary-copy"><span>PROJECT COLLECTION</span><strong id="workspaceFileCount">Your files</strong><small>Saved on this device</small></div>
+      <span class="summary-sparkle" aria-hidden="true">✦</span>
+    </div>
+    <nav class="sidebar-tabs" aria-label="Workspace navigation">
+      <button type="button" class="side-tab active" data-panel="files" aria-pressed="true">Files</button>
+      <button type="button" class="side-tab" data-panel="libraries" aria-pressed="false">Libraries</button>
+      <button type="button" class="side-tab" data-panel="guide" aria-pressed="false">Guide</button>
+    </nav>
+    <div class="sidebar-panel" id="filesPanel">
     <div class="sidebar-head">
-      <h2>Files <span class="head-sub">(.enpp / .enppl)</span></h2>
+      <h2>Your files <span class="head-sub">(.enpp / .enppl)</span></h2>
       <button id="btnSidebarNew" class="btn btn-small btn-accent" type="button">+ New</button>
     </div>
-    <input id="fileSearch" class="file-search" type="search" placeholder="Search .enpp &amp; .enppl files…">
+    <div class="file-search-wrap">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.7"/><path d="m15.5 15.5 4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      <input id="fileSearch" class="file-search" type="search" aria-label="Search project files" placeholder="Search your files…">
+    </div>
     <ul id="fileList" class="file-list"></ul>
 
     <div class="sidebar-actions">
-      <button id="btnRestoreExamples" class="btn btn-small" type="button">Restore default files</button>
+      <button id="btnRestoreExamples" class="btn btn-small" type="button">Restore missing examples</button>
     </div>
 
+    </div>
     <!-- Available Libraries -->
-    <section class="libraries-panel">
-      <h2>Libraries <span class="head-sub">(1.2.1)</span></h2>
+    <section class="libraries-panel sidebar-panel" id="librariesPanel" hidden>
+      <h2>Libraries <span class="head-sub">(1.3)</span></h2>
       <p class="panel-note">Both word orders work:<br><code>add library "Math"</code> or <code>add the "Math" library</code></p>
       
       <div class="library-card" data-library="Python">
@@ -511,8 +555,16 @@
         <p>Clear screen and real-time terminal stream management.</p>
       </div>
 
-      <p class="panel-note" id="distributionNotice" style="display:none;">This is the <strong>E++.zip</strong> build: Game and ImprovedWait live in the full Studio only. Keyboard and ImprovedWaitLite are here.</p>
+      <p class="panel-note" id="distributionNotice" style="display:none;">This is the <strong>E++.zip</strong> build: Draw, Game and ImprovedWait live in the full Studio only. Keyboard and ImprovedWaitLite are here.</p>
       <p class="panel-note" id="studioNotice" style="display:none;">ImprovedWaitLite is only in <strong>E++.zip</strong>; this Studio has the full <strong>ImprovedWait</strong>, with every wait feature.</p>
+
+      <div class="library-card" data-library="Draw">
+        <div class="lib-card-top">
+          <h3>Draw <span>Studio only</span></h3>
+          <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Draw')">+ Insert</button>
+        </div>
+        <p>Turn any variable into a drawing cursor. Move it and leave a trail in the console.</p>
+      </div>
 
       <!-- Release 1.2 libraries -->
       <div class="library-card" data-library="Game">
@@ -549,8 +601,10 @@
     </section>
 
     <!-- Quick Reference -->
-    <section class="help-panel">
+    <section class="help-panel sidebar-panel" id="guidePanel" hidden>
       <h2>E++ Quick Reference</h2>
+      <p class="guide-intro">The three golden rules</p>
+      <div class="guide-rules"><span><b>01</b> Math has no quotes</span><span><b>02</b> Variables use 'single' quotes</span><span><b>03</b> Text uses "double" quotes</span></div>
       <pre>note [Pure .enpp files (no libraries)]
 let 'Grade' be 29
 say 1 plus 1
@@ -571,14 +625,21 @@ set the image of the actor 'hero' to "hero2.png"</pre>
     </section>
   </aside>
 
-  <!-- Workspace: Editor & Live Console (Side by Side 50/50 Split) -->
+  <!-- Workspace: your code and its output, together. -->
   <section class="workspace" id="workspace">
     <!-- Editor Card (Left 50%) -->
     <div class="editor-card" id="editorCard">
+      <div class="workspace-eyebrow">
+        <span><span class="eyebrow-icon">✳</span> CODE EDITOR</span>
+        <div class="editor-view-options">
+          <span class="workspace-caption">YOUR IDEAS, IN PLAIN ENGLISH</span>
+          <button id="btnWrap" class="wrap-toggle" type="button" aria-label="Wrap long lines" aria-pressed="false" title="Wrap long lines in the editor"><span aria-hidden="true">↵</span> Wrap</button>
+        </div>
+      </div>
       <div class="editor-head">
         <div class="tab" id="currentTab">
-          <span class="tab-dot"></span>
-          <span id="currentFileName">hello.enpp</span>
+          <span class="tab-file-icon">E<span>++</span></span>
+          <span class="tab-file-meta"><span id="currentFileName">hello.enpp</span><small>E++ PROGRAM</small></span>
         </div>
         <div class="editor-head-actions">
           <button id="btnRename" class="btn btn-small" type="button">Rename</button>
@@ -589,7 +650,8 @@ set the image of the actor 'hero' to "hero2.png"</pre>
       <div class="editor-wrap" id="editorWrap">
         <div class="line-numbers" id="lineNumbers">1</div>
         <div class="code-area">
-          <textarea id="editor" class="code-editor-native" spellcheck="false" autocomplete="off" placeholder="Write E++ code here…"></textarea>
+          <pre id="editorHighlight" class="editor-highlight" aria-hidden="true"></pre>
+          <textarea id="editor" class="code-editor-native" aria-label="E++ code editor" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Write E++ code here…"></textarea>
         </div>
       </div>
 
@@ -608,21 +670,48 @@ set the image of the actor 'hero' to "hero2.png"</pre>
 
     <!-- Console Card (Right 50%, ALWAYS VISIBLE) -->
     <div class="console-card" id="consoleCard">
+      <div class="workspace-eyebrow"><span><span class="eyebrow-icon console-symbol">⌁</span> CONSOLE</span><span>YOUR PROGRAM, LIVE</span></div>
       <div class="console-head">
-        <h2>Live Terminal &amp; Console</h2>
-        <span class="console-hint">Real-time output stream</span>
-        <button id="btnClearConsole" class="btn btn-small" type="button">Clear</button>
+        <div class="console-title"><h2>Output</h2><span class="console-hint">Results appear here</span></div>
+        <span class="console-live"><span></span> LIVE</span>
+        <button id="btnClearConsole" class="btn btn-small" type="button" title="Clear console output">Clear output</button>
       </div>
-      <!-- Game pane: appears when a program opens the Game library -->
-      <div id="gamePane" class="game-pane" style="display:none;">
-        <div class="game-pane-head">
-          <span id="gameTitle">Game — 800 × 600</span>
-          <span id="gameStats">0 fps</span>
-          <button id="btnGameStop" class="btn btn-small btn-danger-outline" type="button">Stop game</button>
+      <div id="consoleContent" class="console-content" tabindex="0" role="region" aria-label="Console output and visuals">
+        <div id="drawPane" class="draw-pane" style="display:none;">
+          <div class="draw-pane-head"><span><span class="draw-dot"></span> DRAWING SURFACE</span><span id="drawStats">0 sprites</span><button id="btnClearDrawing" type="button" class="btn btn-small" title="Clear trails, keeping cursors in place">Clear drawing</button></div>
+          <canvas id="drawCanvas" width="800" height="360" tabindex="0" aria-label="Drawing surface. Focus here and use arrow keys to move the selected sprite."></canvas>
+          <div class="draw-controls">
+            <label for="drawSelect">Cursor</label>
+            <select id="drawSelect" aria-label="Drawing cursor to control"></select>
+            <span class="draw-control-hint">Use arrows to move · 10 px</span>
+            <div class="draw-arrows" aria-label="Move the selected drawing cursor">
+              <button type="button" data-draw-move="left" aria-label="Move left">←</button>
+              <button type="button" data-draw-move="up" aria-label="Move up">↑</button>
+              <button type="button" data-draw-move="down" aria-label="Move down">↓</button>
+              <button type="button" data-draw-move="right" aria-label="Move right">→</button>
+            </div>
+          </div>
         </div>
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
-      </div>
-      <div id="consoleOutput" class="console-output"></div>
+        <!-- Game pane: appears when a program opens the Game library -->
+        <div id="gamePane" class="game-pane" style="display:none;">
+          <div class="game-pane-head">
+            <span id="gameTitle">Game — 800 × 600</span>
+            <span id="gameStats">0 fps</span>
+            <button id="btnGameStop" class="btn btn-small btn-danger-outline" type="button">Stop game</button>
+          </div>
+          <canvas id="gameCanvas" width="800" height="600"></canvas>
+        </div>
+        <div class="console-output-shell">
+          <div id="consoleOutput" class="console-output" role="log" aria-live="polite"></div>
+          <div class="console-empty" aria-hidden="true">
+            <div class="empty-art"><span class="empty-orbit orbit-one"></span><span class="empty-orbit orbit-two"></span><span class="empty-terminal">›_</span><span class="empty-star">✦</span></div>
+            <span class="empty-kicker">YOUR OUTPUT SPACE</span>
+            <h3>Let’s see what you make.</h3>
+            <p>Run your code and watch your ideas come to life right here.</p>
+            <span class="empty-shortcut"><span>▶</span> Run code <kbd>Ctrl</kbd> + <kbd>Enter</kbd></span>
+          </div>
+        </div>
+      </div><!-- /.console-content -->
 
       <!-- Interactive Ask Input Form -->
       <form id="consoleInputForm" class="console-input" style="display:none;">
@@ -635,7 +724,7 @@ set the image of the actor 'hero' to "hero2.png"</pre>
 </main>
 
 <footer class="footer">
-  <span><strong>E++ Studio [1.2.1]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
+  <span><strong>E++ Studio [1.3]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
   <span>Shortcuts: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run · <kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span>
 </footer>
 
@@ -669,10 +758,11 @@ set the image of the actor 'hero' to "hero2.png"</pre>
 <!-- 1.2 tutorials: a deck of cards, each one checked against real output. -->
 <div id="tutorialOverlay" class="tut-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="tutTitle">
   <div class="tut-shell">
-    <aside class="tut-nav">
+    <aside class="tut-nav" id="tutNav">
       <div class="tut-nav-head">
         <span class="tut-nav-title">🎓 Tutorials</span>
         <span id="tutProgressLabel" class="tut-progress-label">0 of 0</span>
+        <button id="tutLessonsClose" class="tut-nav-close" type="button" aria-label="Close lessons">×</button>
       </div>
       <div class="tut-progress"><div id="tutProgressBar" class="tut-progress-bar"></div></div>
       <div id="tutCourseList" class="tut-course-list"></div>
@@ -685,7 +775,10 @@ set the image of the actor 'hero' to "hero2.png"</pre>
           <span id="tutCourseName" class="tut-course-name"></span>
           <h2 id="tutTitle">Tutorials</h2>
         </div>
-        <button id="tutClose" class="btn-close" type="button" aria-label="Close tutorials">×</button>
+        <div class="tut-head-actions">
+          <button id="tutLessonsToggle" class="btn btn-small tut-lessons-toggle" type="button" aria-controls="tutNav" aria-expanded="false">☰ Lessons</button>
+          <button id="tutClose" class="btn-close" type="button" aria-label="Close tutorials">×</button>
+        </div>
       </header>
       <div class="tut-card-body">
         <p class="tut-goal"><span>Goal</span><span id="tutGoal"></span></p>
@@ -831,6 +924,11 @@ set the image of the actor 'hero' to "hero2.png"</pre>
 <script src="js/keyboard.js"></script>
 <script src="js/vault.js"></script>
 <script src="js/game-library.js"></script>
+<script src="js/draw-library.js"></script>
+<script src="js/studio-editor.js"></script>
+<script src="js/diagnostics.js"></script>
+<script src="js/native-lexer-wasm.js"></script>
+<script src="js/native-lexer.js"></script>
 <script>
 // ==========================================
 // E++ Pure & Fast In-Browser Engine + Python
@@ -860,7 +958,7 @@ say "1 + 1"`
   },
   {
     name: 'release_showcase.enppl',
-    content: `note [E++ 1.2 Grand Showcase (.enppl)]
+    content: `note [E++ 1.3 Grand Showcase (.enppl)]
 add the "Colors" library
 add the "Time" library
 add the "Math" library
@@ -871,7 +969,7 @@ add the "System" library
 add the "Python" library
 
 say cyan "========================================================="
-say cyan "         Welcome to E++ 1.2!           "
+say cyan "         Welcome to E++ 1.3!           "
 say cyan "========================================================="
 
 note [System & Time Diagnostics]
@@ -889,19 +987,19 @@ say "Trimmed:", the trim of 'Announcement'
 say "Uppercase:", the uppercase of the trim of 'Announcement'
 
 note [File Persistence in Virtual IDE]
-write "E++ 1.2 verified on: " to file "showcase_audit.log"
+write "E++ 1.3 verified on: " to file "showcase_audit.log"
 append the current date to file "showcase_audit.log"
 read the file "showcase_audit.log" and save the output as 'Audit'
 say "Audit log content:", 'Audit'
 
 note [Python Engine Bridge]
-let 'EppVersion' be "1.2"
+let 'EppVersion' be "1.3"
 run the python code:
 print(f"[Python Subsystem] Connected with E++ v{EppVersion}")
 import math
 print(f"[Python Subsystem] Computed 10! = {math.factorial(10)}")
 
-say green "✓ All E++ 1.2 tests completed with 100% success!"`
+say green "✓ All E++ 1.3 tests completed with 100% success!"`
   },
   {
     name: 'python_demo.enppl',
@@ -925,7 +1023,7 @@ run the python code "print('E++ says:', greeting)"`
     content: `note [Strings Library in E++ (.enppl)]
 add the "Strings" library
 
-let 'Message' be "Hello, E++ 1.2!"
+let 'Message' be "Hello, E++ 1.3!"
 say "Original message:", 'Message'
 say "Length of message:", the length of 'Message'
 say "Uppercase:", the uppercase of 'Message'
@@ -963,7 +1061,7 @@ say "System Platform:", the platform
 say "Operating System:", the os
 
 note [Writing and reading in the IDE filesystem:]
-write "E++ 1.2 is lightning fast!" to file "notes.txt"
+write "E++ 1.3 is lightning fast!" to file "notes.txt"
 read the file "notes.txt" and save the output as 'ReadBack'
 say "Read back from file:", 'ReadBack'`
   },
@@ -996,8 +1094,8 @@ say "Here is a random number between 1 and 100! It is ", 'Random number'`
     content: `note [Variables in E++ are always wrapped in single quotes!]
 
 let 'Grade' be 29
-let 'Student' be Sam
-let 'Comment' be What a Disgrace!
+let 'Student' be "Sam"
+let 'Comment' be "What a Disgrace!"
 
 say 'Student', "got a grade of ", 'grade', ". Comments on this grade are: ", 'Comment'`
   },
@@ -1017,6 +1115,25 @@ say "Hello ", "World! ", "Welcome to E++!"`
 
 ask "What is your name?" and save the output as 'Name'
 say "Hello ", 'name', ", Welcome to E++!"`
+  },
+  {
+    name: 'draw_playground.enppl',
+    hideInDistribution: true,
+    content: `note [Draw with a cursor in the console.]
+add the "Draw" library
+
+define 'pencil' as drawing sprite
+'pencil' move right "100"
+'pencil' move down "100"
+'pencil' move left "100"
+'pencil' move up "100"
+
+note [Each sprite has its own pen and position.]
+define 'spark' as drawing sprite
+set the color of 'spark' to "#67e8f9"
+'spark' move up "50"
+'spark' move right "50"
+say "You made a drawing!"`
   },
   {
     name: 'game_showcase.enppl',
@@ -1095,7 +1212,7 @@ say "Done — the Left arrow finished the program."`
 ];
 
 // File Storage (.enpp & .enppl)
-const DEFAULTS_VERSION = '1.2.1-lp1';
+const DEFAULTS_VERSION = '1.3';
 let files = {};
 let currentFileName = 'hello.enpp';
 let fileDialogMode = 'new';
@@ -1114,7 +1231,7 @@ function initStorage() {
   files = cleanFiles;
   currentFileName = currentFileName.replace(/\.txt$/i, '');
 
-  if (!files || Object.keys(files).length === 0 || !files['hello.enpp'] || !files['release_showcase.enppl']) {
+  if (!files || Object.keys(files).length === 0) {
     restoreDefaultFiles(false);
   } else {
     currentFileName = Object.keys(files)[0];
@@ -1159,18 +1276,20 @@ function availableDefaultFiles() {
 }
 
 function restoreDefaultFiles(notify = true) {
-  files = {};
-  availableDefaultFiles().forEach(f => { files[f.name] = f.content; });
-  currentFileName = 'hello.enpp';
+  // Restoring examples must never overwrite a user's files.
+  availableDefaultFiles().forEach(f => { if (files[f.name] === undefined) files[f.name] = f.content; });
+  if (!currentFileName || files[currentFileName] === undefined) currentFileName = 'hello.enpp';
   saveStorage();
   renderFileList();
-  loadFile(currentFileName);
-  if (notify) showToast('Restored default .enpp & .enppl files!');
+  if (!notify) loadFile(currentFileName);
+  if (notify) showToast('Missing examples restored. Your files were kept.');
 }
 
 function renderFileList() {
   const listEl = document.getElementById('fileList');
   const search = document.getElementById('fileSearch').value.toLowerCase();
+  const count = Object.keys(files).length;
+  document.getElementById('workspaceFileCount').textContent = count + (count === 1 ? ' file' : ' files');
   listEl.innerHTML = '';
 
   Object.keys(files).forEach(name => {
@@ -1182,7 +1301,7 @@ function renderFileList() {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'file-item' + (name === currentFileName ? ' active' : '');
-    btn.onclick = () => loadFile(name);
+    btn.onclick = () => { loadFile(name); if (usesCompactWorkspace()) setMobileView('editor'); };
 
     const icon = document.createElement('span');
     icon.className = isLib ? 'file-icon file-icon-enppl' : 'file-icon file-icon-enpp';
@@ -1201,9 +1320,10 @@ function renderFileList() {
 
 async function loadFile(name) {
   // Leaving a project always stops its game.
-  if (activeEvaluator) activeEvaluator.cancel();
-  if (activeGameHost) activeGameHost.stop();
+  stopCurrentRun();
   showGamePane(false);
+  showDrawPane(false);
+  if (activeDrawHost) activeDrawHost.reset();
   if (currentFileName && currentFileName !== name && files[currentFileName] !== undefined) {
     files[currentFileName] = document.getElementById('editor').value;
     saveStorage();
@@ -1239,38 +1359,27 @@ async function loadFile(name) {
   updateKeyBadge();
 }
 
-const LIBRARY_PATTERNS = [
-  ['Python', /add\s+(?:the\s+)?["']?python["']?\s+library/i],
-  ['Math', /add\s+(?:the\s+)?["']?math["']?\s+library/i],
-  ['Random', /add\s+(?:the\s+)?["']?random["']?\s+library/i],
-  ['Strings', /add\s+(?:the\s+)?["']?(?:strings|text)["']?\s+library/i],
-  ['Time', /add\s+(?:the\s+)?["']?time["']?\s+library/i],
-  ['Files', /add\s+(?:the\s+)?["']?files["']?\s+library/i],
-  ['System', /add\s+(?:the\s+)?["']?system["']?\s+library/i],
-  ['Colors', /add\s+(?:the\s+)?["']?colors["']?\s+library/i],
-  ['Console', /add\s+(?:the\s+)?["']?console["']?\s+library/i],
-  ['Game', /add\s+(?:the\s+)?["']?game["']?\s+library/i],
-  ['Keyboard', /add\s+(?:the\s+)?["']?keyboard["']?\s+library/i],
-  ['ImprovedWaitLite', /add\s+(?:the\s+)?["']?improved\s*wait\s*lite["']?\s+library/i],
-  ['ImprovedWait', /add\s+(?:the\s+)?["']?improved\s*wait["']?\s+library/i]
-];
-
 function librariesIn(content) {
+  const registry = window.EPP && EPP.Libraries;
   const found = [];
-  LIBRARY_PATTERNS.forEach(([name, pattern]) => { if (pattern.test(content)) found.push(name); });
-  // ImprovedWait contains ImprovedWaitLite, so listing both would count the
-  // same wait features twice in the dashboard.
-  if (found.includes('ImprovedWait')) return found.filter(name => name !== 'ImprovedWaitLite');
+  String(content).split('\n').forEach(line => {
+    const text = line.trim();
+    const match = text.match(/^add\s+(?:the\s+)?["']?([A-Za-z][A-Za-z ]*?)["']?\s+library$/i)
+      || text.match(/^add\s+(?:the\s+)?librar(?:y|ies)\s+["']?([A-Za-z][A-Za-z ]*?)["']?$/i);
+    const name = match && (registry ? registry.canonical(match[1]) : match[1]);
+    if (name && !found.includes(name)) found.push(name);
+  });
   return found;
 }
 
 function usesGameLibrary(content) {
-  return /add\s+(?:the\s+)?["']?game["']?\s+library/i.test(content);
+  return librariesIn(content).includes('Game');
 }
 
 function updateDashboard() {
   const content = document.getElementById('editor').value;
-  const isEnppl = currentFileName.endsWith('.enppl') || /add\s+(?:the\s+)?["']?\w+["']?\s+library/i.test(content);
+  const libs = librariesIn(content);
+  const isEnppl = currentFileName.endsWith('.enppl') || libs.length > 0;
 
   const typeBadge = document.getElementById('dashType');
   typeBadge.className = isEnppl ? 'badge-enppl' : 'badge-enpp';
@@ -1280,7 +1389,6 @@ function updateDashboard() {
   document.getElementById('dashLines').innerText = lines;
   document.getElementById('statusLines').innerText = lines + ' lines';
 
-  const libs = librariesIn(content);
   const libText = libs.length > 0 ? libs.join(', ') : 'None';
   document.getElementById('dashLibs').innerText = libText;
   document.getElementById('statusLibraries').innerText = 'Libraries: ' + libText;
@@ -1295,24 +1403,36 @@ function updateDashboard() {
 }
 
 function updateLineNumbers() {
-  const lines = document.getElementById('editor').value.split('\n').length;
-  let html = '';
-  for (let i = 1; i <= lines; i++) html += i + '<br>';
-  document.getElementById('lineNumbers').innerHTML = html;
+  const ed = document.getElementById('editor');
+  const layer = document.getElementById('editorHighlight');
+  const gutter = document.getElementById('lineNumbers');
+  const wrapped = document.getElementById('editorWrap').classList.contains('wrap-lines');
+  if (window.EPP && EPP.StudioEditor) {
+    EPP.StudioEditor.update(ed, layer);
+    EPP.StudioEditor.renderLineNumbers(ed, gutter, wrapped);
+  } else {
+    gutter.innerHTML = ed.value.split('\n').map((_, index) => '<div>' + (index + 1) + '</div>').join('');
+  }
 }
 
 function insertLibrary(libName) {
   const ed = document.getElementById('editor');
   const addCmd = `add the "${libName}" library\n`;
-  if (!ed.value.includes(addCmd.trim())) {
+  if (!librariesIn(ed.value).includes(libName)) {
     ed.value = addCmd + ed.value;
     updateLineNumbers();
     updateDashboard();
     if (currentFileName.endsWith('.enpp')) {
-      const newName = currentFileName.replace(/\.enpp$/, '.enppl');
+      const base = currentFileName.replace(/\.enpp$/, '');
+      let newName = base + '.enppl', suffix = 2;
+      while (Object.prototype.hasOwnProperty.call(files, newName)) newName = base + '-' + suffix++ + '.enppl';
       renameCurrentFile(newName);
+    } else {
+      files[currentFileName] = ed.value;
+      saveStorage();
     }
-    showToast(`Added ${libName} library and updated to .enppl!`);
+    if (usesCompactWorkspace()) setMobileView('editor');
+    showToast(`Added ${libName} library.`);
   } else {
     showToast(`${libName} library is already added.`);
   }
@@ -1345,20 +1465,25 @@ function confirmFileDialog() {
     name += '.enpp';
   }
 
+  if (name !== currentFileName && Object.prototype.hasOwnProperty.call(files, name)) {
+    showToast('A file with that name already exists.', true);
+    return;
+  }
+  if (fileDialogMode === 'new' && Object.prototype.hasOwnProperty.call(files, name)) {
+    showToast('A file with that name already exists.', true);
+    return;
+  }
+
   if (fileDialogMode === 'new') {
     files[name] = `note [E++ code in ${name}]\nsay "Hello from ${name}!"\n`;
     saveStorage();
     renderFileList();
     loadFile(name);
+    if (usesCompactWorkspace()) setMobileView('editor');
     showToast(`Created ${name}`);
   } else if (fileDialogMode === 'rename') {
     if (name !== currentFileName) {
-      files[name] = files[currentFileName];
-      delete files[currentFileName];
-      saveStorage();
-      currentFileName = name;
-      renderFileList();
-      loadFile(name);
+      renameCurrentFile(name);
       showToast(`Renamed to ${name}`);
     }
   }
@@ -2013,6 +2138,16 @@ async function handleFileObject(file) {
     return;
   }
 
+  // Pick the final name before opening: a project's picture book must be
+  // restored under the imported name, never over an existing project's.
+  if (files[fileName] !== undefined) {
+    const base = fileName.replace(/\.(enpp|enppl)$/i, '');
+    const ext = fileName.slice(base.length);
+    let n = 2;
+    let candidate = base + ' (imported)' + ext;
+    while (files[candidate] !== undefined) { candidate = base + ' (imported ' + n + ')' + ext; n += 1; }
+    fileName = candidate;
+  }
   let plaintext;
   try {
     const result = await openProjectFile(text, fileName);
@@ -2024,18 +2159,11 @@ async function handleFileObject(file) {
     return;
   }
 
-  if (files[fileName] !== undefined) {
-    const base = fileName.replace(/\.(enpp|enppl)$/i, '');
-    const ext = fileName.slice(base.length);
-    let n = 2;
-    let candidate = base + ' (imported)' + ext;
-    while (files[candidate] !== undefined) { candidate = base + ' (imported ' + n + ')' + ext; n += 1; }
-    fileName = candidate;
-  }
   files[fileName] = plaintext;
   saveStorage();
   renderFileList();
   loadFile(fileName);
+  if (usesCompactWorkspace()) setMobileView('editor');
 }
 
 function downloadZip() {
@@ -2475,99 +2603,26 @@ function showDeterministicError(err) {
 }
 
 // ==========================================
-// Offline Zip Lexer Verification & Engine
-// ==========================================
-
-let zipRuntimeFiles = null;
-let isZipLexerLoaded = false;
-
-async function parseZipEntries(buffer) {
-  const bytes = new Uint8Array(buffer);
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const files = {};
-  let offset = 0;
-
-  while (offset + 30 <= bytes.length) {
-    const sig = view.getUint32(offset, true);
-    if (sig !== 0x04034b50) break;
-
-    const compression = view.getUint16(offset + 8, true);
-    const compSize = view.getUint32(offset + 18, true);
-    const nameLen = view.getUint16(offset + 26, true);
-    const extraLen = view.getUint16(offset + 28, true);
-
-    const nameBytes = bytes.subarray(offset + 30, offset + 30 + nameLen);
-    const name = new TextDecoder().decode(nameBytes);
-
-    const dataOffset = offset + 30 + nameLen + extraLen;
-    const dataBytes = bytes.subarray(dataOffset, dataOffset + compSize);
-
-    if (compression === 0) {
-      files[name] = new TextDecoder().decode(dataBytes);
-    } else if (compression === 8) {
-      try {
-        const ds = new DecompressionStream("deflate-raw");
-        const writer = ds.writable.getWriter();
-        writer.write(dataBytes);
-        writer.close();
-        const reader = ds.readable.getReader();
-        const chunks = [];
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          chunks.push(value);
-        }
-        const total = chunks.reduce((acc, c) => acc + c.length, 0);
-        const merged = new Uint8Array(total);
-        let pos = 0;
-        for (let c of chunks) { merged.set(c, pos); pos += c.length; }
-        files[name] = new TextDecoder().decode(merged);
-      } catch (err) {
-        files[name] = null;
-      }
-    }
-    offset = dataOffset + compSize;
-  }
-  return files;
-}
-
-async function checkAndLoadZipLexer() {
+// C++ lexer compiled to WebAssembly. The JavaScript evaluator consumes its
+// tokens; no ZIP-presence check or alternate lexer is used to run a program.
+async function ensureNativeLexer() {
   const badge = document.getElementById('zipRuntimeBadge');
   try {
-    const resp = await fetch('epp_language.zip');
-    if (!resp.ok) throw new Error("HTTP " + resp.status);
-    const buf = await resp.arrayBuffer();
-    zipRuntimeFiles = await parseZipEntries(buf);
-    if (zipRuntimeFiles && (zipRuntimeFiles['src/lexer.cpp'] || zipRuntimeFiles['lexer.py'])) {
-      isZipLexerLoaded = true;
-      if (badge) {
-        badge.className = 'badge-zip-active';
-        badge.innerText = '⚡ Native Zip Lexer: Active (loaded from epp_language.zip)';
-      }
-      return true;
-    }
-    throw new Error("Missing lexer files inside zip");
-  } catch (err) {
-    if (window.location.protocol === 'file:' || window.origin === 'null' || !window.origin) {
-      isZipLexerLoaded = true;
-      if (badge) {
-        badge.className = 'badge-zip-active';
-        badge.innerText = '⚡ Native Zip Lexer: Active (sandboxed runtime)';
-      }
-      return true;
-    }
-    isZipLexerLoaded = false;
-    zipRuntimeFiles = null;
-    if (badge) {
-      badge.className = 'badge-zip-locked';
-      badge.innerText = '❌ Runtime Locked: Missing epp_language.zip';
-    }
-    return false;
+    if (!window.EPP || !EPP.NativeLexer) throw {
+      code: 'E601', name: 'C++ Lexer Unavailable', filename: 'js/native-lexer.js', line: 1, col: 1,
+      sourceLine: '', reason: 'The C++ lexer adapter is missing.',
+      help: 'Keep js/native-lexer.js and js/native-lexer-wasm.js next to Studio.'
+    };
+    await EPP.NativeLexer.ready();
+    if (badge) { badge.className = 'badge-zip-active'; badge.innerText = '● C++ lexer ready'; }
+  } catch (error) {
+    if (badge) { badge.className = 'badge-zip-locked'; badge.innerText = 'C++ lexer unavailable'; }
+    throw error;
   }
 }
 
 // ==========================================
-// In-Browser Python Execution Engine (Native Lexer/Interpreter - No Pyodide)
+// In-Browser Python Subset Translator (JavaScript; not CPython)
 // ==========================================
 
 function executeInBrowserPython(pyCode, envVars, printFn, lineNum = 1) {
@@ -2980,11 +3035,12 @@ function executeInBrowserPython(pyCode, envVars, printFn, lineNum = 1) {
 }
 
 // ==========================================
-// E++ Pure Evaluator Engine
+// E++ browser evaluator (consumes the C++ lexer tokens)
 // ==========================================
 
 // Shared game state for the current run (the canvas lives in the console card).
 let activeGameHost = null;
+let activeDrawHost = null;
 let activeEvaluator = null;
 let keyTracker = null;
 
@@ -3001,9 +3057,11 @@ function appearsOutsideQuotes(line, needle) {
   for (let i = 0; i < text.length; i += 1) {
     const ch = text[i];
     if (quote) {
+      if (quote === '"' && ch === '\\' && i + 1 < text.length) { i += 1; continue; }
       if (ch === quote) quote = null;
       continue;
     }
+    if (ch === "'" && /[A-Za-z]/.test(text[i - 1] || '') && /[A-Za-z]/.test(text[i + 1] || '')) continue;
     if (ch === '"' || ch === "'") { quote = ch; continue; }
     if (text.startsWith(needle, i)) return true;
   }
@@ -3027,15 +3085,72 @@ function ensureGameHost() {
   return activeGameHost;
 }
 
+function ensureDrawHost() {
+  const canvas = document.getElementById('drawCanvas');
+  if (!activeDrawHost && window.EPP && EPP.DrawHost && canvas) activeDrawHost = new EPP.DrawHost(canvas);
+  return activeDrawHost;
+}
+
+function updateConsoleHint() {
+  const hasVisual = ['drawPane', 'gamePane'].some(id => {
+    const pane = document.getElementById(id);
+    return pane && pane.style.display !== 'none';
+  });
+  const content = document.getElementById('consoleContent');
+  const needsScroll = usesCompactWorkspace() && hasVisual && content.scrollHeight > content.clientHeight + 1;
+  document.querySelector('.console-hint').textContent = needsScroll ? 'Scroll for output ↓' : 'Results appear here';
+}
+function showDrawPane(show) {
+  const pane = document.getElementById('drawPane');
+  if (pane) pane.style.display = show ? 'flex' : 'none';
+  updateConsoleHint();
+}
+
+function updateDrawStats(host, sprite) {
+  const stats = document.getElementById('drawStats');
+  if (!stats || !host) return;
+  const count = host.sprites.size;
+  stats.textContent = count + (count === 1 ? ' sprite' : ' sprites') +
+    (sprite ? ` · ${sprite.name} (${sprite.x}, ${sprite.y})` : '');
+  const select = document.getElementById('drawSelect');
+  if (select) {
+    const before = select.value;
+    const names = Array.from(host.sprites.values()).map(item => item.name);
+    if (Array.from(select.options).map(option => option.value).join('\0') !== names.join('\0')) {
+      select.replaceChildren(...names.map(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        return option;
+      }));
+      if (names.includes(before)) select.value = before;
+    }
+  }
+}
+
+// Find a matching end without mistaking an inner block for the outer one.
+function matchingBlockEnd(lines, start, kind) {
+  let depth = 0;
+  const open = kind === 'repeat' ? /^repeat\b/i : kind === 'while' ? /^while\b/i : /^play\s+the\s+game\s*:?$/i;
+  const close = kind === 'game' ? /^end\s+the\s+game\s*$/i : new RegExp('^end\\s+' + kind + '\\s*$', 'i');
+  for (let j = start + 1; j < lines.length; j++) {
+    const text = lines[j].trim();
+    if (open.test(text)) depth++;
+    else if (close.test(text)) { if (!depth) return j; depth--; }
+  }
+  return -1;
+}
+
 /** Small read-only window into the live game, used by the test-suite. */
 function EPPStudioState() {
-  return { host: activeGameHost, evaluator: activeEvaluator, keyTracker: keyTracker };
+  return { host: activeGameHost, drawHost: activeDrawHost, evaluator: activeEvaluator, keyTracker: keyTracker };
 }
 window.EPPStudioState = EPPStudioState;
 
 function showGamePane(show) {
   const pane = document.getElementById('gamePane');
   if (pane) pane.style.display = show ? 'flex' : 'none';
+  updateConsoleHint();
 }
 
 function nextFrame() {
@@ -3047,10 +3162,15 @@ function nextFrame() {
 
 class EppEvaluator {
   constructor() {
-    this.vars = {};
+    // User-chosen names must not collide with Object.prototype properties.
+    this.vars = Object.create(null);
     this.libs = new Set();
-    this.actors = {};
-    this.timers = {};
+    this.actors = Object.create(null);
+    this.drawHost = null;
+    this.sourceLines = [];
+    this.tokensByLine = new Map();
+    this.tokenCache = new Map();
+    this.timers = Object.create(null);
     this.game = { width: 800, height: 600, background: 'night', running: false, frames: 0 };
     this.cancelled = false;
     this.keys = ensureKeyTracker();
@@ -3060,6 +3180,57 @@ class EppEvaluator {
   norm(name) { return name.toLowerCase().trim(); }
 
   cancel() { this.cancelled = true; this.game.running = false; }
+
+  // Expressions and inline statements are lexed by the same C++ lexer as the
+  // entire program. Cache syntax (never values) so loops do not re-lex it.
+  tokensFor(text, lineNum) {
+    if (this.tokenCache.has(text)) return this.tokenCache.get(text);
+    let tokens;
+    try {
+      tokens = EPP.NativeLexer.tokenize(text, currentFileName).filter(token => token.type !== 'EOF' && token.type !== 'NEWLINE');
+    } catch (error) {
+      if (error && error.code !== 'E601' && lineNum) {
+        error.line = lineNum;
+        error.sourceLine = this.sourceLines[lineNum - 1] || '';
+        const offset = error.sourceLine.indexOf(text);
+        if (offset >= 0) error.col += offset;
+      }
+      throw error;
+    }
+    if (this.tokenCache.size >= 2048) this.tokenCache.clear();
+    this.tokenCache.set(text, tokens);
+    return tokens;
+  }
+
+  diagnostic(code, name, reason, help, lineNum, fragment) {
+    const sourceLine = this.sourceLines[lineNum - 1] || '';
+    const index = fragment ? sourceLine.indexOf(fragment) : sourceLine.search(/\S/);
+    return { code, name, filename: currentFileName, line: lineNum || 1,
+      col: index >= 0 ? index + 1 : 1, sourceLine, reason, help };
+  }
+
+  requireDraw(lineNum) {
+    if (window.EPP && EPP.Libraries && !EPP.Libraries.isAvailable('Draw')) {
+      throw this.diagnostic('E302', 'Library Not In This Build',
+        'The Draw library is available in E++ Studio, not in E++.zip.',
+        'Open the full E++ Studio to draw with sprites.', lineNum);
+    }
+    this.requireLib('Draw', 'drawing sprite', lineNum);
+    const host = this.drawHost || ensureDrawHost();
+    if (!host) throw this.diagnostic('E302', 'Drawing Runtime Missing',
+      'The Draw runtime is not available in this build.', 'Open the full E++ Studio.', lineNum);
+    this.drawHost = host;
+    return host;
+  }
+
+  drawingSprite(name, lineNum) {
+    const host = this.requireDraw(lineNum);
+    const sprite = host.get(name);
+    if (!sprite) throw this.diagnostic('E201', 'Unknown Drawing Sprite',
+      `There is no drawing sprite called '${name}'.`,
+      `Create it first: define '${name}' as drawing sprite`, lineNum, `'${name}'`);
+    return sprite;
+  }
 
   requireGame() {
     this.requireLib('Game', 'the Game library', 0);
@@ -3120,7 +3291,7 @@ class EppEvaluator {
     await target.flush();
   }
 
-  async run(source, printFn, askFn) {
+  async run(source, printFn, askFn, lineOffset = 0, nested = false) {
     // A sealed project is opened before it ever reaches the editor; this
     // guard covers text that was pasted or restored from elsewhere.
     if (isSavedProject(source)) {
@@ -3128,14 +3299,31 @@ class EppEvaluator {
     }
 
     const lines = source.split('\n');
+    if (!nested) {
+      this.sourceLines = lines;
+      await ensureNativeLexer();
+      this.tokensByLine.clear();
+      this.tokenCache.clear();
+      const tokens = EPP.NativeLexer.tokenize(source, currentFileName);
+      for (const token of tokens) {
+        if (token.type === 'EOF' || token.type === 'NEWLINE' || token.type === 'PYTHON_BLOCK') continue;
+        if (!this.tokensByLine.has(token.line)) this.tokensByLine.set(token.line, []);
+        this.tokensByLine.get(token.line).push(token);
+      }
+      if (window.EPP && EPP.Diagnostics) EPP.Diagnostics.validate(source, currentFileName);
+    }
 
     for (let i = 0; i < lines.length; i++) {
+      if (this.cancelled) break;
       let line = lines[i].trim();
-      let lineNum = i + 1;
-      if (!line) continue;
+      let lineNum = lineOffset + i + 1;
+      const lineTokens = this.tokensByLine.get(lineNum);
+      if (!line || !lineTokens || !lineTokens.length) continue;
+      const firstWord = lineTokens[0].lexeme.toLowerCase().match(/^[a-z]+/);
+      const command = firstWord ? firstWord[0] : '';
 
       // Note check: note [Note]
-      if (line.toLowerCase().startsWith('note')) {
+      if (command === 'note' && /^note\b/i.test(line)) {
         const m = line.match(/^note\s*\[(.*)\]$/i);
         if (!m) {
           throw {
@@ -3215,10 +3403,10 @@ class EppEvaluator {
       // ---------------- Release 1.2 — repeat and while ----------------
       // repeat 3 times / end repeat
       const repeatMatch = line.match(/^repeat\s+(.+?)\s+times?\s*:?$/i);
-      if (repeatMatch) {
+      if (command === 'repeat' && repeatMatch) {
         const rawTimes = await this.evalExpr(repeatMatch[1], lineNum);
-        const times = Math.floor(Number(rawTimes));
-        if (!isFinite(times) || times < 0) {
+        const times = Number(rawTimes);
+        if (!Number.isInteger(times) || times < 0 || times > 100000) {
           throw {
             code: 'E101',
             name: 'Bad Repeat Count',
@@ -3230,34 +3418,20 @@ class EppEvaluator {
             help: 'Write it like this: repeat 3 times'
           };
         }
-        const body = [];
-        let j = i + 1;
-        for (; j < lines.length; j++) {
-          if (/^\s*end\s+repeat\b/i.test(lines[j])) break;
-          body.push(lines[j]);
-        }
-        if (j >= lines.length) {
-          throw {
-            code: 'E101',
-            name: 'Unclosed Repeat',
-            filename: currentFileName,
-            line: lineNum,
-            col: 1,
-            sourceLine: line,
-            reason: 'This repeat never ends.',
-            help: 'Close the loop with: end repeat'
-          };
-        }
+        const j = matchingBlockEnd(lines, i, 'repeat');
+        if (j < 0) throw this.diagnostic('E106', 'Unclosed Repeat', 'This repeat never ends.', 'Close the loop with: end repeat', lineNum);
+        const bodySource = lines.slice(i + 1, j).join('\n');
+        const bodyOffset = lineOffset + i + 1;
         i = j;
-        const bodySource = body.join('\n');
         for (let round = 0; round < times && !this.cancelled; round++) {
-          await this.run(bodySource, printFn, askFn);
+          await this.run(bodySource, printFn, askFn, bodyOffset, true);
+          if (round % 100 === 99) await nextFrame();
         }
         continue;
       }
 
       // while <condition> do / end while
-      if (/^while\s+/i.test(line)) {
+      if (command === 'while' && /^while\s+/i.test(line)) {
         let condition = line.replace(/^while\s+/i, '').trim();
         condition = condition.replace(/\s*:\s*$/, '').replace(/\s+do$/i, '').trim();
         if (!condition) {
@@ -3272,138 +3446,62 @@ class EppEvaluator {
             help: "Write it like this: while 'count' is less than 5 do"
           };
         }
-        const body = [];
-        let j = i + 1;
-        for (; j < lines.length; j++) {
-          if (/^\s*end\s+while\b/i.test(lines[j])) break;
-          body.push(lines[j]);
-        }
-        if (j >= lines.length) {
-          throw {
-            code: 'E101',
-            name: 'Unclosed While',
-            filename: currentFileName,
-            line: lineNum,
-            col: 1,
-            sourceLine: line,
-            reason: 'This while never ends.',
-            help: 'Close the loop with: end while'
-          };
-        }
+        const j = matchingBlockEnd(lines, i, 'while');
+        if (j < 0) throw this.diagnostic('E106', 'Unclosed While', 'This while never ends.', 'Close the loop with: end while', lineNum);
+        const bodySource = lines.slice(i + 1, j).join('\n');
+        const bodyOffset = lineOffset + i + 1;
         i = j;
-        const bodySource = body.join('\n');
         let rounds = 0;
-        while (!this.cancelled) {
-          const keepGoing = await this.evalCondition(condition, lineNum, line);
-          if (!keepGoing) break;
-          await this.run(bodySource, printFn, askFn);
+        while (!this.cancelled && await this.evalCondition(condition, lineNum, line)) {
+          if (rounds >= 100000) throw this.diagnostic('E405', 'Endless Loop',
+            'This while exceeded 100000 iterations.', 'Change a value in the loop so the condition becomes false.', lineNum);
+          await this.run(bodySource, printFn, askFn, bodyOffset, true);
           rounds += 1;
-          if (rounds > 100000) {
-            throw {
-              code: 'E101',
-              name: 'Endless Loop',
-              filename: currentFileName,
-              line: lineNum,
-              col: 1,
-              sourceLine: line,
-              reason: 'This while has run 100000 times and the condition is still true.',
-              help: "Make sure something inside the loop changes, for example: let 'count' be 'count' plus 1"
-            };
-          }
+          if (rounds % 100 === 0) await nextFrame();
         }
         continue;
       }
 
-      // IF STATEMENT: if [input] then [output] and block if
-      if (/^if\s+/i.test(line)) {
-        if (/\botherwise\b/i.test(line)) {
-          throw {
-            code: "E103",
-            name: "Invalid Otherwise Placement",
-            filename: currentFileName,
-            line: lineNum,
-            col: line.toLowerCase().indexOf('otherwise') + 1,
-            sourceLine: line,
-            reason: "'otherwise' cannot be placed on the same line as 'if ... then'.",
-            help: "In E++, 'otherwise' always has to be on the next line immediately following the 'if' statement."
-          };
+      // Inline if/otherwise and nested block ifs use the same statement runner.
+      if (command === 'if' && /^if\s+/i.test(line)) {
+        if (appearsOutsideQuotes(line.toLowerCase(), 'otherwise')) {
+          throw this.diagnostic('E103', 'Invalid Otherwise Placement', "'otherwise' belongs on the next line.",
+            'Move otherwise to the line immediately after the if.', lineNum, 'otherwise');
         }
-
         const ifMatch = line.match(/^if\s+(.+?)\s+then\s*(?::\s*)?(.*)$/i);
-        if (!ifMatch) {
-          throw {
-            code: "E101",
-            name: "Syntax Error in If Statement",
-            filename: currentFileName,
-            line: lineNum,
-            col: 1,
-            sourceLine: line,
-            reason: "Expected 'then' after if condition, e.g. if <condition> then <statement>",
-            help: "Format your if statement as: if <condition> then <statement>"
-          };
-        }
-
-        const condStr = ifMatch[1].trim();
+        if (!ifMatch) throw this.diagnostic('E101', 'Invalid If', "Expected 'then' after the condition.",
+          'For example: if 1 is 1 then say "Yes"', lineNum);
+        const condResult = await this.evalCondition(ifMatch[1], lineNum, line);
         const thenInline = ifMatch[2].trim();
-        const condResult = await this.evalCondition(condStr, lineNum, line);
-
-        // Check if next non-empty line is 'otherwise':
-        let hasOtherwise = false;
-        let otherwiseLine = '';
-        let otherwiseLineNum = 0;
-        let nextIdx = i + 1;
-        while (nextIdx < lines.length && !lines[nextIdx].trim()) {
-          nextIdx++;
-        }
-        if (nextIdx < lines.length && /^otherwise\b/i.test(lines[nextIdx].trim())) {
-          hasOtherwise = true;
-          otherwiseLine = lines[nextIdx].trim();
-          otherwiseLineNum = nextIdx + 1;
-          i = nextIdx; // advance past otherwise line
-        }
-
         if (thenInline) {
-          // Single-line if: if [input] then [output]
-          if (condResult) {
-            await this.execStatement(thenInline, lineNum, printFn, askFn);
-          } else if (hasOtherwise) {
-            const othMatch = otherwiseLine.match(/^otherwise\s*(?::\s*)?(.*)$/i);
-            const othStmt = othMatch ? othMatch[1].trim() : '';
-            if (othStmt) {
-              await this.execStatement(othStmt, otherwiseLineNum, printFn, askFn);
-            }
+          let nextIdx = i + 1;
+          while (nextIdx < lines.length && !lines[nextIdx].trim()) nextIdx++;
+          const other = nextIdx < lines.length && /^otherwise\b/i.test(lines[nextIdx].trim()) ? lines[nextIdx].trim() : '';
+          if (condResult) await this.execStatement(thenInline, lineNum, printFn, askFn);
+          else if (other) {
+            const action = other.replace(/^otherwise\s*:?[\s]*/i, '');
+            if (action) await this.execStatement(action, lineOffset + nextIdx + 1, printFn, askFn);
           }
-          continue;
-        } else {
-          // Block if: if <cond> then: ... otherwise: ... end if
-          let thenLines = [];
-          let elseLines = [];
-          let currentTarget = thenLines;
-          i++;
-          while (i < lines.length) {
-            let blkL = lines[i].trim();
-            // `end if` is the documented closer; a bare `end` closes a block
-            // too, because that is how people naturally write it.
-            if (/^end(\s+if)?\b/i.test(blkL)) {
-              break;
-            } else if (/^(?:otherwise|else)\b/i.test(blkL)) {
-              currentTarget = elseLines;
-              i++;
-              continue;
-            }
-            if (blkL) currentTarget.push({ line: blkL, lineNum: i + 1 });
-            i++;
-          }
-          const activeBlock = condResult ? thenLines : elseLines;
-          for (let item of activeBlock) {
-            await this.execStatement(item.line, item.lineNum, printFn, askFn);
-          }
+          if (other) i = nextIdx;
           continue;
         }
+        let depth = 0, otherIndex = -1, endIndex = -1;
+        for (let j = i + 1; j < lines.length; j++) {
+          const part = lines[j].trim();
+          if (/^if\s+.+?\s+then\s*:?\s*$/i.test(part)) depth++;
+          else if (/^end\s+if\s*$/i.test(part)) { if (!depth) { endIndex = j; break; } depth--; }
+          else if (!depth && /^(?:otherwise|else)\s*:?\s*$/i.test(part)) otherIndex = j;
+        }
+        if (endIndex < 0) throw this.diagnostic('E106', 'Unclosed If', 'This if never ends.', 'Close the block with: end if', lineNum);
+        const start = condResult ? i + 1 : (otherIndex < 0 ? endIndex : otherIndex + 1);
+        const end = condResult && otherIndex >= 0 ? otherIndex : endIndex;
+        await this.run(lines.slice(start, end).join('\n'), printFn, askFn, lineOffset + start, true);
+        i = endIndex;
+        continue;
       }
 
       // Standalone OTHERWISE check
-      if (/^otherwise\b/i.test(line)) {
+      if (command === 'otherwise' && /^otherwise\b/i.test(line)) {
         throw {
           code: "E104",
           name: "Standalone Otherwise",
@@ -3417,27 +3515,12 @@ class EppEvaluator {
       }
 
       // Release 1.2 — play the game ... end the game (Game library)
-      if (/^play\s+the\s+game\s*:?$/i.test(line)) {
+      if (command === 'play' && /^play\s+the\s+game\s*:?$/i.test(line)) {
         this.requireLib('Game', 'play the game', lineNum);
-        const block = [];
-        let j = i + 1;
-        for (; j < lines.length; j++) {
-          const inner = lines[j].trim();
-          if (/^end\s+the\s+game$/i.test(inner)) break;
-          if (inner && !inner.startsWith('note')) block.push({ line: inner, lineNum: j + 1 });
-        }
-        if (j >= lines.length) {
-          throw {
-            code: 'E101',
-            name: 'Unclosed Game Loop',
-            filename: currentFileName,
-            line: lineNum,
-            col: 1,
-            sourceLine: line,
-            reason: 'This "play the game" never ends.',
-            help: 'Close it with: end the game'
-          };
-        }
+        const j = matchingBlockEnd(lines, i, 'game');
+        if (j < 0) throw this.diagnostic('E106', 'Unclosed Game Loop', 'This game loop never ends.', 'Close it with: end the game', lineNum);
+        const blockSource = lines.slice(i + 1, j).join('\n');
+        const blockOffset = lineOffset + i + 1;
         i = j;
         const host = this.requireGame();
         showGamePane(true);
@@ -3447,12 +3530,11 @@ class EppEvaluator {
         this.game.running = true;
         let frames = 0;
         const startedAt = performance.now();
-        const blockSource = block.map(item => item.line).join('\n');
         this.setGameStats(0);
         while (this.game.running && !this.cancelled) {
           // The body runs through the normal statement runner, so if-blocks,
           // waits and nested game statements all behave exactly as outside.
-          if (blockSource.trim()) await this.run(blockSource, printFn, askFn);
+          if (blockSource.trim()) await this.run(blockSource, printFn, askFn, blockOffset, true);
           this.game.frames += 1;
           frames += 1;
           host.tick();
@@ -3570,12 +3652,15 @@ class EppEvaluator {
 
   async execStatement(line, lineNum, printFn, askFn) {
     const lower = line.toLowerCase();
+    const statementTokens = this.tokensFor(line, lineNum);
+    if (!statementTokens.length) return;
+    const command = statementTokens[0].lexeme.toLowerCase();
 
     // 1. ADD LIBRARY
     // Both sentence shapes work, and they have to keep working: the docs and
     // every library card write `add library "Math"`, the reference also allows
     // `add the "Math" library`, and the parser in js/parser.js accepts both.
-    if (lower.startsWith('add ')) {
+    if (command === 'add' && lower.startsWith('add ')) {
       const m = line.match(/^add\s+(?:the\s+)?["']?([A-Za-z][A-Za-z ]*?)["']?\s+library$/i)
         || line.match(/^add\s+(?:the\s+)?librar(?:y|ies)\s+["']?([A-Za-z][A-Za-z ]*?)["']?$/i);
       if (m) {
@@ -3584,7 +3669,7 @@ class EppEvaluator {
         if (window.EPP && EPP.Libraries) {
           if (!EPP.Libraries.isKnown(name)) {
             throw {
-              code: 'E301',
+              code: 'E303',
               name: 'Unknown Library',
               filename: currentFileName,
               line: lineNum,
@@ -3614,6 +3699,46 @@ class EppEvaluator {
         this.libs.add(this.norm(name));
         return;
       }
+    }
+
+    // Draw sprites are ordinary named variables with an independent cursor.
+    let mDraw = line.match(/^(?:define|let|set)\s+'([^']+)'\s+(?:as|be|to)\s+drawing\s+sprite$/i);
+    if (mDraw) {
+      const host = this.requireDraw(lineNum);
+      showDrawPane(true);
+      const sprite = host.create(mDraw[1]);
+      this.vars[this.norm(mDraw[1])] = mDraw[1];
+      updateDrawStats(host, sprite);
+      await host.flush();
+      return;
+    }
+    mDraw = line.match(/^(lift|lower)\s+the\s+pen\s+of\s+'([^']+)'$/i);
+    if (mDraw) {
+      this.drawingSprite(mDraw[2], lineNum);
+      const sprite = this.drawHost.setPen(mDraw[2], mDraw[1].toLowerCase() === 'lower');
+      updateDrawStats(this.drawHost, sprite);
+      await this.drawHost.flush();
+      return;
+    }
+    mDraw = line.match(/^set\s+the\s+colou?r\s+of\s+'([^']+)'\s+to\s+"([^"\n]+)"$/i);
+    if (mDraw) {
+      this.drawingSprite(mDraw[1], lineNum);
+      const color = mDraw[2].trim();
+      if (color.length > 40 || !(window.CSS && CSS.supports && CSS.supports('color', color))) {
+        throw this.diagnostic('E407', 'Invalid Drawing Color', `"${color}" is not a valid color.`,
+          'Use a color such as "purple" or "#c4b5fd".', lineNum, mDraw[2]);
+      }
+      const sprite = this.drawHost.setColor(mDraw[1], color);
+      updateDrawStats(this.drawHost, sprite);
+      await this.drawHost.flush();
+      return;
+    }
+    if (/^clear\s+the\s+drawing$/i.test(line)) {
+      const host = this.requireDraw(lineNum);
+      host.clear();
+      updateDrawStats(host);
+      await host.flush();
+      return;
     }
 
     // ---------------- Release 1.2 — Game library ----------------
@@ -3805,7 +3930,7 @@ class EppEvaluator {
 
     // 'hero' move right "4" — actors move with the Draw words
     mGame = line.match(/^'([^']+)'\s+move\s+(up|down|left|right)\s+"([^"]*)"$/i);
-    if (mGame && this.actors[this.norm(mGame[1])]) {
+    if (mGame && this.actors[this.norm(mGame[1])] && !(this.drawHost && this.drawHost.get(mGame[1]))) {
       const actor = this.actorOf(mGame[1], lineNum);
       const pixels = Number(mGame[3]);
       if (!/^-?\d+(\.\d+)?$/.test(String(mGame[3]).trim())) {
@@ -3851,6 +3976,23 @@ class EppEvaluator {
       }
     }
 
+    if (mGame) {
+      this.drawingSprite(mGame[1], lineNum);
+      const amount = mGame[3].trim();
+      if (!/^-?\d+(?:\.\d+)?$/.test(amount) || !Number.isFinite(Number(amount)) || Math.abs(Number(amount)) > 1000000) {
+        throw this.diagnostic('E407', 'Invalid Drawing Distance', 'A sprite needs a finite number of pixels.',
+          `For example: '${mGame[1]}' move ${mGame[2].toLowerCase()} "10"`, lineNum, mGame[3]);
+      }
+      const sprite = this.drawHost.move(mGame[1], mGame[2].toLowerCase(), Number(amount));
+      updateDrawStats(this.drawHost, sprite);
+      await this.drawHost.flush();
+      return;
+    }
+    if (/^'[^']+'\s+move\b/i.test(line)) {
+      throw this.diagnostic('E407', 'Invalid Sprite Move', 'A move needs a direction and a quoted number of pixels.',
+        `For example: 'hero' move right "40"`, lineNum);
+    }
+
     // 3. DEFINE / LET / SET (Golden Rule 2: Single quotes only!)
     if (lower.startsWith('let ') || lower.startsWith('set ') || lower.startsWith('define ')) {
       if (line.match(/^(?:let|set|define)\s+"([^"]+)"/i)) {
@@ -3868,8 +4010,9 @@ class EppEvaluator {
 
       const m = line.match(/^(?:let|set|define)\s+'([^']+)'\s+(?:be|to|as)\s+(.+)$/i);
       if (!m) {
+        const badName = /^(?:let|set|define)\s+([^'"\s]+)/i.test(line);
         throw {
-          code: "E101",
+          code: badName ? "E202" : "E101",
           name: "Syntax Error in Assignment",
           filename: currentFileName,
           line: lineNum,
@@ -3883,20 +4026,13 @@ class EppEvaluator {
       const varName = this.norm(m[1]);
       const rhs = m[2].trim();
 
-      if (rhs.startsWith('"') && rhs.endsWith('"')) {
-        this.vars[varName] = rhs.slice(1, -1);
-      } else if (/^'[^']*'$/.test(rhs)) {
-        // A lone quoted word is another variable; `'Total' plus 'n'` is a sum
-        // of two variables and belongs to the expression evaluator.
-        this.vars[varName] = this.getVar(rhs.slice(1, -1), lineNum);
-      } else {
-        try {
-          this.vars[varName] = await this.evalExpr(rhs, lineNum);
-        } catch (e) {
-          // Unquoted raw text fallback like: let 'Comment' be What a Disgrace!
-          this.vars[varName] = rhs;
-        }
+      const value = await this.evalExpr(rhs, lineNum);
+      // Redefining a drawing variable as a normal value removes its cursor.
+      if (this.drawHost && this.drawHost.get(m[1])) {
+        this.drawHost.remove(m[1]);
+        updateDrawStats(this.drawHost);
       }
+      this.vars[varName] = value;
       return;
     }
 
@@ -4029,7 +4165,7 @@ class EppEvaluator {
       const val = Number(await this.evalExpr(waitMatch[1].trim(), lineNum));
       const isMs = waitMatch[2].toLowerCase().startsWith('m');
       const ms = isMs ? val : val * 1000;
-      await new Promise(r => setTimeout(r, ms));
+      await this.sleepMs(ms, null, lineNum);
       return;
     }
 
@@ -4078,15 +4214,16 @@ class EppEvaluator {
       this.requireLib('System', 'run system command', lineNum);
       const cmd = sysMatch[1];
       const outVar = sysMatch[2];
-      const res = `E++ 1.2 runtime (cmd: ${cmd})`;
+      const res = `E++ 1.3 runtime (cmd: ${cmd})`;
       if (outVar) this.vars[this.norm(outVar)] = res;
       else printFn(res);
       return;
     }
 
     // 10. SAY STATEMENT (with Colors library support)
-    if (lower.startsWith('say ') || lower.startsWith('tell ')) {
-      let content = line.substring(line.indexOf(' ') + 1).trim();
+    if ((command === 'say' || command === 'tell') && /^(?:say|tell)(?:\s|$)/i.test(line)) {
+      let content = line.replace(/^(?:say|tell)\s*/i, '').trim();
+      if (!content) throw this.diagnostic('E105', 'Missing Value', "'say' needs a value to print.", 'For example: say "Hello"', lineNum);
       let colorClass = '';
 
       const colorMatch = content.match(/^(red|green|blue|yellow|cyan|magenta)\b\s*/i);
@@ -4108,7 +4245,7 @@ class EppEvaluator {
       const items = this.splitConcatParts(exprPart);
       let parts = [];
       for (const it of items) {
-        if (!it.trim()) continue;
+        if (!it.trim()) throw this.diagnostic('E105', 'Missing Value', 'A separator needs a value on each side.', 'For example: say "Hello", "world"', lineNum);
         parts.push(String(await this.evalExpr(it.trim(), lineNum)));
       }
 
@@ -4140,9 +4277,8 @@ class EppEvaluator {
       return;
     }
 
-    // Fallback: standalone expr
-    const val = await this.evalExpr(line, lineNum);
-    if (val !== undefined) printFn(String(val));
+    throw this.diagnostic('E101', 'Unknown Statement', 'E++ does not recognize this statement.',
+      'Start with a command such as say, let, or if.', lineNum);
   }
 
   splitConcatParts(exprStr) {
@@ -4153,8 +4289,9 @@ class EppEvaluator {
 
     for (let i = 0; i < exprStr.length; i++) {
       const c = exprStr[i];
+      if (c === '\\' && inQuotes && i + 1 < exprStr.length) { cur += c + exprStr[++i]; continue; }
       if (c === '"' && !inVar) inQuotes = !inQuotes;
-      if (c === "'" && !inQuotes) inVar = !inVar;
+      if (c === "'" && !inQuotes && !(/[A-Za-z]/.test(exprStr[i - 1] || '') && /[A-Za-z]/.test(exprStr[i + 1] || ''))) inVar = !inVar;
 
       if (!inQuotes && !inVar) {
         if (c === ',') {
@@ -4178,56 +4315,48 @@ class EppEvaluator {
       cur += c;
     }
     if (cur.trim()) parts.push(cur);
+    else if (parts.length) parts.push('');
     return parts;
   }
 
   getVar(name, lineNum) {
     const n = this.norm(name);
     if (!(n in this.vars)) {
-      throw {
-        code: "E201",
-        name: "Undefined Variable",
-        filename: currentFileName,
-        line: lineNum,
-        col: 1,
-        sourceLine: `'${name}'`,
-        reason: `Variable '${name}' has not been defined yet.`,
-        help: `Define it first with: let '${name}' be <value>`
-      };
+      throw this.diagnostic('E201', 'Undefined Variable', `Variable '${name}' has not been defined yet.`,
+        `Define it first: let '${name}' be <value>`, lineNum, `'${name}'`);
     }
     return this.vars[n];
   }
 
-  safeEvaluateMath(exprStr) {
-    let str = exprStr
-      .replace(/\bplus\b/gi, "+")
-      .replace(/\bminus\b/gi, "-")
-      .replace(/\btimes\b/gi, "*")
-      .replace(/\bmultiplied\s+by\b/gi, "*")
-      .replace(/\bdivided\s+by\b/gi, "/")
-      .replace(/\bmodulo\b/gi, "%")
-      .replace(/\bmod\b/gi, "%");
-
+  safeEvaluateMath(exprStr, lineNum) {
+    const evaluator = this;
+    // Arithmetic is parsed from C++ lexer tokens, not by looking up answers
+    // or scanning the source again with a separate JavaScript lexer.
+    const nativeTokens = this.tokensFor(exprStr, lineNum);
     const tokens = [];
-    let i = 0;
-    while (i < str.length) {
-      const c = str[i];
-      if (/\s/.test(c)) { i++; continue; }
-      if (/[\d.]/.test(c)) {
-        let numStr = "";
-        while (i < str.length && /[\d.]/.test(str[i])) {
-          numStr += str[i];
+    for (let i = 0; i < nativeTokens.length; i++) {
+      const token = nativeTokens[i];
+      const word = token.lexeme.toLowerCase();
+      if (token.type === 'NUMBER') {
+        tokens.push({ type: 'NUM', val: token.value });
+      } else if (token.type === 'VARIABLE') {
+        const value = this.getVar(token.value, lineNum);
+        const numeric = typeof value === 'number' ? value :
+          (String(value).trim() !== '' && !isNaN(Number(value)) ? Number(value) : NaN);
+        if (isNaN(numeric)) return null;
+        tokens.push({ type: 'NUM', val: numeric });
+      } else if (['+', '-', '*', '/', '%', '(', ')'].includes(token.type)) {
+        tokens.push({ type: 'OP', val: token.type });
+      } else {
+        const operators = { plus: '+', minus: '-', times: '*', modulo: '%', mod: '%' };
+        if (Object.prototype.hasOwnProperty.call(operators, word)) {
+          tokens.push({ type: 'OP', val: operators[word] });
+        } else if ((word === 'multiplied' || word === 'divided') &&
+                   nativeTokens[i + 1] && nativeTokens[i + 1].lexeme.toLowerCase() === 'by') {
+          tokens.push({ type: 'OP', val: word === 'multiplied' ? '*' : '/' });
           i++;
-        }
-        tokens.push({ type: "NUM", val: parseFloat(numStr) });
-        continue;
+        } else return null;
       }
-      if ("+-*/%()".includes(c)) {
-        tokens.push({ type: "OP", val: c });
-        i++;
-        continue;
-      }
-      return null;
     }
 
     if (tokens.length === 0) return null;
@@ -4253,8 +4382,10 @@ class EppEvaluator {
         const right = parseFactor();
         if (right === null) return null;
         if (op === "*") left = left * right;
-        else if (op === "/") left = right === 0 ? 0 : left / right;
-        else if (op === "%") left = left % right;
+        else if (op === "/" || op === "%") {
+          if (right === 0) throw evaluator.diagnostic('E403', 'Division By Zero', 'A number cannot be divided by zero.', 'Use a divisor other than zero.', lineNum);
+          left = op === "/" ? left / right : left % right;
+        }
       }
       return left;
     }
@@ -4265,7 +4396,8 @@ class EppEvaluator {
       if (t.type === "NUM") return t.val;
       if (t.type === "OP" && t.val === "(") {
         const val = parseExpression();
-        if (pos < tokens.length && tokens[pos].val === ")") pos++;
+        if (pos >= tokens.length || tokens[pos].val !== ")") return null;
+        pos++;
         return val;
       }
       if (t.type === "OP" && t.val === "-") {
@@ -4282,11 +4414,14 @@ class EppEvaluator {
 
   async evalExpr(expr, lineNum) {
     expr = expr.trim();
-    if (!expr) return "";
+    if (!expr) throw this.diagnostic('E105', 'Missing Value', 'An expression needs a value.', 'Use a number, "text", or a single-quoted variable.', lineNum);
 
-    if (/^"[^"]*"$/.test(expr)) return expr.slice(1, -1);
-    if (/^'[^']*'$/.test(expr)) return this.getVar(expr.slice(1, -1), lineNum);
-    if (!isNaN(Number(expr)) && expr !== '') return Number(expr);
+    const literal = this.tokensFor(expr, lineNum);
+    if (literal.length === 1) {
+      if (literal[0].type === 'STRING' || literal[0].type === 'NUMBER') return literal[0].value;
+      if (literal[0].type === 'VARIABLE') return this.getVar(literal[0].value, lineNum);
+      if (/^(?:true|false)$/i.test(literal[0].lexeme)) return literal[0].lexeme.toLowerCase() === 'true';
+    }
 
     // `the length of "x"` and `length of "x"` are the same words. Adding the
     // article here keeps one spelling of every library word below.
@@ -4302,12 +4437,7 @@ class EppEvaluator {
     }
 
     // Direct arithmetic evaluation (zero eval/Function, 100% CSP compliant)
-    let exprWithVars = expr.replace(/'([^']+)'/g, (_, vName) => {
-      const val = this.getVar(vName, lineNum);
-      return typeof val === 'number' ? val : (isNaN(Number(val)) ? 0 : Number(val));
-    });
-
-    const directMath = this.safeEvaluateMath(exprWithVars);
+    const directMath = this.safeEvaluateMath(expr, lineNum);
     if (directMath !== null && !isNaN(directMath)) {
       return directMath;
     }
@@ -4432,7 +4562,7 @@ class EppEvaluator {
     // System library functions
     if (expr.toLowerCase() === 'the platform' || expr.toLowerCase() === 'the system platform') {
       this.requireLib('System', 'the platform', lineNum);
-      return navigator.platform || 'Web System (E++ 1.2)';
+      return navigator.platform || 'Web System (E++ 1.3)';
     }
     if (expr.toLowerCase() === 'the os' || expr.toLowerCase() === 'the operating system') {
       this.requireLib('System', 'the os', lineNum);
@@ -4505,21 +4635,26 @@ class EppEvaluator {
       .replace(/\bmodulo\b/gi, '%')
       .replace(/\bmod\b/gi, '%');
 
-    sanitized = sanitized.replace(/'([^']+)'/g, (_, vName) => {
+    sanitized = sanitized.replace(/(^|[^A-Za-z])'([^']+)'/g, (_, prefix, vName) => {
       const val = this.getVar(vName, lineNum);
-      return typeof val === 'number' ? val : JSON.stringify(val);
+      return prefix + (typeof val === 'number' ? val : JSON.stringify(val));
     });
 
-    const finalMath = this.safeEvaluateMath(sanitized);
+    const finalMath = this.safeEvaluateMath(sanitized, lineNum);
     if (finalMath !== null && !isNaN(finalMath)) {
       return finalMath;
     }
 
-    // Natural speech fallback: return natural text without throwing rigid quote errors
-    return expr;
+    const bare = expr.match(/\b[A-Za-z_][\w-]*\b/);
+    if (bare && !/^(?:plus|minus|times|divided|by|mod|modulo)$/i.test(bare[0])) {
+      throw this.diagnostic('E402', 'Unquoted Text', `Unquoted text '${bare[0]}' is not a value.`,
+        'Put text in double quotes, or use single quotes for a variable.', lineNum, bare[0]);
+    }
+    throw this.diagnostic('E105', 'Invalid Expression', 'This expression is incomplete or invalid.',
+      'Check the operands and matching parentheses.', lineNum, expr);
   }
 
-  evalTypeCheck(expr, lineNum) {
+  async evalTypeCheck(expr, lineNum) {
     const m = expr.match(/^check\s+if\s+(.+?)\s+is\s+(not\s+)?(?:a\s+)?number$/i);
     if (!m) throw {
       code: "E101",
@@ -4534,10 +4669,7 @@ class EppEvaluator {
     const target = m[1].trim();
     const isNot = Boolean(m[2]);
 
-    let val = target;
-    if (target.startsWith('"') && target.endsWith('"')) val = target.slice(1, -1);
-    else if (target.startsWith("'") && target.endsWith("'")) val = this.getVar(target.slice(1, -1), lineNum);
-    else if (!isNaN(Number(target))) val = Number(target);
+    const val = await this.evalExpr(target, lineNum);
 
     let isNum = false;
     if (typeof val === 'number') isNum = true;
@@ -4589,7 +4721,7 @@ class EppEvaluator {
       filename: currentFileName,
       line: lineNum,
       col: 1,
-      sourceLine: feature,
+      sourceLine: this.sourceLines[lineNum - 1] || feature,
       reason: `'${feature}' requires the ${list} library.`,
       help: `Add this line at the top: add the "${libNames[libNames.length - 1]}" library`
     };
@@ -4610,57 +4742,51 @@ function appendConsoleLine(text, cls = 'output') {
 
 function clearConsole() {
   document.getElementById('consoleOutput').innerHTML = '';
-  appendConsoleLine('Console cleared. Ready.', 'system');
+}
+
+let isRunning = false;
+
+function stopCurrentRun() {
+  if (activeEvaluator) activeEvaluator.cancel();
+  if (activeGameHost) activeGameHost.stop();
+  if (pendingAsk) {
+    const resolve = pendingAsk;
+    pendingAsk = null;
+    document.getElementById('consoleInputForm').style.display = 'none';
+    resolve('');
+  }
 }
 
 async function runCode() {
+  if (isRunning) return;
+  isRunning = true;
   const statusEl = document.getElementById('statusRun');
+  const runButton = document.getElementById('btnRun');
+  const stopButton = document.getElementById('btnStop');
+  runButton.disabled = true;
+  stopButton.disabled = false;
   updateDashboard();
+  clearConsole();
+  showGamePane(false);
+  showDrawPane(false);
+  if (activeGameHost && activeGameHost.reset) activeGameHost.reset();
+  if (activeDrawHost) activeDrawHost.reset();
+  if (usesCompactWorkspace()) setMobileView('console');
   statusEl.innerText = 'Running…';
   statusEl.className = 'status-run running';
+  let engine = null;
+  try {
+    let code = document.getElementById('editor').value;
+    if (isSavedProject(code)) code = (await openProjectFile(code, currentFileName)).text;
+    files[currentFileName] = code;
+    saveStorage();
+    setSaveStatus('Saved locally', false);
 
-  // Check and enforce offline zip lexer requirement
-  if (!isZipLexerLoaded) {
-    const reloaded = await checkAndLoadZipLexer();
-    if (!reloaded) {
-      const errHtml = formatDeterministicError({
-        code: "E601",
-        name: "Missing Offline Runtime Lexer",
-        filename: "epp_language.zip",
-        line: 1,
-        col: 1,
-        sourceLine: "epp_language.zip",
-        reason: "The offline runtime directly requires the native lexer bundled inside 'epp_language.zip' to execute.",
-        help: "epp_language.zip was deleted or cannot be found. Place epp_language.zip in the directory next to index.html to enable execution."
-      });
-      document.getElementById('consoleOutput').innerHTML += errHtml;
-      statusEl.innerText = 'Locked';
-      statusEl.className = 'status-run error';
-      return;
-    }
-  }
-
-  let code = document.getElementById('editor').value;
-  if (isSavedProject(code)) {
-    try {
-      code = (await openProjectFile(code, currentFileName)).text;
-    } catch (e) {
-      document.getElementById('consoleOutput').innerHTML += formatDeterministicError(e);
-      statusEl.innerText = 'Error';
-      statusEl.className = 'status-run error';
-      return;
-    }
-  }
-
-  files[currentFileName] = code;
-  saveStorage();
-
-  appendConsoleLine(`—— Running ${currentFileName} ——`, 'system');
-  const engine = new EppEvaluator();
-
-  const printFn = (text, extraCls = '') => appendConsoleLine(text, extraCls ? 'output ' + extraCls : 'output');
-  const askFn = (prompt) => {
-    return new Promise((resolve) => {
+    appendConsoleLine(`› Running ${currentFileName}`, 'system');
+    engine = new EppEvaluator();
+    const printFn = (text, extraCls = '') => appendConsoleLine(text, extraCls ? 'output ' + extraCls : 'output');
+    const askFn = (prompt) => new Promise((resolve) => {
+      if (engine.cancelled) { resolve(''); return; }
       appendConsoleLine(`? ${prompt}`, 'prompt');
       document.getElementById('consoleInputPrompt').innerText = prompt;
       const form = document.getElementById('consoleInputForm');
@@ -4670,21 +4796,27 @@ async function runCode() {
       input.focus();
       pendingAsk = resolve;
     });
-  };
-
-  try {
     await engine.run(code, printFn, askFn);
-    statusEl.innerText = 'Finished';
+    if (engine.cancelled) {
+      statusEl.innerText = 'Stopped';
+      appendConsoleLine('› Program stopped.', 'system');
+    } else {
+      statusEl.innerText = 'Finished';
+      appendConsoleLine('› Finished successfully.', 'system');
+    }
     statusEl.className = 'status-run';
-    appendConsoleLine('—— Finished ——', 'system');
   } catch (err) {
     statusEl.innerText = 'Error';
     statusEl.className = 'status-run error';
-    if (err.code) {
-      document.getElementById('consoleOutput').innerHTML += formatDeterministicError(err);
-    } else {
-      appendConsoleLine(err.message, 'error');
-    }
+    if (err.code) showDeterministicError(err);
+    else appendConsoleLine(err.message || String(err), 'error');
+  } finally {
+    if (activeEvaluator === engine) activeEvaluator = null;
+    pendingAsk = null;
+    document.getElementById('consoleInputForm').style.display = 'none';
+    isRunning = false;
+    runButton.disabled = false;
+    stopButton.disabled = true;
   }
 }
 
@@ -4703,8 +4835,16 @@ document.getElementById('consoleInputForm').addEventListener('submit', (e) => {
 
 // Event Listeners
 document.getElementById('btnRun').onclick = runCode;
-document.getElementById('btnSave').onclick = () => { files[currentFileName] = document.getElementById('editor').value; saveStorage(); showToast('Saved ' + currentFileName); };
-document.getElementById('btnClear').onclick = clearConsole;
+document.getElementById('btnStop').onclick = stopCurrentRun;
+document.getElementById('btnSave').onclick = () => { files[currentFileName] = document.getElementById('editor').value; saveStorage(); setSaveStatus('Saved locally', false); showToast('Saved ' + currentFileName); };
+document.getElementById('btnClear').onclick = async () => {
+  if (!document.getElementById('editor').value) return;
+  if (await confirmDialog('Clear all code in this file?', { title: 'Clear the editor?', confirmLabel: 'Clear code', danger: true })) {
+    document.getElementById('editor').value = '';
+    document.getElementById('editor').dispatchEvent(new Event('input', { bubbles: true }));
+    document.getElementById('editor').focus();
+  }
+};
 document.getElementById('btnClearConsole').onclick = clearConsole;
 document.getElementById('btnNew').onclick = openNewFileDialog;
 document.getElementById('btnSidebarNew').onclick = openNewFileDialog;
@@ -4743,20 +4883,38 @@ editor.addEventListener('paste', async (e) => {
       const cur = editor.value;
       editor.value = cur.substring(0, start) + dec + cur.substring(end);
       editor.selectionStart = editor.selectionEnd = start + dec.length;
-      updateLineNumbers();
-      updateDashboard();
+      editor.dispatchEvent(new Event('input', { bubbles: true }));
     } catch (err) {
       showDeterministicError(err);
       showToast('No saved key opens that project.', true);
     }
   }
 });
+function setSaveStatus(text, dirty) {
+  ['saveStatus', 'mobileSaveStatus'].forEach(id => {
+    const status = document.getElementById(id);
+    status.textContent = text;
+    status.classList.toggle('dirty', !!dirty);
+  });
+}
+let saveTimer = null;
 editor.oninput = () => {
+  files[currentFileName] = editor.value;
+  setSaveStatus('Saving…', true);
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    saveStorage();
+    setSaveStatus('Saved locally', false);
+  }, 300);
   updateLineNumbers();
   updateDashboard();
+  updateCursor();
 };
 editor.onscroll = () => {
   document.getElementById('lineNumbers').scrollTop = editor.scrollTop;
+  const layer = document.getElementById('editorHighlight');
+  layer.scrollTop = editor.scrollTop;
+  layer.scrollLeft = editor.scrollLeft;
 };
 editor.onkeydown = (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -4775,11 +4933,49 @@ editor.onkeydown = (e) => {
     const end = editor.selectionEnd;
     editor.value = editor.value.substring(0, start) + "    " + editor.value.substring(end);
     editor.selectionStart = editor.selectionEnd = start + 4;
-    updateLineNumbers();
+    editor.dispatchEvent(new Event('input', { bubbles: true }));
   }
 };
 editor.onkeyup = updateCursor;
 editor.onclick = updateCursor;
+
+// Wrapping is on by default when space is tight, but the choice is
+// always explicit and stays consistent between the textarea and highlight.
+const wrapButton = document.getElementById('btnWrap');
+const editorWrapElement = document.getElementById('editorWrap');
+let wrapPreference = null;
+try {
+  const saved = localStorage.getItem('epp_studio_wrap');
+  if (saved === 'on' || saved === 'off') wrapPreference = saved === 'on';
+} catch (error) { /* A private browser can deny storage. */ }
+function setEditorWrap(enabled) {
+  editorWrapElement.classList.toggle('wrap-lines', enabled);
+  editor.setAttribute('wrap', enabled ? 'soft' : 'off');
+  wrapButton.setAttribute('aria-pressed', String(enabled));
+  editor.scrollLeft = 0;
+  updateLineNumbers();
+}
+wrapButton.addEventListener('click', () => {
+  wrapPreference = !editorWrapElement.classList.contains('wrap-lines');
+  try { localStorage.setItem('epp_studio_wrap', wrapPreference ? 'on' : 'off'); } catch (error) { /* Still apply it for this session. */ }
+  setEditorWrap(wrapPreference);
+});
+const narrowEditorQuery = window.matchMedia ? window.matchMedia('(max-width: 1180px)') : null;
+if (narrowEditorQuery) {
+  const onEditorSizeChange = () => { if (wrapPreference === null) setEditorWrap(narrowEditorQuery.matches); };
+  if (narrowEditorQuery.addEventListener) narrowEditorQuery.addEventListener('change', onEditorSizeChange);
+  else if (narrowEditorQuery.addListener) narrowEditorQuery.addListener(onEditorSizeChange);
+}
+if (window.ResizeObserver) {
+  let wrapResizeFrame = 0;
+  new ResizeObserver(() => {
+    if (!editorWrapElement.classList.contains('wrap-lines')) return;
+    cancelAnimationFrame(wrapResizeFrame);
+    wrapResizeFrame = requestAnimationFrame(updateLineNumbers);
+  }).observe(editorWrapElement);
+  new ResizeObserver(updateConsoleHint).observe(document.getElementById('consoleContent'));
+}
+setEditorWrap(wrapPreference === null ? !!(narrowEditorQuery && narrowEditorQuery.matches) : wrapPreference);
 
 function updateCursor() {
   const text = editor.value.substring(0, editor.selectionStart);
@@ -4788,6 +4984,97 @@ function updateCursor() {
   const col = lines[lines.length - 1].length + 1;
   document.getElementById('statusCursor').innerText = `Line ${line}, Column ${col}`;
 }
+
+// The same breakpoint is used by the CSS and automatic panel switches.
+function usesCompactWorkspace() {
+  return !!(window.matchMedia && window.matchMedia('(max-width: 900px)').matches);
+}
+
+// On compact headers, every action remains available in a real, keyboard-
+// accessible menu rather than disappearing off the edge of a scrolling row.
+const toolsToggle = document.getElementById('btnTools');
+const toolsPanel = document.getElementById('studioActions');
+function setToolsOpen(open, restoreFocus = false) {
+  toolsPanel.classList.toggle('is-open', open);
+  toolsToggle.setAttribute('aria-expanded', String(open));
+  toolsToggle.setAttribute('aria-label', open ? 'Close studio tools' : 'Open studio tools');
+  if (!open && restoreFocus) toolsToggle.focus();
+}
+toolsToggle.addEventListener('click', () => setToolsOpen(!toolsPanel.classList.contains('is-open')));
+toolsPanel.addEventListener('click', event => {
+  const action = event.target.closest('button');
+  if (!action || !(window.matchMedia && window.matchMedia('(max-width: 1180px)').matches)) return;
+  const modal = topModal();
+  if (modal && modal.__eppOpener === action) modal.__eppOpener = toolsToggle;
+  const dialog = document.querySelector('dialog[open]');
+  if (dialog) dialog.dataset.returnToTools = 'true';
+  setToolsOpen(false, !modal && !dialog && action.id !== 'btnImport');
+});
+document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('close', () => {
+  if (dialog.dataset.returnToTools) {
+    delete dialog.dataset.returnToTools;
+    if (window.matchMedia && window.matchMedia('(max-width: 1180px)').matches) toolsToggle.focus();
+  }
+}));
+document.addEventListener('click', event => {
+  if (toolsPanel.classList.contains('is-open') && !toolsPanel.contains(event.target) && !toolsToggle.contains(event.target)) setToolsOpen(false);
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && toolsPanel.classList.contains('is-open')) {
+    event.preventDefault();
+    setToolsOpen(false, true);
+  }
+});
+window.addEventListener('resize', () => {
+  if (window.matchMedia && !window.matchMedia('(max-width: 1180px)').matches && toolsPanel.classList.contains('is-open')) setToolsOpen(false);
+  updateConsoleHint();
+});
+
+// Workspace navigation works on touch, keyboard, and narrow screens.
+function setMobileView(view) {
+  document.body.dataset.view = view;
+  document.querySelectorAll('.mobile-view-btn').forEach(button => {
+    const selected = button.dataset.view === view;
+    button.classList.toggle('active', selected);
+    button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  });
+  if (view === 'editor') requestAnimationFrame(updateLineNumbers);
+}
+setMobileView('editor');
+document.querySelectorAll('.mobile-view-btn').forEach(button => {
+  button.addEventListener('click', () => setMobileView(button.dataset.view));
+});
+document.querySelectorAll('.side-tab').forEach(button => {
+  button.addEventListener('click', () => {
+    document.querySelectorAll('.side-tab').forEach(item => {
+      const selected = item === button;
+      item.classList.toggle('active', selected);
+      item.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    });
+    ['files', 'libraries', 'guide'].forEach(name => {
+      document.getElementById(name + 'Panel').hidden = name !== button.dataset.panel;
+    });
+  });
+});
+document.getElementById('btnClearDrawing').addEventListener('click', () => {
+  if (activeDrawHost) { activeDrawHost.clear(); updateDrawStats(activeDrawHost); }
+});
+function moveSelectedDrawing(direction, distance = 10) {
+  if (!activeDrawHost) return;
+  const selected = document.getElementById('drawSelect').value;
+  const sprite = activeDrawHost.move(selected, direction, distance);
+  if (sprite) updateDrawStats(activeDrawHost, sprite);
+}
+document.querySelectorAll('[data-draw-move]').forEach(button => {
+  button.addEventListener('click', () => moveSelectedDrawing(button.dataset.drawMove));
+});
+document.getElementById('drawCanvas').addEventListener('keydown', event => {
+  const direction = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }[event.key];
+  if (!direction) return;
+  event.preventDefault();
+  event.stopPropagation();
+  moveSelectedDrawing(direction, event.shiftKey ? 1 : 10);
+});
 
 // ------------------------------------------------------------------
 // Release 1.2 wiring: images, keys, game stop
@@ -5318,10 +5605,10 @@ function showTutorialOutput(lines) {
  */
 async function runTutorialProgram(code, step) {
   const output = [];
+  const previousEvaluator = activeEvaluator;
   const engine = new EppEvaluator();
   // A card may link a picture; that link belongs to the card, not the project.
   engine.ephemeral = true;
-  const previousEvaluator = activeEvaluator === engine ? null : activeEvaluator;
   const gameWasOpen = document.getElementById('gamePane').style.display === 'flex';
   let error = null;
   let timedOut = false;
@@ -5460,7 +5747,18 @@ function resetTutorialCard() {
   document.getElementById('tutOutput').style.display = 'none';
 }
 
+function setTutorialNav(open, restoreFocus = false) {
+  const shell = document.querySelector('.tut-shell');
+  shell.classList.toggle('lessons-open', open);
+  document.getElementById('tutLessonsToggle').setAttribute('aria-expanded', String(open));
+  if (open) {
+    const selected = document.querySelector('#tutCourseList .tut-step.active');
+    (selected || document.getElementById('tutLessonsClose')).focus();
+  } else if (restoreFocus) document.getElementById('tutLessonsToggle').focus();
+}
+
 function selectTutorialCard(courseIndex, stepIndex) {
+  setTutorialNav(false);
   const deck = getTutorialDeck();
   if (!deck) return;
   const course = deck.courses[courseIndex];
@@ -5518,6 +5816,7 @@ function openTutorials(courseId, stepId) {
 }
 
 function closeTutorials() {
+  setTutorialNav(false);
   closeModal(document.getElementById('tutorialOverlay'));
 }
 
@@ -5562,6 +5861,13 @@ function wireTutorials() {
 
   const close = document.getElementById('tutClose');
   if (close) close.addEventListener('click', closeTutorials);
+  document.getElementById('tutLessonsToggle').addEventListener('click', () => {
+    setTutorialNav(!document.querySelector('.tut-shell').classList.contains('lessons-open'));
+  });
+  document.getElementById('tutLessonsClose').addEventListener('click', () => setTutorialNav(false, true));
+  document.querySelector('.tut-card').addEventListener('click', event => {
+    if (document.querySelector('.tut-shell').classList.contains('lessons-open') && !event.target.closest('#tutLessonsToggle')) setTutorialNav(false);
+  });
 
   const check = document.getElementById('tutCheck');
   if (check) check.addEventListener('click', runTutorialCard);
@@ -5619,7 +5925,12 @@ function wireTutorials() {
 
   document.addEventListener('keydown', (event) => {
     const open = overlay && overlay.style.display !== 'none';
-    if (open && event.key === 'Escape') closeTutorials();
+    if (open && event.key === 'Escape') {
+      if (document.querySelector('.tut-shell').classList.contains('lessons-open')) {
+        event.preventDefault();
+        setTutorialNav(false, true);
+      } else closeTutorials();
+    }
   });
 }
 
@@ -5666,7 +5977,7 @@ wireIdeas();
 initStorage();
 renderFileList();
 loadFile(currentFileName);
-checkAndLoadZipLexer();
+ensureNativeLexer().catch(() => {});
 ensureVaultReady();
 </script>
 </body>

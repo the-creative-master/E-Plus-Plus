@@ -14,8 +14,9 @@ class ParseError : public std::runtime_error {
 public:
     int line;
     int col;
-    ParseError(const std::string& msg, int l, int c)
-        : std::runtime_error(msg), line(l), col(c) {}
+    std::string code;
+    ParseError(const std::string& msg, int l, int c, const std::string& error_code = "E101")
+        : std::runtime_error(msg), line(l), col(c), code(error_code) {}
 };
 
 class LogicError : public std::runtime_error {
