@@ -1,11 +1,10 @@
-note: The Python library lets E++ run real Python code.
-note: Python only works after the library line below.
+note [The Python library lets E++ run Python code.]
 add library "Python"
 
-python code "print('Hello from Python!')"
+run the python code "print('Hello from Python!')"
 
-python code ",for number in range(3):
-    print('Counting in Python:', number)
-,"
+run the python code:
+    for number in range(3):
+        print('Counting in Python:', number)
 
 say "And now E++ is talking again."

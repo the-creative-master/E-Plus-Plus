@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 /*
- * Builds the release bundle: E++.zip (and its twin epp_language.zip, which the
- * Studio reads for the offline runtime check).
+ * Builds E++.zip and epp_language.zip. Studio executes its embedded compiled
+ * C++ lexer directly; these archives are downloadable distributions.
  *
- * E++.zip is the *standalone* build of E++ 1.2.1 (Language Patch 1). The Studio and the zip carry
+ * E++.zip is the *standalone* build of E++ 1.3. The Studio and the zip carry
  * different halves of the game tooling, and only one of them at a time:
  *
- *   Studio (E++ Studio)          Game, ImprovedWait
+ *   Studio (E++ Studio)          Draw, Game, ImprovedWait
  *   Zip    (the standalone)      Keyboard, ImprovedWaitLite
  *
- * Game needs a canvas and js/game-library.js, and ImprovedWait is the actor
- * half of the waiting engine — neither travels in this bundle. Nothing is
+ * Draw and Game need their canvas hosts; ImprovedWait is the actor half of
+ * the waiting engine. None of these runtimes travels in this bundle. Nothing is
  * silently missing: the copy of index.html inside the zip is stamped with
  * `window.EPP_DISTRIBUTION = true`, which makes js/libraries.js hide
- * Game/ImprovedWait and keeps Keyboard/ImprovedWaitLite, so `add library "Game"`
+ * Draw/Game/ImprovedWait and keeps Keyboard/ImprovedWaitLite, so `add library "Game"`
  * explains that the library lives in the full Studio download and the library
  * cards for both are removed from the page.
  *
@@ -43,23 +43,29 @@ const ENTRIES = [
   'examples',
   'Makefile',
   'CMakeLists.txt',
+  'LICENSE',
+  'third_party/licenses',
   'README.md',
   'LANGUAGE.md',
   'index.html',
   'lexer.py',
   'epp.py',
+  'tests/cli-1.3.py',
+  'tests/native-lexer.mjs',
+  'tools/build-lexer-wasm.mjs',
   'epp'
 ];
 
 // A distribution never ships the Game runtime, so it never ships the file that
 // implements it. The Studio builds its game pane with it.
 const DISTRIBUTION_EXCLUDED = [
-  'js/game-library.js'
+  'js/game-library.js',
+  'js/draw-library.js'
 ];
 
 // Libraries that are not in this build. Any example that needs one is left out
 // too, rather than shipped broken.
-const MISSING_LIBRARIES = ['Game', 'ImprovedWait'];
+const MISSING_LIBRARIES = ['Game', 'ImprovedWait', 'Draw'];
 
 function log(message) {
   process.stdout.write('  ' + message + '\n');
@@ -75,13 +81,14 @@ function copyIntoStage() {
       throw new Error('Missing bundle entry: ' + entry + ' (run `make` first for the native engine).');
     }
     const to = path.join(STAGE, entry);
+    fs.mkdirSync(path.dirname(to), { recursive: true });
     fs.cpSync(from, to, {
       recursive: true,
       filter: (source) => {
         const relative = path.relative(ROOT, source).split(path.sep).join('/');
         if (!relative) return true;
         if (DISTRIBUTION_EXCLUDED.includes(relative)) return false;
-        if (relative.endsWith('.o')) return false;
+        if (relative.endsWith('.o') || relative.endsWith('.d')) return false;
         if (relative.includes('__pycache__')) return false;
         if (relative.endsWith('.DS_Store')) return false;
         return true;
@@ -93,8 +100,10 @@ function copyIntoStage() {
 
 function mentionsMissingLibrary(text) {
   return MISSING_LIBRARIES.some((name) => {
-    const pattern = new RegExp('add\\s+(?:the\\s+)?["\']?' + name + '["\']?\\s+library', 'i');
-    return pattern.test(text);
+    const aliases = name === 'Draw' ? '(?:Draw|Drawing|Sprites)' : name;
+    const libraryLast = new RegExp(`add\\s+(?:the\\s+)?["']?${aliases}["']?\\s+library\\b`, 'i');
+    const libraryFirst = new RegExp(`add\\s+(?:the\\s+)?librar(?:y|ies)\\s+["']?${aliases}["']?(?:\\s|$)`, 'i');
+    return libraryLast.test(text) || libraryFirst.test(text) || (name === 'Draw' && /\bdrawing\s+sprite\b/i.test(text));
   });
 }
 
@@ -112,6 +121,54 @@ function dropExamplesThatNeedMissingLibraries() {
   }
 }
 
+// The legacy JavaScript core can also be loaded directly, outside index.html.
+// Make the distribution split its default and remove the sprite execution
+// implementation there as well, retaining only informative error stubs.
+function stripDrawFromStandaloneCore() {
+  const js = path.join(STAGE, 'js');
+  function replaceSection(source, start, end, replacement) {
+    const first = source.indexOf(start);
+    const last = source.indexOf(end, first + start.length);
+    if (first < 0 || last < 0) throw new Error('Could not strip standalone Draw section: ' + start);
+    return source.slice(0, first) + replacement + source.slice(last);
+  }
+  const registryFile = path.join(js, 'libraries.js');
+  let registry = fs.readFileSync(registryFile, 'utf8');
+  registry = replaceSection(registry, '    Draw: {', '    Image: {', `    Draw: {
+      name: 'Draw', aliases: ['draw', 'drawing', 'sprites'],
+      description: 'Draw is available in the full E++ Studio, not E++.zip.',
+      unlocks: [], example: ''
+    },
+`);
+  const registryAnchor = '  EPP.Libraries = Libraries;';
+  if (!registry.includes(registryAnchor)) throw new Error('Could not initialize the standalone library registry');
+  registry = registry.replace(registryAnchor, "  Libraries.applyBuild('distribution');\n" + registryAnchor);
+  fs.writeFileSync(registryFile, registry);
+
+  const parserFile = path.join(js, 'parser.js');
+  let parser = fs.readFileSync(parserFile, 'utf8');
+  parser = replaceSection(parser, '      // Check for "drawing sprite" (Draw library)', '      // Check for "image <source>" (Image library)',
+    `      // Draw is not shipped in the standalone runtime.
+      if (this.isWord('drawing')) throw new LibraryError('The Draw library is only available in E++ Studio.', kw.line, kw.column);
+`);
+  const moveAnchor = "    if (t.type === 'VARIABLE') return this.parseMoveSprite();";
+  if (!parser.includes(moveAnchor)) throw new Error('Could not disable sprite movement in the standalone parser');
+  parser = parser.replace(moveAnchor, "    if (t.type === 'VARIABLE') throw new LibraryError('Sprite movement is only available in E++ Studio.', t.line, t.column);");
+  parser = replaceSection(parser, "  /** 'name' move up/down/left/right", '  Parser.prototype.parseSet = function () {', '');
+  fs.writeFileSync(parserFile, parser);
+
+  const interpreterFile = path.join(js, 'interpreter.js');
+  let interpreter = fs.readFileSync(interpreterFile, 'utf8');
+  interpreter = replaceSection(interpreter, '    // Draw library hook:', '    // Dev Build 5: Image library hooks.', '');
+  interpreter = replaceSection(interpreter, '      case AST.DEFINE_SPRITE: {', '      case AST.DEFINE_IMAGE: {',
+    `      case AST.DEFINE_SPRITE:
+      case AST.MOVE_SPRITE:
+        throw new LibraryError('Drawing sprites are only available in E++ Studio.', node.line, node.column);
+`);
+  fs.writeFileSync(interpreterFile, interpreter);
+  log('removed Draw execution from the standalone JavaScript core');
+}
+
 function stampDistributionFlag() {
   const page = path.join(STAGE, 'index.html');
   let html = fs.readFileSync(page, 'utf8');
@@ -124,13 +181,42 @@ function stampDistributionFlag() {
   // the module that owns the registry.
   html = html.replace(
     anchor,
-    '<script>\n// This copy ships in E++.zip: Game and ImprovedWait stay in the full\n' +
+    '<script>\n// This copy ships in E++.zip: Draw, Game and ImprovedWait stay in the full\n' +
     '// Studio download, Keyboard and ImprovedWaitLite are here.\n' +
     'window.EPP_DISTRIBUTION = true;\n</script>\n' + anchor
   );
 
-  // The game runtime is not part of the bundle, so neither is its <script>.
-  html = html.split('\n').filter((line) => !line.includes('src="js/game-library.js"')).join('\n');
+  // The game and drawing hosts are not part of the bundle.
+  html = html.split('\n').filter((line) => !line.includes('src="js/game-library.js"') && !line.includes('src="js/draw-library.js"')).join('\n');
+
+  // Do not leave a hidden drawing demo, canvas, controls, or drawing execution
+  // handlers in the standalone page. Keep a small E302 guard so programs that
+  // ask for a drawing sprite get a useful explanation rather than failing.
+  function stripBetween(start, end, replacement = '') {
+    const first = html.indexOf(start);
+    const last = html.indexOf(end, first + start.length);
+    if (first < 0 || last < 0) throw new Error('Could not strip Studio-only Draw section: ' + start);
+    html = html.slice(0, first) + replacement + html.slice(last);
+  }
+  stripBetween("  {\n    name: 'draw_playground.enppl',", "  {\n    name: 'game_showcase.enppl',");
+  stripBetween('        <div id="drawPane"', '        <!-- Game pane:');
+  stripBetween('    // Draw sprites are ordinary named variables with an independent cursor.',
+    '    // ---------------- Release 1.2 — Game library ----------------',
+    String.raw`    // Draw is Studio-only; keep an explicit diagnostic in this build.
+    if (/^(?:define|let|set)\s+'[^']+'\s+(?:as|be|to)\s+drawing\s+sprite$/i.test(line)) {
+      this.requireDraw(lineNum);
+    }
+
+`);
+  stripBetween('    if (mGame) {\n      this.drawingSprite(mGame[1], lineNum);',
+    '    // 3. DEFINE / LET / SET',
+    String.raw`    if (mGame || /^'[^']+'\s+move\b/i.test(line)) this.requireDraw(lineNum);
+
+`);
+  stripBetween("document.getElementById('btnClearDrawing').addEventListener", '// ------------------------------------------------------------------\n// Release 1.2 wiring:');
+  if (html.includes('id="drawCanvas"') || html.includes("name: 'draw_playground.enppl'") || html.includes('this.drawHost.move(')) {
+    throw new Error('The standalone page still contains Draw execution or controls.');
+  }
 
   if (!html.includes('window.EPP_DISTRIBUTION = true')) {
     throw new Error('Failed to stamp the distribution flag into index.html');
@@ -144,9 +230,8 @@ function buildArchive() {
   fs.rmSync(ZIP_TWIN, { force: true });
   fs.rmSync(path.join(STAGE, 'epp_language.zip'), { force: true });
 
-  // First the offline runtime the Studio checks for, then the release bundle
-  // with that runtime tucked inside, so an extracted E++.zip runs offline
-  // straight away instead of asking for a second download.
+  // Build the smaller runtime archive, then include it in the release bundle
+  // so the extracted distribution also offers the runtime download offline.
   execFileSync('zip', ['-r', '-X', '-q', ZIP_TWIN, '.'], { cwd: STAGE });
   log('wrote ' + path.basename(ZIP_TWIN));
   fs.copyFileSync(ZIP_TWIN, path.join(STAGE, 'epp_language.zip'));
@@ -162,8 +247,18 @@ function verifyArchive() {
 
   const mustHave = [
     'index.html',
+    'LICENSE',
+    'third_party/licenses/llvm-libcxx.txt',
+    'third_party/licenses/wasi-libc-notice.txt',
     'epp_language.zip',
     'css/ide.css',
+    'css/studio.css',
+    'js/diagnostics.js',
+    'js/studio-editor.js',
+    'js/native-lexer.js',
+    'js/native-lexer-wasm.js',
+    'src/wasm_lexer.cpp',
+    'tests/native-lexer.mjs',
     'lexer.py',
     'epp.py',
     'include/vault.hpp',
@@ -175,7 +270,7 @@ function verifyArchive() {
     'js/a11y.js',
     'js/pictures.js'
   ];
-  const mustNotHave = ['js/game-library.js'];
+  const mustNotHave = ['js/game-library.js', 'js/draw-library.js', 'examples/drawing.eppla', 'examples/image.eppla'];
 
   for (const entry of mustHave) {
     if (!listing.includes(entry)) throw new Error('E++.zip is missing ' + entry);
@@ -193,7 +288,12 @@ function verifyArchive() {
   // page can explain where they went. Keyboard, Time and ImprovedWaitLite are
   // all usable inside the bundle; Game and ImprovedWait are not.
   const registry = fs.readFileSync(path.join(STAGE, 'js', 'libraries.js'), 'utf8');
-  for (const name of ['Keyboard', 'ImprovedWaitLite', 'ImprovedWait', 'Game']) {
+  const parser = fs.readFileSync(path.join(STAGE, 'js', 'parser.js'), 'utf8');
+  const interpreter = fs.readFileSync(path.join(STAGE, 'js', 'interpreter.js'), 'utf8');
+  if (!registry.includes("Libraries.applyBuild('distribution')") || parser.includes('return EPP.AST.DefineSprite(') || parser.includes('EPP.AST.MoveSprite(') || interpreter.includes('this.onSprite')) {
+    throw new Error('The standalone JavaScript core still enables Draw.');
+  }
+  for (const name of ['Keyboard', 'ImprovedWaitLite', 'ImprovedWait', 'Game', 'Draw']) {
     if (!registry.includes('    ' + name + ': {')) {
       throw new Error('js/libraries.js no longer describes the ' + name + ' library');
     }
@@ -210,7 +310,7 @@ function verifyArchive() {
   if (!listed(studioLine).includes('ImprovedWaitLite')) {
     throw new Error('the Studio build must hide ImprovedWaitLite');
   }
-  for (const name of ['Game', 'ImprovedWait']) {
+  for (const name of ['Game', 'ImprovedWait', 'Draw']) {
     if (!listed(zipLine).includes(name)) {
       throw new Error('the E++.zip build must hide ' + name);
     }
@@ -227,11 +327,12 @@ function verifyArchive() {
     throw new Error('index.html no longer defines applyBuildLibraries()');
   }
 
-  log('verified ' + listing.length + ' files: Keyboard + ImprovedWaitLite in, Game + ImprovedWait out');
+  log('verified ' + listing.length + ' files: Keyboard + ImprovedWaitLite in, Draw + Game + ImprovedWait out');
 }
 
 copyIntoStage();
 dropExamplesThatNeedMissingLibraries();
+stripDrawFromStandaloneCore();
 stampDistributionFlag();
 buildArchive();
 verifyArchive();

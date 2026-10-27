@@ -1,14 +1,41 @@
-# E++ Programming Language [1.2.1]
-> **"Looks like English, feels like english, and is english"**
+# E++ Programming Language [1.3]
+> **"Looks like English, feels like English, and is English"**
 
-Welcome to **E++ 1.2** — a release in three parts: **guided tutorials** built
-into the Studio, the **Game** library that turns E++ into a small game engine
-(the pygame zero of E++), and the **Keyboard**, **ImprovedWait** and
-**ImprovedWaitLite** libraries that make programs react to people and to time.
+**E++ 1.3** brings a completely redesigned Studio, **Project No Wrongs**
+(stricter syntax and clearer diagnostics), and **Draw**, a Studio-only drawing
+library. The native C++ engine, Python runtime and browser Studio continue to
+share E++ project files and the same core language rules.
 
-E++ still runs on three engines that agree with each other: a native C++
-engine, a single-file Python runtime, and the zero-dependency Studio that runs
-offline in the browser.
+## What's new in 1.3
+
+- **A new Studio:** an editor-first workspace, syntax highlighting, searchable
+  files, library and guide panels, a live console, local autosave and responsive
+  Workspace / Code / Output views on mobile. Run and Stop remain available, as
+  do tutorials, project keys, pictures and the Game library.
+- **Project No Wrongs:** unknown statements are errors, not output. Text must
+  be double-quoted: `say hello` is an `E402` error; use `say "hello"`. The
+  Studio and the C++ and Python engines report locations, reasons and fixes,
+  including for syntax in branches that do not execute.
+- **Draw, only in the full Studio:** any named drawing sprite appears as a
+  cursor in the console. Move several independent cursors with code or with the
+  on-screen and keyboard controls. **Draw is not included in `E++.zip`.**
+- **Safe upgrade:** existing browser projects and tutorial progress are kept;
+  restoring missing examples does not overwrite your files.
+
+### Migrating older code
+
+Put literal text in double quotes and variable names in single quotes:
+
+```text
+note [Old: say hello or let 'Student' be Sam]
+say "hello"
+let 'Student' be "Sam"
+say 'Student'
+```
+
+Use `note [text]` for notes. Unknown commands, incomplete expressions,
+unclosed quotes and missing libraries now produce diagnostics instead of
+being silently treated as text. These checks also apply to `E++.zip`.
 
 ---
 
@@ -54,12 +81,12 @@ variable that loads the image.
 
 ## 💾 Projects and keys
 
-Saving and opening projects needs no ceremony: **Download** writes the project
-out, **Import** opens it again, and the Studio keeps track of which key belongs
+Saving and opening projects needs no ceremony: **Export** downloads the project,
+**Import** opens it again, and the Studio keeps track of which key belongs
 to which project so you never type one. Nothing about how a project file is
 built is worth knowing to use E++, so this manual does not describe it.
 
-- **Download** writes the file and keeps its key in this browser.
+- **Export** downloads the file and keeps its key in this browser.
 - **Import** opens a project saved by E++ — anywhere, as long as this browser
   still has its key.
 - **🔑 Keys** lists the keys this browser holds, exports them as
@@ -93,7 +120,7 @@ python3 epp.py --keyring examples/epp-keys.json examples/17_saved_project.enpp
    - `say 2 times 3` ➔ Evaluates to `6`
 2. **SINGLE quotes for Variables**:
    - `let 'Grade' be 29`
-   - `let 'Student' be Sam`
+   - `let 'Student' be "Sam"`
    - *Never use double quotes for variable names!*
 3. **DOUBLE quotes for Strings**:
    - `say "Hello, World!"`
@@ -116,8 +143,8 @@ note [Notes are ignored during execution and document your program]
 
 ## 🧭 Deterministic diagnostics
 
-Every engine produces the same error, with the same code, the same line and
-column, and a caret under the exact spot:
+Errors include a code, a source location, a reason and a suggested fix. The
+precise caret position can vary by engine:
 
 ```text
 [E++ Error E103: Invalid Otherwise Placement] --> script.enpp:5:28
@@ -129,18 +156,25 @@ column, and a caret under the exact spot:
 
 | Code | Meaning |
 | --- | --- |
-| `E101` | Syntax error (invalid note, malformed statement) |
+| `E101` | Unknown or malformed statement, invalid note or comment |
+| `E102` | Unterminated string or variable name |
 | `E103` | `otherwise` on the same line as `if ... then` |
 | `E104` | `otherwise` without a preceding `if` |
+| `E105` | Missing or incomplete value |
+| `E106` | Missing or mismatched block ending |
 | `E201` | Undefined variable, or an actor that was never created |
 | `E202` | Golden Rule 2 violation (double quotes for a variable) |
 | `E301` | Library not added (feature used before `add the "…" library`) |
 | `E302` | Library exists, but not in this build of E++ |
+| `E303` | Unknown library name |
 | `E401` | Golden Rule 1 violation (math in quotes) |
 | `E402` | Golden Rule 3 violation (unquoted word used as text) |
+| `E403` | Division by zero |
 | `E404` | File not found |
+| `E405` | Invalid value or loop limit |
+| `E407` | Invalid drawing distance or color |
 | `E511`–`E522` | A project file that will not open (not a project, damaged, wrong release, no key, wrong key, bad `--key`) |
-| `E601` | Missing offline runtime lexer (`epp_language.zip`) |
+| `E601` | The compiled C++ browser lexer is unavailable |
 | `E701` | Python `turtle` is prohibited |
 | `E702` | Python runtime exception |
 
@@ -155,21 +189,41 @@ Add any library with the humanizer syntax `add the "<Name>" library`.
 add the "Python" library
 run the python code "print('Hello from Python')"
 ```
-Multi-line blocks keep their indentation, and standard modules (`math`,
-`random`, `json`, `re`, `statistics`, `time`, `datetime`, `string`, `sys`,
-`os`) all work. `turtle` is prohibited everywhere (`E701`).
+Multi-line blocks keep their indentation. In the browser, Python is a **limited
+JavaScript translation**, with partial shims for modules such as `math`,
+`random`, and `json`; it is not a full CPython interpreter. The Python CLI uses
+its installed Python runtime. `turtle` is prohibited everywhere (`E701`).
 
 ### Math (`"Math"`), Random (`"Random"`), Strings (`"Strings"`), Colors (`"Colors"`), Console (`"Console"`), Time (`"Time"`), Files (`"Files"`), System (`"System"`)
 The classic libraries, unchanged: square roots and percentages, dice and coins,
 uppercase and length, ANSI colours, `clear the console`, dates and timestamps,
 file read/write/append, and system commands.
 
-### Draw (`"Draw"`) and Image (`"Image"`)
+### Draw (`"Draw"`) — full Studio only
+
 ```text
 add the "Draw" library
-define 'hero' as drawing sprite
-'hero' move right "60"
+define 'pencil' as drawing sprite
+'pencil' move right "80"
+'pencil' move down "60"
+set the color of 'pencil' to "#67e8f9"
+lift the pen of 'pencil'
+'pencil' move left "40"
+lower the pen of 'pencil'
+'pencil' move up "60"
 ```
+
+Every `define`, `let` or `set` that assigns `drawing sprite` creates a named
+cursor in the console. Sprites start at the center with the pen down; movement
+uses quoted pixel distances and leaves a colored trail. Each cursor has its own
+position, color and pen. Use `clear the drawing` or **Clear drawing** to erase
+trails without moving the cursors; running again resets the surface.
+
+Select a cursor in the console and use its arrow buttons, or focus the drawing
+surface and press arrow keys (hold Shift to move one pixel instead of ten).
+Draw and Game can be used together in the full Studio. **Draw is not shipped in
+`E++.zip` or the CLI runtimes**; trying to add it there reports `E302`.
+See [LANGUAGE.md](LANGUAGE.md#9a-the-draw-library-studio-only) for details.
 
 ### Game (`"Game"`) — Studio only
 The pygame zero of E++: a window, actors with images, movement, collisions and
@@ -265,16 +319,13 @@ the Studio says where that library lives instead of failing obscurely.
 
 ## 📦 What is inside `E++.zip`
 
-`E++.zip` is the standalone release. It contains the native C++ engine, the
-Python runtime, the Studio (`index.html` + `js/`), the examples and the docs —
-with **Keyboard** and **ImprovedWaitLite** ready to use. The **Game** library
-needs a canvas and the **ImprovedWait** actor engine is the largest module in
-the release, so both are left out of the zip on purpose: the build marks them
-as unavailable, removes their cards from the library panel, and
-`add the "Game" library` answers in plain English instead of failing obscurely.
-Use the full Studio release to build games. The reverse is true as well:
-**ImprovedWaitLite is only in the zip** — the Studio hides it, so nobody is
-taught two different ways to wait.
+`E++.zip` contains the native C++ engine, Python runtime, a standalone
+browser workspace, examples and documentation. It includes strict 1.3
+syntax and diagnostics. Its browser workspace includes **Keyboard** and
+**ImprovedWaitLite**, but not **Draw**, **Game**, or **ImprovedWait**. Their
+runtimes and dependent examples are omitted; adding one reports `E302`.
+Use the full Studio for Draw and Game. The full Studio offers ImprovedWait
+instead of ImprovedWaitLite.
 
 ---
 
@@ -308,11 +359,25 @@ Both read the same keyring file the Studio exports (`epp-keys.json`), look for
 report the same `E5xx` diagnostics.
 
 ### Tests and packaging
+
+From the full repository checkout:
+
 ```bash
-npm test        # the JS engine's full suite (projects, libraries, parser, tutorials)
-make test       # runs the C++ and Python engines over the examples
-make zip        # rebuilds E++.zip and epp_language.zip
+npm install      # installs the small browser-test dependency
+npm test         # JS core, diagnostics, Draw, and compiled C++ lexer checks
+make test        # CLI tests plus native C++ / WebAssembly lexer comparison
+make zip         # rebuilds E++.zip and epp_language.zip
+
+# Optional: real browser checks (use your local Chrome/Chromium executable)
+EPP_BROWSER=/path/to/chromium npm run test:studio
 ```
+
+The browser lexer is built from `src/lexer.cpp`, `include/lexer.hpp`, and
+`src/wasm_lexer.cpp` using Zig's WASI C++ toolchain. After editing those files,
+regenerate the offline artifact with `ZIG=/path/to/zig make wasm-lexer` and
+rerun the tests. The generated `js/native-lexer-wasm.js` embeds the compiled
+WebAssembly so `file://` works without a server. Its source fingerprint is
+checked by the test suite.
 
 ---
 
@@ -324,12 +389,23 @@ Open `index.html` in any modern browser, or serve the folder:
 python3 -m http.server 8000
 ```
 
-- True offline runtime: it verifies and loads the lexer from `epp_language.zip`
-  using `DecompressionStream`. If the zip is missing, execution stops with
-  `E601` and the badge on the page turns red.
-- **New / Import / Save / Download** for `.enpp` and `.enppl`; downloads and
-  imports are handled by the keys saved in the browser.
-- **🎓 Learn** opens the card-by-card tutorials described below.
+- Studio **actually lexes each program with `src/lexer.cpp`**, compiled to
+  WebAssembly and embedded for offline use. Its tokens drive Studio's
+  JavaScript evaluator, including literals and arithmetic; the browser does
+  **not** run `src/parser.cpp` or `src/interpreter.cpp`. The native CLI uses
+  those C++ components. Simple programs normally finish quickly; there is no
+  lookup of example outputs. If the compiled lexer cannot load, Studio reports
+  `E601` rather than silently switching to a different lexer. `epp_language.zip`
+  is a downloadable runtime bundle, not an execution dependency.
+- **New / Import / Save / Export** for `.enpp` and `.enppl`; exported projects
+  are encrypted with keys saved in the browser. Edits are also saved locally.
+- On phones and tablets, use **Workspace**, **Code**, and **Output** at the
+  bottom to switch panels. **Tools** contains project actions, Learn, and the
+  other utilities; **Run code** switches to Output, and **Stop** interrupts a run.
+- **Wrap** keeps long lines readable without changing your code or its line
+  numbers. It defaults on when space is tight and remembers your choice.
+- **🎓 Learn** opens the card-by-card tutorials described below; on small
+  screens, **Lessons** opens the course list.
 - **🔑 Keys** lists saved keys and exports / imports a keyring.
 - **🖼 Image** adds an actor image to a Game project.
 - **📦 E++.zip** downloads the standalone release described above.
@@ -383,10 +459,10 @@ show `say the square root of 144` while your own program says
 ```text
 include/            C++ headers (lexer, parser, interpreter, value, ast, vault)
 src/                C++ engine and the native project-file implementation
-js/                 Studio modules: libraries, keyboard, vault, game host, tutorials
-tests/run-tests.mjs the JavaScript engine's test suite (npm test)
-tools/build-zip.mjs the E++.zip builder (make zip)
-examples/           runnable .enpp / .enppl / .eppla programs
+js/                 Studio modules, including the compiled native lexer and its adapter
+tests/              JavaScript, browser, and cross-engine regression tests
+tools/              Release and WebAssembly lexer builders
+examples/           runnable programs (Draw and Game examples require the full Studio)
 lexer.py, epp.py    the Python lexer and runtime
 index.html          the whole Studio: UI, engine and editor in one file
 LANGUAGE.md         the language reference
@@ -396,4 +472,5 @@ LANGUAGE.md         the language reference
 
 ## License
 
-Apache License 2.0. Write programs that read like English, and keep your keys safe.
+Apache License 2.0. The compiled browser lexer also includes LLVM libc++ and
+WASI libc components; their notices are in `third_party/licenses/`.

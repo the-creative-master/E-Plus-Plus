@@ -1,6 +1,8 @@
 #include "parser.hpp"
 #include <iostream>
 #include <sstream>
+#include <algorithm>
+#include <cctype>
 
 namespace epp {
 
@@ -56,9 +58,10 @@ bool Parser::match_any(const std::vector<TokenType>& types) {
 Token Parser::consume(TokenType type, const std::string& error_message) {
     if (check(type)) return advance();
     Token tok = peek();
+    const std::string code = error_message.find("close ") != std::string::npos ? "E106" : "E101";
     throw ParseError(error_message + " (found '" + tok.lexeme + "' at line " +
                      std::to_string(tok.line) + ", col " + std::to_string(tok.col) + ")",
-                     tok.line, tok.col);
+                     tok.line, tok.col, code);
 }
 
 void Parser::skip_newlines() {
@@ -161,20 +164,13 @@ std::shared_ptr<Stmt> Parser::parse_statement() {
     if (tok.type == TokenType::KW_OTHERWISE) {
         throw ParseError("Syntax Error at line " + std::to_string(tok.line) + ", col " + std::to_string(tok.col) +
                          ": 'otherwise' can only appear immediately on the next line after an 'if' statement.",
-                         tok.line, tok.col);
+                         tok.line, tok.col, "E104");
     }
 
-    // Otherwise, standalone expression or unrecognized line
-    int l = tok.line;
-    int c = tok.col;
-    auto expr = parse_expression();
-    if (match(TokenType::TOKEN_NEWLINE) || is_at_end()) {
-        return std::make_shared<ExprStmt>(expr, l, c);
+    if (tok.type == TokenType::KW_END || tok.type == TokenType::KW_ELSE) {
+        throw ParseError("Unexpected block ending '" + tok.lexeme + "' without a matching opening.", tok.line, tok.col, "E106");
     }
-
-    throw ParseError("Unexpected token '" + peek().lexeme + "' at line " +
-                     std::to_string(peek().line) + ", col " + std::to_string(peek().col),
-                     peek().line, peek().col);
+    throw ParseError("Unknown statement '" + tok.lexeme + "'. Start with a command such as say, let, or if.", tok.line, tok.col, "E101");
 }
 
 // say "Hello", "World" with the separation method of " - "
@@ -194,6 +190,9 @@ std::shared_ptr<Stmt> Parser::parse_say_statement() {
 
     std::vector<std::shared_ptr<Expr>> expressions;
     std::shared_ptr<Expr> separator = nullptr;
+    if (is_at_end() || peek().type == TokenType::TOKEN_NEWLINE) {
+        throw ParseError("'say' needs a value to print.", line, col, "E105");
+    }
 
     while (!is_at_end() && peek().type != TokenType::TOKEN_NEWLINE) {
         // Check for separator method clause first
@@ -238,6 +237,9 @@ std::shared_ptr<Stmt> Parser::parse_say_statement() {
 
         // Check delimiters: comma or "and concat it with"
         if (match(TokenType::TOKEN_COMMA)) {
+            if (is_at_end() || peek().type == TokenType::TOKEN_NEWLINE) {
+                throw ParseError("A comma needs another value after it.", previous().line, previous().col, "E105");
+            }
             // Check if comma is followed by "and concat it with" or "and concat with"
             if (match(TokenType::KW_AND)) {
                 if (match(TokenType::KW_CONCAT)) {
@@ -281,8 +283,8 @@ std::shared_ptr<Stmt> Parser::parse_say_statement() {
 }
 
 // let 'Number' be 2
-// let 'Student' be Sam
-// let 'Comment' be What a Disgrace!
+// let 'Student' be "Sam"
+// let 'Comment' be "What a Disgrace!"
 std::shared_ptr<Stmt> Parser::parse_let_statement() {
     Token let_tok = advance(); // Consume 'let' or 'set'
     int line = let_tok.line;
@@ -295,7 +297,7 @@ std::shared_ptr<Stmt> Parser::parse_let_statement() {
                          ", col " + std::to_string(bad_tok.col) +
                          ": Variables in E++ must always be enclosed in single quotes like '" +
                          bad_tok.string_value + "', never double quotes! Double quotes are reserved for text strings.",
-                         bad_tok.line, bad_tok.col);
+                         bad_tok.line, bad_tok.col, "E202");
     }
 
     if (peek().type != TokenType::TOKEN_VARIABLE) {
@@ -303,7 +305,7 @@ std::shared_ptr<Stmt> Parser::parse_let_statement() {
         throw ParseError("Syntax Error at line " + std::to_string(bad_tok.line) +
                          ", col " + std::to_string(bad_tok.col) +
                          ": Expected variable name in single quotes (e.g. 'VariableName'), but found '" +
-                         bad_tok.lexeme + "'.", bad_tok.line, bad_tok.col);
+                         bad_tok.lexeme + "'.", bad_tok.line, bad_tok.col, "E202");
     }
 
     Token var_tok = advance();
@@ -318,24 +320,15 @@ std::shared_ptr<Stmt> Parser::parse_let_statement() {
                          bad_tok.line, bad_tok.col);
     }
 
-    // Now inspect RHS:
-    // If the next token is an IDENTIFIER (not keyword, not string, not number, not variable),
-    // it could be unquoted text like "Sam" or "What a Disgrace!"
-    if (peek().type == TokenType::TOKEN_IDENTIFIER) {
-        // Collect all tokens until newline
-        std::string raw_text;
-        while (!is_at_end() && peek().type != TokenType::TOKEN_NEWLINE) {
-            Token t = advance();
-            if (!raw_text.empty() && t.type != TokenType::TOKEN_EXCLAMATION && t.type != TokenType::TOKEN_QUESTION && t.type != TokenType::TOKEN_COMMA) {
-                raw_text += " ";
-            }
-            raw_text += t.lexeme;
-        }
-        match(TokenType::TOKEN_NEWLINE);
-        return std::make_shared<LetStmt>(var_name, raw_text, line, col);
+    // Draw is intentionally absent from the command-line distribution.
+    auto lower_word = [](std::string word) {
+        std::transform(word.begin(), word.end(), word.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        return word;
+    };
+    if (lower_word(peek().lexeme) == "drawing" && lower_word(peek_at(1).lexeme) == "sprite") {
+        throw ParseError("Drawing sprites are only available in the full E++ Studio, not E++.zip.", peek().line, peek().col, "E302");
     }
 
-    // Otherwise, parse standard expression
     auto val_expr = parse_expression();
     match(TokenType::TOKEN_NEWLINE);
     return std::make_shared<LetStmt>(var_name, val_expr, line, col);
@@ -393,17 +386,16 @@ std::shared_ptr<Stmt> Parser::parse_add_library_statement() {
     int col = add_tok.col;
 
     match(TokenType::KW_THE);
-
-    std::string lib_name;
-    if (peek().type == TokenType::TOKEN_STRING) {
-        lib_name = advance().string_value;
-    } else if (peek().type == TokenType::TOKEN_IDENTIFIER) {
-        lib_name = advance().lexeme;
-    } else {
-        lib_name = advance().lexeme;
+    const bool library_first = match(TokenType::KW_LIBRARY);
+    if (peek().type != TokenType::TOKEN_STRING && peek().type != TokenType::TOKEN_IDENTIFIER) {
+        throw ParseError("Expected a library name, for example: add the \"Math\" library.", peek().line, peek().col);
     }
-
-    match(TokenType::KW_LIBRARY);
+    Token name = advance();
+    std::string lib_name = name.type == TokenType::TOKEN_STRING ? name.string_value : name.lexeme;
+    if (!library_first) consume(TokenType::KW_LIBRARY, "Expected 'library' after the library name");
+    if (!is_at_end() && peek().type != TokenType::TOKEN_NEWLINE) {
+        throw ParseError("Unexpected text after the library declaration.", peek().line, peek().col);
+    }
     match(TokenType::TOKEN_NEWLINE);
 
     return std::make_shared<AddLibraryStmt>(lib_name, line, col);
@@ -634,7 +626,7 @@ std::shared_ptr<Stmt> Parser::parse_if_statement() {
         }
 
         consume(TokenType::KW_END, "Expected 'end if' to close if block");
-        match(TokenType::KW_IF);
+        consume(TokenType::KW_IF, "Expected 'end if' to close if block");
         match(TokenType::TOKEN_NEWLINE);
 
         return std::make_shared<IfStmt>(cond, then_branch, else_branch, line, col);
@@ -704,7 +696,7 @@ std::shared_ptr<Stmt> Parser::parse_repeat_statement() {
     }
 
     consume(TokenType::KW_END, "Expected 'end repeat' to close repeat block");
-    match(TokenType::KW_REPEAT);
+    consume(TokenType::KW_REPEAT, "Expected 'end repeat' to close repeat block");
     match(TokenType::TOKEN_NEWLINE);
 
     return std::make_shared<RepeatStmt>(count, body, line, col);
@@ -730,7 +722,7 @@ std::shared_ptr<Stmt> Parser::parse_while_statement() {
     }
 
     consume(TokenType::KW_END, "Expected 'end while' to close while block");
-    match(TokenType::KW_WHILE);
+    consume(TokenType::KW_WHILE, "Expected 'end while' to close while block");
     match(TokenType::TOKEN_NEWLINE);
 
     return std::make_shared<WhileStmt>(cond, body, line, col);
@@ -1016,14 +1008,13 @@ std::shared_ptr<Expr> Parser::parse_primary() {
         current--; // rewind 'the'
     }
 
-    // Allow unquoted natural identifiers as literal words
+    // Bare text is never an implicit string or variable.
     if (tok.type == TokenType::TOKEN_IDENTIFIER) {
-        advance();
-        return std::make_shared<LiteralExpr>(Value::make_string(tok.lexeme), l, c);
+        throw LogicError("Unquoted text '" + tok.lexeme + "'. Put text in double quotes, or reference a variable in single quotes.", l, c);
     }
 
-    throw ParseError("Expected expression, found '" + tok.lexeme + "' at line " +
-                     std::to_string(l) + ", col " + std::to_string(c), l, c);
+    throw ParseError("Expected a value, found '" + tok.lexeme + "' at line " +
+                     std::to_string(l) + ", col " + std::to_string(c), l, c, "E105");
 }
 
 // check if <expr> is [not] a number

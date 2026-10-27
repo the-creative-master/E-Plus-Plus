@@ -1,8 +1,8 @@
-# The E++ Language Reference (1.2.1 — Language Patch 1)
+# The E++ Language Reference (1.3)
 
 > **"Looks like English, feels like english, and is english"**
 
-This is the reference for **E++ 1.2.1**, Language Patch 1. It covers the language itself, the
+This is the reference for **E++ 1.3**. It covers the language itself, the
 project files you download and import, and the libraries that ship with this
 release.
 
@@ -14,12 +14,12 @@ release.
 | --- | --- |
 | `.enpp` | A pure E++ program: no libraries. |
 | `.enppl` | A program that uses libraries (`add the "Math" library`, …). |
-| `.eppla` | The older name for a library program; still accepted everywhere. |
+| `.eppl` / `.eppla` | Older example extensions accepted by the command-line engines; use `.enpp` / `.enppl` for Studio projects. |
 | `.enpp` / `.enppl` **downloaded from the Studio** | A project file. E++ opens it with the key it keeps for that project. |
 
 ### Project files
 
-- **Download** writes the file; **Import** opens it again.
+- **Export** downloads the file; **Import** opens it again.
 - The Studio keeps one key per project in this browser, so you never type a key
   to open your own work. **🔑 Keys** exports them as `epp-keys.json` and
   imports that file elsewhere.
@@ -53,11 +53,19 @@ saved as `.enppl`.
    - `say 2 times 3` ➔ `6`
 2. **SINGLE quotes for Variables**:
    - `let 'Grade' be 29`
-   - `let 'Student' be Sam`
+   - `let 'Student' be "Sam"`
    - *Never use double quotes for variable names! Double quotes are reserved for text.*
 3. **DOUBLE quotes for Strings**:
    - `say "Hello, World!"`
    - `say "1 + 1"` ➔ literal text `"1 + 1"`.
+
+### Migrating to 1.3
+
+Literal text must always be quoted: `say hello` and `let 'Student' be Sam`
+now report `E402`; write `say "hello"` and `let 'Student' be "Sam"`.
+Unrecognized statements are errors (`E101`), not implicit output. Syntax
+checks also inspect inactive branches. Libraries still have their own grammar:
+for example `add library Math` is a library declaration, not a text value.
 
 ---
 
@@ -145,7 +153,7 @@ say "The sum is ", 'Total'
 
 ```text
 let 'Grade' be 29
-let 'Student' be Sam
+let 'Student' be "Sam"
 
 ask "What is your name?" and save the output as 'Name'
 say "Hello ", 'name', ", welcome to E++!"
@@ -185,10 +193,45 @@ run the python code:
     print(f"Square root of 144 is {math.isqrt(144)}")
 ```
 
-Multi-line blocks are passed through verbatim, so indentation, comments and
-strings survive. The standard modules (`math`, `random`, `json`, `re`,
-`statistics`, `time`, `datetime`, `string`, `sys`, `os`) are available.
-`turtle` is prohibited in every engine (`E701`).
+Multi-line blocks preserve indentation, comments and strings. Studio translates
+a subset of Python to JavaScript and provides partial standard-library shims;
+it is **not** a full Python interpreter. The Python CLI uses its installed
+Python runtime. `turtle` is prohibited in every engine (`E701`).
+
+---
+
+## 9A. The Draw library (Studio only)
+
+Draw is available in the **full E++ Studio only**. `E++.zip` and the C++ and
+Python CLI runtimes do not include it; adding Draw there reports `E302`.
+
+```text
+add the "Draw" library
+define 'pencil' as drawing sprite
+let 'spark' be drawing sprite
+set the color of 'pencil' to "#ffcc88"
+'pencil' move right "80"
+'pencil' move down "60"
+lift the pen of 'spark'
+'spark' move left "40"
+lower the pen of 'spark'
+'spark' move up "30"
+clear the drawing
+```
+
+- Any single-quoted name works. `define ... as`, `let ... be`, and `set ... to`
+  create a sprite and immediately show its labelled cursor in the console.
+- Each sprite starts at the center `(0, 0)` with its pen down. Right increases
+  x; down increases y. Move `up`, `down`, `left` or `right` by a quoted numeric
+  pixel distance. Each sprite keeps its own position, pen and color.
+- `lift the pen of 'name'` moves without drawing; `lower the pen of 'name'`
+  resumes drawing. `set the color of 'name' to "purple"` accepts CSS colors.
+- `clear the drawing` clears trails but keeps sprites and their positions.
+  A new run resets the drawing surface. Assigning a normal value to a drawing
+  variable removes its cursor.
+- In the console, select a cursor and use the arrow buttons. Alternatively,
+  focus the canvas and use the arrow keys: ten pixels per press, or one while
+  holding Shift. Draw and Game may be used in the same Studio program.
 
 ---
 
@@ -382,8 +425,7 @@ say "Rolling: ", a random number between 1 and 6
 ```
 
 The Studio also accepts the article-less spelling (`square root of 144`,
-`uppercase of "e++"`, `length of "hello"`) and `power of`, as in
-`say 2 power of 3`.
+`uppercase of "e++"`, `length of "hello"`).
 
 `say` accepts several pieces separated by commas. E++ inserts a space only
 where two pieces would otherwise run together, so `say "Hi-", 'Word'` prints
@@ -396,37 +438,53 @@ where two pieces would otherwise run together, so `say "Hi-", 'Word'` prints
 
 | Library | `E++.zip` | Full Studio |
 | --- | --- | --- |
-| Math, Random, Strings, Colors, Console, Time, Files, System, Python, Draw, Image | ✅ | ✅ |
+| Math, Random, Strings, Colors, Console, Time, Files, System, Python | ✅ | ✅ |
+| Draw | ❌ | ✅ |
 | Keyboard | ✅ | ✅ |
-| ImprovedWaitLite | ✅ | ✅ |
+| ImprovedWaitLite | ✅ | ❌ |
 | Game | ❌ | ✅ |
 | ImprovedWait | ❌ | ✅ |
 
-Adding a library this build does not contain raises `E302` with the reason and
-a suggestion (`ImprovedWaitLite`), instead of pretending the library exists.
+This table describes the browser workspaces. The command-line engines have
+no canvas and report `E302` for Draw and Game. Adding an unavailable library
+reports its reason instead of pretending it exists. The legacy JavaScript core
+also contains an older Image grammar; Studio picture projects use Game's image
+panel instead.
 
 ---
 
 ## 14. Diagnostics
 
+Studio tokenizes programs with the same `src/lexer.cpp` as the C++ CLI,
+compiled to WebAssembly. Its browser evaluator is JavaScript, not the native
+C++ parser and interpreter. If the compiled lexer cannot load, execution stops
+with `E601`; there is no silent alternate lexer.
+
 | Code | Meaning |
 | --- | --- |
-| `E101` | Syntax error (invalid note syntax, malformed statement) |
+| `E101` | Unknown or malformed statement, invalid note or comment |
+| `E102` | Unterminated string or variable name |
 | `E103` | `otherwise` placed on the same line as `if ... then` |
 | `E104` | `otherwise` without a preceding `if` |
+| `E105` | Missing or incomplete value |
+| `E106` | Missing or mismatched block ending |
 | `E201` | Undefined variable or unknown actor |
 | `E202` | Golden Rule 2 violation (double quotes for a variable) |
 | `E301` | Library not added |
 | `E302` | Library not part of this build |
+| `E303` | Unknown library name |
 | `E401` | Golden Rule 1 violation (math in quotes) |
 | `E402` | Golden Rule 3 violation (unquoted text word in string context) |
+| `E403` | Division by zero |
 | `E404` | File not found |
+| `E405` | Invalid value or loop limit |
+| `E407` | Invalid drawing distance or color |
 | `E511` | Not an E++ project file |
 | `E512` | Truncated or damaged project file |
 | `E513` | Written by a different release |
 | `E520` | The key does not open this project |
 | `E521` | No key available |
 | `E522` | Bad `--key` (needs 64 hex characters) |
-| `E601` | Missing offline runtime lexer (`epp_language.zip`) |
+| `E601` | The compiled C++ browser lexer is unavailable |
 | `E701` | Python `turtle` is prohibited |
 | `E702` | Python runtime exception |

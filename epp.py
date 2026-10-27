@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-E++ (E-Plus-Plus) 1.2 Direct Python Runtime & Engine
+E++ (E-Plus-Plus) 1.3 Direct Python Runtime & Engine
 Uses the native Python lexer to run E++ and Python code directly, including
 project files saved by the Studio.
 """
@@ -19,6 +19,7 @@ import hashlib
 import base64
 import io
 import contextlib
+import ast
 from typing import Dict, Any, List, Optional
 
 from lexer import (
@@ -80,6 +81,10 @@ class Interpreter:
         if 1 <= line_num <= len(self.source_lines):
             return self.source_lines[line_num - 1]
         return ""
+
+    def diagnostic(self, code: str, name: str, reason: str, help_msg: str, line: int, col: int = 1):
+        return EppDiagnosticError(code=code, name=name, filename=self.filename, line=line, col=col,
+                                  source_line=self.get_source_line(line), reason=reason, help_msg=help_msg)
 
     def execute_python_code(self, py_code: str, line: int, col: int) -> str:
         self.require_lib("Python", "Running Python code", line, col)
@@ -169,7 +174,152 @@ class Interpreter:
         lexer = Lexer(source, self.filename)
         tokens = lexer.tokenize()
 
-        self.parse_and_execute(tokens)
+        self.validate_tokens(tokens)
+        try:
+            self.parse_and_execute(tokens)
+        except EppDiagnosticError:
+            raise
+        except (ValueError, TypeError, OverflowError, ZeroDivisionError) as err:
+            code = "E403" if isinstance(err, ZeroDivisionError) else "E405"
+            raise self.diagnostic(code, "Invalid Value", str(err) or "This operation needs valid numbers.",
+                                  "Check the values used by this operation.", self.current_line_num)
+
+    def validate_tokens(self, tokens: List[Token]):
+        """Check statements even inside branches that will not execute."""
+        by_line = {}
+        for token in tokens:
+            if token.type in (TokenType.NEWLINE, TokenType.EOF, TokenType.PYTHON_BLOCK):
+                continue
+            by_line.setdefault(token.line, []).append(token)
+        allowed = {TokenType.KW_SAY, TokenType.KW_TELL, TokenType.KW_LET, TokenType.KW_SET,
+                   TokenType.KW_DEFINE, TokenType.KW_ASK, TokenType.KW_ADD, TokenType.KW_IF,
+                   TokenType.KW_OTHERWISE, TokenType.KW_ELSE, TokenType.KW_END, TokenType.KW_REPEAT,
+                   TokenType.KW_WHILE, TokenType.KW_CHECK, TokenType.KW_NOTE, TokenType.KW_RUN}
+        word_commands = {"write", "append", "read", "clear", "wait", "sleep"}
+        colors = {"red", "green", "blue", "yellow", "cyan", "magenta"}
+
+        def check_value(parts):
+            if not parts: return
+            # Mask only recognised language phrases and quoted literals; every
+            # remaining identifier is unquoted text, even in a dead branch.
+            positions, cursor, chunks = [], 0, []
+            for t in parts:
+                word = t.lexeme
+                positions.append(cursor)
+                chunks.append(' ' * len(word) if t.type in (TokenType.STRING, TokenType.VARIABLE) else word)
+                cursor += len(word) + 1
+            masked = ' '.join(chunks)
+            phrases = [
+                r"\b(?:and\s+)?concat\s+(?:it\s+)?with\b|\bwith\s+(?:the\s+)?sep[ae]ration\s+(?:method\s+)?of\b",
+                r"\b(?:the\s+)?(?:length|uppercase|lowercase|reverse|trim|square\s+root|absolute\s+value|minimum|maximum|first\s+letter|last\s+letter|value)\s+of\b",
+                r"\b(?:the\s+)?current\s+(?:time|date|year|timestamp)\b",
+                r"\bthe\s+(?:system\s+platform|platform|operating\s+system|os|key\s+pressed)\b",
+                r"\b(?:it['’]?s\s+)?(?:a\s+|the\s+)?(?:random\s+)?number\s+between\b",
+                r"\broll\s+(?:a\s+)?dice(?:\s+with)?\b|\bsides\b|\bflip\s+(?:a\s+)?coin\b",
+                r"\bhow\s+much\b|\bpercent\s+(?:is\s+)?of\b|\bpower\s+of\b"
+            ]
+            for pattern in phrases:
+                masked = re.sub(pattern, lambda m: ' ' * len(m.group()), masked, flags=re.IGNORECASE)
+            for t, pos in zip(parts, positions):
+                if t.type == TokenType.IDENTIFIER and masked[pos:pos + len(t.lexeme)].strip() and t.lexeme.lower() not in {"pi", "e", "true", "false"}:
+                    raise self.diagnostic("E402", "Unquoted Text", f"Unquoted text '{t.lexeme}' is not a value.",
+                                          'Put text in double quotes, or use single quotes for a variable.', t.line, t.col)
+
+        def check_statement(line):
+            if not line: return
+            first = line[0]
+            if first.type not in allowed and not (first.type == TokenType.IDENTIFIER and first.lexeme.lower() in word_commands):
+                raise self.diagnostic("E101", "Unknown Statement", f"E++ does not recognize '{first.lexeme}' as a statement.",
+                                      "Start with a command such as say, let, or if.", first.line, first.col)
+            if first.type == TokenType.KW_IF:
+                then = next((i for i, t in enumerate(line) if t.type == TokenType.KW_THEN), -1)
+                if then < 0:
+                    raise self.diagnostic("E101", "Invalid If", "Expected 'then' after the condition.",
+                                          'For example: if 1 is 1 then say "Yes"', first.line, first.col)
+                if any(t.type == TokenType.KW_OTHERWISE for t in line[then + 1:]):
+                    bad = next(t for t in line[then + 1:] if t.type == TokenType.KW_OTHERWISE)
+                    raise self.diagnostic("E103", "Invalid Otherwise Placement", "'otherwise' belongs on the next line.",
+                                          "Move otherwise to the next line.", bad.line, bad.col)
+                action = line[then + 1:]
+                if action and action[0].type != TokenType.COLON: check_statement(action)
+            elif first.type == TokenType.KW_OTHERWISE:
+                action = line[1:]
+                if action and action[0].type != TokenType.COLON: check_statement(action)
+            elif first.type in (TokenType.KW_SAY, TokenType.KW_TELL):
+                value = line[1:]
+                if value and value[0].type == TokenType.IDENTIFIER and value[0].lexeme.lower() in colors: value = value[1:]
+                if not value:
+                    raise self.diagnostic("E105", "Missing Value", "'say' needs a value to print.",
+                                          'For example: say "Hello"', first.line, first.col)
+                # Split at commas/concat so bare text in any output part is checked.
+                part = []
+                for t in value:
+                    if t.type == TokenType.COMMA:
+                        check_value(part); part = []
+                    else: part.append(t)
+                check_value(part)
+            elif first.type in (TokenType.KW_LET, TokenType.KW_SET, TokenType.KW_DEFINE):
+                if len(line) < 2 or line[1].type != TokenType.VARIABLE:
+                    raise self.diagnostic("E202", "Invalid Variable Name", "Variable names must be in single quotes.",
+                                          "For example: let 'name' be \"Ada\"", first.line, first.col)
+                if len(line) < 3 or line[2].type not in (TokenType.KW_BE, TokenType.KW_TO, TokenType.KW_AS):
+                    raise self.diagnostic("E101", "Invalid Assignment", "Expected 'be', 'as', or 'to' after the variable.",
+                                          "For example: let 'name' be \"Ada\"", first.line, first.col)
+                if len(line) < 4:
+                    raise self.diagnostic("E105", "Missing Value", "The variable needs a value.",
+                                          "For example: let 'name' be \"Ada\"", first.line, first.col)
+                if " ".join(t.lexeme.lower() for t in line[3:]) == "drawing sprite":
+                    raise self.diagnostic("E302", "Library Not In This Build", "Draw is available in E++ Studio, not E++.zip.",
+                                          "Open the full E++ Studio to use drawing sprites.", first.line, line[3].col)
+                check_value(line[3:])
+            elif first.type == TokenType.KW_ASK:
+                split = next((i for i in range(1, len(line) - 1) if line[i].type == TokenType.KW_AND and line[i + 1].type == TokenType.KW_SAVE), -1)
+                if split < 2:
+                    raise self.diagnostic("E101", "Invalid Ask", "An ask needs a question and a variable for the answer.",
+                                          "For example: ask \"Name?\" and save the output as 'name'", first.line, first.col)
+                check_value(line[1:split])
+            elif first.type == TokenType.KW_REPEAT:
+                end = len(line) - (1 if line[-1].type == TokenType.COLON else 0)
+                if end < 3 or line[end - 1].lexeme.lower() not in ("time", "times"):
+                    raise self.diagnostic("E101", "Invalid Repeat", "A repeat needs a count followed by 'times'.",
+                                          "For example: repeat 3 times", first.line, first.col)
+                check_value(line[1:end - 1])
+
+        stack = []
+        previous_inline_if = False
+        for line in by_line.values():
+            check_statement(line)
+            first = line[0]
+            if first.type == TokenType.KW_END:
+                ending = line[1].lexeme.lower() if len(line) == 2 else ""
+                if not stack or stack[-1][0] != ending:
+                    raise self.diagnostic("E106", "Unexpected Block End", "This ending does not match the open block.",
+                                          "Use end if, end repeat, or end while for the matching block.", first.line, first.col)
+                stack.pop()
+                previous_inline_if = False
+            elif first.type == TokenType.KW_IF:
+                then = next((i for i, t in enumerate(line) if t.type == TokenType.KW_THEN), -1)
+                is_block = then >= 0 and then + 1 < len(line) and line[then + 1].type == TokenType.COLON
+                if is_block:
+                    if then + 2 < len(line):
+                        raise self.diagnostic("E101", "Invalid If Block", "Put a block's statements on the following lines.",
+                                              "For example: if 1 is 1 then: followed by a new line.", first.line, first.col)
+                    stack.append(("if", first))
+                previous_inline_if = not is_block
+            elif first.type in (TokenType.KW_REPEAT, TokenType.KW_WHILE):
+                stack.append((first.lexeme.lower(), first))
+                previous_inline_if = False
+            elif first.type in (TokenType.KW_OTHERWISE, TokenType.KW_ELSE):
+                if not previous_inline_if and not (stack and stack[-1][0] == "if"):
+                    raise self.diagnostic("E104", "Standalone Otherwise", "'otherwise' needs a preceding if.",
+                                          "Put otherwise immediately after an if statement.", first.line, first.col)
+                previous_inline_if = False
+            else:
+                previous_inline_if = False
+        if stack:
+            kind, first = stack[-1]
+            raise self.diagnostic("E106", "Unclosed Block", f"This {kind} has no matching ending.",
+                                  f"Close it with: end {kind}", first.line, first.col)
 
     def parse_and_execute(self, tokens: List[Token]):
         idx = 0
@@ -201,22 +351,106 @@ class Interpreter:
             tok = tokens[idx]
             line_num = tok.line
             col_num = tok.col
+            self.current_line_num = line_num
 
             # 1. NOTE
             if tok.type == TokenType.KW_NOTE:
                 idx += 1
                 continue
 
-            # 2. ADD THE "<LIB>" LIBRARY
+            # Library declarations support both documented word orders.
             if tok.type == TokenType.KW_ADD:
-                idx += 1
-                if match(TokenType.KW_THE): pass
-                lib_name = ""
-                if idx < n and tokens[idx].type in (TokenType.STRING, TokenType.IDENTIFIER):
-                    lib_name = tokens[idx].string_value if tokens[idx].type == TokenType.STRING else tokens[idx].lexeme
-                    idx += 1
-                if match(TokenType.KW_LIBRARY): pass
-                self.libs.add(self.norm(lib_name))
+                end = idx
+                while end < n and tokens[end].type not in (TokenType.NEWLINE, TokenType.EOF):
+                    end += 1
+                declaration = tokens[idx:end]
+                j = 1
+                if j < len(declaration) and declaration[j].type == TokenType.KW_THE: j += 1
+                library_first = j < len(declaration) and declaration[j].type == TokenType.KW_LIBRARY
+                if library_first: j += 1
+                if j >= len(declaration) or declaration[j].type not in (TokenType.STRING, TokenType.IDENTIFIER):
+                    raise self.diagnostic("E101", "Invalid Library Declaration", "Expected a library name.",
+                                          'Use: add the "Math" library', line_num, col_num)
+                name_token = declaration[j]
+                lib_name = name_token.string_value if name_token.type == TokenType.STRING else name_token.lexeme
+                j += 1
+                if not library_first:
+                    if j >= len(declaration) or declaration[j].type != TokenType.KW_LIBRARY:
+                        raise self.diagnostic("E101", "Invalid Library Declaration", "Expected 'library' after the name.",
+                                              'Use: add the "Math" library', line_num, col_num)
+                    j += 1
+                if j != len(declaration):
+                    raise self.diagnostic("E101", "Invalid Library Declaration", "Unexpected text after the library name.",
+                                          'Use: add the "Math" library', line_num, declaration[j].col)
+                normalized = self.norm(lib_name)
+                if normalized in ("draw", "drawing", "sprites", "game", "improvedwait"):
+                    raise self.diagnostic("E302", "Library Not In This Build",
+                                          f"The '{lib_name}' library is available in E++ Studio, not E++.zip.",
+                                          "Open the full E++ Studio to use this library.", line_num, name_token.col)
+                known = {"python", "math", "random", "strings", "text", "colors", "time", "files", "system", "console", "keyboard", "improvedwaitlite"}
+                if normalized not in known:
+                    raise self.diagnostic("E303", "Unknown Library", f"There is no library called '{lib_name}'.",
+                                          "Check the library name and spelling.", line_num, name_token.col)
+                self.libs.add("strings" if normalized == "text" else normalized)
+                idx = end
+                continue
+
+            # Repeat and while blocks use the same interpreter/environment, and
+            # preserve the original token locations even in nested loops.
+            if tok.type in (TokenType.KW_REPEAT, TokenType.KW_WHILE):
+                kind = "repeat" if tok.type == TokenType.KW_REPEAT else "while"
+                end_header = idx + 1
+                while end_header < n and tokens[end_header].type not in (TokenType.NEWLINE, TokenType.EOF): end_header += 1
+                header = list(tokens[idx + 1:end_header])
+                if header and header[-1].type == TokenType.COLON: header.pop()
+                if kind == "repeat":
+                    if not header or header[-1].lexeme.lower() not in ("times", "time"):
+                        raise self.diagnostic("E101", "Invalid Repeat", "A repeat needs a count followed by 'times'.",
+                                              "For example: repeat 3 times", line_num, col_num)
+                    count_tokens = header[:-1]
+                    if not count_tokens:
+                        raise self.diagnostic("E105", "Missing Repeat Count", "The repeat count is missing.",
+                                              "For example: repeat 3 times", line_num, col_num)
+                else:
+                    if header and header[-1].type == TokenType.KW_DO: header.pop()
+                    if not header:
+                        raise self.diagnostic("E105", "Missing While Condition", "The while condition is missing.",
+                                              "For example: while 'n' is less than 3 do", line_num, col_num)
+                body_start = end_header + (1 if end_header < n and tokens[end_header].type == TokenType.NEWLINE else 0)
+                j, depth, at_start = body_start, 1, True
+                while j < n and tokens[j].type != TokenType.EOF:
+                    t = tokens[j]
+                    if t.type == TokenType.NEWLINE:
+                        at_start = True
+                    elif at_start:
+                        if t.type == tok.type: depth += 1
+                        if t.type == TokenType.KW_END and j + 1 < n and tokens[j + 1].type == tok.type:
+                            depth -= 1
+                            if depth == 0: break
+                        at_start = False
+                    j += 1
+                if depth:
+                    raise self.diagnostic("E106", "Unclosed Block", f"This {kind} has no matching end {kind}.",
+                                          f"Close the block with: end {kind}", line_num, col_num)
+                body = tokens[body_start:j]
+                idx = j + 2
+                if idx < n and tokens[idx].type not in (TokenType.NEWLINE, TokenType.EOF):
+                    raise self.diagnostic("E101", "Unexpected Text", f"Unexpected text after end {kind}.",
+                                          "Put each statement on its own line.", tokens[idx].line, tokens[idx].col)
+                if kind == "repeat":
+                    count = self.eval_expr(count_tokens, line_num, count_tokens[0].col)
+                    if not isinstance(count, (int, float)) or not math.isfinite(count) or count < 0 or int(count) != count or count > 100000:
+                        raise self.diagnostic("E405", "Invalid Repeat Count", "Repeat needs a whole number from 0 to 100000.",
+                                              "For example: repeat 3 times", line_num, col_num)
+                    for _ in range(int(count)): self.parse_and_execute(body)
+                else:
+                    rounds = 0
+                    while self.eval_condition(header, line_num, col_num):
+                        if rounds >= 100000:
+                            raise self.diagnostic("E405", "Endless Loop", "The while loop exceeded 100000 iterations.",
+                                                  "Change a value in the loop so the condition becomes false.", line_num, col_num)
+                        self.parse_and_execute(body)
+                        rounds += 1
                 continue
 
             # 3. RUN THE PYTHON CODE
@@ -275,7 +509,7 @@ class Interpreter:
 
                 # Collect condition tokens until KW_THEN
                 cond_tokens = []
-                while idx < n and tokens[idx].type != TokenType.KW_THEN and tokens[idx].type != TokenType.NEWLINE:
+                while idx < n and tokens[idx].type != TokenType.KW_THEN and tokens[idx].type not in (TokenType.NEWLINE, TokenType.EOF):
                     cond_tokens.append(tokens[idx])
                     idx += 1
 
@@ -296,30 +530,48 @@ class Interpreter:
 
                 # Check if block if: then : \n
                 if match(TokenType.COLON):
-                    # Multi-line block if
+                    # Multi-line blocks: count only nested block ifs, not
+                    # inline ifs or type-checks appearing inside a statement.
                     then_tokens = []
                     else_tokens = []
                     cur_block = then_tokens
                     skip_newlines()
-                    depth = 1
+                    depth, at_start = 1, True
                     while idx < n:
-                        if tokens[idx].type == TokenType.KW_IF:
-                            depth += 1
-                        elif tokens[idx].type == TokenType.KW_END:
-                            if idx + 1 < n and tokens[idx+1].type == TokenType.KW_IF:
-                                depth -= 1
-                                if depth == 0:
-                                    idx += 2
-                                    break
-                        elif depth == 1 and tokens[idx].type in (TokenType.KW_OTHERWISE, TokenType.KW_ELSE):
-                            cur_block = else_tokens
+                        current = tokens[idx]
+                        if current.type == TokenType.NEWLINE:
+                            cur_block.append(current)
                             idx += 1
-                            if match(TokenType.COLON): pass
-                            skip_newlines()
+                            at_start = True
                             continue
-                        cur_block.append(tokens[idx])
+                        if at_start and current.type == TokenType.KW_IF:
+                            j = idx + 1
+                            while j < n and tokens[j].type not in (TokenType.NEWLINE, TokenType.EOF): j += 1
+                            header = tokens[idx:j]
+                            then = next((k for k, t in enumerate(header) if t.type == TokenType.KW_THEN), -1)
+                            if then >= 0 and then + 1 < len(header) and header[then + 1].type == TokenType.COLON:
+                                depth += 1
+                        elif at_start and current.type == TokenType.KW_END and idx + 1 < n and tokens[idx + 1].type == TokenType.KW_IF:
+                            depth -= 1
+                            if depth == 0:
+                                idx += 2
+                                break
+                        elif at_start and depth == 1 and current.type in (TokenType.KW_OTHERWISE, TokenType.KW_ELSE):
+                            j = idx + 1
+                            if j < n and tokens[j].type == TokenType.COLON: j += 1
+                            if j >= n or tokens[j].type in (TokenType.NEWLINE, TokenType.EOF):
+                                cur_block = else_tokens
+                                idx = j
+                                skip_newlines()
+                                at_start = True
+                                continue
+                        cur_block.append(current)
                         idx += 1
+                        at_start = False
 
+                    if depth != 0:
+                        raise self.diagnostic("E106", "Unclosed Block", "This if has no matching end if.",
+                                              "Close the block with: end if", line_num, col_num)
                     active_tokens = then_tokens if cond_result else else_tokens
                     sub_interp = Interpreter(self.filename)
                     sub_interp.vars = self.vars
@@ -332,7 +584,7 @@ class Interpreter:
                 # Single-line if statement
                 # Collect tokens for then-statement on the current line
                 then_stmt_tokens = []
-                while idx < n and tokens[idx].line == line_num and tokens[idx].type != TokenType.NEWLINE:
+                while idx < n and tokens[idx].line == line_num and tokens[idx].type not in (TokenType.NEWLINE, TokenType.EOF):
                     then_stmt_tokens.append(tokens[idx])
                     idx += 1
 
@@ -349,13 +601,16 @@ class Interpreter:
                     otherwise_line_num = oth_tok.line
                     idx += 1
                     # Collect statement tokens on the otherwise line
-                    while idx < n and tokens[idx].line == otherwise_line_num and tokens[idx].type != TokenType.NEWLINE:
+                    while idx < n and tokens[idx].line == otherwise_line_num and tokens[idx].type not in (TokenType.NEWLINE, TokenType.EOF):
                         otherwise_stmt_tokens.append(tokens[idx])
                         idx += 1
                 else:
                     # Rewind newlines if not otherwise
                     idx = saved_idx
 
+                if not then_stmt_tokens:
+                    raise self.diagnostic("E105", "Missing If Action", "There is no statement after 'then'.",
+                                          'Write an action after then, or use then: and end if.', line_num, col_num)
                 if cond_result:
                     if then_stmt_tokens:
                         self.execute_single_statement(then_stmt_tokens, line_num)
@@ -381,7 +636,7 @@ class Interpreter:
             # Collect line tokens for standard statement execution
             stmt_tokens = []
             cur_stmt_line = tok.line
-            while idx < n and tokens[idx].line == cur_stmt_line and tokens[idx].type != TokenType.NEWLINE:
+            while idx < n and tokens[idx].line == cur_stmt_line and tokens[idx].type not in (TokenType.NEWLINE, TokenType.EOF):
                 stmt_tokens.append(tokens[idx])
                 idx += 1
 
@@ -414,8 +669,9 @@ class Interpreter:
 
             if len(tokens) < 4 or tokens[1].type != TokenType.VARIABLE:
                 cur_line = self.get_source_line(line_num)
+                bad_name = len(tokens) > 1 and tokens[1].type != TokenType.VARIABLE
                 raise EppDiagnosticError(
-                    code="E101",
+                    code="E202" if bad_name else "E101",
                     name="Syntax Error in Variable Assignment",
                     filename=self.filename,
                     line=line_num,
@@ -426,41 +682,68 @@ class Interpreter:
                 )
 
             var_name = tokens[1].string_value
-            # rhs tokens after be/as/to
-            rhs_idx = 2
-            while rhs_idx < len(tokens) and tokens[rhs_idx].type in (TokenType.KW_BE, TokenType.KW_AS, TokenType.KW_TO):
-                rhs_idx += 1
-
-            val = self.eval_expr(tokens[rhs_idx:], line_num, tokens[rhs_idx].col if rhs_idx < len(tokens) else col_num, allow_raw_words=True)
+            if tokens[2].type not in (TokenType.KW_BE, TokenType.KW_AS, TokenType.KW_TO):
+                raise self.diagnostic("E101", "Invalid Assignment", "Expected 'be', 'as', or 'to' after the variable.",
+                                      "For example: let 'Name' be \"Sam\"", line_num, tokens[2].col)
+            rhs_idx = 3
+            if rhs_idx >= len(tokens):
+                raise self.diagnostic("E105", "Missing Value", "The assignment needs a value.",
+                                      "For example: let 'Name' be \"Sam\"", line_num, col_num)
+            val = self.eval_expr(tokens[rhs_idx:], line_num, tokens[rhs_idx].col)
             self.set_var(var_name, val)
             return
 
-        # ASK
+        # ASK — the variable after 'as' is the destination, not the first
+        # variable that might appear in the prompt.
         if first.type == TokenType.KW_ASK:
-            # ask "Prompt" and save the output as 'Name'
-            prompt_val = "Enter input: "
-            name_idx = -1
-            for i, t in enumerate(tokens):
-                if t.type == TokenType.VARIABLE:
-                    name_idx = i
-                    break
-            if name_idx != -1:
-                prompt_tokens = tokens[1:name_idx]
-                # filter keywords
-                clean_prompt_tokens = [t for t in prompt_tokens if t.type not in (TokenType.KW_AND, TokenType.KW_SAVE, TokenType.KW_THE, TokenType.KW_OUTPUT, TokenType.KW_AS)]
-                if clean_prompt_tokens:
-                    prompt_val = str(self.eval_expr(clean_prompt_tokens, line_num, col_num))
-                try:
-                    user_val = input(prompt_val)
-                except (EOFError, IOError):
-                    user_val = "Alex"
-                var_name = tokens[name_idx].string_value
-                # Try int/float conversion
-                try:
-                    num = float(user_val) if "." in user_val else int(user_val)
-                    self.set_var(var_name, num)
-                except ValueError:
-                    self.set_var(var_name, user_val)
+            and_idx = next((i for i, t in enumerate(tokens) if t.type == TokenType.KW_AND), -1)
+            if and_idx <= 1 or and_idx + 1 >= len(tokens) or tokens[and_idx + 1].type != TokenType.KW_SAVE:
+                raise self.diagnostic("E101", "Invalid Ask", "Expected a prompt and 'and save ... as'.",
+                                      "For example: ask \"Name?\" and save the output as 'Name'", line_num, col_num)
+            j = and_idx + 2
+            while j < len(tokens) and tokens[j].type in (TokenType.KW_THE, TokenType.KW_IT, TokenType.KW_OUTPUT, TokenType.KW_ANSWER, TokenType.KW_RESULT): j += 1
+            if j >= len(tokens) or tokens[j].type not in (TokenType.KW_AS, TokenType.KW_IN):
+                raise self.diagnostic("E101", "Invalid Ask", "Expected 'as' before the destination variable.",
+                                      "Use a single-quoted name: as 'Name'", line_num, col_num)
+            j += 1
+            if j >= len(tokens) or tokens[j].type != TokenType.VARIABLE:
+                bad_col = tokens[j].col if j < len(tokens) else col_num
+                raise self.diagnostic("E202", "Invalid Variable Name", "The answer needs a single-quoted variable name.",
+                                      "For example: as 'Name'", line_num, bad_col)
+            if j + 1 != len(tokens):
+                raise self.diagnostic("E101", "Invalid Ask", "Unexpected text after the answer variable.",
+                                      "Put each statement on its own line.", line_num, tokens[j + 1].col)
+            prompt_val = str(self.eval_expr(tokens[1:and_idx], line_num, tokens[1].col))
+            try:
+                user_val = input(prompt_val)
+            except (EOFError, IOError):
+                user_val = ""
+            try:
+                num = float(user_val) if "." in user_val else int(user_val)
+                self.set_var(tokens[j].string_value, num)
+            except ValueError:
+                self.set_var(tokens[j].string_value, user_val)
+            return
+
+        if first.type == TokenType.KW_CHECK:
+            if len(tokens) < 5 or tokens[1].type != TokenType.KW_IF:
+                raise self.diagnostic("E101", "Invalid Type Check", "Expected check if <value> is [not] a number.",
+                                      'For example: check if "hello" is not a number', line_num, col_num)
+            is_idx = next((i for i, t in enumerate(tokens) if t.type == TokenType.KW_IS), -1)
+            if is_idx < 2:
+                raise self.diagnostic("E101", "Invalid Type Check", "Expected 'is' in the type check.",
+                                      'For example: check if "hello" is a number', line_num, col_num)
+            rest = [t.lexeme.lower() for t in tokens[is_idx + 1:]]
+            if rest not in (["a", "number"], ["number"], ["not", "a", "number"], ["not", "number"]):
+                raise self.diagnostic("E101", "Invalid Type Check", "Expected 'a number' or 'not a number'.",
+                                      'For example: check if "hello" is not a number', line_num, col_num)
+            value = self.eval_expr(tokens[2:is_idx], line_num, tokens[2].col)
+            try:
+                float(value)
+                result = str(value).strip() != ""
+            except (ValueError, TypeError):
+                result = False
+            print(str(not result if rest[0] == "not" else result).lower())
             return
 
         # WRITE TO FILE
@@ -545,10 +828,14 @@ class Interpreter:
                     print(res)
             return
 
+        code = "E106" if first.type in (TokenType.KW_END, TokenType.KW_ELSE) else "E101"
+        raise self.diagnostic(code, "Unknown Statement", f"E++ does not recognize '{first.lexeme}' as a statement.",
+                              'Start with a command such as say, let, or if.', line_num, col_num)
+
     def execute_say(self, tokens: List[Token], line_num: int, col_num: int):
         if not tokens:
-            print()
-            return
+            raise self.diagnostic("E105", "Missing Value", "'say' needs a value to print.",
+                                  'For example: say "Hello"', line_num, col_num)
 
         # Check Colors library keyword
         color_code = ""
@@ -568,7 +855,8 @@ class Interpreter:
                 color_code = color_map[col_word]
                 tokens = tokens[1:]
                 if not tokens:
-                    return
+                    raise self.diagnostic("E105", "Missing Value", "A colored say needs a value to print.",
+                                          'For example: say red "Hello"', line_num, col_num)
 
         # Check for separation method
         sep_str = None
@@ -587,6 +875,8 @@ class Interpreter:
             if of_idx != -1 and of_idx + 1 < len(tokens):
                 sep_str = str(self.eval_expr(tokens[of_idx+1:], line_num, tokens[of_idx+1].col))
             tokens = tokens[:sep_idx]
+            if tokens and tokens[-1].type == TokenType.KW_THE: tokens.pop()
+            if tokens and tokens[-1].type == TokenType.KW_WITH: tokens.pop()
 
         # Evaluate concat parts separated by commas or 'and concat it with'
         parts = self.split_concat_tokens(tokens)
@@ -633,11 +923,20 @@ class Interpreter:
         while i < len(tokens):
             t = tokens[i]
             if t.type == TokenType.COMMA:
-                if cur: res.append(cur)
+                if not cur:
+                    raise self.diagnostic("E105", "Missing Value", "A comma needs a value before it.",
+                                          'Separate values like: say "Hello", "world"', t.line, t.col)
+                res.append(cur)
                 cur = []
                 i += 1
+                if i < len(tokens) and tokens[i].type == TokenType.KW_AND and i + 1 < len(tokens) and tokens[i + 1].type == TokenType.KW_CONCAT:
+                    i += 1
+                if i == len(tokens):
+                    raise self.diagnostic("E105", "Missing Value", "A comma needs a value after it.",
+                                          'Separate values like: say "Hello", "world"', t.line, t.col)
                 continue
             if t.type == TokenType.KW_CONCAT:
+                if cur and cur[-1].type == TokenType.KW_AND: cur.pop()
                 if cur: res.append(cur)
                 cur = []
                 i += 1
@@ -706,7 +1005,8 @@ class Interpreter:
     def eval_expr(self, tokens: List[Token], line: int, col: int, allow_raw_words: bool = False) -> Any:
         tokens = [t for t in tokens if t.type not in (TokenType.NEWLINE, TokenType.EOF)]
         if not tokens:
-            return ""
+            raise self.diagnostic("E105", "Missing Value", "An expression needs a value.",
+                                  'Use a number, "text", or a single-quoted variable.', line, col)
 
         # Single string literal
         if len(tokens) == 1 and tokens[0].type == TokenType.STRING:
@@ -720,113 +1020,100 @@ class Interpreter:
         if len(tokens) == 1 and tokens[0].type == TokenType.NUMBER:
             return int(tokens[0].number_value) if tokens[0].number_value.is_integer() else tokens[0].number_value
 
-        # Random functions: "a random number between X and Y"
-        tok_str = " ".join(t.lexeme for t in tokens).lower()
-        if "random number between" in tok_str or "number between" in tok_str:
+        # Library operations have exact prefixes and evaluate their arguments
+        # through this same restricted expression evaluator. Never pass E++
+        # source to Python's eval().
+        words = [t.lexeme.lower() for t in tokens]
+        tok_str = " ".join(words)
+        base = 1 if words and words[0] == "the" else 0
+
+        def rest_after(prefix):
+            return tokens[base + len(prefix):] if words[base:base + len(prefix)] == prefix else None
+
+        def evaluate(part):
+            return self.eval_expr(part, line, part[0].col if part else col)
+
+        def normal_number(value):
+            return int(value) if isinstance(value, float) and value.is_integer() else value
+
+        def divided_parts(part, word):
+            where = next((i for i, t in enumerate(part) if t.lexeme.lower() == word), -1)
+            if where <= 0 or where == len(part) - 1:
+                raise self.diagnostic("E105", "Missing Value", f"Expected values on both sides of '{word}'.",
+                                      "Check the library expression's arguments.", line, col)
+            return part[:where], part[where + 1:]
+
+        random_match = re.match(r"^(?:it['’]?s\s+)?(?:a\s+|the\s+)?(?:random\s+)?number\s+between\b", tok_str)
+        if random_match:
             if "random" not in self.libs and "math" not in self.libs:
                 self.require_lib("Random", "Random numbers", line, col)
-            m = re.search(r'between\s+(.+?)\s+and\s+(.+)$', tok_str)
-            if m:
-                # Find bounds
-                low = int(float(m.group(1).strip()))
-                high = int(float(m.group(2).strip()))
-                return random.randint(min(low, high), max(low, high))
+            at = words.index("between")
+            left, right = divided_parts(tokens[at + 1:], "and")
+            low, high = float(evaluate(left)), float(evaluate(right))
+            lo, hi = min(low, high), max(low, high)
+            return random.randint(int(lo), int(hi)) if lo.is_integer() and hi.is_integer() else random.uniform(lo, hi)
 
-        # Roll a dice
-        if "roll a dice" in tok_str or "roll dice" in tok_str:
-            self.require_lib("Random", "Rolling dice", line, col)
-            sides = 6
-            m = re.search(r'with\s+(\d+)\s+sides', tok_str)
-            if m: sides = int(m.group(1))
+        if re.match(r"^roll\s+(?:a\s+)?dice(?:\s|$)", tok_str):
+            if "random" not in self.libs and "math" not in self.libs:
+                self.require_lib("Random", "Rolling dice", line, col)
+            if "with" in words:
+                at = words.index("with")
+                if words[-1] != "sides":
+                    raise self.diagnostic("E105", "Invalid Dice", "Expected a number followed by 'sides'.", "For example: roll a dice with 6 sides", line, col)
+                sides = int(evaluate(tokens[at + 1:-1]))
+            elif tok_str in ("roll a dice", "roll dice"):
+                sides = 6
+            else:
+                raise self.diagnostic("E105", "Invalid Dice", "The dice expression is incomplete.", "For example: roll a dice", line, col)
+            if sides < 1: raise ValueError("A dice needs at least one side.")
             return random.randint(1, sides)
 
-        # Flip a coin
-        if "flip a coin" in tok_str:
-            self.require_lib("Random", "Flipping coin", line, col)
+        if tok_str in ("flip a coin", "flip coin"):
+            if "random" not in self.libs and "math" not in self.libs:
+                self.require_lib("Random", "Flipping coin", line, col)
             return random.choice(["heads", "tails"])
 
-        # Math: square root of X
-        if "square root of" in tok_str:
+        arg = rest_after(["square", "root", "of"])
+        if arg is not None:
             self.require_lib("Math", "Square root", line, col)
-            m = re.search(r'square root of\s+(.+)$', tok_str)
-            if m:
-                arg = float(m.group(1).strip())
-                res = math.sqrt(arg)
-                return int(res) if res.is_integer() else res
-
-        if "percent is of" in tok_str:
-            self.require_lib("Math", "Percentage calculation", line, col)
-            m = re.search(r'how much\s+(.+?)\s+percent\s+is\s+of\s+(.+)$', tok_str)
-            if m:
-                pct = float(m.group(1).strip())
-                tot = float(m.group(2).strip())
-                res = (pct / 100.0) * tot
-                return int(res) if res.is_integer() else res
-
-        # 20 percent of 150  (the same answer as `how much 20 percent is of 150`)
-        if "percent of" in tok_str and "percent is of" not in tok_str:
-            self.require_lib("Math", "Percentage calculation", line, col)
-            m = re.search(r'(.+?)\s+percent\s+of\s+(.+)$', tok_str)
-            if m:
-                pct = float(m.group(1).strip())
-                tot = float(m.group(2).strip())
-                res = (pct / 100.0) * tot
-                return int(res) if res.is_integer() else res
-
-        if "absolute value of" in tok_str:
+            return normal_number(math.sqrt(float(evaluate(arg))))
+        arg = rest_after(["absolute", "value", "of"])
+        if arg is not None:
             self.require_lib("Math", "Absolute value", line, col)
-            m = re.search(r'absolute value of\s+(.+)$', tok_str)
-            if m:
-                clean_expr = m.group(1).replace("plus", "+").replace("minus", "-").replace("times", "*")
-                val = eval(clean_expr)
-                return abs(int(val)) if isinstance(val, int) else abs(val)
+            return normal_number(abs(float(evaluate(arg))))
+        for name, function in (("minimum", min), ("maximum", max)):
+            arg = rest_after([name, "of"])
+            if arg is not None:
+                self.require_lib("Math", name.title(), line, col)
+                left, right = divided_parts(arg, "and")
+                return normal_number(function(float(evaluate(left)), float(evaluate(right))))
 
-        if "minimum of" in tok_str:
-            self.require_lib("Math", "Minimum", line, col)
-            m = re.search(r'minimum of\s+(.+?)\s+and\s+(.+)$', tok_str)
-            if m:
-                return min(int(float(m.group(1))), int(float(m.group(2))))
+        if "percent" in words:
+            at = words.index("percent")
+            start = 2 if words[:2] == ["how", "much"] else 0
+            after = at + 1
+            if after < len(words) and words[after] == "is": after += 1
+            if after < len(words) and words[after] == "of":
+                self.require_lib("Math", "Percentage calculation", line, col)
+                return normal_number(float(evaluate(tokens[start:at])) * float(evaluate(tokens[after + 1:])) / 100.0)
 
-        if "maximum of" in tok_str:
-            self.require_lib("Math", "Maximum", line, col)
-            m = re.search(r'maximum of\s+(.+?)\s+and\s+(.+)$', tok_str)
-            if m:
-                return max(int(float(m.group(1))), int(float(m.group(2))))
+        if tok_str in ("the value of pi", "value of pi", "pi", "the value of e", "value of e", "e"):
+            self.require_lib("Math", "Mathematical constant", line, col)
+            return math.e if words[-1] == "e" else math.pi
 
-        if tok_str in ("the value of pi", "pi"):
-            self.require_lib("Math", "Value of pi", line, col)
-            return math.pi
-
-        # Strings: the article is optional (`the length of "x"` / `length of "x"`).
-        if any(prefix in tok_str for prefix in (
-            "uppercase of", "lowercase of", "trim of", "reverse of",
-            "length of", "first letter of", "last letter of"
-        )):
-            self.require_lib("Strings", "Strings library", line, col)
-            base_s = ""
-            for t in tokens:
-                if t.type == TokenType.STRING:
-                    base_s = t.string_value
-                    break
-                elif t.type == TokenType.VARIABLE:
-                    base_s = str(self.get_var(t.string_value, line, t.col))
-                    break
-            if "trim of" in tok_str: base_s = base_s.strip()
-            if "uppercase of" in tok_str: base_s = base_s.upper()
-            if "lowercase of" in tok_str: base_s = base_s.lower()
-            if "reverse of" in tok_str: base_s = base_s[::-1]
-            if "first letter of" in tok_str: base_s = base_s[:1]
-            if "last letter of" in tok_str: base_s = base_s[-1:]
-            if "length of" in tok_str: return len(base_s)
-            return base_s
-
-        if "number between" in tok_str:
-            self.require_lib("Random", "Random numbers", line, col)
-            m = re.search(r'between\s+(\d+)\s+and\s+(\d+)', tok_str)
-            if m:
-                low = int(m.group(1))
-                high = int(m.group(2))
-                return random.randint(min(low, high), max(low, high))
+        for prefix, function in (
+            (["uppercase", "of"], lambda x: x.upper()),
+            (["lowercase", "of"], lambda x: x.lower()),
+            (["trim", "of"], lambda x: x.strip()),
+            (["reverse", "of"], lambda x: x[::-1]),
+            (["length", "of"], len),
+            (["first", "letter", "of"], lambda x: x[:1]),
+            (["last", "letter", "of"], lambda x: x[-1:]),
+        ):
+            arg = rest_after(prefix)
+            if arg is not None:
+                self.require_lib("Strings", "Strings library", line, col)
+                return function(str(evaluate(arg)))
 
         # System: the platform / the os
         if tok_str in ("the platform", "the system platform"):
@@ -880,17 +1167,40 @@ class Interpreter:
                 expr_parts.append(t.lexeme)
 
         expr_str = " ".join(expr_parts)
-        # Check if pure arithmetic
+        # Evaluate only arithmetic AST nodes: never treat broken math as text.
         safe_eval_str = expr_str.replace("plus", "+").replace("minus", "-").replace("times", "*").replace("divided by", "/")
-        if re.match(r'^[\d\s\+\-\*\/\%\.\(\)]+$', safe_eval_str):
+        if re.fullmatch(r'[\d\s+*/%().-]+', safe_eval_str):
+            def calculate(node):
+                if isinstance(node, ast.Expression): return calculate(node.body)
+                if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)): return node.value
+                if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
+                    value = calculate(node.operand)
+                    return value if isinstance(node.op, ast.UAdd) else -value
+                if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod)):
+                    left, right = calculate(node.left), calculate(node.right)
+                    if isinstance(node.op, ast.Add): return left + right
+                    if isinstance(node.op, ast.Sub): return left - right
+                    if isinstance(node.op, ast.Mult): return left * right
+                    if right == 0: raise ZeroDivisionError()
+                    return left / right if isinstance(node.op, ast.Div) else left % right
+                raise ValueError("Unsupported expression")
             try:
-                res = eval(safe_eval_str)
+                res = calculate(ast.parse(safe_eval_str, mode="eval"))
                 return int(res) if isinstance(res, float) and res.is_integer() else res
-            except Exception:
-                pass
+            except ZeroDivisionError:
+                raise self.diagnostic("E403", "Division By Zero", "A number cannot be divided by zero.",
+                                      "Use a divisor other than zero.", line, col)
+            except (ValueError, SyntaxError, OverflowError):
+                raise self.diagnostic("E105", "Invalid Expression", "This arithmetic expression is incomplete or invalid.",
+                                      "Check the operands and matching parentheses.", line, col)
 
-        # Natural speech / words fallback
-        return " ".join(t.lexeme for t in tokens)
+        bad = next((t for t in tokens if t.type == TokenType.IDENTIFIER), None)
+        if bad:
+            raise self.diagnostic("E402", "Unquoted Text", f"Unquoted text '{bad.lexeme}' is not a value.",
+                                  'Put text in double quotes, or use single quotes for a variable.', line, bad.col)
+        raise self.diagnostic("E105", "Invalid Expression", "This expression could not be understood.",
+                              'Use a number, "text", or a single-quoted variable.', line, col)
+
 
 
 # ==========================================
@@ -898,7 +1208,7 @@ class Interpreter:
 # ==========================================
 
 def _usage():
-    print("E++ [1.2] Python Direct Engine")
+    print("E++ [1.3] Python Direct Engine")
     print("Usage:")
     print("  python3 epp.py <file.enpp|file.enppl>             Run a program")
     print("  python3 epp.py -e '<code string>'                 Run inline code")

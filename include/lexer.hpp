@@ -5,8 +5,17 @@
 #include <vector>
 #include <unordered_map>
 #include <iostream>
+#include <stdexcept>
 
 namespace epp {
+
+class LexError : public std::runtime_error {
+public:
+    int line, col;
+    std::string code;
+    LexError(const std::string& message, int l, int c, const std::string& error_code = "E102")
+        : std::runtime_error(message), line(l), col(c), code(error_code) {}
+};
 
 enum class TokenType {
     // End of file / line
@@ -198,10 +207,21 @@ struct Token {
         : type(t), lexeme(lex), line(l), col(c) {}
 };
 
+// The browser build cannot use C++ exceptions, so both builds record the same
+// lexical issue first. The native API still throws LexError from tokenize().
+struct LexIssue {
+    std::string message;
+    std::string code;
+    int line = 1;
+    int col = 1;
+};
+
 class Lexer {
 public:
     explicit Lexer(const std::string& source);
     std::vector<Token> tokenize();
+    bool has_error() const { return failed; }
+    const LexIssue& error() const { return issue; }
 
     static std::string token_type_name(TokenType t);
     static std::string to_lower(const std::string& s);
@@ -211,6 +231,9 @@ private:
     size_t cursor = 0;
     int line = 1;
     int col = 1;
+    bool failed = false;
+    LexIssue issue;
+    void report_error(const std::string& message, int l, int c, const std::string& code = "E102");
 
     bool is_at_end() const;
     char peek() const;

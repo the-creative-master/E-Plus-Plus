@@ -7,6 +7,9 @@
 #include <chrono>
 #include <sstream>
 #include <vector>
+#include <utility>
+#include <cerrno>
+#include <cstdlib>
 
 namespace epp {
 
@@ -166,9 +169,19 @@ std::string Lexer::to_lower(const std::string& s) {
 }
 
 Lexer::Lexer(const std::string& source) : src(source) {
-    // Release 1.2: a sealed project is opened with the keyring before lexing.
+    // Studio opens its saved projects before passing their plaintext to the
+    // WebAssembly lexer. The native CLI continues to open vaults here.
+#ifndef EPP_BROWSER_PLAINTEXT
     if (is_vault(src)) {
         src = open_vault(src);
+    }
+#endif
+}
+
+void Lexer::report_error(const std::string& message, int l, int c, const std::string& code) {
+    if (!failed) {
+        issue = {message, code, l, c};
+        failed = true;
     }
 }
 
@@ -210,17 +223,11 @@ void Lexer::skip_whitespace_and_comments() {
         if (c == ' ' || c == '\t' || c == '\r') {
             advance();
         } else if (c == '/' && peek_next() == '/') {
-            int err_line = line;
-            int err_col = col;
-            throw std::runtime_error("Syntax Error at line " + std::to_string(err_line) +
-                                     ", col " + std::to_string(err_col) +
-                                     ": E++ does not use '// note'. Notes must use the syntax: note [Note]");
+            report_error("E++ does not use // comments. Use note [text].", line, col, "E101");
+            return;
         } else if (c == '#') {
-            int err_line = line;
-            int err_col = col;
-            throw std::runtime_error("Syntax Error at line " + std::to_string(err_line) +
-                                     ", col " + std::to_string(err_col) +
-                                     ": E++ does not use '#' comments. Notes must use the syntax: note [Note]");
+            report_error("E++ does not use # comments. Use note [text].", line, col, "E101");
+            return;
         } else {
             break;
         }
@@ -265,7 +272,7 @@ std::vector<Token> Lexer::tokenize() {
     std::vector<Token> tokens;
     while (!is_at_end()) {
         skip_whitespace_and_comments();
-        if (is_at_end()) break;
+        if (failed || is_at_end()) break;
 
         char c = peek();
         if (c == '\n') {
@@ -324,9 +331,18 @@ std::vector<Token> Lexer::tokenize() {
             continue;
         }
 
-        tokens.push_back(scan_token());
+        Token token = scan_token();
+        if (failed) break;
+        tokens.push_back(std::move(token));
     }
 
+    if (failed) {
+#ifndef EPP_BROWSER_PLAINTEXT
+        throw LexError(issue.message, issue.line, issue.col, issue.code);
+#else
+        return {};
+#endif
+    }
     tokens.emplace_back(TokenType::TOKEN_EOF, "", line, col);
     return tokens;
 }
@@ -396,11 +412,11 @@ Token Lexer::scan_number() {
     }
 
     Token tok(TokenType::TOKEN_NUMBER, text, start_line, start_col);
-    try {
-        tok.number_value = std::stod(text);
-    } catch (...) {
-        tok.number_value = 0.0;
-    }
+    // strtod gives the same out-of-range behaviour in both builds without
+    // requiring C++ exception support in WebAssembly.
+    errno = 0;
+    tok.number_value = std::strtod(text.c_str(), nullptr);
+    if (errno == ERANGE) tok.number_value = 0.0;
     return tok;
 }
 
@@ -411,11 +427,11 @@ Token Lexer::scan_string() {
     advance(); // Consume opening '"'
     std::string text;
 
-    while (!is_at_end() && peek() != '"') {
+    while (!is_at_end() && peek() != '"' && peek() != '\n') {
         char c = peek();
         if (c == '\\') {
             advance();
-            if (is_at_end()) break;
+            if (is_at_end() || peek() == '\n') break;
             char esc = advance();
             if (esc == 'n') text.push_back('\n');
             else if (esc == 't') text.push_back('\t');
@@ -428,11 +444,11 @@ Token Lexer::scan_string() {
         }
     }
 
-    if (is_at_end()) {
-        std::cerr << "Warning at line " << start_line << ": Unterminated string literal!\n";
-    } else {
-        advance(); // Consume closing '"'
+    if (is_at_end() || peek() == '\n') {
+        report_error("Unterminated string. Add the closing double quote (\").", start_line, start_col);
+        return Token(TokenType::TOKEN_EOF, "", start_line, start_col);
     }
+    advance(); // closing double quote
 
     std::string raw_lexeme = src.substr(start_pos, cursor - start_pos);
     Token tok(TokenType::TOKEN_STRING, raw_lexeme, start_line, start_col);
@@ -446,15 +462,19 @@ Token Lexer::scan_variable() {
     advance(); // Consume opening '\''
     std::string text;
 
-    while (!is_at_end() && peek() != '\'') {
+    while (!is_at_end() && peek() != '\'' && peek() != '\n') {
         char c = advance();
         text.push_back(c);
     }
 
-    if (is_at_end()) {
-        std::cerr << "Warning at line " << start_line << ": Unterminated variable name in single quotes!\n";
-    } else {
-        advance(); // Consume closing '\''
+    if (is_at_end() || peek() == '\n') {
+        report_error("Unterminated variable name. Add the closing single quote (').", start_line, start_col);
+        return Token(TokenType::TOKEN_EOF, "", start_line, start_col);
+    }
+    advance(); // closing single quote
+    if (text.find_first_not_of(" \t\r") == std::string::npos) {
+        report_error("A variable name cannot be empty.", start_line, start_col, "E202");
+        return Token(TokenType::TOKEN_EOF, "", start_line, start_col);
     }
 
     Token tok(TokenType::TOKEN_VARIABLE, "'" + text + "'", start_line, start_col);
@@ -490,19 +510,20 @@ Token Lexer::scan_word() {
         if (peek() == '[') {
             advance(); // consume '['
             std::string note_text = "";
-            while (!is_at_end() && peek() != ']') {
+            while (!is_at_end() && peek() != ']' && peek() != '\n') {
                 note_text += advance();
             }
-            if (peek() == ']') {
-                advance(); // consume ']'
+            if (is_at_end() || peek() != ']') {
+                report_error("Unterminated note. Close it with ].", start_line, start_col, "E101");
+                return Token(TokenType::TOKEN_EOF, "", start_line, start_col);
             }
+            advance(); // consume ']'
             Token tok(TokenType::KW_NOTE, "note [" + note_text + "]", start_line, start_col);
             tok.string_value = note_text;
             return tok;
         } else {
-            throw std::runtime_error("Syntax Error at line " + std::to_string(start_line) +
-                                     ", col " + std::to_string(start_col) +
-                                     ": Notes in E++ must use the syntax: note [Note]");
+            report_error("Notes must use the syntax: note [Note]", start_line, start_col, "E101");
+            return Token(TokenType::TOKEN_EOF, "", start_line, start_col);
         }
     }
 

@@ -45,14 +45,13 @@
  *   multiplicative := power (("times"|"divided by"|"percent of") power)*
  *   power          := unary [ "power of" power ]
  *   unary          := ["minus"|"square root of"] unary | primary
- *   primary        := NUMBER | STRING | VARIABLE | bare words
+ *   primary        := NUMBER | STRING | VARIABLE
  *                   | "(" expression ")"
  *                   | ("uppercase of"|"lowercase of"|"length of") unary   [Text]
  *                   | "random number between" power "and" power          [Random]
  *
- * Bare words that are not operators are read as a value: at runtime a bare
- * word resolves to the variable of that name if one exists, otherwise it is
- * literal text (so `Define name as WeeklyHow.` stores the text WeeklyHow).
+ * Unquoted words are not values. Text must use double quotes and variable
+ * references use single quotes, including in branches that never execute.
  *
  * Library gating: operators owned by a library (see libraries.js) raise a
  * LibraryError at parse time when the library has not been added earlier in
@@ -429,6 +428,14 @@
       }
       // Check for "drawing sprite" (Draw library)
       if (this.isWord('drawing')) {
+        if (EPP.Libraries && !EPP.Libraries.isAvailable('Draw')) {
+          throw new LibraryError('The "Draw" library is not included in this build of E++.',
+            kw.line, kw.column, EPP.Libraries.whyUnavailable('Draw'));
+        }
+        if (!this.loadedLibraries.Draw) {
+          throw new LibraryError('Drawing sprites require the Draw library.', kw.line, kw.column,
+            'Add the library first: add the "Draw" library');
+        }
         this.advance(); // drawing
         if (!this.matchWord('sprite')) {
           var badSprite = this.current();
@@ -1678,13 +1685,17 @@
           'Values can be "text in quotes", \'a variable\', a number, or maths such as 1 plus 1.');
       }
 
-      // Bare words: one or more words that are not operators/keywords.
+      // Reject unquoted values during parsing, including in inactive branches.
       var words = [];
       var first = t;
       while (this.current().type === 'WORD' && !RESERVED[this.current().value.toLowerCase()]) {
         words.push(this.advance().value);
       }
-      return EPP.AST.BareWord(words.join(' '), first);
+      var text = words.join(' '), plural = words.length > 1;
+      throw new ParseError((plural ? 'The words "' + text + '" do' : 'The word "' + text + '" does') +
+        ' not mean anything in E++ yet — text requires double quotes and variables must be written inside single quotes.',
+        first.line, first.column,
+        'Write "' + text + '" for text or use single quotes for a variable.');
     }
 
     throw new ParseError('Expected a value but found ' + this.describe(t) + '.',
