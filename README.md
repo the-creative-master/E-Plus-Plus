@@ -454,6 +454,23 @@ show `say the square root of 144` while your own program says
 
 ---
 
+## 📱 Totally Not A Social Media Site
+
+A separate, self-contained parody site lives in `totally-not-a-social-media-site/`.
+No login, no password: type a username and BOOM. Upload videos, give likes,
+comment, search. Every video is catalogued and stored by `js/videostorage.js`,
+and playback streams in ten second chunks so nothing ever lags. All of the
+countries it claims to be banned in are fictional.
+
+```bash
+python3 -m http.server 8000      # then open /totally-not-a-social-media-site/
+```
+
+See [`totally-not-a-social-media-site/README.md`](totally-not-a-social-media-site/README.md)
+for the details.
+
+---
+
 ## 📁 Project layout
 
 ```text
@@ -466,6 +483,7 @@ examples/           runnable programs (Draw and Game examples require the full S
 lexer.py, epp.py    the Python lexer and runtime
 index.html          the whole Studio: UI, engine and editor in one file
 LANGUAGE.md         the language reference
+totally-not-a-social-media-site/   standalone parody social site (no build step)
 ```
 
 ---

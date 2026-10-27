@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Totally Not A Social Media Site</title>
+<meta name="description" content="A parody social network where nobody needs to log in. Upload videos, give likes, blur the feed. Every country is fictional.">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23c9ff4a'/%3E%3Cstop offset='1' stop-color='%2338e8ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='%230b0d12'/%3E%3Cpath d='M23 18l24 14-24 14z' fill='url(%23g)'/%3E%3Cpath d='M15 13l4 4M49 47l-4 4' stroke='%23ff4d8d' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+
+<a class="skip-link" href="#feed">Skip to the feed</a>
+
+<!-- ============================================================== header -->
+<header class="topbar">
+  <div class="topbar__inner">
+    <a class="brand" href="#/" aria-label="Totally Not A Social Media Site - home">
+      <span class="brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 64 64" role="img">
+          <defs>
+            <linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#c9ff4a"/>
+              <stop offset="1" stop-color="#38e8ff"/>
+            </linearGradient>
+          </defs>
+          <rect x="6" y="12" width="52" height="40" rx="12" fill="none" stroke="url(#brandGrad)" stroke-width="3"/>
+          <path d="M26 23l19 9-19 9z" fill="url(#brandGrad)"/>
+          <path d="M32 4v8M22 8l4 6M42 8l-4 6" stroke="#ff4d8d" stroke-width="3" stroke-linecap="round" fill="none"/>
+        </svg>
+      </span>
+      <span class="brand__text">
+        <strong>Totally Not A Social Media Site</strong>
+        <small>no login &middot; no password &middot; no borders</small>
+      </span>
+    </a>
+
+    <div class="topbar__search">
+      <span class="topbar__search-icon" aria-hidden="true"></span>
+      <input id="search" type="search" placeholder="Search videos, tags, people  (press /)" aria-label="Search videos" autocomplete="off">
+    </div>
+
+    <div class="topbar__actions">
+      <button id="sanitize-toggle" class="chip-btn" type="button" aria-pressed="false" title="Blur thumbnails like a content passport would">
+        <span class="chip-btn__icon" aria-hidden="true">◐</span><span class="chip-btn__label">Sanitise</span>
+      </button>
+      <button id="theme-toggle" class="chip-btn" type="button" title="Toggle theme">
+        <span class="chip-btn__icon" aria-hidden="true">◑</span><span class="chip-btn__label">Theme</span>
+      </button>
+      <button id="about-btn" class="chip-btn" type="button" title="Read the charter">
+        <span class="chip-btn__icon" aria-hidden="true">§</span><span class="chip-btn__label">Charter</span>
+      </button>
+      <button id="upload-btn" class="btn btn--primary" type="button">
+        <span aria-hidden="true">⬆</span> Upload
+      </button>
+      <div class="identity-wrap">
+        <div id="identity"></div>
+        <div id="identity-menu" class="identity-menu" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- =============================================================== layout -->
+<div class="layout">
+
+  <!-- ------------------------------------------------------- left rail -->
+  <aside class="rail rail--left" aria-label="Primary">
+    <nav class="nav">
+      <p class="nav__heading">Feed</p>
+      <button class="nav__item is-active" type="button" data-nav="home">
+        <span class="nav__icon" aria-hidden="true">✦</span> For you
+      </button>
+      <button class="nav__item" type="button" data-nav="trending">
+        <span class="nav__icon" aria-hidden="true">▲</span> Trending
+      </button>
+      <button class="nav__item" type="button" data-nav="new">
+        <span class="nav__icon" aria-hidden="true">✚</span> Newest
+      </button>
+      <button class="nav__item" type="button" data-nav="top">
+        <span class="nav__icon" aria-hidden="true">★</span> Most appreciated
+      </button>
+      <button class="nav__item" type="button" data-nav="liked">
+        <span class="nav__icon" aria-hidden="true">♥</span> Liked by you
+      </button>
+      <button class="nav__item" type="button" data-nav="mine">
+        <span class="nav__icon" aria-hidden="true">☺</span> Your channel
+      </button>
+    </nav>
+
+    <section class="panel panel--freedom">
+      <h2 class="panel__title">Freedom meter</h2>
+      <div class="meter"><span class="meter__fill" style="width:73%"></span></div>
+      <p class="panel__note">73% of the planet can still reach this page. The other 27% are fictional, which makes them very easy to ignore.</p>
+    </section>
+
+    <section class="panel panel--banned">
+      <h2 class="panel__title">Currently banned in</h2>
+      <ul class="banned-list">
+        <li><span class="banned-list__flag">▩</span> Bureaucratistan</li>
+        <li><span class="banned-list__flag">▩</span> North Freedonia</li>
+        <li><span class="banned-list__flag">▩</span> Tyrannia</li>
+        <li><span class="banned-list__flag">▩</span> The Republic of Cat Videos</li>
+      </ul>
+      <p class="panel__note">All of these countries are made up. Several real ones are not, but naming them here would only start an argument we cannot finish.</p>
+    </section>
+
+    <p class="rail__foot">Upload with <kbd>U</kbd> &middot; Search with <kbd>/</kbd></p>
+  </aside>
+
+  <!-- ------------------------------------------------------------- feed -->
+  <main class="feed" aria-label="Videos">
+    <div class="feed__head">
+      <div>
+        <h1 id="feed-title">For you</h1>
+        <p id="feed-count" class="feed__count">0 videos</p>
+      </div>
+      <div class="feed__legend">
+        <span class="legend"><span class="legend__dot legend__dot--live"></span> streams in 10 second chunks</span>
+        <span class="legend"><span class="legend__dot"></span> stored in videostorage.js</span>
+      </div>
+    </div>
+
+    <div id="feed" class="feed__list"></div>
+  </main>
+
+  <!-- ------------------------------------------------------ right rail -->
+  <aside class="rail rail--right" aria-label="Information">
+    <section class="panel">
+      <h2 class="panel__title">Global availability</h2>
+      <ul id="availability" class="places"></ul>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel__title">Library stats</h2>
+      <dl class="stats">
+        <div class="stats__row"><dt>Videos</dt><dd id="stat-videos">0</dd></div>
+        <div class="stats__row"><dt>Views</dt><dd id="stat-views">0</dd></div>
+        <div class="stats__row"><dt>Likes</dt><dd id="stat-likes">0</dd></div>
+        <div class="stats__row"><dt>On disk</dt><dd id="stat-storage">0 B</dd></div>
+      </dl>
+      <p class="panel__note">Payload backend: <strong id="stat-backend">checking…</strong></p>
+    </section>
+
+    <section class="panel panel--charter">
+      <h2 class="panel__title">The charter</h2>
+      <ul class="charter">
+        <li>No account is ever required.</li>
+        <li>No video is ever removed for its opinions.</li>
+        <li>Uploads are reviewed by nobody, ever.</li>
+        <li>The feed is chronological enough to be honest.</li>
+        <li>Every byte lives in <code>videostorage.js</code>.</li>
+      </ul>
+    </section>
+
+    <p class="disclaimer">
+      This is a parody of social media bans around the world. No real platform, company or person is being represented. Every country listed is fictional. Please do not take the jokes about censorship personally - they are jokes.
+    </p>
+  </aside>
+</div>
+
+<!-- ============================================================== modals -->
+<div id="gate" class="modal modal--gate" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+  <div class="modal__panel">
+    <div class="gate__mark" aria-hidden="true">
+      <svg viewBox="0 0 64 64">
+        <defs>
+          <linearGradient id="gateGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#c9ff4a"/>
+            <stop offset="1" stop-color="#38e8ff"/>
+          </linearGradient>
+        </defs>
+        <rect x="6" y="12" width="52" height="40" rx="12" fill="none" stroke="url(#gateGrad)" stroke-width="3"/>
+        <path d="M26 23l19 9-19 9z" fill="url(#gateGrad)"/>
+      </svg>
+    </div>
+    <h2 id="gate-title">Pick a name. That is the whole signup.</h2>
+    <p class="gate__copy">No email. No phone number. No password. No verification email you will never read. Type a username and <strong>BOOM</strong> &mdash; you are on the internet.</p>
+    <form id="gate-form" class="gate__form" autocomplete="off">
+      <label class="field">
+        <span class="field__label">Username</span>
+        <input id="gate-name" type="text" maxlength="24" placeholder="e.g. Anonymous_Otter_412" spellcheck="false">
+      </label>
+      <p id="gate-error" class="field__error" role="alert"></p>
+      <div class="gate__row">
+        <button id="gate-random" class="btn btn--ghost" type="button">Surprise me</button>
+        <button class="btn btn--primary btn--big" type="submit">BOOM!</button>
+      </div>
+    </form>
+    <p class="gate__note">Your name is stored in this browser only. It is not a login - it is a pseudonym with a very short onboarding.</p>
+  </div>
+</div>
+
+<div id="upload-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="upload-title-heading">
+  <div class="modal__panel modal__panel--wide">
+    <button id="upload-close" class="modal__close" type="button" aria-label="Close">&times;</button>
+    <h2 id="upload-title-heading">Upload a video</h2>
+    <p class="modal__copy">Files stay on this device. The bytes go into <code>videostorage.js</code>, the catalogue goes with them, and playback streams in ten second chunks so it never lags.</p>
+
+    <div id="upload-drop" class="drop" tabindex="0" role="button" aria-label="Choose a video file">
+      <input id="upload-file" type="file" accept="video/*" hidden>
+      <span class="drop__icon" aria-hidden="true">⬆</span>
+      <strong id="upload-drop-label">Drop a video here or click to choose</strong>
+      <span class="drop__hint">MP4, WebM, MOV or OGV &middot; stored locally &middot; nothing is uploaded to a server</span>
+    </div>
+
+    <div class="upload__grid">
+      <label class="field">
+        <span class="field__label">Title</span>
+        <input id="upload-title" type="text" maxlength="90" placeholder="Untitled masterpiece">
+      </label>
+      <label class="field">
+        <span class="field__label">Tags</span>
+        <input id="upload-tags" type="text" maxlength="120" placeholder="cats, satire, definitely-not-a-riot">
+      </label>
+    </div>
+
+    <label class="field">
+      <span class="field__label">Description</span>
+      <textarea id="upload-desc" rows="3" maxlength="500" placeholder="Say something. It will be read by nobody."></textarea>
+    </label>
+
+    <div id="upload-preview" class="upload__preview" hidden>
+      <video id="upload-preview-video" controls playsinline preload="metadata"></video>
+      <span id="upload-meta" class="upload__meta"></span>
+    </div>
+
+    <div class="upload__progress" id="upload-progress-wrap" hidden>
+      <div class="upload__progress-bar"><span id="upload-progress"></span></div>
+      <p id="upload-status" class="upload__status"></p>
+    </div>
+
+    <div class="modal__actions">
+      <button id="upload-demo" class="btn btn--ghost" type="button">Record a demo clip</button>
+      <button id="upload-publish" class="btn btn--primary btn--big" type="button" disabled>Publish</button>
+    </div>
+  </div>
+</div>
+
+<div id="about-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="about-title">
+  <div class="modal__panel">
+    <button id="about-close" class="modal__close" type="button" aria-label="Close">&times;</button>
+    <h2 id="about-title">Totally Not A Social Media Site</h2>
+    <p class="modal__copy">A parody of every platform that has ever told you to <em>log in</em>, and of every country that has ever answered with <em>this page has been blocked</em>.</p>
+    <ul class="charter charter--wide">
+      <li><strong>No login.</strong> Type a name. BOOM.</li>
+      <li><strong>Real uploads.</strong> Your videos are stored as blobs in the browser and catalogued by <code>videostorage.js</code>.</li>
+      <li><strong>Streaming playback.</strong> The first ten seconds are pulled as soon as a video appears on screen; the next ten seconds arrive while you watch. Nothing lags, nothing re-downloads.</li>
+      <li><strong>Exportable.</strong> Export the library and you get a real <code>videostorage.js</code> file with the videos inside. Drop it next to this page and the feed is back.</li>
+      <li><strong>Everything is a joke.</strong> Including the ban list, which is entirely fictional.</li>
+    </ul>
+    <div class="modal__actions">
+      <button id="about-export" class="btn btn--ghost" type="button">Export videostorage.js</button>
+      <button id="about-close-2" class="btn btn--primary" type="button">Back to the feed</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+
+<script src="js/videostorage.js"></script>
+<script src="js/stream-player.js"></script>
+<script src="js/app.js"></script>
+<script>
+  // Small extras that need the DOM to be ready.
+  document.addEventListener("DOMContentLoaded", function () {
+    var exportBtn = document.getElementById("about-export");
+    var closeBtn = document.getElementById("about-close-2");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", function () {
+        var modal = document.getElementById("about-modal");
+        modal.classList.remove("is-open");
+        modal.setAttribute("aria-hidden", "true");
+      });
+    }
+    if (exportBtn) {
+      exportBtn.addEventListener("click", function () {
+        exportBtn.disabled = true;
+        exportBtn.textContent = "Packing the library…";
+        window.VideoStorage.exportJS().then(function (source) {
+          var blob = new Blob([source], { type: "text/javascript" });
+          var url = URL.createObjectURL(blob);
+          var link = document.createElement("a");
+          link.href = url;
+          link.download = "videostorage.js";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(function () {
+            URL.revokeObjectURL(url);
+          }, 1000);
+          exportBtn.disabled = false;
+          exportBtn.textContent = "Export videostorage.js";
+        }).catch(function () {
+          exportBtn.disabled = false;
+          exportBtn.textContent = "Export videostorage.js";
+        });
+      });
+    }
+  });
+</script>
+</body>
+</html>
