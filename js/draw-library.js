@@ -1,4 +1,4 @@
-/* E++ 1.3 Draw: a small, independent drawing surface for the Studio console.
+/* E++ 1.3.5 Draw: an animated, independent drawing surface for the Studio console.
  * Coordinates are measured in pixels from the centre; positive y is down.
  * The host keeps paths separately from cursors so clearing a drawing does not
  * move sprites. It has no dependency on the Game library or on the DOM.
@@ -7,18 +7,22 @@
   'use strict';
   var EPP = global.EPP || (global.EPP = {});
   var COLORS = ['#c4b5fd', '#67e8f9', '#fbbf77', '#86efac', '#f9a8d4', '#fcd34d'];
+  var DEFAULT_SPEED = 240; // pixels per second; null means instant
 
   function DrawHost(canvas) {
     this.canvas = canvas;
     this.sprites = new Map();
     this.strokes = [];
+    this.animations = new Set();
+    this.pathVersion = 0;
     this.render();
   }
 
   DrawHost.prototype.create = function (name) {
     var key = String(name).trim().toLowerCase();
+    this.stopAnimations(key);
     var sprite = { name: String(name).trim(), x: 0, y: 0, direction: 'up', penDown: true,
-      color: COLORS[this.sprites.size % COLORS.length] };
+      speed: DEFAULT_SPEED, color: COLORS[this.sprites.size % COLORS.length] };
     this.sprites.set(key, sprite);
     this.render();
     return sprite;
@@ -29,7 +33,9 @@
   };
 
   DrawHost.prototype.remove = function (name) {
-    this.sprites.delete(String(name).trim().toLowerCase());
+    var key = String(name).trim().toLowerCase();
+    this.stopAnimations(key);
+    this.sprites.delete(key);
     this.render();
   };
 
@@ -50,6 +56,100 @@
     return sprite;
   };
 
+  DrawHost.prototype.setSpeed = function (name, speed) {
+    var sprite = this.get(name);
+    if (!sprite) return null;
+    if (speed === null || String(speed).toLowerCase() === 'instant') sprite.speed = null;
+    else {
+      var value = Number(speed);
+      if (!Number.isFinite(value) || value <= 0 || value > 100000) throw new Error('Speed must be between 0 and 100000 pixels per second, or instant.');
+      sprite.speed = value;
+    }
+    return sprite;
+  };
+
+  /** Stop promptly even when a browser has suspended animation frames. */
+  DrawHost.prototype.stopAnimations = function (name) {
+    this.animations.forEach(function (job) {
+      if (!name || job.key === name) job.cancel();
+    });
+  };
+
+  /**
+   * Program movement takes real time, while move() remains immediate for the
+   * manual controls. Each animation adds at most one stroke unless the pen,
+   * drawing or cursor changes, so long movements do not create thousands of
+   * segments. Manual movement is relative and remains usable during a run.
+   */
+  DrawHost.prototype.animateMove = function (name, direction, distance, options) {
+    var self = this, sprite = this.get(name);
+    if (!sprite) return Promise.resolve(null);
+    if (!/^(up|down|left|right)$/.test(direction) || !Number.isFinite(distance)) return Promise.reject(new Error('Invalid drawing movement.'));
+    var key = String(name).trim().toLowerCase();
+    var settings = options || {};
+    var notify = typeof settings.onFrame === 'function' ? settings.onFrame : function () {};
+    if (sprite.speed === null || distance === 0) {
+      self.move(name, direction, distance);
+      notify(sprite);
+      return self.flush().then(function () { return sprite; });
+    }
+    var now = function () { return global.performance && global.performance.now ? global.performance.now() : Date.now(); };
+    return new Promise(function (resolve) {
+      var remaining = distance, last = now(), handle = null, frameKind = '', done = false;
+      var stroke = null, strokeVersion = self.pathVersion;
+      function finish() {
+        if (done) return;
+        done = true;
+        if (handle !== null) {
+          if (frameKind === 'raf' && typeof global.cancelAnimationFrame === 'function') global.cancelAnimationFrame(handle);
+          else clearTimeout(handle);
+        }
+        self.animations.delete(job);
+        resolve(sprite);
+      }
+      var job = { key: key, cancel: finish };
+      self.animations.add(job);
+      function schedule() {
+        if (typeof global.requestAnimationFrame === 'function') {
+          frameKind = 'raf'; handle = global.requestAnimationFrame(tick);
+        } else { frameKind = 'timeout'; handle = setTimeout(tick, 16); }
+      }
+      function tick() {
+        handle = null;
+        if (done || self.get(name) !== sprite || (settings.cancelled && settings.cancelled())) { finish(); return; }
+        var time = now();
+        var elapsed = Math.max(0, time - last) / 1000;
+        last = time;
+        var amount = sprite.speed === null ? Math.abs(remaining) : Math.min(Math.abs(remaining), sprite.speed * elapsed);
+        var step = remaining < 0 ? -amount : amount;
+        var fromX = sprite.x, fromY = sprite.y;
+        if (direction === 'up') sprite.y -= step;
+        else if (direction === 'down') sprite.y += step;
+        else if (direction === 'left') sprite.x -= step;
+        else sprite.x += step;
+        // Avoid accumulating floating-point frame errors at the destination.
+        if (Math.abs(remaining - step) < 1e-9) {
+          sprite.x = Math.round(sprite.x * 1e9) / 1e9;
+          sprite.y = Math.round(sprite.y * 1e9) / 1e9;
+        }
+        sprite.direction = direction;
+        if (sprite.penDown && step !== 0) {
+          if (!stroke || strokeVersion !== self.pathVersion || stroke.x2 !== fromX || stroke.y2 !== fromY || stroke.color !== sprite.color) {
+            stroke = { x1: fromX, y1: fromY, x2: sprite.x, y2: sprite.y, color: sprite.color };
+            strokeVersion = self.pathVersion;
+            self.strokes.push(stroke);
+          } else { stroke.x2 = sprite.x; stroke.y2 = sprite.y; }
+        } else if (!sprite.penDown) stroke = null;
+        remaining -= step;
+        self.render();
+        notify(sprite);
+        if (Math.abs(remaining) < 1e-9) finish();
+        else schedule();
+      }
+      schedule();
+    });
+  };
+
   DrawHost.prototype.setPen = function (name, down) {
     var sprite = this.get(name);
     if (!sprite) return null;
@@ -68,12 +168,15 @@
 
   DrawHost.prototype.clear = function () {
     this.strokes = [];
+    this.pathVersion++;
     this.render();
   };
 
   DrawHost.prototype.reset = function () {
+    this.stopAnimations();
     this.sprites.clear();
     this.strokes = [];
+    this.pathVersion++;
     this.render();
   };
 

@@ -1,14 +1,16 @@
 {
   "name": "e-plus-plus",
-  "version": "1.3.0",
-  "description": "E++ 1.3: an English-like language and redesigned Studio with strict diagnostics and drawing sprites.",
+  "version": "1.3.5",
+  "description": "E++ 1.3.5: an English-like language, Studio, animated drawing sprites, and a community gallery.",
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "start": "python3 -m http.server 8000 --bind 0.0.0.0",
-    "test": "node tests/run-tests.mjs && node tests/release-1.3.mjs && node tests/native-lexer.mjs",
+    "start": "node server.js",
+    "test": "node tests/run-tests.mjs && node tests/release-1.3.mjs && node tests/release-1.3.5.mjs && node tests/native-lexer.mjs && node tests/gallery-1.3.5.mjs",
     "zip": "node tools/build-zip.mjs",
-    "test:studio": "node tests/studio-native.browser.cjs"
+    "test:studio": "node tests/studio-native.browser.cjs && node tests/studio-1.3.5.browser.cjs",
+    "test:distribution": "node tests/distribution-1.3.5.mjs",
+    "test:distribution:browser": "node tests/distribution-1.3.5.browser.cjs"
   },
   "engines": {
     "node": ">=18"

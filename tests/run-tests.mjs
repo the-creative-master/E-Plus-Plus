@@ -368,15 +368,16 @@ console.log('.eppl vs .eppla file system (Requirement 5)');
   ok('.eppl and .eppla files validated, created, saved, deleted');
 }
 
-console.log('E++.zip Standalone Runtime (Requirement 6 & 7)');
+console.log('Legacy standalone pure-code HTML generator');
 {
   const standaloneHtml = EPP.generateStandaloneHtml();
   assert.ok(standaloneHtml.includes('E++ Standalone Runtime'));
   assert.ok(standaloneHtml.includes('save project as name.eppl'));
-  assert.ok(standaloneHtml.includes('Libraries are not supported in the standalone E++.zip runtime'));
+  assert.ok(standaloneHtml.includes('This legacy pure-code export does not support libraries'));
+  assert.ok(!standaloneHtml.includes('cdn.jsdelivr.net'), 'legacy pure-code export works without a CDN');
   const zip = EPP.buildZip([{ name: 'index.html', content: standaloneHtml }]);
   assert.ok(zip instanceof Uint8Array && zip.length > 500);
-  ok('E++.zip packages the entire standalone E++ runtime into a clean zip');
+  ok('legacy pure-code HTML export can be packaged into a clean zip');
 }
 
 console.log('Syntax highlighting');
@@ -1335,11 +1336,13 @@ console.log('\nRelease 1.2.1: the two builds');
 
   // E++.zip is the mirror image: Lite in, Game and ImprovedWait out.
   const zipMissing = EPP.Libraries.applyBuild('distribution').slice().sort();
-  assert.deepEqual(zipMissing, ['Draw', 'Game', 'ImprovedWait']);
+  assert.deepEqual(zipMissing, ['Colors', 'Draw', 'Game', 'ImprovedWait']);
   assert.equal(EPP.Libraries.isAvailable('ImprovedWaitLite'), true);
   assert.equal(EPP.Libraries.isAvailable('Keyboard'), true);
   assert.equal(EPP.Libraries.isAvailable('Game'), false);
   assert.equal(EPP.Libraries.isAvailable('ImprovedWait'), false);
+  assert.equal(EPP.Libraries.isAvailable('Colors'), false);
+  assert.equal(EPP.Libraries.isAvailable('colours'), false);
   assert.match(EPP.Libraries.whyUnavailable('Game'), /Studio/i);
   ok('E++.zip has ImprovedWaitLite and leaves Game/ImprovedWait out');
 
@@ -1351,11 +1354,15 @@ console.log('\nRelease 1.2.1: the two builds');
   assert.deepEqual([...output], ['zip ok']);
   await expectError('E++.zip explains where Game went',
     'add library "Game"', /Studio/i);
+  await expectError('E++.zip explains where Colors went',
+    'add library "Colors"', /Studio/i);
+  await assert.rejects(new EPP.Interpreter().executeStatement(EPP.AST.Library('Colors', { line: 1, column: 1 })), /not included/i,
+    'a direct AST cannot bypass the distribution library guard');
   ok('the zip runs ImprovedWaitLite and explains the missing Game library');
 
   // The build table is the single source of truth for both directions.
   assert.deepEqual([...EPP.Libraries.missingFor('studio')], ['ImprovedWaitLite']);
-  assert.deepEqual([...EPP.Libraries.missingFor('distribution')].sort(), ['Draw', 'Game', 'ImprovedWait']);
+  assert.deepEqual([...EPP.Libraries.missingFor('distribution')].sort(), ['Colors', 'Draw', 'Game', 'ImprovedWait']);
   EPP.Libraries.showAll();
   assert.equal(EPP.Libraries.isAvailable('ImprovedWaitLite'), true, 'showAll restores everything');
   assert.equal(EPP.Libraries.isAvailable('Game'), true);
@@ -1519,12 +1526,11 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
   assert.ok(/api\.fetchIdeas\(/.test(page), 'the panel reads the public list, not a local one');
 
   // The version the page announces matches this release everywhere it shows.
-  assert.ok(page.includes('<title>E++ Studio | 1.3</title>'), 'the tab title is 1.2.1');
-  assert.ok(page.includes('class="build-badge">1.3<'), 'the header badge is 1.2.1');
-  assert.ok(page.includes("const DEFAULTS_VERSION = '1.3'"),
-    'the defaults stamp is 1.2.1 Language Patch 1, so an older 1.2.1 refreshes its files');
-  assert.ok(page.includes("epp_idea_draft_1_2_1"), 'the idea draft key is per release');
-  ok('the page announces 1.2.1 and the new keys are versioned');
+  assert.ok(page.includes('<title>E++ Studio | 1.3.5</title>'), 'the tab title is 1.3.5');
+  assert.ok(page.includes('class="build-badge">1.3.5<'), 'the header badge is 1.3.5');
+  assert.ok(page.includes("const DEFAULTS_VERSION = '1.3.5'"), 'new examples are added without overwriting existing files');
+  assert.ok(page.includes("epp_idea_draft_1_2_1"), 'existing idea drafts remain available');
+  ok('the page announces 1.3.5 while retaining existing progress');
 
   // Every library card is bound to a registry name, so a build can hide it.
   const cards = page.match(/data-library="[^"]+"/g) || [];

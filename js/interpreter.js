@@ -685,6 +685,10 @@
           throw new LibraryError('There is no library called "' + node.name + '".', node.line, node.column,
             'Available libraries: ' + EPP.Libraries.names().join(', ') + '.');
         }
+        if (EPP.Libraries.isAvailable && !EPP.Libraries.isAvailable(canonical)) {
+          throw new LibraryError('The "' + canonical + '" library is not included in this build of E++.',
+            node.line, node.column, EPP.Libraries.whyUnavailable(canonical));
+        }
         this.loadedLibraries.add(canonical);
         this.onLibrary(canonical);
         return;

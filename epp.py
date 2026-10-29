@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-E++ (E-Plus-Plus) 1.3 Direct Python Runtime & Engine
+E++ (E-Plus-Plus) 1.3.5 Direct Python Runtime & Engine
 Uses the native Python lexer to run E++ and Python code directly, including
 project files saved by the Studio.
 """
@@ -1208,7 +1208,7 @@ class Interpreter:
 # ==========================================
 
 def _usage():
-    print("E++ [1.3] Python Direct Engine")
+    print("E++ [1.3.5] Python Direct Engine")
     print("Usage:")
     print("  python3 epp.py <file.enpp|file.enppl>             Run a program")
     print("  python3 epp.py -e '<code string>'                 Run inline code")

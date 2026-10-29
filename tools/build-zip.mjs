@@ -3,17 +3,17 @@
  * Builds E++.zip and epp_language.zip. Studio executes its embedded compiled
  * C++ lexer directly; these archives are downloadable distributions.
  *
- * E++.zip is the *standalone* build of E++ 1.3. The Studio and the zip carry
+ * E++.zip is the *standalone* build of E++ 1.3.5. The Studio and the zip carry
  * different halves of the game tooling, and only one of them at a time:
  *
  *   Studio (E++ Studio)          Draw, Game, ImprovedWait
  *   Zip    (the standalone)      Keyboard, ImprovedWaitLite
  *
- * Draw and Game need their canvas hosts; ImprovedWait is the actor half of
+ * Colors is Studio-only in this release. Draw and Game need canvas hosts; ImprovedWait is the actor half of
  * the waiting engine. None of these runtimes travels in this bundle. Nothing is
  * silently missing: the copy of index.html inside the zip is stamped with
  * `window.EPP_DISTRIBUTION = true`, which makes js/libraries.js hide
- * Draw/Game/ImprovedWait and keeps Keyboard/ImprovedWaitLite, so `add library "Game"`
+ * Colors/Draw/Game/ImprovedWait and keeps Keyboard/ImprovedWaitLite, so `add library "Game"`
  * explains that the library lives in the full Studio download and the library
  * cards for both are removed from the page.
  *
@@ -47,12 +47,16 @@ const ENTRIES = [
   'third_party/licenses',
   'README.md',
   'LANGUAGE.md',
+  'WIKI.md',
+  'wiki.html',
+  'server.js',
   'index.html',
   'lexer.py',
   'epp.py',
   'tests/cli-1.3.py',
   'tests/native-lexer.mjs',
   'tools/build-lexer-wasm.mjs',
+  'tools/build-wiki.py',
   'epp'
 ];
 
@@ -65,7 +69,7 @@ const DISTRIBUTION_EXCLUDED = [
 
 // Libraries that are not in this build. Any example that needs one is left out
 // too, rather than shipped broken.
-const MISSING_LIBRARIES = ['Game', 'ImprovedWait', 'Draw'];
+const MISSING_LIBRARIES = ['Game', 'ImprovedWait', 'Draw', 'Colors'];
 
 function log(message) {
   process.stdout.write('  ' + message + '\n');
@@ -100,7 +104,7 @@ function copyIntoStage() {
 
 function mentionsMissingLibrary(text) {
   return MISSING_LIBRARIES.some((name) => {
-    const aliases = name === 'Draw' ? '(?:Draw|Drawing|Sprites)' : name;
+    const aliases = name === 'Draw' ? '(?:Draw|Drawing|Sprites)' : name === 'Colors' ? '(?:Colors|Colours|Color|Colour)' : name;
     const libraryLast = new RegExp(`add\\s+(?:the\\s+)?["']?${aliases}["']?\\s+library\\b`, 'i');
     const libraryFirst = new RegExp(`add\\s+(?:the\\s+)?librar(?:y|ies)\\s+["']?${aliases}["']?(?:\\s|$)`, 'i');
     return libraryLast.test(text) || libraryFirst.test(text) || (name === 'Draw' && /\bdrawing\s+sprite\b/i.test(text));
@@ -134,6 +138,12 @@ function stripDrawFromStandaloneCore() {
   }
   const registryFile = path.join(js, 'libraries.js');
   let registry = fs.readFileSync(registryFile, 'utf8');
+  registry = replaceSection(registry, '    Colors: {', '    Console: {', `    Colors: {
+      name: 'Colors', aliases: ['colors', 'colours', 'color', 'colour'],
+      description: 'Colors is available in the full E++ Studio, not E++.zip.',
+      unlocks: [], example: ''
+    },
+`);
   registry = replaceSection(registry, '    Draw: {', '    Image: {', `    Draw: {
       name: 'Draw', aliases: ['draw', 'drawing', 'sprites'],
       description: 'Draw is available in the full E++ Studio, not E++.zip.',
@@ -169,6 +179,67 @@ function stripDrawFromStandaloneCore() {
   log('removed Draw execution from the standalone JavaScript core');
 }
 
+// The full repository keeps Colors. The standalone native and Python sources
+// are patched as well as the binary, so rebuilding an extracted archive cannot
+// accidentally bring the excluded library back.
+function stripColorsFromDistribution() {
+  function replaceOnce(text, before, after, label) {
+    if (!text.includes(before)) throw new Error('Cannot configure Colors exclusion: ' + label);
+    return text.replace(before, after);
+  }
+  function replaceBetween(text, start, end, replacement, label) {
+    const first = text.indexOf(start), last = text.indexOf(end, first + start.length);
+    if (first < 0 || last < 0) throw new Error('Cannot configure Colors exclusion: ' + label);
+    return text.slice(0, first) + replacement + text.slice(last);
+  }
+  const cppFile = path.join(STAGE, 'src/interpreter.cpp');
+  let cpp = fs.readFileSync(cppFile, 'utf8');
+  cpp = replaceOnce(cpp,
+    'norm == "draw" || norm == "drawing"',
+    'norm == "colors" || norm == "colours" || norm == "color" || norm == "colour" || norm == "draw" || norm == "drawing"', 'native library guard');
+  cpp = replaceOnce(cpp,
+    'require_library("Colors", "Colored output", stmt->line, stmt->col);',
+    'throw LibraryError("The Colors library is available in E++ Studio, not in E++.zip.", stmt->line, stmt->col, "E302");', 'native colored say guard');
+  cpp = replaceBetween(cpp,
+    '    if (!stmt->color.empty()) {\n        std::string ansi',
+    '\n}\n\nvoid Interpreter::visitLetStmt',
+    '    out << result << "\\n";\n', 'native color output');
+  fs.writeFileSync(cppFile, cpp);
+
+  const pyFile = path.join(STAGE, 'epp.py');
+  let python = fs.readFileSync(pyFile, 'utf8');
+  python = replaceOnce(python,
+    'if normalized in ("draw", "drawing", "sprites", "game", "improvedwait"):',
+    'if normalized in ("colors", "colours", "color", "colour", "draw", "drawing", "sprites", "game", "improvedwait"):', 'Python library guard');
+  python = replaceBetween(python, '        # Check Colors library keyword', '        # Check for separation method',
+`        # Colors is not included in this distribution.
+        if tokens[0].type == TokenType.IDENTIFIER and tokens[0].lexeme.lower() in {"red", "green", "blue", "yellow", "cyan", "magenta"}:
+            raise self.diagnostic("E302", "Library Not In This Build", "The Colors library is available in E++ Studio, not E++.zip.",
+                                  "Use a plain say statement in this build.", line_num, col_num)
+
+`, 'Python colored say guard');
+  python = replaceOnce(python,
+    '        if color_code:\n            print(f"{color_code}{out_str}\\033[0m")\n        else:\n            print(out_str)',
+    '        print(out_str)', 'Python color output');
+  fs.writeFileSync(pyFile, python);
+
+  // Rebuild *from the staged sources*, not from the full-Studio binary. Leave
+  // the rebuilt executable but not intermediate objects in the archive.
+  execFileSync('make', ['-B', 'epp'], { cwd: STAGE, stdio: 'pipe' });
+  for (const name of fs.readdirSync(path.join(STAGE, 'src'))) {
+    if (/\.(?:o|d)$/.test(name)) fs.rmSync(path.join(STAGE, 'src', name));
+  }
+  const packageJson = { name: 'e-plus-plus-distribution', version: '1.3.5', private: true,
+    scripts: { start: 'node server.js' }, engines: { node: '>=18' } };
+  fs.writeFileSync(path.join(STAGE, 'package.json'), JSON.stringify(packageJson, null, 2) + '\n');
+  const makefile = path.join(STAGE, 'Makefile');
+  const make = fs.readFileSync(makefile, 'utf8');
+  const originalZip = 'zip: $(TARGET)\n\t@node tools/build-zip.mjs';
+  if (!make.includes(originalZip)) throw new Error('Could not configure the standalone make zip target');
+  fs.writeFileSync(makefile, make.replace(originalZip, "zip:\n\t@echo 'Rebuild release archives from the full E++ source checkout.'\n\t@exit 1"));
+  log('removed Colors from Python and native execution, and rebuilt the standalone binary');
+}
+
 function stampDistributionFlag() {
   const page = path.join(STAGE, 'index.html');
   let html = fs.readFileSync(page, 'utf8');
@@ -198,6 +269,20 @@ function stampDistributionFlag() {
     if (first < 0 || last < 0) throw new Error('Could not strip Studio-only Draw section: ' + start);
     html = html.slice(0, first) + replacement + html.slice(last);
   }
+  stripBetween('      <div class="library-card" data-library="Colors">', '      <div class="library-card" data-library="System">');
+  // The default showcase remains useful without a library the zip omits.
+  html = html.replace(/^add\s+the\s+"Colors"\s+library\s*\n/gim, '')
+    .replace(/^(\s*)say\s+(?:red|green|blue|yellow|cyan|magenta)\s+/gim, '$1say ')
+    .replace("name: 'time_and_colors.enppl'", "name: 'time_demo.enppl'")
+    .replace('Time & Colors Demonstration', 'Time Demonstration')
+    .replace('Terminal colors and timers work smoothly.', 'Timers work smoothly.');
+  stripBetween('      const colorMatch = content.match(', '      let separator = null;', String.raw`      if (/^(red|green|blue|yellow|cyan|magenta)\b\s*/i.test(content)) {
+        throw this.diagnostic('E302', 'Library Not In This Build',
+          'The Colors library is available in E++ Studio, not inside E++.zip.',
+          'Use a plain say statement in this build.', lineNum);
+      }
+
+`);
   stripBetween("  {\n    name: 'draw_playground.enppl',", "  {\n    name: 'game_showcase.enppl',");
   stripBetween('        <div id="drawPane"', '        <!-- Game pane:');
   stripBetween('    // Draw sprites are ordinary named variables with an independent cursor.',
@@ -293,7 +378,7 @@ function verifyArchive() {
   if (!registry.includes("Libraries.applyBuild('distribution')") || parser.includes('return EPP.AST.DefineSprite(') || parser.includes('EPP.AST.MoveSprite(') || interpreter.includes('this.onSprite')) {
     throw new Error('The standalone JavaScript core still enables Draw.');
   }
-  for (const name of ['Keyboard', 'ImprovedWaitLite', 'ImprovedWait', 'Game', 'Draw']) {
+  for (const name of ['Keyboard', 'ImprovedWaitLite', 'ImprovedWait', 'Game', 'Draw', 'Colors']) {
     if (!registry.includes('    ' + name + ': {')) {
       throw new Error('js/libraries.js no longer describes the ' + name + ' library');
     }
@@ -310,7 +395,7 @@ function verifyArchive() {
   if (!listed(studioLine).includes('ImprovedWaitLite')) {
     throw new Error('the Studio build must hide ImprovedWaitLite');
   }
-  for (const name of ['Game', 'ImprovedWait', 'Draw']) {
+  for (const name of ['Game', 'ImprovedWait', 'Draw', 'Colors']) {
     if (!listed(zipLine).includes(name)) {
       throw new Error('the E++.zip build must hide ' + name);
     }
@@ -327,12 +412,13 @@ function verifyArchive() {
     throw new Error('index.html no longer defines applyBuildLibraries()');
   }
 
-  log('verified ' + listing.length + ' files: Keyboard + ImprovedWaitLite in, Draw + Game + ImprovedWait out');
+  log('verified ' + listing.length + ' files: Keyboard + ImprovedWaitLite in, Draw + Game + ImprovedWait + Colors out');
 }
 
 copyIntoStage();
 dropExamplesThatNeedMissingLibraries();
 stripDrawFromStandaloneCore();
+stripColorsFromDistribution();
 stampDistributionFlag();
 buildArchive();
 verifyArchive();

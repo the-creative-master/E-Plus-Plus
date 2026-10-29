@@ -1,4 +1,4 @@
-/* E++ Studio 1.3 — an editor-first workspace. */
+/* E++ Studio 1.3.5 — an editor-first workspace. */
 :root {
   --bg: #0c0d17;
   --panel: #141521;
@@ -46,6 +46,7 @@ button, input, textarea { font: inherit; }
 .btn-small { padding: 7px 10px; font-size: 11.5px; white-space: nowrap; }
 .topbar .btn-small { border-color: transparent; background: transparent; color: #b9b9ca; }
 .topbar .btn-small:hover { background: #282838; color: #fff; }
+.topbar #btnWiki { display: inline-flex; align-items: center; text-decoration: none; }
 .topbar #btnNew { background: #272638; border-color: #3b3950; color: #e2ddf5; }
 .btn-run { padding: 10px 15px; color: #1b1630; background: #c3b1ff; border-color: #c3b1ff; font-size: 12px; font-weight: 800; white-space: nowrap; }
 .btn-run:hover:not(:disabled) { background: #d0c2ff; color: #1b1630; border-color: #d0c2ff; }
@@ -557,4 +558,63 @@ html, body { background: #0c0f1d !important; }
 @media (forced-colors: active) {
   #editor { color: CanvasText !important; -webkit-text-fill-color: CanvasText; }
   .editor-highlight { display: none; }
+}
+
+/* Community gallery: a public server-backed collection, not a local cache. */
+.gallery-overlay { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; padding: 18px; background: rgba(5, 5, 15, .83); backdrop-filter: blur(6px); }
+.gallery-shell { width: min(1000px, 100%); max-height: min(88vh, 820px); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #48425c; border-radius: 16px; background: #171824; box-shadow: 0 28px 70px rgba(0, 0, 0, .65); }
+.gallery-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 20px 24px; border-bottom: 1px solid #343343; background: #20202e; }
+.gallery-kicker { color: #c5b0ff; font-size: 10px; font-weight: 800; letter-spacing: .12em; }
+.gallery-head h2 { margin: 5px 0; color: #f2eefc; font-size: 21px; }
+.gallery-head p, .gallery-publish > p { margin: 0; color: #b5b5c8; font-size: 12.5px; line-height: 1.6; }
+.gallery-body { display: grid; grid-template-columns: minmax(240px, .9fr) minmax(0, 1.25fr); min-height: 0; overflow-y: auto; }
+.gallery-publish, .gallery-browse { min-width: 0; padding: 22px 24px; }
+.gallery-publish { border-right: 1px solid #343343; background: #1a1928; }
+.gallery-publish h3, .gallery-browse h3 { margin: 0 0 10px; color: #eeeafa; font-size: 15px; }
+#galleryForm { display: flex; flex-direction: column; gap: 7px; margin-top: 18px; }
+#galleryForm label { margin-top: 7px; color: #e2dcf4; font-size: 12px; font-weight: 700; }
+#galleryForm label span { color: #9898ae; font-weight: 400; }
+#galleryForm input { box-sizing: border-box; width: 100%; min-height: 39px; border: 1px solid #484659; border-radius: 7px; padding: 9px 11px; background: #11121c; color: #f2eefc; font: inherit; font-size: 13px; }
+#galleryForm input:focus-visible { outline: 2px solid #bba8ff; outline-offset: 2px; }
+#galleryPublish { margin-top: 12px; min-height: 42px; }
+.gallery-publish .gallery-storage-note { margin-top: 16px; font-size: 11.5px; color: #aaa8be; }
+.gallery-browse-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.gallery-browse-head h3 { margin: 0; }
+.gallery-status { min-height: 20px; color: #a4a6ba; font-size: 12px; line-height: 1.5; }
+.gallery-status.is-error { color: #ffbdc1; }
+.gallery-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 10px; }
+.gallery-card, .gallery-empty { min-width: 0; padding: 14px; border: 1px solid #3c3b4e; border-radius: 10px; background: #222230; }
+.gallery-card-title { overflow-wrap: anywhere; margin: 0 0 4px; color: #f1ecff; font-size: 14px; }
+.gallery-card-meta { margin: 0; color: #afa8c2; font-size: 11px; overflow-wrap: anywhere; }
+.gallery-card-description { margin: 10px 0; color: #cccbd9; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.gallery-card button { margin-top: 12px; }
+.gallery-empty { grid-column: 1 / -1; margin: 0; color: #b8b7c8; font-size: 13px; }
+@media (max-width: 760px) {
+  .gallery-overlay { padding: 8px; }
+  .gallery-shell { max-height: 94vh; }
+  .gallery-head { padding: 16px; }
+  .gallery-body { grid-template-columns: minmax(0, 1fr); }
+  .gallery-publish, .gallery-browse { padding: 18px; }
+  .gallery-publish { border-right: 0; border-bottom: 1px solid #343343; }
+  .gallery-list { grid-template-columns: minmax(0, 1fr); }
+  .gallery-browse button, .gallery-card button { min-height: 44px; }
+}
+@media (max-width: 430px) and (max-height: 680px) {
+  .draw-controls { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 7px 10px; }
+  .draw-controls label { display: block; }
+  .draw-controls select { width: 100%; max-width: none; }
+  .draw-arrows { grid-column: 1 / -1; }
+}
+.pic-item-error { color: #ffbdc1; }
+.gallery-jump { display: none; }
+@media (max-width: 760px) {
+  .gallery-jump { display: inline-flex; align-items: center; min-height: 44px; margin: 8px 0 0; padding: 0; border: 0; background: transparent; color: #d2c4ff; font: inherit; font-size: 12px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+}
+/* The console is a narrow side pane on small laptops; keep every Draw control visible. */
+@media (min-width: 901px) and (max-width: 1250px) {
+  .draw-controls { flex-wrap: wrap; gap: 6px; }
+  .draw-controls select { flex: 1 1 auto; min-width: 0; }
+  .draw-control-hint { display: none; }
+  .draw-arrows { flex: 0 0 100%; margin: 0; }
+  .draw-arrows button { flex: 1 1 0; height: 30px; }
 }

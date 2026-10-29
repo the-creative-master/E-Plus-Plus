@@ -2,7 +2,7 @@ note [Files Library Demonstration in E++ (.enppl)]
 add the "Files" library
 
 note [1. Writing to a text file]
-write "E++ Release 1.0 is officially released and rock-solid!" to file "release_notes.txt"
+write "E++ 1.3.5 project notes." to file "release_notes.txt"
 say "File written successfully."
 
 note [2. Appending data to the file]

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-E++ (E-Plus-Plus) 1.3 Lexer and Subsystem
+E++ (E-Plus-Plus) 1.3.5 Lexer and Subsystem
 Written in Python for direct execution and runtime integration.
 """
 
@@ -931,4 +931,4 @@ if __name__ == "__main__":
         for t in tokens:
             print(t)
     else:
-        print("E++ 1.3 Lexer module loaded.")
+        print("E++ 1.3.5 Lexer module loaded.")

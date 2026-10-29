@@ -1,10 +1,10 @@
 /*
- * E++ Standalone HTML Generator for E++.zip.
- * Produces a self-contained index.html with the complete E++ language core:
- * Lexer, Parser, AST, Interpreter, Error system, and Syntax Highlighter.
+ * Legacy pure-code HTML generator (separate from the E++.zip distribution).
+ * Produces a self-contained index.html with a small, pure-code subset of E++.
+ * It is not the Studio's C++-lexer-backed evaluator or the full distribution.
  *
  * Rules:
- * - Libraries are NOT supported in E++.zip (pure .eppl only).
+ * - This legacy export is pure .eppl only; E++.zip itself supports several libraries.
  * - "save project as name.eppl" manually typed in the command prompt saves the file.
  */
 (function (global) {
@@ -14,9 +14,6 @@
 
   function generateStandaloneHtml(initialCode) {
     initialCode = initialCode || (
-      'note: Welcome to E++ Standalone Runtime (Dev Build 5)!\n' +
-      'note: Type "save project as name.eppl" in the command bar to save.\n' +
-      'note: Libraries are not supported in E++.zip — pure .eppl code only.\n\n' +
       'Define \'greeting\' as "Hello from E++!"\n' +
       'say \'greeting\'\n' +
       'say "Maths in plain English: " plus (5 times 4 plus 2)\n\n' +
@@ -29,7 +26,7 @@
 '<head>\n' +
 '<meta charset="UTF-8">\n' +
 '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
-'<title>E++ Standalone Runtime — Dev Build 5</title>\n' +
+'<title>E++ Standalone Runtime — 1.3.5 · legacy pure-code export</title>\n' +
 '<style>\n' +
 '  :root {\n' +
 '    --bg: #0b1120;\n' +
@@ -118,7 +115,7 @@
 '    <div class="logo">E++</div>\n' +
 '    <div>\n' +
 '      <strong>E++ Standalone Runtime</strong>\n' +
-'      <span class="badge">Dev Build 5</span>\n' +
+'      <span class="badge">1.3.5 · legacy pure-code export</span>\n' +
 '      <span class="badge badge-warn">Pure .eppl (No Libraries)</span>\n' +
 '    </div>\n' +
 '  </div>\n' +
@@ -146,8 +143,8 @@
 '      <button id="btnClear" class="btn" style="padding: 3px 8px; font-size: 11px;">Clear</button>\n' +
 '    </div>\n' +
 '    <div class="console-out" id="consoleOut">\n' +
-'      <div class="console-line system">E++ Standalone Runtime (Dev Build 5) Ready.</div>\n' +
-'      <div class="console-line system">Note: Libraries are not supported in E++.zip. Use pure .eppl code.</div>\n' +
+'      <div class="console-line system">E++ Standalone Runtime (1.3.5 · legacy pure-code export) Ready.</div>\n' +
+'      <div class="console-line system">This legacy export supports pure code. The full E++.zip also supports libraries.</div>\n' +
 '      <div class="console-line prompt">Type "save project as name.eppl" below to save your code.</div>\n' +
 '    </div>\n' +
 '    <form id="cmdForm" class="cmd-bar">\n' +
@@ -178,7 +175,6 @@
 '  EPP.LibraryError = sub("LibraryError");\n' +
 '})(window.EPP);\n' +
 '</script>\n' +
-'<script src="https://cdn.jsdelivr.net/npm/eplusplus-core@1.0.0/dist/core.js" onerror="/* fallback to inline */"></script>\n' +
 '<script>\n' +
 '// Synchronized E++ Lexer & Parser\n' +
 '(function(global) {\n' +
@@ -254,9 +250,9 @@
 '  Parser.prototype.parseStmt = function() {\n' +
 '    var t = this.cur();\n' +
 '    if (this.isW("library") || this.isW("add")) {\n' +
-'      // In E++.zip libraries are NOT supported\n' +
+'      // This legacy pure-code export does not support libraries.\n' +
 '      throw new EPP.LibraryError(\n' +
-'        "Libraries are not supported in the standalone E++.zip runtime! E++.zip is strictly for pure .eppl code without libraries. To use libraries, run your code in the full E++ IDE with .eppla files.",\n' +
+'        "This legacy pure-code export does not support libraries. Use the E++.zip runtime or E++ Studio for library programs.",\n' +
 '        t.line, t.column, "Remove library statements or run in the full E++ IDE."\n' +
 '      );\n' +
 '    }\n' +
@@ -518,8 +514,8 @@
 '    if (runningInterp) return;\n' +
 '    btnRun.disabled = true; btnStop.disabled = false;\n' +
 '    log("—— Running Program ——", "system");\n' +
-'    var parser = new window.EPP.StandaloneParser(editor.value);\n' +
 '    try {\n' +
+'      var parser = new window.EPP.StandaloneParser(editor.value);\n' +
 '      var prog = parser.parse();\n' +
 '      runningInterp = new window.EPP.StandaloneInterpreter({\n' +
 '        output: function(t) { log(t); },\n' +
