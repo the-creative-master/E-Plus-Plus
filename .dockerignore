@@ -1,0 +1,10 @@
+.git
+node_modules
+.dist
+.cache
+build
+__pycache__
+*.o
+*.d
+shared.js
+shared.js.*.tmp

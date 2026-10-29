@@ -1,8 +1,8 @@
-# The E++ Language Reference (1.3)
+# The E++ Language Reference (1.3.5)
 
 > **"Looks like English, feels like english, and is english"**
 
-This is the reference for **E++ 1.3**. It covers the language itself, the
+This is the reference for **E++ 1.3.5**. It covers the language itself, the
 project files you download and import, and the libraries that ship with this
 release.
 
@@ -175,7 +175,7 @@ say 1 plus 1
 say "Hello ", "World! ", "Welcome to E++!"
 say "Hello " and concat it with "World!"
 say 1 + 2 and concat it with 2 + 3 with the seperation method of "-"
-say red "Colour only works after add the \"Colors\" library"
+note [Colored output is only in the full Studio, not E++.zip]
 ```
 
 ---
@@ -209,6 +209,8 @@ Python CLI runtimes do not include it; adding Draw there reports `E302`.
 add the "Draw" library
 define 'pencil' as drawing sprite
 let 'spark' be drawing sprite
+set the speed of 'pencil' to 200
+set the speed of 'spark' to instant
 set the color of 'pencil' to "#ffcc88"
 'pencil' move right "80"
 'pencil' move down "60"
@@ -224,6 +226,12 @@ clear the drawing
 - Each sprite starts at the center `(0, 0)` with its pen down. Right increases
   x; down increases y. Move `up`, `down`, `left` or `right` by a quoted numeric
   pixel distance. Each sprite keeps its own position, pen and color.
+- Program moves animate at 240 pixels/second by default. `set the speed of
+  'name' to 200` changes that sprite (valid range: greater than 0 up to 100000
+  pixels/second); `set the speed of 'name' to instant` moves without animation.
+  A move completes before the next statement; Stop interrupts it. The console
+  speed menu adjusts the selected cursor while it moves. Manual arrows move
+  immediately.
 - `lift the pen of 'name'` moves without drawing; `lower the pen of 'name'`
   resumes drawing. `set the color of 'name' to "purple"` accepts CSS colors.
 - `clear the drawing` clears trails but keeps sprites and their positions.
@@ -287,7 +295,8 @@ set the image of the actor 'hero' to "hero-alt.png"
 - `create the actor 'hero' with the image "<source>"` still works, and links the
   name as a side effect.
 - An actor whose name has no picture yet still runs: it draws a labelled tile,
-  and the Studio says how to link one.
+  and the Studio says how to link one. Unreadable uploads are rejected, and
+  failed existing links are identified so you can relink a local image.
 
 ### Movement and collisions
 
@@ -438,7 +447,8 @@ where two pieces would otherwise run together, so `say "Hi-", 'Word'` prints
 
 | Library | `E++.zip` | Full Studio |
 | --- | --- | --- |
-| Math, Random, Strings, Colors, Console, Time, Files, System, Python | ✅ | ✅ |
+| Math, Random, Strings, Console, Time, Files, System, Python | ✅ | ✅ |
+| Colors | ❌ | ✅ |
 | Draw | ❌ | ✅ |
 | Keyboard | ✅ | ✅ |
 | ImprovedWaitLite | ✅ | ❌ |
@@ -446,7 +456,9 @@ where two pieces would otherwise run together, so `say "Hi-", 'Word'` prints
 | ImprovedWait | ❌ | ✅ |
 
 This table describes the browser workspaces. The command-line engines have
-no canvas and report `E302` for Draw and Game. Adding an unavailable library
+no canvas and report `E302` for Draw and Game. The ZIP’s C++ and Python
+engines also reject Colors, including after rebuilding its sources; the full
+repository CLI runners still support Colors. Adding an unavailable library
 reports its reason instead of pretending it exists. The legacy JavaScript core
 also contains an older Image grammar; Studio picture projects use Game's image
 panel instead.
@@ -478,7 +490,7 @@ with `E601`; there is no silent alternate lexer.
 | `E403` | Division by zero |
 | `E404` | File not found |
 | `E405` | Invalid value or loop limit |
-| `E407` | Invalid drawing distance or color |
+| `E407` | Invalid drawing distance, speed or color |
 | `E511` | Not an E++ project file |
 | `E512` | Truncated or damaged project file |
 | `E513` | Written by a different release |

@@ -130,12 +130,13 @@
     Draw: {
       name: 'Draw',
       aliases: ['draw', 'drawing', 'sprites'],
-      description: 'Drawing sprites you can move around: define \'hero\' as drawing sprite, then \'hero\' move up "10".',
+      description: 'Animated drawing cursors: choose a speed in pixels per second or use instant movement.',
       unlocks: [
         { feature: 'drawing sprite', kind: 'statement' },
-        { feature: 'move up/down/left/right', kind: 'statement' }
+        { feature: 'move up/down/left/right', kind: 'statement' },
+        { feature: 'set the speed of a drawing sprite', kind: 'statement' }
       ],
-      example: 'add the "Draw" library\ndefine \'hero\' as drawing sprite\n\'hero\' move right "40"\n\'hero\' move down "20"'
+      example: 'add the "Draw" library\ndefine \'hero\' as drawing sprite\nset the speed of \'hero\' to 200\n\'hero\' move right "40"\n\'hero\' move down "20"'
     },
     Image: {
       name: 'Image',
@@ -246,6 +247,7 @@
    * "no such library".
    */
   var UNAVAILABLE_REASONS = {
+    Colors: 'The Colors library is available in E++ Studio, not inside E++.zip. Use plain say statements in this build.',
     Draw: 'The Draw library is available in E++ Studio, not inside E++.zip. Open the full Studio to draw with sprites.',
     Game: 'The Game library is not part of this build. It ships with the E++ Studio, not inside E++.zip — open index.html from the release page to build games.',
     ImprovedWait: 'The ImprovedWait library is not part of this build. ImprovedWaitLite ships inside E++.zip and has every non-game waiting feature; add library "ImprovedWaitLite" instead.',
@@ -258,7 +260,7 @@
    */
   var BUILD_LIBRARIES = {
     studio: ['ImprovedWaitLite'],
-    distribution: ['Game', 'ImprovedWait', 'Draw']
+    distribution: ['Game', 'ImprovedWait', 'Draw', 'Colors']
   };
 
   // Empty by default: a full build has every library until it says otherwise.

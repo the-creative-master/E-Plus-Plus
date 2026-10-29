@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>E++ 1.3.5 Wiki</title>
+<link rel="stylesheet" href="css/wiki.css">
+</head>
+<body>
+<a class="skip" href="#wiki-content">Skip to guide</a>
+<header class="wiki-header"><a href="index.html" class="back">← Back to Studio</a><span>THE E++ GUIDE <strong>1.3.5</strong></span></header>
+<main id="wiki-content" class="wiki-content">
+<h1 id="e-135-wiki">E++ 1.3.5 Wiki</h1>
+<p>An approachable guide to E++, from your first line to games, animated drawings and shared projects. For exact syntax and diagnostic codes, see <a href="LANGUAGE.md">LANGUAGE.md</a>.</p>
+<h2 id="contents">Contents</h2>
+<ul><li><a href="#what-is-e">What is E++?</a></li>
+<li><a href="#start-and-find-your-way-around">Start and find your way around</a></li>
+<li><a href="#tutorial-output-and-maths">Tutorial: output and maths</a></li>
+<li><a href="#tutorial-variables-and-questions">Tutorial: variables and questions</a></li>
+<li><a href="#tutorial-decisions-and-loops">Tutorial: decisions and loops</a></li>
+<li><a href="#tutorial-add-a-library">Tutorial: add a library</a></li>
+<li><a href="#drawing-with-animated-sprites">Drawing with animated sprites</a></li>
+<li><a href="#games-and-pictures">Games and pictures</a></li>
+<li><a href="#community-gallery-and-deployment">Community gallery and deployment</a></li>
+<li><a href="#saving-exporting-and-keys">Saving, exporting and keys</a></li>
+<li><a href="#runtime-and-library-differences">Runtime and library differences</a></li>
+<li><a href="#errors-and-troubleshooting">Errors and troubleshooting</a></li>
+<li><a href="#keyboard-and-accessibility">Keyboard and accessibility</a></li></ul>
+<h2 id="what-is-e">What is E++?</h2>
+<p>E++ is an English-like programming language. It has a browser Studio for writing and running projects, a native C++ command-line engine, and a Python runner. The engines share core language rules and project-file support, but not every visual feature or library is available in each engine.</p>
+<p>The three rules to remember:</p>
+<ol><li>Use <strong>double quotes for text</strong>: <code>&quot;Hello&quot;</code>.</li>
+<li>Use <strong>single quotes for variable names</strong>: <code>&#x27;score&#x27;</code>.</li>
+<li>Write <strong>maths without quotes</strong>: <code>2 plus 3</code>.</li></ol>
+<p><code>say hello</code> is not a text shortcut: it produces an unquoted-text error. Use <code>say &quot;hello&quot;</code>. Variable names are case-insensitive. Notes use <code>note [explanation]</code>; <code>#</code> and <code>//</code> are not E++ comments.</p>
+<h2 id="start-and-find-your-way-around">Start and find your way around</h2>
+<p>Run <code>npm start</code> with Node.js 18 or newer, and open <code>http://localhost:8000</code> on the same machine. The server also provides the community gallery. Opening <code>index.html</code> directly works offline for the editor, Draw and Game, but cannot publish to the gallery.</p>
+<ul><li><strong>Files:</strong> select a project, create one, rename it or restore missing examples. Existing files are not overwritten by the restore action.</li>
+<li><strong>Code:</strong> write your program; syntax highlighting and line numbers follow the editor. Use <strong>Wrap</strong> for long lines.</li>
+<li><strong>Output:</strong> see text, errors and visual canvases. <strong>Run code</strong> executes; <strong>Stop</strong> interrupts a running program.</li>
+<li><strong>Libraries:</strong> insert a library declaration. <strong>Learn</strong> opens interactive lessons, and <strong>Wiki</strong> opens this guide in the same tab. Use <strong>Back to Studio</strong> to return to your project.</li>
+<li>On narrow screens, switch between <strong>Files</strong>, <strong>Code</strong>, and <strong>Output</strong>, and use <strong>Tools</strong> to reach project actions.</li></ul>
+<p>The Studio keeps personal working files and linked pictures in the current browser. This is separate from the public gallery. Do not rely on a browser as your only backup: export important projects and their keyring.</p>
+<h2 id="tutorial-output-and-maths">Tutorial: output and maths</h2>
+<p>Create a new <code>.enpp</code> file, type this and press <strong>Run code</strong>:</p>
+<pre><code>note [My first program]
+say &quot;Hello, E++!&quot;
+say 7 plus 5
+say 2 plus 3 times 4
+say &quot;2 plus 3&quot;</code></pre>
+<p>The last line prints the words inside the quotes, not their calculated value. Arithmetic supports <code>plus</code>, <code>minus</code>, <code>times</code>, <code>divided by</code> and operators such as <code>+</code>, <code>-</code>, <code>*</code> and <code>/</code>. Parentheses can group arithmetic. A division by zero is an error.</p>
+<h2 id="tutorial-variables-and-questions">Tutorial: variables and questions</h2>
+<pre><code>let &#x27;name&#x27; be &quot;Ada&quot;
+let &#x27;score&#x27; be 10
+say &quot;Hello, &quot;, &#x27;name&#x27;
+let &#x27;score&#x27; be &#x27;score&#x27; plus 1
+say &quot;Score:&quot;, &#x27;score&#x27;
+ask &quot;What is your name?&quot; and save the output as &#x27;visitor&#x27;
+say &quot;Welcome, &quot;, &#x27;visitor&#x27;</code></pre>
+<p>The <code>ask</code> line waits for input in the console. <code>let</code>, <code>define ... as</code>, and <code>set ... to</code> can assign values. <code>say</code> can join several pieces with commas; text still needs double quotes, and variable references need single quotes.</p>
+<h2 id="tutorial-decisions-and-loops">Tutorial: decisions and loops</h2>
+<pre><code>let &#x27;score&#x27; be 5
+if &#x27;score&#x27; is greater than 3 then say &quot;Great work!&quot;
+otherwise say &quot;Keep trying!&quot;
+
+repeat 3 times
+  say &quot;Practice makes progress.&quot;
+end repeat
+
+let &#x27;count&#x27; be 1
+while &#x27;count&#x27; is less than 4 do
+  say &#x27;count&#x27;
+  let &#x27;count&#x27; be &#x27;count&#x27; plus 1
+end while</code></pre>
+<p>Place <code>otherwise</code> on the next line, not after the first <code>say</code>. Blocks can also use <code>if ... then:</code>, <code>else:</code> and <code>end if</code>. Close every <code>repeat</code>, <code>while</code>, and block <code>if</code> with the corresponding <code>end</code>. Syntax is checked even in a branch that does not run.</p>
+<h2 id="tutorial-add-a-library">Tutorial: add a library</h2>
+<p>A library unlocks extra words. Use a <code>.enppl</code> project and add it before using its features:</p>
+<pre><code>add library &quot;Math&quot;
+add library &quot;Strings&quot;
+say the square root of 144
+say the uppercase of &quot;hello&quot;</code></pre>
+<p>Other common libraries include Random, Time, Files, System and Python. The full Studio also offers Colors, Draw, Game and ImprovedWait. The ZIP has ImprovedWaitLite rather than ImprovedWait and does not contain Colors, Draw or Game. A missing declaration reports <code>E301</code>; a library not in that build reports <code>E302</code>.</p>
+<h2 id="drawing-with-animated-sprites">Drawing with animated sprites</h2>
+<p>Draw is available in the full Studio, not in <code>E++.zip</code> or the command-line engines. Any single-quoted variable name can become a visible, controllable cursor.</p>
+<pre><code>add library &quot;Draw&quot;
+define &#x27;pencil&#x27; as drawing sprite
+set the color of &#x27;pencil&#x27; to &quot;#ffcc88&quot;
+set the speed of &#x27;pencil&#x27; to 200
+&#x27;pencil&#x27; move right &quot;100&quot;
+&#x27;pencil&#x27; move down &quot;100&quot;
+&#x27;pencil&#x27; move left &quot;100&quot;
+&#x27;pencil&#x27; move up &quot;100&quot;</code></pre>
+<ul><li>Each sprite starts at the centre, <code>(0, 0)</code>, with its pen down and its own color and speed. Right increases x; down increases y.</li>
+<li>Program moves animate at <strong>240 pixels per second by default</strong>. Set a positive speed up to 100,000 pixels per second: <code>set the speed of &#x27;pencil&#x27; to 60</code>. You may use a numeric expression or variable.</li>
+<li><code>set the speed of &#x27;pencil&#x27; to instant</code> explicitly skips animation for that cursor. Change the speed again to restore animation.</li>
+<li>The console’s <strong>Cursor</strong> and <strong>Speed</strong> menus select and adjust a sprite, including while it moves. Arrow buttons move the selected cursor 10 pixels immediately; focus the canvas to use arrow keys, or hold Shift for one-pixel steps.</li>
+<li><code>lift the pen of &#x27;pencil&#x27;</code> moves without a trail; <code>lower the pen of &#x27;pencil&#x27;</code> resumes drawing. <code>clear the drawing</code> clears trails without moving cursors. A new run resets them.</li>
+<li>A move waits for its animation before the program continues. <strong>Stop</strong> interrupts it at its current position. Assigning an ordinary value to a drawing variable removes that cursor.</li></ul>
+<h2 id="games-and-pictures">Games and pictures</h2>
+<p>Game is Studio-only. Start with <code>game_showcase.enppl</code>, or write:</p>
+<pre><code>add library &quot;Game&quot;
+set the game window to 640 by 480
+set the game background to &quot;night&quot;
+create the actor &#x27;hero&#x27;
+put the actor &#x27;hero&#x27; at 0 and 0
+&#x27;hero&#x27; move right &quot;50&quot;</code></pre>
+<p>Choose <strong>Image</strong> after adding Game, select a local picture, give it the name <code>hero</code>, and link it. The picture panel can insert the actor setup for you. Local files are decoded and resized before being linked; they are stored as embedded image data, not fetched from a remote server when the game runs. Transparency is preserved. The included example has two embedded starter pictures.</p>
+<p>A broken or unsupported upload is refused with a message. If an older link or an external URL fails, the panel explains that it could not load and the game displays a labelled tile; unlink and upload the picture again. A URL or relative filename written in code still depends on that resource being available. Exported and gallery projects carry their linked embedded pictures.</p>
+<p>The game window uses its centre as <code>(0, 0)</code>. <code>set the size of the actor &#x27;hero&#x27; to 2</code> doubles its size. <code>show</code>, <code>hide</code>, and <code>if &#x27;hero&#x27; is touching &#x27;gem&#x27; then ...</code> work with actors. A <code>play the game</code> / <code>end the game</code> block runs once per frame. Add Keyboard for checks such as <code>if the &quot;Up arrow&quot; key is pressed then &#x27;hero&#x27; move up &quot;5&quot;</code>; use <strong>Stop game</strong> or <code>stop the game</code> to finish. ImprovedWait adds actor pause, resume and wait features.</p>
+<h2 id="community-gallery-and-deployment">Community gallery and deployment</h2>
+<p>The gallery is shared by everyone using the <strong>same running server</strong>. Open <strong>Gallery</strong>, fill in a title and optional author and description, and choose <strong>Publish current project</strong>. Code and embedded picture data are public. Choose <strong>Open a copy</strong> on a card to create a new local project; it does not overwrite your existing files and does not run automatically. Review other people’s code before running it.</p>
+<p>The server validates and stores projects in a server-side <code>shared.js</code> file. Gallery reads use a same-origin API with no browser gallery cache. Clearing cookies, localStorage or IndexedDB does not delete published entries. An opened local copy, however, is an ordinary browser project and can be lost if local storage is cleared.</p>
+<p>A local <code>npm start</code> is not a globally hosted service. To make one public and durable, deploy the Node server behind HTTPS with a writable persistent volume. Set <code>EPP_GALLERY_PATH=/data/shared.js</code>, <code>PORT</code>, and optionally <code>HOST</code> (default <code>0.0.0.0</code>). The Dockerfile in the full source checkout supports a volume mounted at <code>/data</code>; ensure it is writable by the container’s Node user. An ephemeral host, a static-only site, GitHub Pages or a fresh redeploy without a volume cannot retain published projects. There is no preconfigured central cloud service.</p>
+<p>The server serializes concurrent writes and atomically replaces the file. Use <strong>one server process per gallery file</strong>; it is not a distributed database and does not coordinate multiple replicas. Back up <code>shared.js</code>; stop the server before restoring a backup. Do not expose the data file as an executable script. Corrupt data makes startup fail instead of silently resetting it.</p>
+<p>The API accepts titles up to 80 characters, authors up to 60, descriptions up to 300, code up to 128 KB and up to 24 embedded images totalling roughly 1.2 MB. External image links are not included as gallery pictures: re-upload them locally first. The store caps its size at 50 MB and 2,000 projects. An oversized or invalid submission is rejected. Code may still contain URLs, which remain external dependencies.</p>
+<p>Publishing is anonymous and public. There are no accounts, built-in moderation tools, deletion interface or spam protection. A public operator must provide suitable rate limiting, monitoring, moderation, backups and a way to handle takedown requests. Never publish credentials or private material. A server operator can remove entries from a backed-up gallery file while the server is stopped, taking care to preserve the JSON data structure.</p>
+<h2 id="saving-exporting-and-keys">Saving, exporting and keys</h2>
+<p>The editor auto-saves working files in the browser. <code>.enpp</code> denotes a pure program; <code>.enppl</code> is used for programs with libraries. The command-line engines also accept older <code>.eppl</code> and <code>.eppla</code> examples.</p>
+<p><strong>Export</strong> downloads a sealed project and keeps its key in this browser. <strong>Keys</strong> can export a keyring file and import it on another machine. Keep the keyring private and back it up alongside the project; a sealed project cannot be opened without a matching key. The CLI accepts <code>--keyring epp-keys.json project.enppl</code>. Studio-exported projects include linked pictures. Gallery publication is different: it deliberately publishes an unsealed copy.</p>
+<h2 id="runtime-and-library-differences">Runtime and library differences</h2>
+<p>The Studio loads <code>src/lexer.cpp</code> compiled to WebAssembly and consumes its real tokens in a JavaScript evaluator. It is not running the C++ parser or interpreter in the browser. If the compiled lexer is unavailable, execution stops with <code>E601</code>; there is no silent alternate lexer.</p>
+<p>The native <code>./epp</code> uses the C++ lexer, parser and interpreter. <code>python3 epp.py</code> uses the Python engine. Their core syntax and diagnostics overlap with Studio, but they do not provide its Draw or Game canvas. Studio translates a subset of Python to JavaScript and is not a full Python interpreter. The command-line Python bridge can run Python on the machine; only run code you trust.</p>
+<p>In the full Studio: Math, Random, Strings, Colors, Console, Time, Files, System, Python, Keyboard, Draw, Game and ImprovedWait are available. In <code>E++.zip</code>: Colors, Draw, Game and ImprovedWait are unavailable, while ImprovedWaitLite is available. The archived native and Python runners also reject Colors. The full repository’s native and Python runners retain Colors. Availability does not imply identical OS, filesystem, Python or graphical behavior across engines.</p>
+<p>Build the native engine with <code>make</code>, run tests with <code>make test</code> and <code>npm test</code>, and rebuild the archives with <code>make zip</code>. Browser regression tests require Playwright and a local Chromium executable; see the repository test scripts.</p>
+<h2 id="errors-and-troubleshooting">Errors and troubleshooting</h2>
+<ul><li><strong>E101 / E102 / E105 / E106:</strong> unknown or incomplete statement, unfinished quote, missing value or missing block ending. Check the indicated line and help text.</li>
+<li><strong>E201 / E202:</strong> unknown variable or actor, or a variable name written incorrectly. Use single quotes for names and define them first.</li>
+<li><strong>E301 / E302 / E303:</strong> add the necessary library, use the full Studio for a Studio-only library, or check its spelling.</li>
+<li><strong>E402:</strong> a literal word such as <code>hello</code> needs double quotes. <code>say &quot;hello&quot;</code> is valid.</li>
+<li><strong>E403 / E407:</strong> division by zero, or invalid Draw distance, speed or color. A speed is positive or <code>instant</code>.</li>
+<li><strong>E511–E522:</strong> a sealed project is damaged or its key is missing. Import the keyring saved with that project.</li>
+<li><strong>E601:</strong> the compiled C++ lexer could not load. Keep <code>js/native-lexer.js</code> and <code>js/native-lexer-wasm.js</code> alongside Studio and reload.</li>
+<li><strong>Gallery unavailable:</strong> start the Node server; a static page and <code>file://</code> have no write API. If hosting in the cloud, check the volume, server logs, HTTPS and proxy configuration.</li>
+<li><strong>Picture is a tile:</strong> choose Image, unlink the failed picture and upload a valid local file. A remote URL can be unavailable or blocked.</li></ul>
+<h2 id="keyboard-and-accessibility">Keyboard and accessibility</h2>
+<p>Use <code>Ctrl+Enter</code> or <code>Cmd+Enter</code> to run, and <code>Ctrl+S</code> or <code>Cmd+S</code> to save. Dialogs retain keyboard focus and close with Escape. The mobile workspace and Draw controls have touch targets; the canvas is keyboard-focusable. The Output panel is a live region. Use browser zoom, high-contrast mode and line wrapping as needed.</p>
+<footer><a href="index.html">← Return to the Studio</a> · <a href="LANGUAGE.md">Language reference</a></footer>
+</main>
+</body>
+</html>

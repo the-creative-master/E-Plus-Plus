@@ -12,6 +12,10 @@ release_notes.txt
 .cache/
 node_modules/
 
+# Live, server-side community gallery data (put this on a persistent volume)
+/shared.js
+/shared.js.*.tmp
+
 # Release packaging staging
 .dist/
 

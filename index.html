@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>E++ Studio | 1.3</title>
+<title>E++ Studio | 1.3.5</title>
 <link rel="stylesheet" href="css/ide.css">
 <style>
   /* Color classes for Terminal */
@@ -351,7 +351,7 @@
   <div class="brand">
     <div class="logo" aria-hidden="true">E<span>++</span></div>
     <div>
-      <h1>E++ <span>Studio</span> <span class="build-badge">1.3</span></h1>
+      <h1>E++ <span>Studio</span> <span class="build-badge">1.3.5</span></h1>
       <p>YOUR SPACE TO CREATE</p>
     </div>
   </div>
@@ -375,6 +375,8 @@
       <div class="action-group learn-actions" role="group" aria-label="Learn and share">
         <span class="action-group-label">Learn &amp; share</span>
         <button id="btnLearn" class="btn btn-small btn-tutorial" type="button" title="Learn E++ card by card">Learn</button>
+        <a id="btnWiki" class="btn btn-small" href="wiki.html" title="Open the E++ guide">Wiki</a>
+        <button id="btnGallery" class="btn btn-small" type="button" title="Browse and publish community projects">Gallery</button>
         <button id="btnSuggest" class="btn btn-small btn-suggest" type="button" title="Suggest a feature — everyone can see it">Suggest</button>
       </div>
       <span class="action-divider" aria-hidden="true"></span>
@@ -419,7 +421,7 @@
   </div>
   <div class="dash-group dash-group-end">
     <span id="zipRuntimeBadge" class="badge-zip-locked">C++ lexer loading…</span>
-    <span class="dash-badge-pill badge-version" id="buildVersion">v1.3 · Project No Wrongs</span>
+    <span class="dash-badge-pill badge-version" id="buildVersion">v1.3.5 · Create & share</span>
   </div>
   <span id="mobileSaveStatus" class="mobile-save-status" role="status">Saved locally</span>
   <div class="dash-rules">
@@ -480,7 +482,7 @@
     </div>
     <!-- Available Libraries -->
     <section class="libraries-panel sidebar-panel" id="librariesPanel" hidden>
-      <h2>Libraries <span class="head-sub">(1.3)</span></h2>
+      <h2>Libraries <span class="head-sub">(1.3.5)</span></h2>
       <p class="panel-note">Both word orders work:<br><code>add library "Math"</code> or <code>add the "Math" library</code></p>
       
       <div class="library-card" data-library="Python">
@@ -555,7 +557,7 @@
         <p>Clear screen and real-time terminal stream management.</p>
       </div>
 
-      <p class="panel-note" id="distributionNotice" style="display:none;">This is the <strong>E++.zip</strong> build: Draw, Game and ImprovedWait live in the full Studio only. Keyboard and ImprovedWaitLite are here.</p>
+      <p class="panel-note" id="distributionNotice" style="display:none;">This is the <strong>E++.zip</strong> build: Colors, Draw, Game and ImprovedWait live in the full Studio. Keyboard and ImprovedWaitLite are here.</p>
       <p class="panel-note" id="studioNotice" style="display:none;">ImprovedWaitLite is only in <strong>E++.zip</strong>; this Studio has the full <strong>ImprovedWait</strong>, with every wait feature.</p>
 
       <div class="library-card" data-library="Draw">
@@ -563,7 +565,7 @@
           <h3>Draw <span>Studio only</span></h3>
           <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Draw')">+ Insert</button>
         </div>
-        <p>Turn any variable into a drawing cursor. Move it and leave a trail in the console.</p>
+        <p>Turn any variable into a drawing cursor. Animate its trail at a chosen speed, or move instantly.</p>
       </div>
 
       <!-- Release 1.2 libraries -->
@@ -683,6 +685,13 @@ set the image of the actor 'hero' to "hero2.png"</pre>
           <div class="draw-controls">
             <label for="drawSelect">Cursor</label>
             <select id="drawSelect" aria-label="Drawing cursor to control"></select>
+            <label for="drawSpeed">Speed</label>
+            <select id="drawSpeed" aria-label="Speed of the selected drawing cursor">
+              <option value="60">Slow · 60 px/s</option>
+              <option value="240">Normal · 240 px/s</option>
+              <option value="600">Fast · 600 px/s</option>
+              <option value="instant">Instant</option>
+            </select>
             <span class="draw-control-hint">Use arrows to move · 10 px</span>
             <div class="draw-arrows" aria-label="Move the selected drawing cursor">
               <button type="button" data-draw-move="left" aria-label="Move left">←</button>
@@ -724,7 +733,7 @@ set the image of the actor 'hero' to "hero2.png"</pre>
 </main>
 
 <footer class="footer">
-  <span><strong>E++ Studio [1.3]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
+  <span><strong>E++ Studio [1.3.5]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
   <span>Shortcuts: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run · <kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span>
 </footer>
 
@@ -861,6 +870,37 @@ set the image of the actor 'hero' to "hero2.png"</pre>
   </div>
 </div>
 
+<div id="galleryOverlay" class="gallery-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="galleryHeading">
+  <div class="gallery-shell">
+    <header class="gallery-head">
+      <div><span class="gallery-kicker">MAKE SOMETHING TOGETHER</span><h2 id="galleryHeading">Community gallery</h2><p>Discover projects and share a copy of your own.</p></div>
+      <button id="galleryClose" class="btn-close" type="button" aria-label="Close gallery">×</button>
+    </header>
+    <div class="gallery-body">
+      <section class="gallery-publish" aria-labelledby="galleryPublishHeading">
+        <h3 id="galleryPublishHeading">Publish your project</h3>
+        <p>Your code, pictures and the name below will be public to everyone using this server. Do not publish passwords or private information.</p>
+        <button id="galleryBrowseJump" class="gallery-jump" type="button">Browse community projects ↓</button>
+        <form id="galleryForm">
+          <label for="galleryTitle">Project title</label>
+          <input id="galleryTitle" name="title" maxlength="80" required autocomplete="off" placeholder="My first project">
+          <label for="galleryAuthor">Your name <span>(optional)</span></label>
+          <input id="galleryAuthor" name="author" maxlength="60" autocomplete="nickname" placeholder="Anonymous">
+          <label for="galleryDescription">What did you make? <span>(optional)</span></label>
+          <input id="galleryDescription" name="description" maxlength="300" autocomplete="off" placeholder="A little about your project">
+          <button id="galleryPublish" class="btn btn-accent" type="submit">Publish current project</button>
+        </form>
+        <p class="gallery-storage-note">Published projects are stored by the server, not in your browser. There is no self-service deletion; the server operator controls moderation.</p>
+      </section>
+      <section class="gallery-browse" aria-labelledby="galleryBrowseHeading">
+        <div class="gallery-browse-head"><h3 id="galleryBrowseHeading" tabindex="-1">From the community</h3><button id="galleryRefresh" class="btn btn-small" type="button">Refresh</button></div>
+        <p id="galleryStatus" class="gallery-status" role="status" aria-live="polite"></p>
+        <div id="galleryList" class="gallery-list"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
 <div id="suggestOverlay" class="sug-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="sugTitle">
   <div class="sug-shell">
     <header class="sug-head">
@@ -919,6 +959,7 @@ set the image of the actor 'hero' to "hero2.png"</pre>
 <script src="js/libraries.js"></script>
   <script src="js/pictures.js"></script>
   <script src="js/ideas.js"></script>
+  <script src="js/gallery.js"></script>
   <script src="js/a11y.js"></script>
 <script src="js/tutorials.js"></script>
 <script src="js/keyboard.js"></script>
@@ -957,8 +998,19 @@ note [Quotes are strictly string text:]
 say "1 + 1"`
   },
   {
+    name: 'welcome_1_3_5.enpp',
+    content: `note [Welcome to E++ 1.3.5. Run this file, then open Learn or Wiki.]
+say "Hello from E++ 1.3.5!"
+let 'ideas' be 3
+say "Ideas to try:", 'ideas'
+repeat 3 times
+  say "Create, learn, and share."
+end repeat
+note [Try the Gallery to publish a copy of a project.]`
+  },
+  {
     name: 'release_showcase.enppl',
-    content: `note [E++ 1.3 Grand Showcase (.enppl)]
+    content: `note [E++ 1.3.5 Grand Showcase (.enppl)]
 add the "Colors" library
 add the "Time" library
 add the "Math" library
@@ -969,7 +1021,7 @@ add the "System" library
 add the "Python" library
 
 say cyan "========================================================="
-say cyan "         Welcome to E++ 1.3!           "
+say cyan "         Welcome to E++ 1.3.5!           "
 say cyan "========================================================="
 
 note [System & Time Diagnostics]
@@ -987,19 +1039,19 @@ say "Trimmed:", the trim of 'Announcement'
 say "Uppercase:", the uppercase of the trim of 'Announcement'
 
 note [File Persistence in Virtual IDE]
-write "E++ 1.3 verified on: " to file "showcase_audit.log"
+write "E++ 1.3.5 verified on: " to file "showcase_audit.log"
 append the current date to file "showcase_audit.log"
 read the file "showcase_audit.log" and save the output as 'Audit'
 say "Audit log content:", 'Audit'
 
 note [Python Engine Bridge]
-let 'EppVersion' be "1.3"
+let 'EppVersion' be "1.3.5"
 run the python code:
 print(f"[Python Subsystem] Connected with E++ v{EppVersion}")
 import math
 print(f"[Python Subsystem] Computed 10! = {math.factorial(10)}")
 
-say green "✓ All E++ 1.3 tests completed with 100% success!"`
+say green "✓ E++ 1.3.5 showcase complete!"`
   },
   {
     name: 'python_demo.enppl',
@@ -1023,7 +1075,7 @@ run the python code "print('E++ says:', greeting)"`
     content: `note [Strings Library in E++ (.enppl)]
 add the "Strings" library
 
-let 'Message' be "Hello, E++ 1.3!"
+let 'Message' be "Hello, E++ 1.3.5!"
 say "Original message:", 'Message'
 say "Length of message:", the length of 'Message'
 say "Uppercase:", the uppercase of 'Message'
@@ -1061,7 +1113,7 @@ say "System Platform:", the platform
 say "Operating System:", the os
 
 note [Writing and reading in the IDE filesystem:]
-write "E++ 1.3 is lightning fast!" to file "notes.txt"
+write "E++ 1.3.5 is ready!" to file "notes.txt"
 read the file "notes.txt" and save the output as 'ReadBack'
 say "Read back from file:", 'ReadBack'`
   },
@@ -1123,6 +1175,8 @@ say "Hello ", 'name', ", Welcome to E++!"`
 add the "Draw" library
 
 define 'pencil' as drawing sprite
+note [Speed is pixels per second. Try 60, 600, or instant.]
+set the speed of 'pencil' to 200
 'pencil' move right "100"
 'pencil' move down "100"
 'pencil' move left "100"
@@ -1138,7 +1192,7 @@ say "You made a drawing!"`
   {
     name: 'game_showcase.enppl',
     hideInDistribution: true,
-    content: `note [E++ 1.2 — the Game library: the pygame zero of E++.]
+    content: `note [E++ 1.3.5 — the Game library: the pygame zero of E++.]
 note [This file comes with two pictures already linked: hero and gem.]
 note [Press the Image button to add your own, or to change these.]
 add the "Game" library
@@ -1184,7 +1238,7 @@ say "Final score: ", 'score'`
   },
   {
     name: 'keyboard_playground.enppl',
-    content: `note [E++ 1.2 — the Keyboard library: any key, by name.]
+    content: `note [E++ 1.3.5 — the Keyboard library: any key, by name.]
 add the "Keyboard" library
 add the "ImprovedWaitLite" library
 
@@ -1212,7 +1266,8 @@ say "Done — the Left arrow finished the program."`
 ];
 
 // File Storage (.enpp & .enppl)
-const DEFAULTS_VERSION = '1.3';
+const DEFAULTS_VERSION = '1.3.5';
+const WIKI_RETURN_FILE_KEY = 'epp_wiki_return_file';
 let files = {};
 let currentFileName = 'hello.enpp';
 let fileDialogMode = 'new';
@@ -1237,6 +1292,12 @@ function initStorage() {
     currentFileName = Object.keys(files)[0];
     addNewDefaults();
   }
+  // Returning from the guide should bring the reader back to the same project.
+  try {
+    const previous = sessionStorage.getItem(WIKI_RETURN_FILE_KEY);
+    sessionStorage.removeItem(WIKI_RETURN_FILE_KEY);
+    if (previous && Object.prototype.hasOwnProperty.call(files, previous)) currentFileName = previous;
+  } catch (error) { /* The file still stays saved if session storage is unavailable. */ }
 }
 
 /**
@@ -1266,13 +1327,19 @@ function availableDefaultFiles() {
   const withLite = !registry || registry.isAvailable('ImprovedWaitLite');
   return DEFAULT_FILES
     .filter(f => !f.hideInDistribution || !window.EPP_DISTRIBUTION)
-    .map(f => ({
-      ...f,
-      // The Studio has ImprovedWait (which includes every wait feature);
-      // E++.zip has ImprovedWaitLite. The examples are the same text, with
-      // the one library name each build actually ships.
-      content: withLite ? f.content : f.content.replace(/\bImprovedWaitLite\b/g, 'ImprovedWait')
-    }));
+    .map(f => {
+      // Keep the example runnable in each build; never change a user's saved file.
+      let content = withLite ? f.content : f.content.replace(/\bImprovedWaitLite\b/g, 'ImprovedWait');
+      let name = f.name;
+      if (window.EPP_DISTRIBUTION) {
+        content = content.replace(/^add\s+the\s+"Colors"\s+library\s*\n/gim, '')
+          .replace(/^(\s*)say\s+(?:red|green|blue|yellow|cyan|magenta)\s+/gim, '$1say ')
+          .replace('Time & Colors Demonstration', 'Time Demonstration')
+          .replace('Terminal colors and timers work smoothly.', 'Timers work smoothly.');
+        if (name === 'time_and_colors.enppl') name = 'time_demo.enppl';
+      }
+      return { ...f, name, content };
+    });
 }
 
 function restoreDefaultFiles(notify = true) {
@@ -1571,46 +1638,61 @@ async function exportCurrentFile() {
   showToast(`Sealed ${fileNameToExport} with a new key (${sealed.fingerprint}).`);
 }
 
-/** Reads an image, shrinks it to 256px and returns a data: URL. */
-function imageFileToDataUrl(file, maxSide = 256) {
+/** Decode a local image before accepting it; no network request is needed. */
+function decodePicture(data) {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('That image could not be read.'));
-    reader.onload = () => {
-      const original = String(reader.result);
-      let settled = false;
-      const finish = (value) => {
-        if (settled) return;
-        settled = true;
-        // A browser that cannot encode the picture still has the original
-        // file, and the original is always a usable source — never nothing.
-        resolve(typeof value === 'string' && value ? value : original);
-      };
-      // If the browser never fires load or error (an odd format, a very slow
-      // decoder), the original file is still a perfectly good image source.
-      const fallback = setTimeout(() => finish(original), 3000);
-      const img = new Image();
-      img.onerror = () => { clearTimeout(fallback); finish(original); };
-      img.onload = () => {
-        clearTimeout(fallback);
-        try {
-          const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
-          const width = Math.max(1, Math.round(img.width * scale));
-          const height = Math.max(1, Math.round(img.height * scale));
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-          const hasAlpha = /^image\/(png|webp|gif|svg)/i.test(file.type);
-          finish(canvas.toDataURL(hasAlpha ? 'image/png' : 'image/jpeg', 0.86));
-        } catch (error) {
-          finish(original);
-        }
-      };
-      img.src = original;
+    const img = new Image();
+    let finished = false;
+    const finish = (error) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      img.onload = img.onerror = null;
+      if (error) reject(error);
+      else resolve(img);
     };
+    const timer = setTimeout(() => finish(new Error('The picture took too long to decode.')), 5000);
+    img.onload = () => {
+      if (!img.naturalWidth || !img.naturalHeight) finish(new Error('The picture has no visible dimensions.'));
+      else finish();
+    };
+    img.onerror = () => finish(new Error('The browser could not decode this picture. Choose a valid PNG, JPG, GIF, WEBP or SVG.'));
+    img.src = data;
+  });
+}
+
+/** Reads a local image, verifies it and shrinks it to 256px. */
+async function imageFileToDataUrl(file, maxSide = 256) {
+  const original = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('That picture could not be read.'));
+    reader.onload = () => resolve(String(reader.result || ''));
     reader.readAsDataURL(file);
   });
+  // Some operating systems do not report a file's MIME type. Infer it from
+  // the extension so a transparent PNG isn't silently flattened into JPEG.
+  const extension = (String(file.name || '').match(/\.([^.]+)$/) || [])[1]?.toLowerCase();
+  const types = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml', avif: 'image/avif', bmp: 'image/bmp', ico: 'image/x-icon' };
+  const type = /^image\//i.test(file.type || '') ? file.type : (types[extension] || '');
+  if (!type || !original.startsWith('data:')) throw new Error('That file is not a supported picture.');
+  const source = original.replace(/^data:[^;,]*/, 'data:' + type);
+  const img = await decodePicture(source);
+  try {
+    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+    const width = Math.max(1, Math.round(img.naturalWidth * scale));
+    const height = Math.max(1, Math.round(img.naturalHeight * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d');
+    if (!context) return source;
+    context.drawImage(img, 0, 0, width, height);
+    const converted = canvas.toDataURL(/^image\/jpe?g$/i.test(type) ? 'image/jpeg' : 'image/png', 0.86);
+    return converted && converted !== 'data:,' ? converted : source;
+  } catch (error) {
+    // A verified, decoded original is still usable if canvas encoding fails.
+    return source;
+  }
 }
 
 // ------------------------------------------------------------------
@@ -1635,6 +1717,8 @@ const PICTURE_PANEL_LIMIT = 24;
 
 let pictureStore = null;      // { [project file]: book }
 let pictureDraft = null;      // the picture waiting to be linked
+let pictureError = '';
+let pictureSelection = 0;     // do not let a slow earlier decode replace a newer selection
 let pendingActorName = '';    // set by the old one-shot flow
 
 function picturesApi() {
@@ -1681,15 +1765,17 @@ function loadPictureStore() {
 
 function savePictureStore() {
   const api = picturesApi();
-  if (!api) return;
+  if (!api) return false;
   const plain = {};
   Object.keys(pictureStore || {}).forEach(project => {
     plain[project] = api.toJSON(pictureStore[project]);
   });
   try {
     localStorage.setItem(PICTURE_STORE_KEY, JSON.stringify(plain));
+    return true;
   } catch (error) {
     showToast('This browser is out of storage for pictures — remove one you no longer need.', true);
+    return false;
   }
 }
 
@@ -1712,18 +1798,29 @@ function pictureForName(name) {
 function linkPicture(name, data, extra) {
   const api = picturesApi();
   if (!api) return null;
-  const entry = api.put(pictureBook(), name, data, extra);
+  const book = pictureBook();
+  const previous = api.get(book, name);
+  const entry = api.put(book, name, data, extra);
   if (!entry) return null;
-  savePictureStore();
+  if (!savePictureStore()) {
+    if (previous) book[api.cleanName(name).toLowerCase()] = previous;
+    else api.remove(book, name);
+    return null;
+  }
   return entry;
 }
 
 function unlinkPicture(name) {
   const api = picturesApi();
   if (!api) return false;
-  const removed = api.remove(pictureBook(), name);
-  if (removed) savePictureStore();
-  return removed;
+  const book = pictureBook();
+  const previous = api.get(book, name);
+  if (!api.remove(book, name)) return false;
+  if (!savePictureStore()) {
+    book[api.cleanName(name).toLowerCase()] = previous;
+    return false;
+  }
+  return true;
 }
 
 /** The interpreter asks here for "the picture called hero". */
@@ -1751,7 +1848,7 @@ function insertActorCode(actorName) {
   const code = ed.value;
   const actorLines = actorLinesFor(actorName);
   const setupLines = [];
-  if (!/^\s*add\s+(?:the\s+)?["']?game["']?\s+library\s*$/im.test(code)) {
+  if (!usesGameLibrary(code)) {
     setupLines.push('add the "Game" library');
   }
   if (!/^\s*set\s+the\s+game\s+window\s+to\s+/im.test(code)) {
@@ -1811,7 +1908,6 @@ function renderPictureList() {
 
     const thumb = document.createElement('img');
     thumb.className = 'pic-thumb';
-    thumb.src = entry.data;
     thumb.alt = '';
     row.appendChild(thumb);
 
@@ -1825,6 +1921,12 @@ function renderPictureList() {
     meta.className = 'pic-item-meta';
     const size = entry.width && entry.height ? entry.width + '×' + entry.height + ' · ' : '';
     meta.textContent = size + Math.max(1, Math.round(entry.data.length / 1024)) + ' KB';
+    thumb.onerror = () => {
+      thumb.alt = 'Picture could not load';
+      meta.textContent = 'Could not load — unlink and choose this picture again.';
+      meta.classList.add('pic-item-error');
+    };
+    thumb.src = entry.data;
     main.appendChild(meta);
     row.appendChild(main);
 
@@ -1849,8 +1951,7 @@ function renderPictureList() {
         `Unlink '${entry.name}'? The name stays in the program, but it will draw a placeholder tile until you link a picture again.`,
         { title: 'Unlink this picture?', danger: true, confirmLabel: 'Unlink' }
       );
-      if (!yes) return;
-      unlinkPicture(entry.name);
+      if (!yes || !unlinkPicture(entry.name)) return;
       renderPictureList();
       showToast(`'${entry.name}' is no longer linked to a picture.`);
     });
@@ -1897,7 +1998,8 @@ function renderPicturePreview() {
   if (clear) clear.disabled = !valid || !existing;
 
   if (note) {
-    if (!name) note.textContent = 'Give the picture a name — for example hero.';
+    if (pictureError) note.textContent = pictureError;
+    else if (!name) note.textContent = 'Give the picture a name — for example hero.';
     else if (!valid) note.textContent = 'A name starts with a letter; letters, numbers, spaces, - and _ are fine.';
     else if (existing) note.textContent = `'${name}' is already linked to a picture. Linking again replaces it.`;
     else note.textContent = `'${name}' will mean this picture everywhere in this project.`;
@@ -1915,55 +2017,43 @@ function openPictures(options = {}) {
   const nameField = document.getElementById('picName');
   if (options.name && nameField) nameField.value = options.name;
   else if (nameField && !nameField.value) nameField.value = 'hero';
+  pictureSelection++;
   pictureDraft = options.draft || null;
+  pictureError = '';
   refreshPicturePanel();
   openModal(overlay, document.getElementById('picDrop'));
 }
 
 function closePictures() {
+  pictureSelection++;
   closeModal(document.getElementById('imageOverlay'));
 }
 
 /** Turns a chosen file into the draft picture the panel shows. */
 async function pickPictureFile(file) {
   if (!file) return;
-  if (!/^image\//i.test(file.type || '') && !/\.(png|jpe?g|gif|webp|avif|svg|bmp|ico)$/i.test(file.name || '')) {
-    showToast('That is not a picture. Choose a PNG, JPG, GIF, WEBP or SVG.', true);
-    return;
-  }
-  let data = '';
+  const selection = ++pictureSelection;
+  pictureDraft = null;
+  pictureError = '';
+  refreshPicturePanel();
   try {
-    data = await imageFileToDataUrl(file);
-  } catch (error) {
-    data = '';
-  }
-  if (!data || typeof data !== 'string') {
-    showToast('That picture could not be read. Try another file.', true);
-    return;
-  }
-  pictureDraft = {
-    data,
-    width: 0,
-    height: 0,
-    file: file.name || ''
-  };
-  // Measure it, so the panel can say how big it really is.
-  try {
-    const probe = await new Promise(resolve => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => resolve(null);
-      img.src = data;
-    });
-    if (probe) {
-      pictureDraft.width = probe.naturalWidth || probe.width || 0;
-      pictureDraft.height = probe.naturalHeight || probe.height || 0;
+    if (!/^image\//i.test(file.type || '') && !/\.(png|jpe?g|gif|webp|avif|svg|bmp|ico)$/i.test(file.name || '')) {
+      throw new Error('That is not a picture. Choose a PNG, JPG, GIF, WEBP or SVG.');
     }
+    if (file.size > 8 * 1024 * 1024) throw new Error('That picture is over 8 MB. Choose a smaller file.');
+    const data = await imageFileToDataUrl(file);
+    const probe = await decodePicture(data);
+    if (selection !== pictureSelection) return;
+    pictureDraft = { data, width: probe.naturalWidth, height: probe.naturalHeight, file: file.name || '' };
   } catch (error) {
-    // A picture we cannot measure is still a picture.
+    if (selection !== pictureSelection) return;
+    pictureError = error.message || 'That picture could not be read. Try another file.';
+    refreshPicturePanel();
+    showToast(pictureError, true);
+    return;
   }
   const nameField = document.getElementById('picName');
-  if (nameField && (!nameField.value || nameField.value === 'hero')) {
+  if (nameField && !nameField.value) {
     const api = picturesApi();
     const guess = api ? api.cleanName(String(file.name || '').replace(/\.[^.]+$/, '')) : '';
     if (guess) nameField.value = guess;
@@ -1987,7 +2077,9 @@ async function linkDraftPicture(options = {}) {
     height: pictureDraft.height
   });
   if (!entry) {
-    showToast('That picture could not be linked.', true);
+    pictureError = 'That picture could not be saved. Check the name and free browser storage, then try again.';
+    renderPicturePreview();
+    showToast(pictureError, true);
     return null;
   }
   if (options.insert !== false) insertActorCode(entry.name);
@@ -2051,6 +2143,7 @@ function wirePictures() {
     });
     drop.addEventListener('drop', (event) => {
       event.preventDefault();
+      event.stopPropagation();
       drop.classList.remove('pic-drop-active');
       const files = event.dataTransfer && event.dataTransfer.files;
       if (files && files[0]) pickPictureFile(files[0]);
@@ -2069,16 +2162,14 @@ function wirePictures() {
   overlay.addEventListener('dragover', (event) => event.preventDefault());
   overlay.addEventListener('drop', (event) => {
     event.preventDefault();
+    event.stopPropagation();
     const files = event.dataTransfer && event.dataTransfer.files;
     if (files && files[0]) pickPictureFile(files[0]);
   });
 
   const nameField = document.getElementById('picName');
   if (nameField) {
-    nameField.addEventListener('input', () => {
-      if (picturesApi()) nameField.value = picturesApi().cleanName(nameField.value);
-      renderPicturePreview();
-    });
+    nameField.addEventListener('input', () => renderPicturePreview());
   }
 
   const link = document.getElementById('picLink');
@@ -2102,8 +2193,7 @@ function wirePictures() {
     const yes = await confirmDialog(`Unlink '${name}' from its picture?`, {
       title: 'Unlink this picture?', danger: true, confirmLabel: 'Unlink'
     });
-    if (!yes) return;
-    unlinkPicture(name);
+    if (!yes || !unlinkPicture(name)) return;
     refreshPicturePanel();
     showToast(`'${name}' is no longer linked to a picture.`);
   });
@@ -2264,7 +2354,7 @@ function showToast(msg, isErr = false) {
 // an open panel and closing a panel puts the caret back where it was.
 // ------------------------------------------------------------------
 
-const MODAL_IDS = ['tutorialOverlay', 'suggestOverlay', 'imageOverlay', 'askOverlay'];
+const MODAL_IDS = ['tutorialOverlay', 'suggestOverlay', 'imageOverlay', 'galleryOverlay', 'askOverlay'];
 
 function a11yApi() {
   return (window.EPP && window.EPP.A11y) || null;
@@ -3111,7 +3201,7 @@ function updateDrawStats(host, sprite) {
   if (!stats || !host) return;
   const count = host.sprites.size;
   stats.textContent = count + (count === 1 ? ' sprite' : ' sprites') +
-    (sprite ? ` · ${sprite.name} (${sprite.x}, ${sprite.y})` : '');
+    (sprite ? ` · ${sprite.name} (${Math.round(sprite.x * 10) / 10}, ${Math.round(sprite.y * 10) / 10})` : '');
   const select = document.getElementById('drawSelect');
   if (select) {
     const before = select.value;
@@ -3126,6 +3216,27 @@ function updateDrawStats(host, sprite) {
       if (names.includes(before)) select.value = before;
     }
   }
+  updateDrawSpeedControl(host);
+}
+
+function updateDrawSpeedControl(host) {
+  const select = document.getElementById('drawSelect');
+  const speed = document.getElementById('drawSpeed');
+  if (!select || !speed || !host) return;
+  const sprite = host.get(select.value);
+  speed.disabled = !sprite;
+  if (!sprite) return;
+  const value = sprite.speed === null ? 'instant' : String(sprite.speed);
+  const custom = speed.querySelector('[data-custom-speed]');
+  if (custom && custom.value !== value) custom.remove();
+  if (!Array.from(speed.options).some(option => option.value === value)) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = value + ' px/s';
+    option.dataset.customSpeed = 'true';
+    speed.appendChild(option);
+  }
+  speed.value = value;
 }
 
 // Find a matching end without mistaking an inner block for the outer one.
@@ -3179,7 +3290,11 @@ class EppEvaluator {
 
   norm(name) { return name.toLowerCase().trim(); }
 
-  cancel() { this.cancelled = true; this.game.running = false; }
+  cancel() {
+    this.cancelled = true;
+    this.game.running = false;
+    if (this.drawHost) this.drawHost.stopAnimations();
+  }
 
   // Expressions and inline statements are lexed by the same C++ lexer as the
   // entire program. Cache syntax (never values) so loops do not re-lex it.
@@ -3274,6 +3389,14 @@ class EppEvaluator {
       `'${name}' has no picture linked yet — it draws as a tile. Press 🖼 Image to link one.`,
       'system'
     );
+  }
+
+  hintFailedPicture(name) {
+    if (!this.failedPictures) this.failedPictures = new Set();
+    const key = this.norm(name);
+    if (this.failedPictures.has(key)) return;
+    this.failedPictures.add(key);
+    appendConsoleLine(`The picture for '${name}' could not load yet — the actor uses a tile. Open Image to relink a local picture, or check the URL.`, 'system');
   }
 
   /**
@@ -3712,6 +3835,20 @@ class EppEvaluator {
       await host.flush();
       return;
     }
+    mDraw = line.match(/^set\s+the\s+speed\s+of\s+'([^']+)'\s+to\s+(.+)$/i);
+    if (mDraw) {
+      this.drawingSprite(mDraw[1], lineNum);
+      const input = mDraw[2].trim();
+      const instant = /^(?:instant|"instant")$/i.test(input);
+      const speed = instant ? null : Number(await this.evalExpr(input, lineNum));
+      if (!instant && (!Number.isFinite(speed) || speed <= 0 || speed > 100000)) {
+        throw this.diagnostic('E407', 'Invalid Drawing Speed', 'Speed must be greater than zero and at most 100000 pixels per second, or instant.',
+          `For example: set the speed of '${mDraw[1]}' to 200`, lineNum, input);
+      }
+      const sprite = this.drawHost.setSpeed(mDraw[1], speed);
+      updateDrawStats(this.drawHost, sprite);
+      return;
+    }
     mDraw = line.match(/^(lift|lower)\s+the\s+pen\s+of\s+'([^']+)'$/i);
     if (mDraw) {
       this.drawingSprite(mDraw[2], lineNum);
@@ -3821,7 +3958,10 @@ class EppEvaluator {
       }
       showGamePane(true);
       const host = this.requireGame();
-      if (source) await host.preload(source);
+      if (source) {
+        const loaded = await host.preload(source);
+        if (!loaded || !loaded.__eppReady || loaded.__eppFailed) this.hintFailedPicture(actorName);
+      }
       // An explicit picture links the name for the rest of the project.
       if (mGame[2] !== undefined && source && !this.ephemeral) {
         linkPicture(actorName, source, { added: new Date().toISOString() });
@@ -3853,7 +3993,12 @@ class EppEvaluator {
       if (actor) {
         actor.source = source;
         const host = ensureGameHost();
-        if (host) { await host.preload(source); host.setActorImage(actorName, source); await host.flush(); }
+        if (host) {
+          const loaded = await host.preload(source);
+          if (!loaded || !loaded.__eppReady || loaded.__eppFailed) this.hintFailedPicture(actorName);
+          host.setActorImage(actorName, source);
+          await host.flush();
+        }
       }
       return;
     }
@@ -3868,7 +4013,8 @@ class EppEvaluator {
       actor.source = source;
       if (!this.ephemeral) linkPicture(actorName, source, { added: new Date().toISOString() });
       const host = this.requireGame();
-      await host.preload(source);
+      const loaded = await host.preload(source);
+      if (!loaded || !loaded.__eppReady || loaded.__eppFailed) this.hintFailedPicture(actorName);
       host.setActorImage(actorName, source);
       await host.flush();
       return;
@@ -3983,9 +4129,11 @@ class EppEvaluator {
         throw this.diagnostic('E407', 'Invalid Drawing Distance', 'A sprite needs a finite number of pixels.',
           `For example: '${mGame[1]}' move ${mGame[2].toLowerCase()} "10"`, lineNum, mGame[3]);
       }
-      const sprite = this.drawHost.move(mGame[1], mGame[2].toLowerCase(), Number(amount));
+      const sprite = await this.drawHost.animateMove(mGame[1], mGame[2].toLowerCase(), Number(amount), {
+        cancelled: () => this.cancelled,
+        onFrame: current => updateDrawStats(this.drawHost, current)
+      });
       updateDrawStats(this.drawHost, sprite);
-      await this.drawHost.flush();
       return;
     }
     if (/^'[^']+'\s+move\b/i.test(line)) {
@@ -4214,7 +4362,7 @@ class EppEvaluator {
       this.requireLib('System', 'run system command', lineNum);
       const cmd = sysMatch[1];
       const outVar = sysMatch[2];
-      const res = `E++ 1.3 runtime (cmd: ${cmd})`;
+      const res = `E++ 1.3.5 runtime (cmd: ${cmd})`;
       if (outVar) this.vars[this.norm(outVar)] = res;
       else printFn(res);
       return;
@@ -4562,7 +4710,7 @@ class EppEvaluator {
     // System library functions
     if (expr.toLowerCase() === 'the platform' || expr.toLowerCase() === 'the system platform') {
       this.requireLib('System', 'the platform', lineNum);
-      return navigator.platform || 'Web System (E++ 1.3)';
+      return navigator.platform || 'Web System (E++ 1.3.5)';
     }
     if (expr.toLowerCase() === 'the os' || expr.toLowerCase() === 'the operating system') {
       this.requireLib('System', 'the os', lineNum);
@@ -5058,6 +5206,15 @@ document.querySelectorAll('.side-tab').forEach(button => {
 });
 document.getElementById('btnClearDrawing').addEventListener('click', () => {
   if (activeDrawHost) { activeDrawHost.clear(); updateDrawStats(activeDrawHost); }
+});
+document.getElementById('drawSelect').addEventListener('change', () => {
+  if (activeDrawHost) updateDrawSpeedControl(activeDrawHost);
+});
+document.getElementById('drawSpeed').addEventListener('change', event => {
+  if (!activeDrawHost) return;
+  const name = document.getElementById('drawSelect').value;
+  const sprite = activeDrawHost.setSpeed(name, event.target.value === 'instant' ? null : Number(event.target.value));
+  updateDrawStats(activeDrawHost, sprite);
 });
 function moveSelectedDrawing(direction, distance = 10) {
   if (!activeDrawHost) return;
@@ -5966,6 +6123,64 @@ function wireModals() {
   document.addEventListener('keydown', trapModalTab, true);
 }
 
+// A shared project is opened as a new local copy; it never overwrites the
+// editor or runs automatically. The gallery itself stays entirely server-side.
+async function openGalleryProject(project) {
+  let base = String(project.title || 'Shared project').replace(/[^A-Za-z0-9 _-]+/g, '').trim().slice(0, 45) || 'Shared project';
+  let name = base + '.enppl';
+  let number = 2;
+  while (Object.prototype.hasOwnProperty.call(files, name)) name = base + ' ' + number++ + '.enppl';
+  files[name] = project.code;
+  const api = picturesApi();
+  if (api) {
+    const book = api.fromJSON(project.pictures || {});
+    if (!api.isEmpty(book)) {
+      const store = loadPictureStore();
+      store[name] = book;
+      if (!savePictureStore()) {
+        delete store[name];
+        delete files[name];
+        throw new Error('Not enough browser storage to open this project’s pictures. Free space and try again.');
+      }
+    }
+  }
+  await loadFile(name);
+  saveStorage();
+  if (usesCompactWorkspace()) setMobileView('editor');
+}
+
+function wireGallery() {
+  if (!(window.EPP && EPP.wireGallery)) return;
+  EPP.wireGallery({
+    project: () => ({
+      filename: currentFileName,
+      code: document.getElementById('editor').value,
+      pictures: picturesApi() ? picturesApi().toJSON(pictureBook()) : {}
+    }),
+    openProject: openGalleryProject,
+    open: openModal,
+    close: closeModal,
+    isTop: overlay => topModal() === overlay,
+    notify: showToast
+  });
+}
+
+// The guide opens in this frame: sandboxed previews and browsers may block
+// pop-ups. Save immediately so a pending autosave is not lost on navigation.
+document.getElementById('btnWiki').addEventListener('click', event => {
+  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  try {
+    files[currentFileName] = document.getElementById('editor').value;
+    saveStorage();
+  } catch (error) {
+    event.preventDefault();
+    showToast('Could not save this project before opening the wiki. Free browser storage and try again.', true);
+    return;
+  }
+  try { sessionStorage.setItem(WIKI_RETURN_FILE_KEY, currentFileName); }
+  catch (error) { /* The saved project remains available in the file list. */ }
+});
+
 // Initialize
 applyBuildLibraries();
 wireModals();
@@ -5974,6 +6189,7 @@ seedStarterPictures();
 wirePictures();
 wireTutorials();
 wireIdeas();
+wireGallery();
 initStorage();
 renderFileList();
 loadFile(currentFileName);

@@ -1,0 +1,18 @@
+note [E++ 1.3.5: animate a drawing cursor in the full Studio.]
+add library "Draw"
+define 'pencil' as drawing sprite
+set the color of 'pencil' to "#c4b5fd"
+set the speed of 'pencil' to 200
+'pencil' move right "100"
+'pencil' move down "100"
+'pencil' move left "100"
+'pencil' move up "100"
+
+note [Lift the pen and switch to instant movement for a second cursor.]
+let 'spark' be drawing sprite
+set the speed of 'spark' to instant
+lift the pen of 'spark'
+'spark' move left "40"
+lower the pen of 'spark'
+'spark' move up "40"
+say "Your drawing is ready!"
