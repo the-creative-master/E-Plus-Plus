@@ -1,0 +1,15 @@
+const assert = require('node:assert/strict');
+require('../js/vault.js');
+const EShare = require('../js/eshare.js');
+const project = { filename: 'hello.enppl', code: 'say "hello 🌎"', pictures: { hero: { name: 'hero', data: 'data:image/png;base64,aGVsbG8=' } } };
+const code = EShare.encode(project);
+assert.match(code, /^ESHARE1\./);
+assert(!code.includes(project.code));
+assert.deepEqual(EShare.decode('  ' + code + '\n'), project);
+assert.notEqual(EShare.encode(project), code, 'fresh key and nonce');
+assert.throws(() => EShare.decode('bad'), /valid EShare/);
+const parts = code.split('.');
+parts[2] = parts[2].slice(0, 20) + (parts[2][20] === 'A' ? 'B' : 'A') + parts[2].slice(21);
+assert.throws(() => EShare.decode(parts.join('.')), /damaged/);
+assert.throws(() => EShare.encode({ filename: '../x.enpp', code: '' }), /valid E\+\+ project/);
+console.log('EShare authenticated round-trip, tamper and validation tests passed.');

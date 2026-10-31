@@ -1,0 +1,55 @@
+// Optional: EPP_BROWSER=/path/to/chromium node tests/studio-1.4a1.browser.cjs
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const { chromium } = require('playwright-core');
+const { GalleryStore, createServer } = require('../server.js');
+const os = require('node:os');
+const path = require('node:path');
+(async () => {
+  const executablePath = [process.env.EPP_BROWSER, process.env.CHROME_BIN, '/usr/bin/chromium', '/usr/bin/google-chrome'].find(p => p && fs.existsSync(p));
+  if (!executablePath) throw new Error('Set EPP_BROWSER to a Chromium executable.');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'epp-alpha-'));
+  const server = createServer(await new GalleryStore(path.join(dir, 'gallery.json')).init());
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const browser = await chromium.launch({ executablePath, args: ['--no-sandbox'] });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    const errors = [];
+    page.on('pageerror', e => errors.push(String(e)));
+    await page.goto(`http://127.0.0.1:${server.address().port}`);
+    await page.locator('[data-activity="files"]').click();
+    assert.equal(await page.locator('#sidebar').isVisible(), true);
+    await page.locator('[data-activity="files"]').click();
+    assert.equal(await page.locator('#sidebar').isVisible(), false);
+    await page.evaluate(() => { files['alpha.enpp'] = ''; files['alpha.enppl'] = 'existing'; loadFile('alpha.enpp'); });
+    await page.locator('#editor').fill('add library "Math"\nsay 1');
+    assert.equal(await page.locator('#currentFileName').innerText(), 'alpha-2.enppl');
+    assert.equal(await page.evaluate(() => files['alpha.enppl']), 'existing');
+    await page.locator('[data-action="btnSettings"]').click();
+    await page.locator('#autoRename').uncheck();
+    await page.locator('#accentColor').fill('#ff7788');
+    await page.locator('#settingsClose').click();
+    await page.evaluate(() => { files['off.enpp'] = ''; loadFile('off.enpp'); });
+    await page.locator('#editor').fill('add the "Math" library');
+    assert.equal(await page.locator('#currentFileName').innerText(), 'off.enpp');
+    await page.reload();
+    await page.locator('[data-action="btnSettings"]').click();
+    assert.equal(await page.locator('#autoRename').isChecked(), false);
+    assert.equal(await page.locator('#accentColor').inputValue(), '#ff7788');
+    await page.locator('#settingsClose').click();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForFunction(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--studio-scale')) < 1);
+    assert.equal(await page.locator('.activity-bar').isVisible(), true);
+    assert.equal(await page.locator('#editorCard').isVisible(), true);
+    assert.equal(await page.locator('#consoleCard').isVisible(), true);
+    assert.equal(await page.locator('.mobile-view-nav').isVisible(), false);
+    const bounds = await page.evaluate(() => ({ body: document.body.getBoundingClientRect().width, viewport: innerWidth }));
+    assert(Math.abs(bounds.body - bounds.viewport) < 2, 'scaled workspace fits the viewport');
+    await page.locator('[data-activity="files"]').click();
+    assert.equal(await page.locator('#sidebar').isVisible(), true);
+    await page.locator('[data-action="btnSettings"]').click();
+    assert.equal(await page.locator('#settingsDialog').isVisible(), true);
+    assert.deepEqual(errors, []);
+    console.log('E++ 1.4a1 settings and auto-rename checks passed.');
+  } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); fs.rmSync(dir, { recursive: true, force: true }); }
+})().catch(e => { console.error(e); process.exitCode = 1; });
