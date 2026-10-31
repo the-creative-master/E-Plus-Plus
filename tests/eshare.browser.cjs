@@ -1,0 +1,67 @@
+// EPP_BROWSER=/path/to/chromium node tests/eshare.browser.cjs
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { chromium } = require('playwright-core');
+const { GalleryStore, createServer } = require('../server.js');
+(async () => {
+  const executablePath = [process.env.EPP_BROWSER, process.env.CHROME_BIN, '/usr/bin/chromium'].find(p => p && fs.existsSync(p));
+  if (!executablePath) throw new Error('Set EPP_BROWSER to a Chromium executable.');
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'eshare-'));
+  let server, browser;
+  try {
+    server = createServer(await new GalleryStore(path.join(temp, 'gallery.json')).init());
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    browser = await chromium.launch({ executablePath, args: ['--no-sandbox'] });
+    const a = await browser.newContext({ viewport: { width: 1200, height: 800 } });
+    const b = await browser.newContext({ viewport: { width: 1200, height: 800 } });
+    const sender = await a.newPage(), recipient = await b.newPage();
+    const errors = [];
+    for (const page of [sender, recipient]) page.on('pageerror', error => errors.push(String(error)));
+    const url = `http://127.0.0.1:${server.address().port}`;
+    await Promise.all([sender.goto(url), recipient.goto(url)]);
+    await sender.evaluate(() => {
+      files['share.enppl'] = 'add library "Game"\nsay "secret phrase"';
+      loadFile('share.enppl');
+      EPP.Pictures.put(pictureBook('share.enppl'), 'hero', 'data:image/png;base64,aGVsbG8=');
+      savePictureStore();
+    });
+    await sender.locator('[data-action="btnGallery"]').click();
+    await sender.locator('#eshareCurrent').click();
+    const code = await sender.locator('#eshareOutput').inputValue();
+    assert(code.startsWith('ESHARE1.'));
+    assert(!code.includes('secret phrase'));
+    await recipient.locator('#btnTools').click();
+    await recipient.locator('#btnImport').click();
+    await recipient.locator('#importShareCode').fill(code.slice(0, -8));
+    await recipient.locator('#importShareButton').click();
+    assert.match(await recipient.locator('#importStatus').innerText(), /damaged|valid/i);
+    await recipient.locator('#importShareCode').fill(code);
+    await recipient.locator('#importShareButton').click();
+    assert.equal(await recipient.locator('#currentFileName').innerText(), 'share.enppl');
+    assert.equal(await recipient.locator('#editor').inputValue(), 'add library "Game"\nsay "secret phrase"');
+    assert.equal(await recipient.evaluate(() => EPP.Pictures.toJSON(pictureBook('share.enppl')).hero.data), 'data:image/png;base64,aGVsbG8=');
+    await recipient.locator('#btnTools').click();
+    await recipient.locator('#btnImport').click();
+    await recipient.locator('#importShareCode').fill(code);
+    await recipient.locator('#importShareButton').click();
+    assert.equal(await recipient.locator('#currentFileName').innerText(), 'share (imported).enppl');
+    assert.equal(await recipient.evaluate(() => files['share.enppl']), 'add library "Game"\nsay "secret phrase"');
+    await sender.locator('#eshareFile').setInputFiles({ name: 'plain.enpp', mimeType: 'text/plain', buffer: Buffer.from('say "file"') });
+    const plainCode = await sender.locator('#eshareOutput').inputValue();
+    assert.equal(await sender.evaluate(c => EPP.EShare.decode(c).code, plainCode), 'say "file"');
+    const sealed = await sender.evaluate(async () => (await saveProjectFile('share.enppl', 'say "sealed"')).text);
+    await sender.locator('#eshareFile').setInputFiles({ name: 'sealed.enppl', mimeType: 'text/plain', buffer: Buffer.from(sealed) });
+    await sender.waitForFunction(() => document.querySelector('#eshareFileName').textContent === 'sealed.enppl' || document.querySelector('#eshareStatus').textContent.includes('cannot be opened'));
+    const sealedCode = await sender.locator('#eshareOutput').inputValue();
+    assert.equal(await sender.evaluate(c => EPP.EShare.decode(c).code, sealedCode), 'say "sealed"');
+    await recipient.locator('#btnTools').click();
+    await recipient.locator('#btnImport').click();
+    await recipient.locator('#importFileInput').setInputFiles({ name: 'plain.enpp', mimeType: 'text/plain', buffer: Buffer.from('say "plain file"') });
+    await recipient.waitForFunction(() => document.querySelector('#currentFileName').textContent === 'plain.enpp');
+    assert.equal(await recipient.locator('#editor').inputValue(), 'say "plain file"');
+    assert.deepEqual(errors, []);
+    console.log('EShare browser round trips, pictures, collisions, invalid codes and file sharing passed.');
+  } finally { if (browser) await browser.close(); if (server) await new Promise(resolve => server.close(resolve)); fs.rmSync(temp, { recursive: true, force: true }); }
+})().catch(error => { console.error(error); process.exitCode = 1; });

@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>E++ Studio | 1.3.5</title>
-<link rel="stylesheet" href="css/ide.css">
+<title>E++ Studio | 1.4a1</title>
+<link rel="stylesheet" href="css/ide.css?v=1.4a1-workspace-2">
 <style>
   /* Color classes for Terminal */
   .color-red { color: #f87171 !important; }
@@ -122,7 +122,7 @@
     font-size: 13px !important;
     line-height: 1.5 !important;
   }
-  @media (max-width: 850px) {
+  @media (max-width: 0px) {
     .layout {
       grid-template-columns: 200px minmax(0, 1fr) !important;
       gap: 8px !important;
@@ -133,7 +133,7 @@
       gap: 8px !important;
     }
   }
-  @media (max-width: 620px) {
+  @media (max-width: 0px) {
     .sidebar {
       display: none !important;
     }
@@ -343,7 +343,20 @@
     color: #7dd3fc;
   }
 </style>
-<link rel="stylesheet" href="css/studio.css">
+<link rel="stylesheet" href="css/studio.css?v=1.4a1-eshare-1">
+<script>
+  // Keep one desktop workspace on every screen. CSS zoom preserves normal
+  // layout, hit testing and scrolling while fitting the canvas to the viewport.
+  function scaleStudio() {
+    const scale = Math.min(1, window.innerWidth / 1100);
+    const root = document.documentElement.style;
+    root.setProperty('--studio-scale', String(scale));
+    root.setProperty('--studio-width', (window.innerWidth / scale) + 'px');
+    root.setProperty('--studio-height', (window.innerHeight / scale) + 'px');
+  }
+  scaleStudio();
+  window.addEventListener('resize', scaleStudio);
+</script>
 </head>
 <body>
 
@@ -351,7 +364,7 @@
   <div class="brand">
     <div class="logo" aria-hidden="true">E<span>++</span></div>
     <div>
-      <h1>E++ <span>Studio</span> <span class="build-badge">1.3.5</span></h1>
+      <h1>E++ <span>Studio</span> <span class="build-badge">1.4a1</span></h1>
       <p>YOUR SPACE TO CREATE</p>
     </div>
   </div>
@@ -376,7 +389,7 @@
         <span class="action-group-label">Learn &amp; share</span>
         <button id="btnLearn" class="btn btn-small btn-tutorial" type="button" title="Learn E++ card by card">Learn</button>
         <a id="btnWiki" class="btn btn-small" href="wiki.html" title="Open the E++ guide">Wiki</a>
-        <button id="btnGallery" class="btn btn-small" type="button" title="Browse and publish community projects">Gallery</button>
+        <button id="btnGallery" class="btn btn-small" type="button" title="Share an E++ project as an EShare code">EShare</button>
         <button id="btnSuggest" class="btn btn-small btn-suggest" type="button" title="Suggest a feature — everyone can see it">Suggest</button>
       </div>
       <span class="action-divider" aria-hidden="true"></span>
@@ -387,6 +400,7 @@
         <button id="btnKeys" class="btn btn-small" type="button" title="Manage this browser's project keys">Keys</button>
       </div>
     </div>
+    <button id="btnSettings" class="btn btn-small settings-button" type="button" aria-label="Open settings" title="Settings">⚙ <span>Settings</span></button>
     <div class="action-group run-actions">
       <button id="btnStop" class="btn btn-stop" type="button" title="Stop the current program" disabled>■ <span>Stop</span></button>
       <button id="btnRun" class="btn btn-run" type="button" title="Run (Ctrl+Enter)">▶ <span>Run code</span></button>
@@ -395,6 +409,36 @@
     <input id="imageFileInput" type="file" accept="image/*" style="display:none;">
   </div>
 </header>
+
+<dialog id="eshareDialog" class="eshare-dialog" aria-labelledby="eshareTitle">
+  <div class="eshare-head"><div><span class="eshare-kicker">SHARE YOUR CREATIONS</span><h2 id="eshareTitle">EShare <span>↗</span></h2></div><button class="btn eshare-close" id="eshareClose" type="button" aria-label="Close EShare">✕</button></div>
+  <p class="eshare-intro">Turn an E++ project into a code you can send anywhere. Everything happens on your device.</p>
+  <div class="eshare-section-label">01 &nbsp; CHOOSE A PROJECT</div>
+  <div class="eshare-source-actions"><button class="btn eshare-source" id="eshareCurrent" type="button"><span class="eshare-source-icon">⌘</span><span><strong>Current project</strong><small>Share the file open in the editor</small></span></button><button class="btn eshare-source" id="eshareChoose" type="button"><span class="eshare-source-icon">⇧</span><span><strong>Choose a file</strong><small>Select an .enpp or .enppl file</small></span></button></div>
+  <input id="eshareFile" type="file" accept=".enpp,.enppl" hidden>
+  <div class="eshare-section-label">02 &nbsp; COPY YOUR CODE</div>
+  <label class="eshare-output-label" for="eshareOutput"><span>EShare code</span><span id="eshareFileName">No project selected</span></label>
+  <textarea id="eshareOutput" readonly placeholder="Your share code will appear here…" aria-label="Generated EShare code"></textarea>
+  <div class="eshare-bottom"><p class="eshare-privacy">Anyone with this code can open your project. Don’t share secrets.</p><button class="btn btn-accent" id="eshareCopy" type="button" disabled>Copy code</button></div>
+  <p id="eshareStatus" class="eshare-status" role="status" aria-live="polite"></p>
+</dialog>
+<dialog id="importDialog" class="eshare-dialog import-dialog" aria-labelledby="importTitle">
+  <div class="eshare-head"><div><span class="eshare-kicker">BRING SOMETHING IN</span><h2 id="importTitle">Import project</h2></div><button id="importClose" class="btn eshare-close" type="button" aria-label="Close import">✕</button></div>
+  <p class="eshare-intro">Choose an E++ file, or paste an EShare code someone sent you.</p>
+  <button id="importChooseFile" class="btn eshare-source eshare-import-file" type="button"><span class="eshare-source-icon">⇧</span><span><strong>Choose file</strong><small>.enpp or .enppl</small></span><span class="eshare-arrow">↗</span></button>
+  <div class="eshare-section-label">OR PASTE AN EShare CODE</div>
+  <label class="eshare-output-label" for="importShareCode">EShare code</label>
+  <textarea id="importShareCode" placeholder="Paste the entire EShare code here…" spellcheck="false"></textarea>
+  <div class="eshare-bottom"><p class="eshare-privacy">Imports open as a new local copy.</p><button id="importShareButton" class="btn btn-accent" type="button">Import code</button></div>
+  <p id="importStatus" class="eshare-status" role="status" aria-live="polite"></p>
+</dialog>
+
+<dialog id="settingsDialog" class="settings-dialog" aria-labelledby="settingsTitle">
+  <div class="settings-heading"><div><span class="settings-kicker">E++ STUDIO</span><h2 id="settingsTitle">Settings</h2></div><button id="settingsClose" class="btn" type="button" aria-label="Close settings">✕</button></div>
+  <p class="settings-intro">Make your workspace feel like yours. Settings are saved on this device.</p>
+  <label class="settings-row" for="accentColor"><span><strong>Accent color</strong><small>Choose the color of your workspace highlights.</small></span><input id="accentColor" type="color" value="#b7a4ff"></label>
+  <label class="settings-row" for="autoRename"><span><strong>Auto-rename library files</strong><small>Rename .enpp to .enppl when a library is detected.</small></span><input id="autoRename" type="checkbox" checked></label>
+</dialog>
 
 <!-- Live Stats Bar (Dashboard) -->
 <div class="dash-banner" id="dashBanner">
@@ -421,7 +465,7 @@
   </div>
   <div class="dash-group dash-group-end">
     <span id="zipRuntimeBadge" class="badge-zip-locked">C++ lexer loading…</span>
-    <span class="dash-badge-pill badge-version" id="buildVersion">v1.3.5 · Create & share</span>
+    <span class="dash-badge-pill badge-version" id="buildVersion">v1.4a1 · Alpha</span>
   </div>
   <span id="mobileSaveStatus" class="mobile-save-status" role="status">Saved locally</span>
   <div class="dash-rules">
@@ -447,7 +491,18 @@
   </button>
 </nav>
 
-<main class="layout">
+<main class="layout" id="mainLayout">
+  <nav class="activity-bar" aria-label="Studio activity">
+    <button class="activity-item" type="button" data-activity="files" aria-label="Explorer" title="Explorer" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3h8l4 4v13H7zM15 3v5h4M4 7v14h11"/></svg></button>
+    <button class="activity-item" type="button" data-activity="libraries" aria-label="Libraries" title="Libraries" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 4h4v16H4zM10 4h4v16h-4zM16 5l3-1 3 15-3 1z"/></svg></button>
+    <button class="activity-item" type="button" data-activity="guide" aria-label="Quick reference" title="Quick reference" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5c3-1 5-1 8 1v14c-3-2-5-2-8-1zM20 5c-3-1-5-1-8 1v14c3-2 5-2 8-1z"/></svg></button>
+    <span class="activity-divider"></span>
+    <button class="activity-item" type="button" data-action="btnLearn" aria-label="Learn E++" title="Learn E++"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3 9 9-5 9 5-9 5zM7 11v5c3 2 7 2 10 0v-5M21 9v7"/></svg></button>
+    <button class="activity-item" type="button" data-action="btnGallery" aria-label="EShare" title="EShare"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.5"/><path d="m4 18 5-5 3 3 3-4 5 6"/></svg></button>
+    <span class="activity-spacer"></span>
+    <button class="activity-item" type="button" data-action="btnTools" aria-label="More tools" title="More tools"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
+    <button class="activity-item" type="button" data-action="btnSettings" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m10 3-.5 2.2-2 .9-2-1.2-2 3.4 1.7 1.5v2.4l-1.7 1.5 2 3.4 2-1.2 2 .9L10 21h4l.5-2.2 2-.9 2 1.2 2-3.4-1.7-1.5V9.8l1.7-1.5-2-3.4-2 1.2-2-.9L14 3z"/><circle cx="12" cy="12" r="3"/></svg></button>
+  </nav>
   <!-- Sidebar: Files, Libraries, Quick Reference -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-topline">
@@ -733,7 +788,7 @@ set the image of the actor 'hero' to "hero2.png"</pre>
 </main>
 
 <footer class="footer">
-  <span><strong>E++ Studio [1.3.5]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
+  <span><strong>E++ Studio [1.4a1]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
   <span>Shortcuts: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run · <kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span>
 </footer>
 
@@ -870,37 +925,6 @@ set the image of the actor 'hero' to "hero2.png"</pre>
   </div>
 </div>
 
-<div id="galleryOverlay" class="gallery-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="galleryHeading">
-  <div class="gallery-shell">
-    <header class="gallery-head">
-      <div><span class="gallery-kicker">MAKE SOMETHING TOGETHER</span><h2 id="galleryHeading">Community gallery</h2><p>Discover projects and share a copy of your own.</p></div>
-      <button id="galleryClose" class="btn-close" type="button" aria-label="Close gallery">×</button>
-    </header>
-    <div class="gallery-body">
-      <section class="gallery-publish" aria-labelledby="galleryPublishHeading">
-        <h3 id="galleryPublishHeading">Publish your project</h3>
-        <p>Your code, pictures and the name below will be public to everyone using this server. Do not publish passwords or private information.</p>
-        <button id="galleryBrowseJump" class="gallery-jump" type="button">Browse community projects ↓</button>
-        <form id="galleryForm">
-          <label for="galleryTitle">Project title</label>
-          <input id="galleryTitle" name="title" maxlength="80" required autocomplete="off" placeholder="My first project">
-          <label for="galleryAuthor">Your name <span>(optional)</span></label>
-          <input id="galleryAuthor" name="author" maxlength="60" autocomplete="nickname" placeholder="Anonymous">
-          <label for="galleryDescription">What did you make? <span>(optional)</span></label>
-          <input id="galleryDescription" name="description" maxlength="300" autocomplete="off" placeholder="A little about your project">
-          <button id="galleryPublish" class="btn btn-accent" type="submit">Publish current project</button>
-        </form>
-        <p class="gallery-storage-note">Published projects are stored by the server, not in your browser. There is no self-service deletion; the server operator controls moderation.</p>
-      </section>
-      <section class="gallery-browse" aria-labelledby="galleryBrowseHeading">
-        <div class="gallery-browse-head"><h3 id="galleryBrowseHeading" tabindex="-1">From the community</h3><button id="galleryRefresh" class="btn btn-small" type="button">Refresh</button></div>
-        <p id="galleryStatus" class="gallery-status" role="status" aria-live="polite"></p>
-        <div id="galleryList" class="gallery-list"></div>
-      </section>
-    </div>
-  </div>
-</div>
-
 <div id="suggestOverlay" class="sug-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="sugTitle">
   <div class="sug-shell">
     <header class="sug-head">
@@ -959,11 +983,11 @@ set the image of the actor 'hero' to "hero2.png"</pre>
 <script src="js/libraries.js"></script>
   <script src="js/pictures.js"></script>
   <script src="js/ideas.js"></script>
-  <script src="js/gallery.js"></script>
   <script src="js/a11y.js"></script>
 <script src="js/tutorials.js"></script>
 <script src="js/keyboard.js"></script>
 <script src="js/vault.js"></script>
+<script src="js/eshare.js"></script>
 <script src="js/game-library.js"></script>
 <script src="js/draw-library.js"></script>
 <script src="js/studio-editor.js"></script>
@@ -1420,6 +1444,7 @@ async function loadFile(name) {
   document.getElementById('statusFile').innerText = name;
   document.getElementById('dashFile').innerText = name;
 
+  if (studioSettings) maybeAutoRename();
   updateDashboard();
   updateLineNumbers();
   renderFileList();
@@ -1489,15 +1514,9 @@ function insertLibrary(libName) {
     ed.value = addCmd + ed.value;
     updateLineNumbers();
     updateDashboard();
-    if (currentFileName.endsWith('.enpp')) {
-      const base = currentFileName.replace(/\.enpp$/, '');
-      let newName = base + '.enppl', suffix = 2;
-      while (Object.prototype.hasOwnProperty.call(files, newName)) newName = base + '-' + suffix++ + '.enppl';
-      renameCurrentFile(newName);
-    } else {
-      files[currentFileName] = ed.value;
-      saveStorage();
-    }
+    files[currentFileName] = ed.value;
+    maybeAutoRename();
+    saveStorage();
     if (usesCompactWorkspace()) setMobileView('editor');
     showToast(`Added ${libName} library.`);
   } else {
@@ -1557,7 +1576,7 @@ function confirmFileDialog() {
   closeFileDialog();
 }
 
-function renameCurrentFile(newName) {
+function renameCurrentFile(newName, keepEditor = false) {
   newName = newName.replace(/\.txt$/i, '');
   if (newName === currentFileName) return;
   files[newName] = document.getElementById('editor').value;
@@ -1573,7 +1592,11 @@ function renameCurrentFile(newName) {
   currentFileName = newName;
   saveStorage();
   renderFileList();
-  loadFile(newName);
+  if (keepEditor) {
+    ['currentFileName', 'statusFile', 'dashFile'].forEach(id => { document.getElementById(id).innerText = newName; });
+  } else {
+    loadFile(newName);
+  }
 }
 
 async function deleteCurrentFile() {
@@ -1875,10 +1898,8 @@ function insertActorCode(actorName) {
     written = block;
   }
 
-  // A game project is a library project, so it has to be .enppl.
-  if (currentFileName.endsWith('.enpp')) {
-    renameCurrentFile(currentFileName.replace(/\.enpp$/, '.enppl'));
-  }
+  files[currentFileName] = ed.value;
+  maybeAutoRename();
   updateDashboard();
   updateLineNumbers();
   saveStorage();
@@ -2205,10 +2226,8 @@ function wirePictures() {
 
 async function handleFileObject(file) {
   if (!file) return;
-  let fileName = file.name.replace(/\.txt$/i, '');
-  if (!fileName.endsWith('.enpp') && !fileName.endsWith('.enppl')) {
-    fileName += '.enpp';
-  }
+  const fileNameInput = file.name;
+  let fileName = fileNameInput;
   let text;
   try {
     text = await readFileText(file);
@@ -2217,14 +2236,12 @@ async function handleFileObject(file) {
     return;
   }
 
-  if (!isSavedProject(text)) {
-    showDeterministicError({
-      code: 'E511',
-      filename: fileName,
-      reason: 'That file is not an E++ project file, so there is nothing in it to open.',
-      help: 'Import a project saved by the E++ Studio, or copy the code into a new file here.'
-    });
-    showToast('That file is not an E++ project file.', true);
+  if (!/\.(enpp|enppl)$/i.test(file.name)) {
+    showToast('Choose an .enpp or .enppl file.', true);
+    return;
+  }
+  if (/^i\+cc/.test(text.replace(/\s/g, '')) && !isSavedProject(text)) {
+    showToast('This encrypted project file is damaged or incomplete.', true);
     return;
   }
 
@@ -2240,8 +2257,13 @@ async function handleFileObject(file) {
   }
   let plaintext;
   try {
-    const result = await openProjectFile(text, fileName);
-    plaintext = result.text;
+    if (isSavedProject(text)) {
+      const result = await openProjectFile(text, fileName);
+      plaintext = result.text;
+    } else {
+      // Plain .enpp/.enppl files can also be shared and imported.
+      plaintext = text;
+    }
     showToast('Opened ' + fileName + '.');
   } catch (error) {
     showDeterministicError(error);
@@ -2354,7 +2376,7 @@ function showToast(msg, isErr = false) {
 // an open panel and closing a panel puts the caret back where it was.
 // ------------------------------------------------------------------
 
-const MODAL_IDS = ['tutorialOverlay', 'suggestOverlay', 'imageOverlay', 'galleryOverlay', 'askOverlay'];
+const MODAL_IDS = ['tutorialOverlay', 'suggestOverlay', 'imageOverlay', 'askOverlay'];
 
 function a11yApi() {
   return (window.EPP && window.EPP.A11y) || null;
@@ -4998,7 +5020,7 @@ document.getElementById('btnNew').onclick = openNewFileDialog;
 document.getElementById('btnSidebarNew').onclick = openNewFileDialog;
 document.getElementById('btnRename').onclick = openRenameDialog;
 document.getElementById('btnDelete').onclick = deleteCurrentFile;
-document.getElementById('btnImport').onclick = () => document.getElementById('importFileInput').click();
+document.getElementById('btnImport').onclick = () => { document.getElementById('importStatus').textContent = ''; document.getElementById('importDialog').showModal(); };
 document.getElementById('importFileInput').onchange = (e) => {
   if (e.target.files && e.target.files[0]) {
     handleFileObject(e.target.files[0]);
@@ -5045,9 +5067,42 @@ function setSaveStatus(text, dirty) {
     status.classList.toggle('dirty', !!dirty);
   });
 }
+const STUDIO_SETTINGS_KEY = 'epp_studio_settings_1_4';
+var studioSettings = { accent: '#b7a4ff', autoRename: true };
+try {
+  const savedSettings = JSON.parse(localStorage.getItem(STUDIO_SETTINGS_KEY) || '{}');
+  if (/^#[0-9a-f]{6}$/i.test(savedSettings.accent)) studioSettings.accent = savedSettings.accent;
+  if (typeof savedSettings.autoRename === 'boolean') studioSettings.autoRename = savedSettings.autoRename;
+} catch (_) { /* Keep defaults if storage is unavailable or malformed. */ }
+function applyStudioSettings() {
+  document.documentElement.style.setProperty('--accent', studioSettings.accent);
+  document.documentElement.style.setProperty('--accent-2', studioSettings.accent);
+  document.getElementById('accentColor').value = studioSettings.accent;
+  document.getElementById('autoRename').checked = studioSettings.autoRename;
+}
+function persistStudioSettings() {
+  try { localStorage.setItem(STUDIO_SETTINGS_KEY, JSON.stringify(studioSettings)); } catch (_) {}
+}
+function maybeAutoRename() {
+  if (!studioSettings.autoRename || !/\.enpp$/i.test(currentFileName) || !librariesIn(editor.value).length) return;
+  const base = currentFileName.replace(/\.enpp$/i, '');
+  let name = base + '.enppl', suffix = 2;
+  while (Object.prototype.hasOwnProperty.call(files, name)) name = base + '-' + suffix++ + '.enppl';
+  renameCurrentFile(name, true);
+  showToast('Library detected. Renamed to ' + name);
+}
+applyStudioSettings();
+document.getElementById('btnSettings').addEventListener('click', () => document.getElementById('settingsDialog').showModal());
+document.getElementById('settingsClose').addEventListener('click', () => document.getElementById('settingsDialog').close());
+document.getElementById('accentColor').addEventListener('input', e => { studioSettings.accent = e.target.value; applyStudioSettings(); persistStudioSettings(); });
+document.getElementById('autoRename').addEventListener('change', e => {
+  studioSettings.autoRename = e.target.checked; persistStudioSettings();
+  if (studioSettings.autoRename) { maybeAutoRename(); updateDashboard(); }
+});
 let saveTimer = null;
 editor.oninput = () => {
   files[currentFileName] = editor.value;
+  maybeAutoRename();
   setSaveStatus('Saving…', true);
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
@@ -5135,7 +5190,7 @@ function updateCursor() {
 
 // The same breakpoint is used by the CSS and automatic panel switches.
 function usesCompactWorkspace() {
-  return !!(window.matchMedia && window.matchMedia('(max-width: 900px)').matches);
+  return false; // Small screens use the scaled desktop workspace, not panel switching.
 }
 
 // On compact headers, every action remains available in a real, keyboard-
@@ -5151,7 +5206,7 @@ function setToolsOpen(open, restoreFocus = false) {
 toolsToggle.addEventListener('click', () => setToolsOpen(!toolsPanel.classList.contains('is-open')));
 toolsPanel.addEventListener('click', event => {
   const action = event.target.closest('button');
-  if (!action || !(window.matchMedia && window.matchMedia('(max-width: 1180px)').matches)) return;
+  if (!action) return;
   const modal = topModal();
   if (modal && modal.__eppOpener === action) modal.__eppOpener = toolsToggle;
   const dialog = document.querySelector('dialog[open]');
@@ -5165,7 +5220,7 @@ document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('c
   }
 }));
 document.addEventListener('click', event => {
-  if (toolsPanel.classList.contains('is-open') && !toolsPanel.contains(event.target) && !toolsToggle.contains(event.target)) setToolsOpen(false);
+  if (toolsPanel.classList.contains('is-open') && !toolsPanel.contains(event.target) && !toolsToggle.contains(event.target) && !event.target.closest('[data-action="btnTools"]')) setToolsOpen(false);
 });
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && toolsPanel.classList.contains('is-open')) {
@@ -5203,6 +5258,27 @@ document.querySelectorAll('.side-tab').forEach(button => {
       document.getElementById(name + 'Panel').hidden = name !== button.dataset.panel;
     });
   });
+});
+// Desktop activity rail: opening a section reveals the explorer; selecting it
+// again collapses it so the editor and output keep the full workspace.
+const mainLayout = document.getElementById('mainLayout');
+document.querySelectorAll('[data-activity]').forEach(button => {
+  button.addEventListener('click', () => {
+    const wasOpen = mainLayout.classList.contains('explorer-open');
+    const wasSelected = button.classList.contains('active');
+    const open = !(wasOpen && wasSelected);
+    mainLayout.classList.toggle('explorer-open', open);
+    document.querySelectorAll('[data-activity]').forEach(item => {
+      const selected = open && item === button;
+      item.classList.toggle('active', selected);
+      item.setAttribute('aria-expanded', String(selected));
+    });
+    if (open) document.querySelector('.side-tab[data-panel="' + button.dataset.activity + '"]').click();
+    requestAnimationFrame(updateLineNumbers);
+  });
+});
+document.querySelectorAll('.activity-item[data-action]').forEach(button => {
+  button.addEventListener('click', () => document.getElementById(button.dataset.action).click());
 });
 document.getElementById('btnClearDrawing').addEventListener('click', () => {
   if (activeDrawHost) { activeDrawHost.clear(); updateDrawStats(activeDrawHost); }
@@ -6123,45 +6199,100 @@ function wireModals() {
   document.addEventListener('keydown', trapModalTab, true);
 }
 
-// A shared project is opened as a new local copy; it never overwrites the
-// editor or runs automatically. The gallery itself stays entirely server-side.
-async function openGalleryProject(project) {
-  let base = String(project.title || 'Shared project').replace(/[^A-Za-z0-9 _-]+/g, '').trim().slice(0, 45) || 'Shared project';
-  let name = base + '.enppl';
-  let number = 2;
-  while (Object.prototype.hasOwnProperty.call(files, name)) name = base + ' ' + number++ + '.enppl';
-  files[name] = project.code;
-  const api = picturesApi();
-  if (api) {
-    const book = api.fromJSON(project.pictures || {});
-    if (!api.isEmpty(book)) {
-      const store = loadPictureStore();
-      store[name] = book;
-      if (!savePictureStore()) {
-        delete store[name];
-        delete files[name];
-        throw new Error('Not enough browser storage to open this project’s pictures. Free space and try again.');
-      }
-    }
+// EShare codes are portable: their key travels with the authenticated vault.
+// They are not a secret or a replacement for password-protected encryption.
+function wireEShare() {
+  const share = document.getElementById('eshareDialog');
+  const importer = document.getElementById('importDialog');
+  const output = document.getElementById('eshareOutput');
+  const shareStatus = document.getElementById('eshareStatus');
+  const importStatus = document.getElementById('importStatus');
+  const copy = document.getElementById('eshareCopy');
+  function showShareError(error) {
+    output.value = '';
+    copy.disabled = true;
+    document.getElementById('eshareFileName').textContent = 'No project selected';
+    shareStatus.textContent = error.message || 'Could not create an EShare code.';
   }
-  await loadFile(name);
-  saveStorage();
-  if (usesCompactWorkspace()) setMobileView('editor');
-}
-
-function wireGallery() {
-  if (!(window.EPP && EPP.wireGallery)) return;
-  EPP.wireGallery({
-    project: () => ({
-      filename: currentFileName,
-      code: document.getElementById('editor').value,
-      pictures: picturesApi() ? picturesApi().toJSON(pictureBook()) : {}
-    }),
-    openProject: openGalleryProject,
-    open: openModal,
-    close: closeModal,
-    isTop: overlay => topModal() === overlay,
-    notify: showToast
+  function makeShare(project) {
+    output.value = EPP.EShare.encode(project);
+    document.getElementById('eshareFileName').textContent = project.filename;
+    copy.disabled = false;
+    shareStatus.textContent = 'Code ready to copy.';
+  }
+  document.getElementById('btnGallery').addEventListener('click', () => {
+    shareStatus.textContent = '';
+    share.showModal();
+  });
+  document.getElementById('eshareClose').addEventListener('click', () => share.close());
+  document.getElementById('importClose').addEventListener('click', () => importer.close());
+  document.getElementById('importChooseFile').addEventListener('click', () => {
+    importer.close();
+    document.getElementById('importFileInput').click();
+  });
+  document.getElementById('eshareCurrent').addEventListener('click', () => {
+    try {
+      const api = picturesApi();
+      makeShare({ filename: currentFileName, code: editor.value, pictures: api ? api.toJSON(pictureBook()) : {} });
+    } catch (error) { showShareError(error); }
+  });
+  document.getElementById('eshareChoose').addEventListener('click', () => document.getElementById('eshareFile').click());
+  document.getElementById('eshareFile').addEventListener('change', async event => {
+    const file = event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+    try {
+      if (!/\.(enpp|enppl)$/i.test(file.name)) throw new Error('Choose an .enpp or .enppl file.');
+      if (file.size > 12 * 1024 * 1024) throw new Error('This file is too large to share.');
+      let text = await readFileText(file);
+      let pictures = {};
+      if (/^i\+cc/.test(text.replace(/\s/g, '')) && !isSavedProject(text)) throw new Error('This encrypted file is damaged or incomplete.');
+      if (isSavedProject(text)) {
+        const ring = getKeyring();
+        if (!ring) throw new Error('The project keyring is unavailable.');
+        const opened = await ring.openVault(text, file.name);
+        if (!opened.ok) throw new Error('This encrypted file cannot be opened with the keys on this device. Import its keyring first.');
+        const api = picturesApi();
+        const unwrapped = api ? api.unwrap(opened.text) : { code: opened.text };
+        text = unwrapped.code;
+        pictures = api ? api.toJSON(unwrapped.pictures) : {};
+      }
+      makeShare({ filename: file.name, code: text, pictures });
+    } catch (error) { showShareError(error); }
+  });
+  copy.addEventListener('click', async () => {
+    if (!output.value) return;
+    try {
+      if (!navigator.clipboard || !navigator.clipboard.writeText) throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(output.value);
+      shareStatus.textContent = 'Copied! Send the code to someone you trust.';
+    } catch (_) {
+      output.focus(); output.select();
+      shareStatus.textContent = 'Code selected. Copy it with Ctrl+C or your device’s copy command.';
+    }
+  });
+  document.getElementById('importShareButton').addEventListener('click', async () => {
+    try {
+      const project = EPP.EShare.decode(document.getElementById('importShareCode').value);
+      const base = project.filename.replace(/\.(enpp|enppl)$/i, '');
+      const ext = project.filename.slice(base.length);
+      let name = project.filename, n = 2;
+      while (Object.prototype.hasOwnProperty.call(files, name)) name = base + ' (imported' + (n++ === 2 ? '' : ' ' + (n - 1)) + ')' + ext;
+      const api = picturesApi();
+      const book = api ? api.fromJSON(project.pictures) : null;
+      const store = loadPictureStore();
+      if (api && !api.isEmpty(book)) {
+        store[name] = book;
+        if (!savePictureStore()) { delete store[name]; throw new Error('Not enough storage to import this project’s pictures.'); }
+      }
+      try { files[name] = project.code; saveStorage(); }
+      catch (error) { delete files[name]; if (store[name]) { delete store[name]; savePictureStore(); } throw new Error('Not enough storage to import this project.'); }
+      await loadFile(name);
+      renderFileList();
+      importer.close();
+      document.getElementById('importShareCode').value = '';
+      showToast('Imported ' + name + '.');
+    } catch (error) { importStatus.textContent = error.message || 'Could not import this EShare code.'; }
   });
 }
 
@@ -6189,7 +6320,7 @@ seedStarterPictures();
 wirePictures();
 wireTutorials();
 wireIdeas();
-wireGallery();
+wireEShare();
 initStorage();
 renderFileList();
 loadFile(currentFileName);

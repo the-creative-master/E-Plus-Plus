@@ -1,3 +1,5 @@
+> **E++ 1.4a1 — first alpha:** Studio now has a VS Code-inspired editor and output layout. Open **Settings** to choose an accent color or turn off automatic `.enpp` → `.enppl` renaming when a library is added. Settings and files remain local to your browser; existing files are never overwritten by an automatic rename. This is an early preview of 1.4.
+
 # E++ 1.3.5
 
 E++ is a small, English-like programming language with a browser Studio, a C++ command-line engine and a Python runner. Write text in double quotes, variables in single quotes, and maths as numbers and words.
@@ -10,7 +12,7 @@ say 2 plus 3 times 4
 
 ## What’s new in 1.3.5
 
-- **Community gallery:** publish a copy of a project, including embedded Game pictures, and open other people’s projects as new copies. The gallery is stored in the server’s `shared.js`, not in browser storage.
+- **EShare:** turn an E++ project (including its pictures) into a portable code, then import it in another browser. No server or account is required.
 - **Animated Draw:** each drawing cursor has its own speed in pixels per second, plus an explicit instant mode. The console also has a speed selector and manual controls.
 - **More reliable Game pictures:** local files are decoded before they can be linked, transparent images stay transparent, and broken links explain how to repair them. The example images are included offline.
 - **Fresh documentation:** start with the tutorials below, open **Learn** in Studio, or read the [complete wiki](WIKI.md) and [language reference](LANGUAGE.md).
@@ -28,7 +30,7 @@ npm start
 
 Open `http://localhost:8000` on that machine. On phones, use the **Files / Code / Output** tabs and the **Tools** menu. The editor saves personal working copies in this browser. **Learn** opens the interactive lessons; **Wiki** opens the offline guide in the same tab, with a link back to Studio.
 
-You can also open `index.html` directly for offline editing, Draw and Game. The public gallery requires the Node server; a static website or `file://` cannot write server data.
+You can also open `index.html` directly for offline editing, Draw, Game and EShare.
 
 ## Quick tutorials
 
@@ -88,21 +90,11 @@ The default speed is 240 pixels/second. Change it per sprite with `set the speed
 
 An unreadable upload is refused; a broken existing link shows a message and a labelled tile. Upload the file again to relink it. Local uploads are embedded; URLs and relative paths in code still depend on those external resources.
 
-## Community gallery and cloud hosting
+## EShare
 
-1. Open **Gallery**, enter a title and optional name and description, then **Publish current project**. Code and embedded pictures become public to everyone using that server. Do not publish secrets.
-2. Other visitors select **Open a copy**. The original is not overwritten or executed automatically. A copied project becomes a normal local working copy.
-3. The server writes `shared.js` on its own filesystem, using serialized, atomic writes. Browsers fetch it through the same-origin API and do not cache the gallery in localStorage, IndexedDB or cookies. Clearing browser data does not erase published projects.
+Open **EShare** from the activity bar or Tools menu. Choose the current project or select an `.enpp` / `.enppl` file; copy the generated code and send it to someone. To open it, choose **Import → Paste an EShare code**. Imports are saved as new local copies without overwriting existing projects. Pictures are included when present. Plain E++ files and encrypted Studio downloads are supported; encrypted files must be unlockable with the keyring on the device creating the code.
 
-**A cloud deployment is not included automatically.** `npm start` shares the gallery only with people who can reach that server. For a persistent public gallery, deploy `server.js` on an always-on Node host with HTTPS and a writable persistent volume. Set `EPP_GALLERY_PATH` to a file named `shared.js` on that volume, for example:
-
-```bash
-EPP_GALLERY_PATH=/data/shared.js PORT=8000 npm start
-```
-
-Alternatively, from the full source checkout, build the included `Dockerfile` and mount a persistent volume at `/data` writable by the container’s Node user. Use one server process per gallery file; the bundled file store does not coordinate multiple replicas. Back up `shared.js` and restore it while the server is stopped. An ephemeral preview, static host, GitHub Pages, or a redeploy without a persistent volume is **not** durable cloud storage. Each deployment has its own gallery; there is no preconfigured central service.
-
-Anyone who can reach the API can publish without an account. The included server has size limits but no accounts, moderation interface, spam protection or automatic removal; a public operator should arrange moderation, backups, HTTPS and appropriate rate limiting. See [the wiki](WIKI.md#community-gallery-and-deployment) for limits and safety notes.
+EShare uses an authenticated encrypted container, but the decryption key is included in the share code so recipients can open it without setup. **Anyone with the code can read the project:** do not use it to protect secrets. Nothing is uploaded to a server. The old gallery API remains in the server for compatibility, but EShare replaces the gallery in Studio.
 
 ## Command-line engines and testing
 
@@ -123,7 +115,7 @@ In the full checkout, after `make zip`, run `npm run test:distribution` to check
 
 ## Projects and safety
 
-**Export** downloads a sealed project; **Keys** exports or imports the keyring needed to open it on another browser or machine. Keep both safe. Gallery publishing is different: it deliberately makes a public, unsealed copy of your code and embedded pictures. Don’t run untrusted projects without reviewing them; native Python integration can execute Python on your computer.
+**Export** downloads a sealed project; **Keys** exports or imports the keyring needed to open it on another browser or machine. Keep both safe. EShare codes include the key needed to open them, so share them only with people you trust. Don’t run untrusted projects without reviewing them; native Python integration can execute Python on your computer.
 
 The Studio uses `src/lexer.cpp` compiled to offline WebAssembly and consumes its tokens in a JavaScript evaluator. The native CLI separately uses the C++ parser and interpreter; the browser does not run those components. If the compiled lexer is unavailable, Studio stops with `E601` rather than silently falling back. See [WIKI.md](WIKI.md) for architecture, limitations and troubleshooting.
 
