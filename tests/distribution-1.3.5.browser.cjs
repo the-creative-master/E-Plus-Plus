@@ -38,12 +38,16 @@ if (!browserPath) throw new Error('Set EPP_BROWSER to a Chromium or Chrome execu
     assert((await run('say red "not supported"')).includes('E302'));
     assert((await run('say hello')).includes('E402'));
     assert((await run('add library "Math"\nsay the square root of 144')).split('\n').includes('12'));
+    await page.locator('#btnTools').click();
     await page.locator('#btnGallery').click();
-    await page.waitForFunction(() => document.querySelector('#galleryStatus').textContent.includes('available'));
-    await page.locator('#galleryClose').click();
+    await page.locator('#eshareCurrent').click();
+    assert((await page.locator('#eshareOutput').inputValue()).startsWith('ESHARE1.'));
+    await page.locator('#eshareClose').click();
+    await page.locator('#btnTools').click();
     await page.locator('#btnWiki').click();
-    assert.equal(await page.locator('h1').innerText(), 'E++ 1.3.5 Wiki');
+    assert.equal(await page.locator('h1').innerText(), 'E++ 1.4a2 Wiki');
     await page.locator('.wiki-header .back').click();
+    await page.waitForFunction(() => document.querySelector('#editor').value.includes('square root of 144'));
     assert.equal(await page.locator('#editor').inputValue(), 'add library "Math"\nsay the square root of 144');
     assert.deepEqual(errors, []);
     await page.close();
@@ -55,12 +59,16 @@ if (!browserPath) throw new Error('Set EPP_BROWSER to a Chromium or Chrome execu
     await offline.locator('#btnRun').click();
     await offline.waitForFunction(() => document.querySelector('#btnStop').disabled);
     assert((await offline.locator('#consoleOutput').innerText()).split('\n').includes('4842'));
+    await offline.locator('#btnTools').click();
     await offline.locator('#btnGallery').click();
-    await offline.waitForFunction(() => document.querySelector('#galleryStatus').textContent.includes('needs a running E++ server'));
-    await offline.locator('#galleryClose').click();
+    await offline.locator('#eshareCurrent').click();
+    assert((await offline.locator('#eshareOutput').inputValue()).startsWith('ESHARE1.'));
+    await offline.locator('#eshareClose').click();
+    await offline.locator('#btnTools').click();
     await offline.locator('#btnWiki').click();
-    assert.equal(await offline.locator('h1').innerText(), 'E++ 1.3.5 Wiki', 'the extracted wiki opens from file://');
+    assert.equal(await offline.locator('h1').innerText(), 'E++ 1.4a2 Wiki', 'the extracted wiki opens from file://');
     await offline.locator('.wiki-header .back').click();
+    await offline.waitForFunction(() => document.querySelector('#editor').value.includes('say 4123 plus 719'));
     assert.equal(await offline.locator('#editor').inputValue(), 'say 4123 plus 719', 'offline wiki navigation keeps the editor draft');
     await offline.close();
 
@@ -86,7 +94,7 @@ if (!browserPath) throw new Error('Set EPP_BROWSER to a Chromium or Chrome execu
     assert((await legacy.locator('#consoleOut').innerText()).includes('does not support libraries'));
     assert.deepEqual(outside, []);
     await legacy.close();
-    console.log('Extracted E++.zip browser and legacy export: offline lexer, strict errors, Colors/Draw/Game exclusion and gallery status passed.');
+    console.log('Extracted E++.zip browser and legacy export: offline lexer, strict errors, Colors/Draw/Game exclusion and offline EShare passed.');
   } finally {
     await browser.close();
     server.closeAllConnections();

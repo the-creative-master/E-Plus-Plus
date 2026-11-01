@@ -1,5 +1,5 @@
 /*
- * E++ Release 1.2 — project files.
+ * E++ project files (compatible with the original 1.2 vault format).
  *
  * A project that leaves the Studio is written in a container of its own,
  * never as plain text: the file is a base64 block with no readable header,

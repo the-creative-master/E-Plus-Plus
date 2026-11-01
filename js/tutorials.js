@@ -1,5 +1,5 @@
 /*
- * E++ 1.2 — the built-in tutorials.
+ * E++ Studio 1.4a2 — the built-in tutorials.
  *
  * Each course is a deck of cards. A card has:
  *

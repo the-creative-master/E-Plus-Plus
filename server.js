@@ -163,14 +163,14 @@ function sameOrigin(req) {
   } catch { return false; }
 }
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.md': 'text/plain; charset=utf-8', '.zip': 'application/zip', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2' };
-const PUBLIC_FILES = new Set(['index.html', 'wiki.html', 'WIKI.md', 'README.md', 'LANGUAGE.md', 'E++.zip', 'epp_language.zip']);
+const PUBLIC_FILES = new Set(['index.html', 'wiki.html', 'news.html', 'WIKI.md', 'README.md', 'LANGUAGE.md', 'E++.zip', 'epp_language.zip']);
 async function serveStatic(req, res, pathname) {
   if (req.method !== 'GET' && req.method !== 'HEAD') { res.writeHead(405, { Allow: 'GET, HEAD' }); res.end(); return; }
   let name;
   try { name = decodeURIComponent(pathname).replace(/^\/+/, '') || 'index.html'; }
   catch { res.writeHead(400); res.end(); return; }
   const segments = name.split('/');
-  const allowed = PUBLIC_FILES.has(name) || ((segments[0] === 'js' || segments[0] === 'css') && segments.length === 2 && !segments[1].startsWith('.'));
+  const allowed = PUBLIC_FILES.has(name) || ((segments[0] === 'js' || segments[0] === 'css' || segments[0] === 'assets') && segments.length === 2 && !segments[1].startsWith('.'));
   if (!allowed || segments.some(segment => !segment || segment === '.' || segment === '..') || name.includes('\\')) { res.writeHead(404); res.end(); return; }
   const file = path.join(ROOT, ...segments);
   try {

@@ -1,6 +1,4 @@
-> **E++ 1.4a1 — first alpha:** Studio now has a VS Code-inspired editor and output layout. Open **Settings** to choose an accent color or turn off automatic `.enpp` → `.enppl` renaming when a library is added. Settings and files remain local to your browser; existing files are never overwritten by an automatic rename. This is an early preview of 1.4.
-
-# E++ 1.3.5
+# E++ 1.4a2
 
 E++ is a small, English-like programming language with a browser Studio, a C++ command-line engine and a Python runner. Write text in double quotes, variables in single quotes, and maths as numbers and words.
 
@@ -10,15 +8,14 @@ say "Hello, ", 'name'
 say 2 plus 3 times 4
 ```
 
-## What’s new in 1.3.5
+## What’s new in 1.4a2
 
-- **EShare:** turn an E++ project (including its pictures) into a portable code, then import it in another browser. No server or account is required.
-- **Animated Draw:** each drawing cursor has its own speed in pixels per second, plus an explicit instant mode. The console also has a speed selector and manual controls.
-- **More reliable Game pictures:** local files are decoded before they can be linked, transparent images stay transparent, and broken links explain how to repair them. The example images are included offline.
-- **Fresh documentation:** start with the tutorials below, open **Learn** in Studio, or read the [complete wiki](WIKI.md) and [language reference](LANGUAGE.md).
-- **Smaller standalone library set:** `E++.zip` no longer includes the Colors library. Draw, Game and ImprovedWait remain Studio-only; ImprovedWaitLite is in the ZIP. Strict errors remain in both builds.
+- **Edit Studio:** drag launcher shortcuts between the activity and top bars, remove or restore them, and try the Studio default, Focus and Top bar presets. The editor, console and Tools remain available.
+- **Settings:** pick from twelve colors or choose a custom accent, change editor text size, line numbers and wrapping, and control library file auto-renaming (on by default).
+- **News:** open Tools → News for the latest 1.4a2 update and screenshots. EShare now lives only in Tools.
+- **EShare:** turn an E++ project (including its pictures) into a portable code and import it in another browser without a server or account.
 
-The 1.3 responsive Studio, named drawing cursors, project files, strict diagnostics and compiled C++ browser lexer are retained. Upgrading never overwrites existing local projects.
+Settings, layouts and working files stay on this device. Existing files are not overwritten by automatic renaming or EShare imports.
 
 ## Start the Studio
 
@@ -28,7 +25,7 @@ Requirements: Node.js 18 or newer. No npm packages are needed to run the server.
 npm start
 ```
 
-Open `http://localhost:8000` on that machine. On phones, use the **Files / Code / Output** tabs and the **Tools** menu. The editor saves personal working copies in this browser. **Learn** opens the interactive lessons; **Wiki** opens the offline guide in the same tab, with a link back to Studio.
+Open `http://localhost:8000` on that machine. On smaller screens, the same workspace scales down to fit. Use the activity bar for files and libraries and the **Tools** menu for project actions. The editor saves personal working copies in this browser. **Learn** opens the interactive lessons; **Wiki** opens the offline guide in the same tab, with a link back to Studio.
 
 You can also open `index.html` directly for offline editing, Draw, Game and EShare.
 
@@ -92,7 +89,7 @@ An unreadable upload is refused; a broken existing link shows a message and a la
 
 ## EShare
 
-Open **EShare** from the activity bar or Tools menu. Choose the current project or select an `.enpp` / `.enppl` file; copy the generated code and send it to someone. To open it, choose **Import → Paste an EShare code**. Imports are saved as new local copies without overwriting existing projects. Pictures are included when present. Plain E++ files and encrypted Studio downloads are supported; encrypted files must be unlockable with the keyring on the device creating the code.
+Open **Tools → EShare**. Choose the current project or select an `.enpp` / `.enppl` file; copy the generated code and send it to someone. To open it, choose **Import → Paste an EShare code**. Imports are saved as new local copies without overwriting existing projects. Pictures are included when present. Plain E++ files and encrypted Studio downloads are supported; encrypted files must be unlockable with the keyring on the device creating the code.
 
 EShare uses an authenticated encrypted container, but the decryption key is included in the share code so recipients can open it without setup. **Anyone with the code can read the project:** do not use it to protect secrets. Nothing is uploaded to a server. The old gallery API remains in the server for compatibility, but EShare replaces the gallery in Studio.
 
@@ -111,7 +108,7 @@ make zip                       # rebuild E++.zip and epp_language.zip
 
 The full repository’s C++ and Python runners can use Colors, but have no Draw or Game canvas. The copies and native binary inside `E++.zip` reject Colors, Draw and Game with a helpful error, including after rebuilding from the ZIP’s source. In an extracted ZIP, `make`, `make test` and `npm start` work; rebuilding release archives and the `npm test` scripts require the full source checkout. For detailed build differences, see [LANGUAGE.md](LANGUAGE.md#13-which-libraries-are-in-ezip).
 
-In the full checkout, after `make zip`, run `npm run test:distribution` to check the extracted archives. Optional end-to-end tests require `npm install` and a Chromium/Chrome executable: set `EPP_BROWSER` to its path, then run `npm run test:studio` and `npm run test:distribution:browser`.
+In the full checkout, after `make zip`, run `npm run test:distribution` to check the extracted archives. Optional end-to-end tests require `npm install` and a Chromium/Chrome executable: set `EPP_BROWSER` to its path, then run `npm run test:eshare`, `npm run test:studio:alpha` and `npm run test:distribution:browser`.
 
 ## Projects and safety
 

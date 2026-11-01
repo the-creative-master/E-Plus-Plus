@@ -1,4 +1,4 @@
-note [E++ 1.3.5: animate a drawing cursor in the full Studio.]
+note [E++ 1.4a2: animate a drawing cursor in the full Studio.]
 add library "Draw"
 define 'pencil' as drawing sprite
 set the color of 'pencil' to "#c4b5fd"
