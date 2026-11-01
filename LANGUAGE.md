@@ -1,8 +1,8 @@
-# The E++ Language Reference (1.3.5)
+# The E++ Language Reference (1.4a2)
 
 > **"Looks like English, feels like english, and is english"**
 
-This is the reference for **E++ 1.3.5**. It covers the language itself, the
+This is the reference for **E++ 1.4a2**. It covers the language itself, the
 project files you download and import, and the libraries that ship with this
 release.
 

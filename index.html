@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>E++ Studio | 1.4a1</title>
-<link rel="stylesheet" href="css/ide.css?v=1.4a1-workspace-2">
+<title>E++ Studio | 1.4a2</title>
+<link rel="stylesheet" href="css/ide.css?v=1.4a2">
 <style>
   /* Color classes for Terminal */
   .color-red { color: #f87171 !important; }
@@ -343,7 +343,7 @@
     color: #7dd3fc;
   }
 </style>
-<link rel="stylesheet" href="css/studio.css?v=1.4a1-eshare-1">
+<link rel="stylesheet" href="css/studio.css?v=1.4a2">
 <script>
   // Keep one desktop workspace on every screen. CSS zoom preserves normal
   // layout, hit testing and scrolling while fitting the canvas to the viewport.
@@ -364,13 +364,14 @@
   <div class="brand">
     <div class="logo" aria-hidden="true">E<span>++</span></div>
     <div>
-      <h1>E++ <span>Studio</span> <span class="build-badge">1.4a1</span></h1>
+      <h1>E++ <span>Studio</span> <span class="build-badge">1.4a2</span></h1>
       <p>YOUR SPACE TO CREATE</p>
     </div>
   </div>
 
   <div class="top-actions">
     <span id="saveStatus" class="save-status" role="status">Saved locally</span>
+    <div id="launcherTop" class="launcher-top" aria-label="Top launchers"></div>
     <button id="btnTools" class="toolbar-toggle" type="button" aria-label="Open studio tools" aria-controls="studioActions" aria-expanded="false">
       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M5 7h14M5 12h14M5 17h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       <span>Tools</span>
@@ -398,12 +399,14 @@
         <button id="btnImage" class="btn btn-small" type="button" style="display:none;" title="Add an actor image to this game">Image</button>
         <button id="btnZip" class="btn btn-small btn-zip" type="button" title="Download E++ C++ sources &amp; runtime bundle">E++.zip</button>
         <button id="btnKeys" class="btn btn-small" type="button" title="Manage this browser's project keys">Keys</button>
+        <button id="btnSettingsMenu" class="btn btn-small" type="button">Settings</button>
+        <a id="btnNews" class="btn btn-small" href="news.html">News <span class="news-new">NEW</span></a>
       </div>
     </div>
     <button id="btnSettings" class="btn btn-small settings-button" type="button" aria-label="Open settings" title="Settings">⚙ <span>Settings</span></button>
     <div class="action-group run-actions">
-      <button id="btnStop" class="btn btn-stop" type="button" title="Stop the current program" disabled>■ <span>Stop</span></button>
-      <button id="btnRun" class="btn btn-run" type="button" title="Run (Ctrl+Enter)">▶ <span>Run code</span></button>
+      <button id="btnStop" data-component="stop" class="btn btn-stop" type="button" title="Stop the current program" disabled>■ <span>Stop</span></button>
+      <button id="btnRun" data-component="run" class="btn btn-run" type="button" title="Run (Ctrl+Enter)">▶ <span>Run code</span></button>
     </div>
     <input id="importFileInput" type="file" accept=".enpp,.enppl" style="display:none;">
     <input id="imageFileInput" type="file" accept="image/*" style="display:none;">
@@ -435,9 +438,26 @@
 
 <dialog id="settingsDialog" class="settings-dialog" aria-labelledby="settingsTitle">
   <div class="settings-heading"><div><span class="settings-kicker">E++ STUDIO</span><h2 id="settingsTitle">Settings</h2></div><button id="settingsClose" class="btn" type="button" aria-label="Close settings">✕</button></div>
-  <p class="settings-intro">Make your workspace feel like yours. Settings are saved on this device.</p>
+  <p class="settings-intro">Make Studio your own. Your choices are saved on this device.</p>
+  <div class="settings-section-title">APPEARANCE</div>
+  <div class="theme-label">Theme colors <small>Choose a preset or make your own below.</small></div>
+  <div id="themePalette" class="theme-palette" aria-label="Theme colors"></div>
   <label class="settings-row" for="accentColor"><span><strong>Accent color</strong><small>Choose the color of your workspace highlights.</small></span><input id="accentColor" type="color" value="#b7a4ff"></label>
+  <label class="settings-row" for="editorFontSize"><span><strong>Editor text size</strong><small>Adjust code and line number size.</small></span><select id="editorFontSize"><option value="12">Small</option><option value="14">Default</option><option value="16">Large</option><option value="18">Extra large</option></select></label>
+  <label class="settings-row" for="showLineNumbers"><span><strong>Line numbers</strong><small>Show the line number gutter in the editor.</small></span><input id="showLineNumbers" type="checkbox" checked></label>
+  <label class="settings-row" for="settingsWrap"><span><strong>Wrap long lines</strong><small>Keep long lines inside the editor.</small></span><input id="settingsWrap" type="checkbox"></label>
+  <div class="settings-section-title">FILES</div>
   <label class="settings-row" for="autoRename"><span><strong>Auto-rename library files</strong><small>Rename .enpp to .enppl when a library is detected.</small></span><input id="autoRename" type="checkbox" checked></label>
+  <div class="settings-section-title">YOUR WORKSPACE</div>
+  <div class="edit-studio-callout"><div><strong>Edit Studio</strong><small>Arrange, remove, and restore launcher shortcuts.</small></div><button id="openStudioEditor" class="btn btn-accent" type="button">Edit layout ↗</button></div>
+</dialog>
+
+<dialog id="layoutDialog" class="layout-dialog" aria-labelledby="layoutTitle">
+  <header class="layout-dialog-head"><div><span class="settings-kicker">MAKE IT YOURS</span><h2 id="layoutTitle">Edit Studio</h2><p>Drag shortcuts between areas and reorder them. Or use the controls on each shortcut.</p></div><button id="layoutClose" class="btn" type="button" aria-label="Close Edit Studio">✕</button></header>
+  <div class="layout-presets"><span>START WITH A PRESET</span><button class="btn" data-preset="default" type="button">Studio default</button><button class="btn" data-preset="focused" type="button">Focus</button><button class="btn" data-preset="top" type="button">Top bar</button></div>
+  <div class="layout-zones"><section class="layout-zone"><h3>Original position <small>Editor &amp; header</small></h3><div id="zoneHome" class="layout-dropzone" data-zone="home"></div></section><section class="layout-zone"><h3>Activity bar <small>Left side</small></h3><div id="zoneRail" class="layout-dropzone" data-zone="rail"></div></section><section class="layout-zone"><h3>Top bar <small>Next to Tools</small></h3><div id="zoneTop" class="layout-dropzone" data-zone="top"></div></section><section class="layout-zone"><h3>Removed <small>Drag back to restore</small></h3><div id="zoneHidden" class="layout-dropzone" data-zone="hidden"></div></section></div>
+  <p class="layout-locked">The code editor, output console and Tools button always stay available. Settings can always be opened from Tools.</p>
+  <div class="layout-dialog-footer"><span id="layoutStatus" role="status">Changes save automatically.</span><button id="layoutDone" class="btn btn-accent" type="button">Done</button></div>
 </dialog>
 
 <!-- Live Stats Bar (Dashboard) -->
@@ -465,7 +485,7 @@
   </div>
   <div class="dash-group dash-group-end">
     <span id="zipRuntimeBadge" class="badge-zip-locked">C++ lexer loading…</span>
-    <span class="dash-badge-pill badge-version" id="buildVersion">v1.4a1 · Alpha</span>
+    <span class="dash-badge-pill badge-version" id="buildVersion">v1.4a2 · Alpha</span>
   </div>
   <span id="mobileSaveStatus" class="mobile-save-status" role="status">Saved locally</span>
   <div class="dash-rules">
@@ -493,15 +513,11 @@
 
 <main class="layout" id="mainLayout">
   <nav class="activity-bar" aria-label="Studio activity">
-    <button class="activity-item" type="button" data-activity="files" aria-label="Explorer" title="Explorer" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3h8l4 4v13H7zM15 3v5h4M4 7v14h11"/></svg></button>
-    <button class="activity-item" type="button" data-activity="libraries" aria-label="Libraries" title="Libraries" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 4h4v16H4zM10 4h4v16h-4zM16 5l3-1 3 15-3 1z"/></svg></button>
-    <button class="activity-item" type="button" data-activity="guide" aria-label="Quick reference" title="Quick reference" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5c3-1 5-1 8 1v14c-3-2-5-2-8-1zM20 5c-3-1-5-1-8 1v14c3-2 5-2 8-1z"/></svg></button>
-    <span class="activity-divider"></span>
-    <button class="activity-item" type="button" data-action="btnLearn" aria-label="Learn E++" title="Learn E++"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3 9 9-5 9 5-9 5zM7 11v5c3 2 7 2 10 0v-5M21 9v7"/></svg></button>
-    <button class="activity-item" type="button" data-action="btnGallery" aria-label="EShare" title="EShare"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.5"/><path d="m4 18 5-5 3 3 3-4 5 6"/></svg></button>
-    <span class="activity-spacer"></span>
-    <button class="activity-item" type="button" data-action="btnTools" aria-label="More tools" title="More tools"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
-    <button class="activity-item" type="button" data-action="btnSettings" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m10 3-.5 2.2-2 .9-2-1.2-2 3.4 1.7 1.5v2.4l-1.7 1.5 2 3.4 2-1.2 2 .9L10 21h4l.5-2.2 2-.9 2 1.2 2-3.4-1.7-1.5V9.8l1.7-1.5-2-3.4-2 1.2-2-.9L14 3z"/><circle cx="12" cy="12" r="3"/></svg></button>
+    <button class="activity-item" type="button" data-component="explorer" data-activity="files" aria-label="Explorer" title="Explorer" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3h8l4 4v13H7zM15 3v5h4M4 7v14h11"/></svg></button>
+    <button class="activity-item" type="button" data-component="libraries" data-activity="libraries" aria-label="Libraries" title="Libraries" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 4h4v16H4zM10 4h4v16h-4zM16 5l3-1 3 15-3 1z"/></svg></button>
+    <button class="activity-item" type="button" data-component="guide" data-activity="guide" aria-label="Quick reference" title="Quick reference" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5c3-1 5-1 8 1v14c-3-2-5-2-8-1zM20 5c-3-1-5-1-8 1v14c3-2 5-2 8-1z"/></svg></button>
+    <button class="activity-item" type="button" data-component="learn" data-action="btnLearn" aria-label="Learn E++" title="Learn E++"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3 9 9-5 9 5-9 5zM7 11v5c3 2 7 2 10 0v-5M21 9v7"/></svg></button>
+    <button class="activity-item" type="button" data-component="settings" data-action="btnSettings" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m10 3-.5 2.2-2 .9-2-1.2-2 3.4 1.7 1.5v2.4l-1.7 1.5 2 3.4 2-1.2 2 .9L10 21h4l.5-2.2 2-.9 2 1.2 2-3.4-1.7-1.5V9.8l1.7-1.5-2-3.4-2 1.2-2-.9L14 3z"/><circle cx="12" cy="12" r="3"/></svg></button>
   </nav>
   <!-- Sidebar: Files, Libraries, Quick Reference -->
   <aside class="sidebar" id="sidebar">
@@ -537,7 +553,7 @@
     </div>
     <!-- Available Libraries -->
     <section class="libraries-panel sidebar-panel" id="librariesPanel" hidden>
-      <h2>Libraries <span class="head-sub">(1.3.5)</span></h2>
+      <h2>Libraries <span class="head-sub">(1.4a2)</span></h2>
       <p class="panel-note">Both word orders work:<br><code>add library "Math"</code> or <code>add the "Math" library</code></p>
       
       <div class="library-card" data-library="Python">
@@ -690,7 +706,7 @@ set the image of the actor 'hero' to "hero2.png"</pre>
         <span><span class="eyebrow-icon">✳</span> CODE EDITOR</span>
         <div class="editor-view-options">
           <span class="workspace-caption">YOUR IDEAS, IN PLAIN ENGLISH</span>
-          <button id="btnWrap" class="wrap-toggle" type="button" aria-label="Wrap long lines" aria-pressed="false" title="Wrap long lines in the editor"><span aria-hidden="true">↵</span> Wrap</button>
+          <button id="btnWrap" data-component="wrap" class="wrap-toggle" type="button" aria-label="Wrap long lines" aria-pressed="false" title="Wrap long lines in the editor"><span aria-hidden="true">↵</span> Wrap</button>
         </div>
       </div>
       <div class="editor-head">
@@ -699,8 +715,8 @@ set the image of the actor 'hero' to "hero2.png"</pre>
           <span class="tab-file-meta"><span id="currentFileName">hello.enpp</span><small>E++ PROGRAM</small></span>
         </div>
         <div class="editor-head-actions">
-          <button id="btnRename" class="btn btn-small" type="button">Rename</button>
-          <button id="btnDelete" class="btn btn-small btn-danger-outline" type="button">Delete</button>
+          <button id="btnRename" data-component="rename" class="btn btn-small" type="button">Rename</button>
+          <button id="btnDelete" data-component="delete" class="btn btn-small btn-danger-outline" type="button">Delete</button>
         </div>
       </div>
 
@@ -722,6 +738,7 @@ set the image of the actor 'hero' to "hero2.png"</pre>
         <span id="statusLibraries">Libraries: none</span>
         <span class="status-sep">·</span>
         <span id="statusRun" class="status-run">Ready</span>
+        
       </div>
     </div>
 
@@ -787,8 +804,9 @@ set the image of the actor 'hero' to "hero2.png"</pre>
   </section>
 </main>
 
+<div class="bottom-bar"><span>✦ E++ STUDIO</span><span>Updated Daily</span></div>
 <footer class="footer">
-  <span><strong>E++ Studio [1.4a1]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
+  <span><strong>E++ Studio [1.4a2]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
   <span>Shortcuts: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run · <kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span>
 </footer>
 
@@ -1023,8 +1041,8 @@ say "1 + 1"`
   },
   {
     name: 'welcome_1_3_5.enpp',
-    content: `note [Welcome to E++ 1.3.5. Run this file, then open Learn or Wiki.]
-say "Hello from E++ 1.3.5!"
+    content: `note [Welcome to E++ 1.4a2. Run this file, then open Learn or Wiki.]
+say "Hello from E++ 1.4a2!"
 let 'ideas' be 3
 say "Ideas to try:", 'ideas'
 repeat 3 times
@@ -1034,7 +1052,7 @@ note [Try the Gallery to publish a copy of a project.]`
   },
   {
     name: 'release_showcase.enppl',
-    content: `note [E++ 1.3.5 Grand Showcase (.enppl)]
+    content: `note [E++ 1.4a2 Grand Showcase (.enppl)]
 add the "Colors" library
 add the "Time" library
 add the "Math" library
@@ -1045,7 +1063,7 @@ add the "System" library
 add the "Python" library
 
 say cyan "========================================================="
-say cyan "         Welcome to E++ 1.3.5!           "
+say cyan "         Welcome to E++ 1.4a2!           "
 say cyan "========================================================="
 
 note [System & Time Diagnostics]
@@ -1063,19 +1081,19 @@ say "Trimmed:", the trim of 'Announcement'
 say "Uppercase:", the uppercase of the trim of 'Announcement'
 
 note [File Persistence in Virtual IDE]
-write "E++ 1.3.5 verified on: " to file "showcase_audit.log"
+write "E++ 1.4a2 verified on: " to file "showcase_audit.log"
 append the current date to file "showcase_audit.log"
 read the file "showcase_audit.log" and save the output as 'Audit'
 say "Audit log content:", 'Audit'
 
 note [Python Engine Bridge]
-let 'EppVersion' be "1.3.5"
+let 'EppVersion' be "1.4a2"
 run the python code:
 print(f"[Python Subsystem] Connected with E++ v{EppVersion}")
 import math
 print(f"[Python Subsystem] Computed 10! = {math.factorial(10)}")
 
-say green "✓ E++ 1.3.5 showcase complete!"`
+say green "✓ E++ 1.4a2 showcase complete!"`
   },
   {
     name: 'python_demo.enppl',
@@ -1099,7 +1117,7 @@ run the python code "print('E++ says:', greeting)"`
     content: `note [Strings Library in E++ (.enppl)]
 add the "Strings" library
 
-let 'Message' be "Hello, E++ 1.3.5!"
+let 'Message' be "Hello, E++ 1.4a2!"
 say "Original message:", 'Message'
 say "Length of message:", the length of 'Message'
 say "Uppercase:", the uppercase of 'Message'
@@ -1137,7 +1155,7 @@ say "System Platform:", the platform
 say "Operating System:", the os
 
 note [Writing and reading in the IDE filesystem:]
-write "E++ 1.3.5 is ready!" to file "notes.txt"
+write "E++ 1.4a2 is ready!" to file "notes.txt"
 read the file "notes.txt" and save the output as 'ReadBack'
 say "Read back from file:", 'ReadBack'`
   },
@@ -1216,7 +1234,7 @@ say "You made a drawing!"`
   {
     name: 'game_showcase.enppl',
     hideInDistribution: true,
-    content: `note [E++ 1.3.5 — the Game library: the pygame zero of E++.]
+    content: `note [E++ 1.4a2 — the Game library: the pygame zero of E++.]
 note [This file comes with two pictures already linked: hero and gem.]
 note [Press the Image button to add your own, or to change these.]
 add the "Game" library
@@ -1262,7 +1280,7 @@ say "Final score: ", 'score'`
   },
   {
     name: 'keyboard_playground.enppl',
-    content: `note [E++ 1.3.5 — the Keyboard library: any key, by name.]
+    content: `note [E++ 1.4a2 — the Keyboard library: any key, by name.]
 add the "Keyboard" library
 add the "ImprovedWaitLite" library
 
@@ -1290,7 +1308,7 @@ say "Done — the Left arrow finished the program."`
 ];
 
 // File Storage (.enpp & .enppl)
-const DEFAULTS_VERSION = '1.3.5';
+const DEFAULTS_VERSION = '1.4a2';
 const WIKI_RETURN_FILE_KEY = 'epp_wiki_return_file';
 let files = {};
 let currentFileName = 'hello.enpp';
@@ -4384,7 +4402,7 @@ class EppEvaluator {
       this.requireLib('System', 'run system command', lineNum);
       const cmd = sysMatch[1];
       const outVar = sysMatch[2];
-      const res = `E++ 1.3.5 runtime (cmd: ${cmd})`;
+      const res = `E++ 1.4a2 runtime (cmd: ${cmd})`;
       if (outVar) this.vars[this.norm(outVar)] = res;
       else printFn(res);
       return;
@@ -4732,7 +4750,7 @@ class EppEvaluator {
     // System library functions
     if (expr.toLowerCase() === 'the platform' || expr.toLowerCase() === 'the system platform') {
       this.requireLib('System', 'the platform', lineNum);
-      return navigator.platform || 'Web System (E++ 1.3.5)';
+      return navigator.platform || 'Web System (E++ 1.4a2)';
     }
     if (expr.toLowerCase() === 'the os' || expr.toLowerCase() === 'the operating system') {
       this.requireLib('System', 'the os', lineNum);
@@ -6298,7 +6316,7 @@ function wireEShare() {
 
 // The guide opens in this frame: sandboxed previews and browsers may block
 // pop-ups. Save immediately so a pending autosave is not lost on navigation.
-document.getElementById('btnWiki').addEventListener('click', event => {
+['btnWiki', 'btnNews'].forEach(id => document.getElementById(id).addEventListener('click', event => {
   if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
   try {
     files[currentFileName] = document.getElementById('editor').value;
@@ -6310,7 +6328,7 @@ document.getElementById('btnWiki').addEventListener('click', event => {
   }
   try { sessionStorage.setItem(WIKI_RETURN_FILE_KEY, currentFileName); }
   catch (error) { /* The saved project remains available in the file list. */ }
-});
+}));
 
 // Initialize
 applyBuildLibraries();
@@ -6327,5 +6345,6 @@ loadFile(currentFileName);
 ensureNativeLexer().catch(() => {});
 ensureVaultReady();
 </script>
+<script src="js/studio-customize.js?v=1.4a2"></script>
 </body>
 </html>

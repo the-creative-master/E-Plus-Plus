@@ -1,5 +1,5 @@
 /*
- * E++ Release 1.2 — project files, native implementation.
+ * E++ project files, native implementation (1.2 vault format).
  * See include/vault.hpp for the format. No external dependencies.
  */
 #include "vault.hpp"

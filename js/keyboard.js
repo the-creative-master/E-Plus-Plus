@@ -1,5 +1,5 @@
 /*
- * E++ Release 1.2 — Keyboard.
+ * E++ 1.4a2 — Keyboard library.
  *
  * One place that knows what every key is called. `the "Up arrow" key is
  * pressed`, `the "space" key`, `the "a" key` and `mouse...` no — keyboard

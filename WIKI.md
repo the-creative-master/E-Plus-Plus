@@ -1,4 +1,4 @@
-# E++ 1.3.5 Wiki
+# E++ 1.4a2 Wiki
 
 An approachable guide to E++, from your first line to games, animated drawings and shared projects. For exact syntax and diagnostic codes, see [LANGUAGE.md](LANGUAGE.md).
 
@@ -12,7 +12,7 @@ An approachable guide to E++, from your first line to games, animated drawings a
 - [Tutorial: add a library](#tutorial-add-a-library)
 - [Drawing with animated sprites](#drawing-with-animated-sprites)
 - [Games and pictures](#games-and-pictures)
-- [Community gallery and deployment](#community-gallery-and-deployment)
+- [Sharing with EShare](#sharing-with-eshare)
 - [Saving, exporting and keys](#saving-exporting-and-keys)
 - [Runtime and library differences](#runtime-and-library-differences)
 - [Errors and troubleshooting](#errors-and-troubleshooting)
@@ -32,15 +32,15 @@ The three rules to remember:
 
 ## Start and find your way around
 
-Run `npm start` with Node.js 18 or newer, and open `http://localhost:8000` on the same machine. The server also provides the community gallery. Opening `index.html` directly works offline for the editor, Draw and Game, but cannot publish to the gallery.
+Run `npm start` with Node.js 18 or newer, and open `http://localhost:8000` on the same machine. Opening `index.html` directly works offline for the editor, Draw, Game and EShare.
 
 - **Files:** select a project, create one, rename it or restore missing examples. Existing files are not overwritten by the restore action.
 - **Code:** write your program; syntax highlighting and line numbers follow the editor. Use **Wrap** for long lines.
 - **Output:** see text, errors and visual canvases. **Run code** executes; **Stop** interrupts a running program.
 - **Libraries:** insert a library declaration. **Learn** opens interactive lessons, and **Wiki** opens this guide in the same tab. Use **Back to Studio** to return to your project.
-- On narrow screens, switch between **Files**, **Code**, and **Output**, and use **Tools** to reach project actions.
+- On narrow screens, Studio scales the same workspace down. Use **Tools** for project actions and Settings → Edit Studio to arrange launcher shortcuts.
 
-The Studio keeps personal working files and linked pictures in the current browser. This is separate from the public gallery. Do not rely on a browser as your only backup: export important projects and their keyring.
+The Studio keeps personal working files and linked pictures in the current browser. Do not rely on a browser as your only backup: export important projects and their keyring.
 
 ## Tutorial: output and maths
 
@@ -140,29 +140,21 @@ put the actor 'hero' at 0 and 0
 
 Choose **Image** after adding Game, select a local picture, give it the name `hero`, and link it. The picture panel can insert the actor setup for you. Local files are decoded and resized before being linked; they are stored as embedded image data, not fetched from a remote server when the game runs. Transparency is preserved. The included example has two embedded starter pictures.
 
-A broken or unsupported upload is refused with a message. If an older link or an external URL fails, the panel explains that it could not load and the game displays a labelled tile; unlink and upload the picture again. A URL or relative filename written in code still depends on that resource being available. Exported and gallery projects carry their linked embedded pictures.
+A broken or unsupported upload is refused with a message. If an older link or an external URL fails, the panel explains that it could not load and the game displays a labelled tile; unlink and upload the picture again. A URL or relative filename written in code still depends on that resource being available. Exported and EShare projects carry their linked embedded pictures.
 
 The game window uses its centre as `(0, 0)`. `set the size of the actor 'hero' to 2` doubles its size. `show`, `hide`, and `if 'hero' is touching 'gem' then ...` work with actors. A `play the game` / `end the game` block runs once per frame. Add Keyboard for checks such as `if the "Up arrow" key is pressed then 'hero' move up "5"`; use **Stop game** or `stop the game` to finish. ImprovedWait adds actor pause, resume and wait features.
 
-## Community gallery and deployment
+## Sharing with EShare
 
-The gallery is shared by everyone using the **same running server**. Open **Gallery**, fill in a title and optional author and description, and choose **Publish current project**. Code and embedded picture data are public. Choose **Open a copy** on a card to create a new local project; it does not overwrite your existing files and does not run automatically. Review other people’s code before running it.
+Open **Tools → EShare** and choose your current project or an `.enpp` / `.enppl` file. Copy the resulting code and send it to someone; they can use **Tools → Import** and paste it to open a new local copy. The code includes embedded pictures. An encrypted file selected for sharing must first be unlockable by the keyring on that device.
 
-The server validates and stores projects in a server-side `shared.js` file. Gallery reads use a same-origin API with no browser gallery cache. Clearing cookies, localStorage or IndexedDB does not delete published entries. An opened local copy, however, is an ordinary browser project and can be lost if local storage is cleared.
-
-A local `npm start` is not a globally hosted service. To make one public and durable, deploy the Node server behind HTTPS with a writable persistent volume. Set `EPP_GALLERY_PATH=/data/shared.js`, `PORT`, and optionally `HOST` (default `0.0.0.0`). The Dockerfile in the full source checkout supports a volume mounted at `/data`; ensure it is writable by the container’s Node user. An ephemeral host, a static-only site, GitHub Pages or a fresh redeploy without a volume cannot retain published projects. There is no preconfigured central cloud service.
-
-The server serializes concurrent writes and atomically replaces the file. Use **one server process per gallery file**; it is not a distributed database and does not coordinate multiple replicas. Back up `shared.js`; stop the server before restoring a backup. Do not expose the data file as an executable script. Corrupt data makes startup fail instead of silently resetting it.
-
-The API accepts titles up to 80 characters, authors up to 60, descriptions up to 300, code up to 128 KB and up to 24 embedded images totalling roughly 1.2 MB. External image links are not included as gallery pictures: re-upload them locally first. The store caps its size at 50 MB and 2,000 projects. An oversized or invalid submission is rejected. Code may still contain URLs, which remain external dependencies.
-
-Publishing is anonymous and public. There are no accounts, built-in moderation tools, deletion interface or spam protection. A public operator must provide suitable rate limiting, monitoring, moderation, backups and a way to handle takedown requests. Never publish credentials or private material. A server operator can remove entries from a backed-up gallery file while the server is stopped, taking care to preserve the JSON data structure.
+EShare codes include their decryption key. Anyone holding a code can read the project, so never share secrets. EShare works locally without a server. The former gallery API remains available for compatibility, but is no longer the Studio sharing interface.
 
 ## Saving, exporting and keys
 
 The editor auto-saves working files in the browser. `.enpp` denotes a pure program; `.enppl` is used for programs with libraries. The command-line engines also accept older `.eppl` and `.eppla` examples.
 
-**Export** downloads a sealed project and keeps its key in this browser. **Keys** can export a keyring file and import it on another machine. Keep the keyring private and back it up alongside the project; a sealed project cannot be opened without a matching key. The CLI accepts `--keyring epp-keys.json project.enppl`. Studio-exported projects include linked pictures. Gallery publication is different: it deliberately publishes an unsealed copy.
+**Export** downloads a sealed project and keeps its key in this browser. **Keys** can export a keyring file and import it on another machine. Keep the keyring private and back it up alongside the project; a sealed project cannot be opened without a matching key. The CLI accepts `--keyring epp-keys.json project.enppl`. Studio-exported projects include linked pictures. EShare includes its key in the code; anyone with it can open the project.
 
 ## Runtime and library differences
 
@@ -183,7 +175,7 @@ Build the native engine with `make`, run tests with `make test` and `npm test`, 
 - **E403 / E407:** division by zero, or invalid Draw distance, speed or color. A speed is positive or `instant`.
 - **E511–E522:** a sealed project is damaged or its key is missing. Import the keyring saved with that project.
 - **E601:** the compiled C++ lexer could not load. Keep `js/native-lexer.js` and `js/native-lexer-wasm.js` alongside Studio and reload.
-- **Gallery unavailable:** start the Node server; a static page and `file://` have no write API. If hosting in the cloud, check the volume, server logs, HTTPS and proxy configuration.
+- **EShare code rejected:** copy the entire code again. If sharing an encrypted file, import the matching keyring first.
 - **Picture is a tile:** choose Image, unlink the failed picture and upload a valid local file. A remote URL can be unavailable or blocked.
 
 ## Keyboard and accessibility

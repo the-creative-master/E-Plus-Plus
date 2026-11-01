@@ -1,4 +1,4 @@
-/* E++ 1.3.5 Draw: an animated, independent drawing surface for the Studio console.
+/* E++ 1.4a2 Draw: an animated, independent drawing surface for the Studio console.
  * Coordinates are measured in pixels from the centre; positive y is down.
  * The host keeps paths separately from cursors so clearing a drawing does not
  * move sprites. It has no dependency on the Game library or on the DOM.

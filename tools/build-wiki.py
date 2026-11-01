@@ -82,12 +82,12 @@ page = '''<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark light">
-<title>E++ 1.3.5 Wiki</title>
+<title>E++ 1.4a2 Wiki</title>
 <link rel="stylesheet" href="css/wiki.css">
 </head>
 <body>
 <a class="skip" href="#wiki-content">Skip to guide</a>
-<header class="wiki-header"><a href="index.html" class="back">← Back to Studio</a><span>THE E++ GUIDE <strong>1.3.5</strong></span></header>
+<header class="wiki-header"><a href="index.html" class="back">← Back to Studio</a><span>THE E++ GUIDE <strong>1.4a2</strong></span></header>
 <main id="wiki-content" class="wiki-content">
 ''' + '\n'.join(out) + '''
 <footer><a href="index.html">← Return to the Studio</a> · <a href="LANGUAGE.md">Language reference</a></footer>

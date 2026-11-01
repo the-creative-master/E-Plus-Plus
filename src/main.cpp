@@ -10,7 +10,7 @@
 
 void print_banner() {
     std::cout << "=========================================================\n";
-    std::cout << "   E++ Programming Language [1.3.5]                 \n";
+    std::cout << "   E++ Programming Language [1.4a2]                 \n";
     std::cout << "   \"Looks like English, feels like english, and is english\"\n";
     std::cout << "=========================================================\n";
 }
@@ -23,7 +23,7 @@ void print_help() {
     std::cout << "  epp                     Start the interactive E++ REPL\n";
     std::cout << "  epp --help, -h          Show this help message\n";
     std::cout << "  epp --version, -v       Show version info\n";
-    std::cout << "\nSealed projects (Release 1.2):\n";
+    std::cout << "\nSealed project files:\n";
     std::cout << "  epp --key <64 hex> <file.enpp>       Open with one key\n";
     std::cout << "  epp --keyring <keys.json> <file>     Try every key in a keyring\n";
     std::cout << "  epp --new-key                        Print a fresh vault key\n";

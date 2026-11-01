@@ -1,5 +1,5 @@
 /*
- * E++ Release 1.2 — Game library host.
+ * E++ 1.4a2 — Game library host.
  *
  * The pygame-zero half of E++: a game window, actors that carry an image,
  * movement, collisions and a game loop. Actors live in a small model here;
