@@ -1526,11 +1526,11 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
   assert.ok(/api\.fetchIdeas\(/.test(page), 'the panel reads the public list, not a local one');
 
   // The version the page announces matches this release everywhere it shows.
-  assert.ok(page.includes('<title>E++ Studio | 1.4a2</title>'), 'the tab title is 1.4a2');
-  assert.ok(page.includes('class="build-badge">1.4a2<'), 'the header badge is 1.4a2');
+  assert.ok(page.includes('<title>E++ Studio | 1.4a3</title>'), 'the tab title is 1.4a3');
+  assert.ok(page.includes('class="build-badge">1.4a3<'), 'the header badge is 1.4a3');
   assert.ok(page.includes("const DEFAULTS_VERSION = '1.4a2'"), 'new examples are added without overwriting existing files');
   assert.ok(page.includes("epp_idea_draft_1_2_1"), 'existing idea drafts remain available');
-  ok('the page announces 1.4a2 while retaining existing progress');
+  ok('the page announces 1.4a3 while retaining existing progress');
 
   // Every library card is bound to a registry name, so a build can hide it.
   const cards = page.match(/data-library="[^"]+"/g) || [];

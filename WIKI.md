@@ -1,4 +1,4 @@
-# E++ 1.4a2 Wiki
+# E++ 1.4a3 Wiki
 
 An approachable guide to E++, from your first line to games, animated drawings and shared projects. For exact syntax and diagnostic codes, see [LANGUAGE.md](LANGUAGE.md).
 
@@ -39,6 +39,8 @@ Run `npm start` with Node.js 18 or newer, and open `http://localhost:8000` on th
 - **Output:** see text, errors and visual canvases. **Run code** executes; **Stop** interrupts a running program.
 - **Libraries:** insert a library declaration. **Learn** opens interactive lessons, and **Wiki** opens this guide in the same tab. Use **Back to Studio** to return to your project.
 - On narrow screens, Studio scales the same workspace down. Use **Tools** for project actions and Settings → Edit Studio to arrange launcher shortcuts.
+
+Settings offers Studio animations and an appearance reset. Disabling Studio animations or enabling reduced motion in your operating system only affects the interface, not animations in Draw or Game.
 
 The Studio keeps personal working files and linked pictures in the current browser. Do not rely on a browser as your only backup: export important projects and their keyring.
 
@@ -180,4 +182,4 @@ Build the native engine with `make`, run tests with `make test` and `npm test`, 
 
 ## Keyboard and accessibility
 
-Use `Ctrl+Enter` or `Cmd+Enter` to run, and `Ctrl+S` or `Cmd+S` to save. Dialogs retain keyboard focus and close with Escape. The mobile workspace and Draw controls have touch targets; the canvas is keyboard-focusable. The Output panel is a live region. Use browser zoom, high-contrast mode and line wrapping as needed.
+Use `Ctrl+Enter` or `Cmd+Enter` to run, and `Ctrl+S` or `Cmd+S` to save. Press `Ctrl+Shift+P` (`Cmd+Shift+P` on Mac) to open Tools and search Studio features and local projects. Use Edit shortcuts in Tools or the sidebar to choose which features appear in each location. Dialogs retain keyboard focus and close with Escape. The mobile workspace and Draw controls have touch targets; the canvas is keyboard-focusable. The Output panel is a live region. Use browser zoom, high-contrast mode and line wrapping as needed.

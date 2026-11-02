@@ -29,3 +29,5 @@ article p, .news-bottom p { color: #b5b1c6; font-size: 14px; line-height: 1.8; }
 .news-cta { display: inline-flex; padding: 13px 18px; border-radius: 8px; background: #c1aff9; color: #20192d; font-size: 12px; font-weight: 800; text-decoration: none; white-space: nowrap; }
 .news-footer { display: flex; justify-content: space-between; padding: 22px 5%; border-top: 1px solid #ffffff18; color: #aaa3b9; font-size: 10px; font-weight: 700; letter-spacing: .08em; }
 @media(max-width: 650px) { .news-main { padding-top: 50px; } .news-grid { grid-template-columns: 1fr; gap: 25px; padding: 40px 0; } .news-bottom { display: block; margin-top: 40px; } .news-cta { margin-top: 15px; } .news-version { display: none; } }
+
+.news-archive { border-top: 1px solid #ffffff20; margin-top: 80px; padding-top: 70px; }
