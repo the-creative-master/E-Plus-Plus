@@ -1,4 +1,4 @@
-/* E++ 1.4a2 Studio appearance and launcher layout. */
+/* E++ 1.4a3 Studio appearance and launcher layout. */
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
@@ -24,39 +24,49 @@
   function save(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) {} }
   function read(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (_) { return null; } }
   const saved = read(OPTIONS_KEY) || {};
-  const options = { fontSize: [12, 14, 16, 18].includes(saved.fontSize) ? saved.fontSize : 14, lineNumbers: typeof saved.lineNumbers === 'boolean' ? saved.lineNumbers : true };
+  const options = { fontSize: [12, 14, 16, 18].includes(saved.fontSize) ? saved.fontSize : 14, lineNumbers: typeof saved.lineNumbers === 'boolean' ? saved.lineNumbers : true, animations: typeof saved.animations === 'boolean' ? saved.animations : true };
   function applyOptions() {
     document.documentElement.style.setProperty('--editor-font-size', options.fontSize + 'px');
     document.body.classList.toggle('no-line-numbers', !options.lineNumbers);
     $('editorFontSize').value = String(options.fontSize);
     $('showLineNumbers').checked = options.lineNumbers;
+    $('studioAnimations').checked = options.animations;
+    document.documentElement.classList.toggle('studio-motion-off', !options.animations);
     requestAnimationFrame(updateLineNumbers);
   }
   function paintPalette() {
     const selected = $('accentColor').value.toLowerCase();
-    $('themePalette').innerHTML = '';
-    colors.forEach(([label, color]) => {
+    if (!$('themePalette').children.length) colors.forEach(([label, color]) => {
       const button = document.createElement('button');
       button.type = 'button'; button.className = 'theme-swatch';
       button.style.setProperty('--swatch', color);
+      button.dataset.color = color;
       button.title = label; button.setAttribute('aria-label', label);
-      button.setAttribute('aria-pressed', String(selected === color));
       button.addEventListener('click', () => {
         $('accentColor').value = color;
         $('accentColor').dispatchEvent(new Event('input', { bubbles: true }));
-        paintPalette();
       });
       $('themePalette').appendChild(button);
     });
+    $('themePalette').querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(selected === button.dataset.color)));
   }
   $('accentColor').addEventListener('input', paintPalette);
   $('editorFontSize').addEventListener('change', event => { options.fontSize = Number(event.target.value); applyOptions(); save(OPTIONS_KEY, options); });
+  $('studioAnimations').addEventListener('change', event => { options.animations = event.target.checked; applyOptions(); save(OPTIONS_KEY, options); });
   $('showLineNumbers').addEventListener('change', event => { options.lineNumbers = event.target.checked; applyOptions(); save(OPTIONS_KEY, options); });
   $('settingsWrap').addEventListener('change', event => {
     if ($('btnWrap').getAttribute('aria-pressed') !== String(event.target.checked)) $('btnWrap').click();
   });
   $('btnWrap').addEventListener('click', () => { $('settingsWrap').checked = $('btnWrap').getAttribute('aria-pressed') === 'true'; });
   $('settingsWrap').checked = $('btnWrap').getAttribute('aria-pressed') === 'true';
+  $('resetAppearance').addEventListener('click', () => {
+    options.fontSize = 14; options.lineNumbers = true; options.animations = true;
+    $('accentColor').value = '#b7a4ff';
+    $('accentColor').dispatchEvent(new Event('input', { bubbles: true }));
+    if ($('btnWrap').getAttribute('aria-pressed') === 'true') $('btnWrap').click();
+    applyOptions(); save(OPTIONS_KEY, options);
+    showToast('Appearance reset. Your layout and files were kept.');
+  });
   $('btnSettingsMenu').addEventListener('click', () => $('btnSettings').click());
   paintPalette(); applyOptions();
 
@@ -73,7 +83,7 @@
   const parking = document.createElement('div'); parking.hidden = true; document.body.appendChild(parking);
   function applyLayout() {
     layout.home.forEach(id => { nodes[id].hidden = false; nodes[id].classList.remove('launcher-moved'); homes[id].parentNode.insertBefore(nodes[id], homes[id]); });
-    layout.rail.forEach(id => { nodes[id].hidden = false; nodes[id].classList.toggle('launcher-moved', !!homes[id]); rail.appendChild(nodes[id]); });
+    layout.rail.forEach(id => { nodes[id].hidden = false; nodes[id].classList.toggle('launcher-moved', !!homes[id]); rail.insertBefore(nodes[id], $('extraSidebar')); });
     layout.top.forEach(id => { nodes[id].hidden = false; nodes[id].classList.toggle('launcher-moved', !!homes[id]); top.appendChild(nodes[id]); });
     layout.hidden.forEach(id => { nodes[id].hidden = true; parking.appendChild(nodes[id]); });
     if (!layout.rail.length) rail.classList.add('empty'); else rail.classList.remove('empty');
@@ -101,11 +111,11 @@
         const title = document.createElement('strong'); title.textContent = names[id];
         const select = document.createElement('select'); select.setAttribute('aria-label', 'Move ' + names[id] + ' to');
         (homes[id] ? [['home', 'Original'], ['rail', 'Activity bar'], ['top', 'Top bar'], ['hidden', 'Removed']] : [['rail', 'Activity bar'], ['top', 'Top bar'], ['hidden', 'Removed']]).forEach(([value, text]) => { const option = document.createElement('option'); option.value = value; option.textContent = text; select.appendChild(option); });
-        select.value = zone; select.addEventListener('change', () => move(id, select.value));
+        select.value = zone; select.addEventListener('change', () => { move(id, select.value); const next = document.querySelector('.layout-tile[data-id="' + id + '"] select'); if (next) next.focus(); });
         const up = document.createElement('button'); up.type = 'button'; up.textContent = '↑'; up.className = 'layout-order'; up.disabled = zone === 'home' || index === 0; up.setAttribute('aria-label', 'Move ' + names[id] + ' up');
-        up.addEventListener('click', () => move(id, zone, layout[zone][index - 1]));
+        up.addEventListener('click', () => { move(id, zone, layout[zone][index - 1]); const next = document.querySelector('.layout-tile[data-id="' + id + '"] select'); if (next) next.focus(); });
         const down = document.createElement('button'); down.type = 'button'; down.textContent = '↓'; down.className = 'layout-order'; down.disabled = zone === 'home' || index === layout[zone].length - 1; down.setAttribute('aria-label', 'Move ' + names[id] + ' down');
-        down.addEventListener('click', () => move(id, zone, layout[zone][index + 2]));
+        down.addEventListener('click', () => { move(id, zone, layout[zone][index + 2]); const next = document.querySelector('.layout-tile[data-id="' + id + '"] select'); if (next) next.focus(); });
         tile.append(handle, title, select, up, down);
         tile.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', id); e.dataTransfer.effectAllowed = 'move'; });
         tile.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); });
@@ -124,5 +134,14 @@
   $('openStudioEditor').addEventListener('click', () => { $('settingsDialog').close(); renderZones(); $('layoutDialog').showModal(); });
   $('layoutClose').addEventListener('click', () => $('layoutDialog').close());
   $('layoutDone').addEventListener('click', () => $('layoutDialog').close());
+  // Allow the shortcut visibility editor to restore a launcher that an older
+  // layout moved to the top bar or removed entirely.
+  window.EPPStudioLayout = {
+    restoreSidebar: function (id) {
+      if (!Object.hasOwn(names, id)) return;
+      ['home', 'rail', 'top', 'hidden'].forEach(zone => { layout[zone] = layout[zone].filter(item => item !== id); });
+      layout.rail.push(id); applyLayout();
+    }
+  };
   applyLayout();
 })();

@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>E++ Studio | 1.4a2</title>
-<link rel="stylesheet" href="css/ide.css?v=1.4a2">
+<title>E++ Studio | 1.4a3</title>
+<link rel="stylesheet" href="css/ide.css?v=1.4a3">
 <style>
   /* Color classes for Terminal */
   .color-red { color: #f87171 !important; }
@@ -343,8 +343,9 @@
     color: #7dd3fc;
   }
 </style>
-<link rel="stylesheet" href="css/studio.css?v=1.4a2">
+<link rel="stylesheet" href="css/studio.css?v=1.4a3-hub">
 <script>
+  try { if (JSON.parse(localStorage.getItem('epp_studio_appearance_1_4a2') || '{}').animations === false) document.documentElement.classList.add('studio-motion-off'); } catch (_) {}
   // Keep one desktop workspace on every screen. CSS zoom preserves normal
   // layout, hit testing and scrolling while fitting the canvas to the viewport.
   function scaleStudio() {
@@ -364,7 +365,7 @@
   <div class="brand">
     <div class="logo" aria-hidden="true">E<span>++</span></div>
     <div>
-      <h1>E++ <span>Studio</span> <span class="build-badge">1.4a2</span></h1>
+      <h1>E++ <span>Studio</span> <span class="build-badge">1.4a3</span></h1>
       <p>YOUR SPACE TO CREATE</p>
     </div>
   </div>
@@ -372,12 +373,15 @@
   <div class="top-actions">
     <span id="saveStatus" class="save-status" role="status">Saved locally</span>
     <div id="launcherTop" class="launcher-top" aria-label="Top launchers"></div>
-    <button id="btnTools" class="toolbar-toggle" type="button" aria-label="Open studio tools" aria-controls="studioActions" aria-expanded="false">
+    <button id="btnTools" class="toolbar-toggle" type="button" aria-label="Open studio tools" aria-keyshortcuts="Control+Shift+P Meta+Shift+P" aria-controls="studioActions" aria-expanded="false">
       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M5 7h14M5 12h14M5 17h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       <span>Tools</span>
     </button>
     <div class="action-bar" id="studioActions">
-      <div class="action-group file-actions" role="group" aria-label="Project actions">
+      <div class="tools-hub-head"><div><span class="tools-kicker">YOUR STUDIO, ALL IN ONE PLACE</span><h2>Tools</h2></div><button id="btnEditFeatures" class="btn btn-small" type="button">Edit shortcuts</button></div>
+      <label class="tools-search"><span aria-hidden="true">⌕</span><input id="toolsSearch" type="search" aria-label="Search tools and projects" placeholder="Search tools and projects…" autocomplete="off"><kbd>Ctrl ⇧ P</kbd></label>
+      <div class="tools-hub-scroll"><a href="#toolsProjectList" id="toolsProjectJump" class="tools-project-jump">Jump to your projects ↓</a><div class="tools-section-title">FEATURES <span id="toolsFeatureCount"></span></div><div id="toolsFeatureList" class="tools-feature-list"></div><div class="tools-section-title tools-project-heading">YOUR PROJECTS <span id="toolsProjectCount"></span></div><div id="toolsProjectList" class="tools-project-list"></div></div>
+      <div class="action-group file-actions legacy-actions" role="group" aria-label="Project actions">
         <span class="action-group-label">Project</span>
         <button id="btnNew" class="btn btn-small btn-accent" type="button" title="New file">+ New</button>
         <button id="btnSave" class="btn btn-small" type="button" title="Save file">Save</button>
@@ -386,7 +390,7 @@
         <button id="btnClear" class="btn btn-small" type="button" title="Clear the editor">Clear code</button>
       </div>
       <span class="action-divider" aria-hidden="true"></span>
-      <div class="action-group learn-actions" role="group" aria-label="Learn and share">
+      <div class="action-group learn-actions legacy-actions" role="group" aria-label="Learn and share">
         <span class="action-group-label">Learn &amp; share</span>
         <button id="btnLearn" class="btn btn-small btn-tutorial" type="button" title="Learn E++ card by card">Learn</button>
         <a id="btnWiki" class="btn btn-small" href="wiki.html" title="Open the E++ guide">Wiki</a>
@@ -394,7 +398,7 @@
         <button id="btnSuggest" class="btn btn-small btn-suggest" type="button" title="Suggest a feature — everyone can see it">Suggest</button>
       </div>
       <span class="action-divider" aria-hidden="true"></span>
-      <div class="action-group tool-actions" role="group" aria-label="Studio tools">
+      <div class="action-group tool-actions legacy-actions" role="group" aria-label="Studio tools">
         <span class="action-group-label">Studio tools</span>
         <button id="btnImage" class="btn btn-small" type="button" style="display:none;" title="Add an actor image to this game">Image</button>
         <button id="btnZip" class="btn btn-small btn-zip" type="button" title="Download E++ C++ sources &amp; runtime bundle">E++.zip</button>
@@ -445,11 +449,21 @@
   <label class="settings-row" for="accentColor"><span><strong>Accent color</strong><small>Choose the color of your workspace highlights.</small></span><input id="accentColor" type="color" value="#b7a4ff"></label>
   <label class="settings-row" for="editorFontSize"><span><strong>Editor text size</strong><small>Adjust code and line number size.</small></span><select id="editorFontSize"><option value="12">Small</option><option value="14">Default</option><option value="16">Large</option><option value="18">Extra large</option></select></label>
   <label class="settings-row" for="showLineNumbers"><span><strong>Line numbers</strong><small>Show the line number gutter in the editor.</small></span><input id="showLineNumbers" type="checkbox" checked></label>
+  <label class="settings-row" for="studioAnimations"><span><strong>Studio animations</strong><small>Gentle motion for menus, panels and controls. Reduced-motion system preferences are always respected.</small></span><input id="studioAnimations" type="checkbox" checked></label>
   <label class="settings-row" for="settingsWrap"><span><strong>Wrap long lines</strong><small>Keep long lines inside the editor.</small></span><input id="settingsWrap" type="checkbox"></label>
+  <button id="resetAppearance" class="btn btn-small reset-appearance" type="button">Reset appearance</button>
   <div class="settings-section-title">FILES</div>
   <label class="settings-row" for="autoRename"><span><strong>Auto-rename library files</strong><small>Rename .enpp to .enppl when a library is detected.</small></span><input id="autoRename" type="checkbox" checked></label>
   <div class="settings-section-title">YOUR WORKSPACE</div>
   <div class="edit-studio-callout"><div><strong>Edit Studio</strong><small>Arrange, remove, and restore launcher shortcuts.</small></div><button id="openStudioEditor" class="btn btn-accent" type="button">Edit layout ↗</button></div>
+</dialog>
+
+<dialog id="featureDialog" class="feature-dialog" aria-labelledby="featureTitle">
+  <header class="feature-head"><div><span class="settings-kicker">MAKE STUDIO YOURS</span><h2 id="featureTitle">Edit shortcuts</h2><p>Choose what appears in the sidebar and in Tools. Changes save automatically.</p></div><button id="featureClose" class="btn" type="button" aria-label="Close shortcut editor">✕</button></header>
+  <div class="feature-presets"><span>PRESETS</span><button class="btn btn-small" type="button" data-feature-preset="all">Everything</button><button class="btn btn-small" type="button" data-feature-preset="essential">Essentials</button><button class="btn btn-small" type="button" data-feature-preset="default">Reset</button><button id="featureLayout" class="btn btn-small" type="button">Arrange original launchers ↗</button></div>
+  <div class="feature-table-head"><span>FEATURE</span><span>SIDEBAR</span><span>TOOLS</span></div>
+  <div id="featureEditorList" class="feature-editor-list"></div>
+  <footer class="feature-footer"><span>Editor, output and the Tools button are always available.</span><button id="featureDone" class="btn btn-accent" type="button">Done</button></footer>
 </dialog>
 
 <dialog id="layoutDialog" class="layout-dialog" aria-labelledby="layoutTitle">
@@ -485,7 +499,7 @@
   </div>
   <div class="dash-group dash-group-end">
     <span id="zipRuntimeBadge" class="badge-zip-locked">C++ lexer loading…</span>
-    <span class="dash-badge-pill badge-version" id="buildVersion">v1.4a2 · Alpha</span>
+    <span class="dash-badge-pill badge-version" id="buildVersion">v1.4a3 · Alpha</span>
   </div>
   <span id="mobileSaveStatus" class="mobile-save-status" role="status">Saved locally</span>
   <div class="dash-rules">
@@ -518,6 +532,8 @@
     <button class="activity-item" type="button" data-component="guide" data-activity="guide" aria-label="Quick reference" title="Quick reference" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5c3-1 5-1 8 1v14c-3-2-5-2-8-1zM20 5c-3-1-5-1-8 1v14c3-2 5-2 8-1z"/></svg></button>
     <button class="activity-item" type="button" data-component="learn" data-action="btnLearn" aria-label="Learn E++" title="Learn E++"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3 9 9-5 9 5-9 5zM7 11v5c3 2 7 2 10 0v-5M21 9v7"/></svg></button>
     <button class="activity-item" type="button" data-component="settings" data-action="btnSettings" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m10 3-.5 2.2-2 .9-2-1.2-2 3.4 1.7 1.5v2.4l-1.7 1.5 2 3.4 2-1.2 2 .9L10 21h4l.5-2.2 2-.9 2 1.2 2-3.4-1.7-1.5V9.8l1.7-1.5-2-3.4-2 1.2-2-.9L14 3z"/><circle cx="12" cy="12" r="3"/></svg></button>
+    <div id="extraSidebar" class="extra-sidebar"></div>
+    <button id="btnSidebarEdit" class="activity-item sidebar-edit" type="button" title="Edit sidebar and Tools" aria-label="Edit sidebar and Tools">☷</button>
   </nav>
   <!-- Sidebar: Files, Libraries, Quick Reference -->
   <aside class="sidebar" id="sidebar">
@@ -553,7 +569,7 @@
     </div>
     <!-- Available Libraries -->
     <section class="libraries-panel sidebar-panel" id="librariesPanel" hidden>
-      <h2>Libraries <span class="head-sub">(1.4a2)</span></h2>
+      <h2>Libraries <span class="head-sub">(1.4a3)</span></h2>
       <p class="panel-note">Both word orders work:<br><code>add library "Math"</code> or <code>add the "Math" library</code></p>
       
       <div class="library-card" data-library="Python">
@@ -806,7 +822,7 @@ set the image of the actor 'hero' to "hero2.png"</pre>
 
 <div class="bottom-bar"><span>✦ E++ STUDIO</span><span>Updated Daily</span></div>
 <footer class="footer">
-  <span><strong>E++ Studio [1.4a2]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
+  <span><strong>E++ Studio [1.4a3]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
   <span>Shortcuts: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run · <kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span>
 </footer>
 
@@ -1041,8 +1057,8 @@ say "1 + 1"`
   },
   {
     name: 'welcome_1_3_5.enpp',
-    content: `note [Welcome to E++ 1.4a2. Run this file, then open Learn or Wiki.]
-say "Hello from E++ 1.4a2!"
+    content: `note [Welcome to E++ 1.4a3. Run this file, then open Learn or Wiki.]
+say "Hello from E++ 1.4a3!"
 let 'ideas' be 3
 say "Ideas to try:", 'ideas'
 repeat 3 times
@@ -1052,7 +1068,7 @@ note [Try the Gallery to publish a copy of a project.]`
   },
   {
     name: 'release_showcase.enppl',
-    content: `note [E++ 1.4a2 Grand Showcase (.enppl)]
+    content: `note [E++ 1.4a3 Grand Showcase (.enppl)]
 add the "Colors" library
 add the "Time" library
 add the "Math" library
@@ -1063,7 +1079,7 @@ add the "System" library
 add the "Python" library
 
 say cyan "========================================================="
-say cyan "         Welcome to E++ 1.4a2!           "
+say cyan "         Welcome to E++ 1.4a3!           "
 say cyan "========================================================="
 
 note [System & Time Diagnostics]
@@ -1081,19 +1097,19 @@ say "Trimmed:", the trim of 'Announcement'
 say "Uppercase:", the uppercase of the trim of 'Announcement'
 
 note [File Persistence in Virtual IDE]
-write "E++ 1.4a2 verified on: " to file "showcase_audit.log"
+write "E++ 1.4a3 verified on: " to file "showcase_audit.log"
 append the current date to file "showcase_audit.log"
 read the file "showcase_audit.log" and save the output as 'Audit'
 say "Audit log content:", 'Audit'
 
 note [Python Engine Bridge]
-let 'EppVersion' be "1.4a2"
+let 'EppVersion' be "1.4a3"
 run the python code:
 print(f"[Python Subsystem] Connected with E++ v{EppVersion}")
 import math
 print(f"[Python Subsystem] Computed 10! = {math.factorial(10)}")
 
-say green "✓ E++ 1.4a2 showcase complete!"`
+say green "✓ E++ 1.4a3 showcase complete!"`
   },
   {
     name: 'python_demo.enppl',
@@ -1117,7 +1133,7 @@ run the python code "print('E++ says:', greeting)"`
     content: `note [Strings Library in E++ (.enppl)]
 add the "Strings" library
 
-let 'Message' be "Hello, E++ 1.4a2!"
+let 'Message' be "Hello, E++ 1.4a3!"
 say "Original message:", 'Message'
 say "Length of message:", the length of 'Message'
 say "Uppercase:", the uppercase of 'Message'
@@ -1155,7 +1171,7 @@ say "System Platform:", the platform
 say "Operating System:", the os
 
 note [Writing and reading in the IDE filesystem:]
-write "E++ 1.4a2 is ready!" to file "notes.txt"
+write "E++ 1.4a3 is ready!" to file "notes.txt"
 read the file "notes.txt" and save the output as 'ReadBack'
 say "Read back from file:", 'ReadBack'`
   },
@@ -1234,7 +1250,7 @@ say "You made a drawing!"`
   {
     name: 'game_showcase.enppl',
     hideInDistribution: true,
-    content: `note [E++ 1.4a2 — the Game library: the pygame zero of E++.]
+    content: `note [E++ 1.4a3 — the Game library: the pygame zero of E++.]
 note [This file comes with two pictures already linked: hero and gem.]
 note [Press the Image button to add your own, or to change these.]
 add the "Game" library
@@ -1280,7 +1296,7 @@ say "Final score: ", 'score'`
   },
   {
     name: 'keyboard_playground.enppl',
-    content: `note [E++ 1.4a2 — the Keyboard library: any key, by name.]
+    content: `note [E++ 1.4a3 — the Keyboard library: any key, by name.]
 add the "Keyboard" library
 add the "ImprovedWaitLite" library
 
@@ -1401,8 +1417,14 @@ function renderFileList() {
   document.getElementById('workspaceFileCount').textContent = count + (count === 1 ? ' file' : ' files');
   listEl.innerHTML = '';
 
-  Object.keys(files).forEach(name => {
-    if (search && !name.toLowerCase().includes(search)) return;
+  const matches = Object.keys(files).filter(name => !search || name.toLowerCase().includes(search)).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base', numeric: true }));
+  if (!matches.length) {
+    const empty = document.createElement('li');
+    empty.className = 'file-list-empty';
+    empty.textContent = search ? 'No files match your search.' : 'No files yet.';
+    listEl.appendChild(empty);
+  }
+  matches.forEach(name => {
     const isLib = name.endsWith('.enppl');
     const li = document.createElement('li');
     li.className = 'file-row';
@@ -2380,12 +2402,14 @@ function confirmDialog(message, options = {}) {
   }).then(value => value === true);
 }
 
+let toastTimer;
 function showToast(msg, isErr = false) {
   const t = document.getElementById('toast');
   t.innerText = msg;
   t.style.display = 'block';
   t.style.borderColor = isErr ? 'var(--danger)' : 'var(--accent)';
-  setTimeout(() => { t.style.display = 'none'; }, 2600);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.display = 'none'; }, 2600);
 }
 
 // ------------------------------------------------------------------
@@ -4402,7 +4426,7 @@ class EppEvaluator {
       this.requireLib('System', 'run system command', lineNum);
       const cmd = sysMatch[1];
       const outVar = sysMatch[2];
-      const res = `E++ 1.4a2 runtime (cmd: ${cmd})`;
+      const res = `E++ 1.4a3 runtime (cmd: ${cmd})`;
       if (outVar) this.vars[this.norm(outVar)] = res;
       else printFn(res);
       return;
@@ -4750,7 +4774,7 @@ class EppEvaluator {
     // System library functions
     if (expr.toLowerCase() === 'the platform' || expr.toLowerCase() === 'the system platform') {
       this.requireLib('System', 'the platform', lineNum);
-      return navigator.platform || 'Web System (E++ 1.4a2)';
+      return navigator.platform || 'Web System (E++ 1.4a3)';
     }
     if (expr.toLowerCase() === 'the os' || expr.toLowerCase() === 'the operating system') {
       this.requireLib('System', 'the os', lineNum);
@@ -6345,6 +6369,7 @@ loadFile(currentFileName);
 ensureNativeLexer().catch(() => {});
 ensureVaultReady();
 </script>
-<script src="js/studio-customize.js?v=1.4a2"></script>
+<script src="js/studio-customize.js?v=1.4a3"></script>
+<script src="js/studio-hub.js?v=1.4a3-hub"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-note [E++ 1.4a2 Grand Showcase (.enppl)]
+note [E++ 1.4a3 Grand Showcase (.enppl)]
 add the "Time" library
 add the "Math" library
 add the "Random" library
@@ -8,7 +8,7 @@ add the "System" library
 add the "Python" library
 
 say "========================================================="
-say "         Welcome to E++ 1.4a2!           "
+say "         Welcome to E++ 1.4a3!           "
 say "========================================================="
 
 note [System & Time Diagnostics]
@@ -26,16 +26,16 @@ say "Trimmed:", the trim of 'Announcement'
 say "Uppercase:", the uppercase of the trim of 'Announcement'
 
 note [File Persistence]
-write "E++ 1.4a2 verified on: " to file "showcase_audit.log"
+write "E++ 1.4a3 verified on: " to file "showcase_audit.log"
 append the current date to file "showcase_audit.log"
 read the file "showcase_audit.log" and save the output as 'Audit'
 say "Audit log content:", 'Audit'
 
 note [Python Engine Bridge]
-let 'EppVersion' be "1.4a2"
+let 'EppVersion' be "1.4a3"
 run the python code:
 print(f"[Python Subsystem] Connected with E++ v{EppVersion}")
 import math
 print(f"[Python Subsystem] Computed 10! = {math.factorial(10)}")
 
-say "✓ E++ 1.4a2 showcase complete!"
+say "✓ E++ 1.4a3 showcase complete!"

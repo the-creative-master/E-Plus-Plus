@@ -1,4 +1,4 @@
-# E++ 1.4a2
+# E++ 1.4a3
 
 E++ is a small, English-like programming language with a browser Studio, a C++ command-line engine and a Python runner. Write text in double quotes, variables in single quotes, and maths as numbers and words.
 
@@ -8,12 +8,13 @@ say "Hello, ", 'name'
 say 2 plus 3 times 4
 ```
 
-## What’s new in 1.4a2
+## What’s new in 1.4a3
 
-- **Edit Studio:** drag launcher shortcuts between the activity and top bars, remove or restore them, and try the Studio default, Focus and Top bar presets. The editor, console and Tools remain available.
-- **Settings:** pick from twelve colors or choose a custom accent, change editor text size, line numbers and wrapping, and control library file auto-renaming (on by default).
-- **News:** open Tools → News for the latest 1.4a2 update and screenshots. EShare now lives only in Tools.
-- **EShare:** turn an E++ project (including its pictures) into a portable code and import it in another browser without a server or account.
+- **Tools hub:** press **Ctrl+Shift+P** (Cmd+Shift+P on Mac) to open Tools and search features and every local project. Use Edit shortcuts in Tools or the sidebar to choose which features appear in each place.
+- **Studio in motion:** subtle animations bring menus, panels, dialogs, controls and notifications to life. Disable Studio animations in Settings; the system reduced-motion preference is always respected. Neither option changes your Draw or Game programs.
+- **Smoother customization:** reset appearance without touching your files, layout or auto-rename preference. Theme selection and launcher movement also retain keyboard focus.
+- **A tidier explorer:** files are sorted naturally, and searches explain when there are no matches. Notifications stay visible for their full duration, even when several arrive together.
+- **Release news:** open Tools → News for the 1.4a3 highlights. Existing EShare, editable launcher layouts, color themes and default-on library file renaming remain available.
 
 Settings, layouts and working files stay on this device. Existing files are not overwritten by automatic renaming or EShare imports.
 

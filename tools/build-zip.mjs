@@ -3,7 +3,7 @@
  * Builds E++.zip and epp_language.zip. Studio executes its embedded compiled
  * C++ lexer directly; these archives are downloadable distributions.
  *
- * E++.zip is the *standalone* build of E++ 1.4a2. The Studio and the zip carry
+ * E++.zip is the *standalone* build of E++ 1.4a3. The Studio and the zip carry
  * different halves of the game tooling, and only one of them at a time:
  *
  *   Studio (E++ Studio)          Draw, Game, ImprovedWait
@@ -231,7 +231,7 @@ function stripColorsFromDistribution() {
   for (const name of fs.readdirSync(path.join(STAGE, 'src'))) {
     if (/\.(?:o|d)$/.test(name)) fs.rmSync(path.join(STAGE, 'src', name));
   }
-  const packageJson = { name: 'e-plus-plus-distribution', version: '1.4.0-alpha.2', private: true,
+  const packageJson = { name: 'e-plus-plus-distribution', version: '1.4.0-alpha.3', private: true,
     scripts: { start: 'node server.js' }, engines: { node: '>=18' } };
   fs.writeFileSync(path.join(STAGE, 'package.json'), JSON.stringify(packageJson, null, 2) + '\n');
   const makefile = path.join(STAGE, 'Makefile');

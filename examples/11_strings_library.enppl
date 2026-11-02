@@ -2,7 +2,7 @@ note [Strings Library Demonstration in E++ (.enppl)]
 add the "Strings" library
 
 note [1. Measuring String Length]
-let 'Message' be "Hello, E++ 1.4a2!"
+let 'Message' be "Hello, E++ 1.4a3!"
 say "Original message:", 'Message'
 say "Length of message:", the length of 'Message'
 
