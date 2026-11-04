@@ -676,7 +676,7 @@ async function betaPhone(version) {
   s += rect(PW - 62, 14, 52, 24, T.accent, 7);
   s += text(PW - 36, 30, '▸ Run', { size: 10.5, weight: 700, fill: '#1a1730', anchor: 'middle' });
 
-  // the code card fills the phone
+  // the code card fills the phone (body[data-mobile-view='editor'])
   s += rect(8, 62, PW - 16, 600, T.panel, 12, `stroke="${T.border}"`);
   s += text(20, 88, 'CODE EDITOR', { size: 8.5, weight: 800, fill: T.faint, spacing: 1.3 });
   s += text(PW - 62, 88, 'Wrap', { size: 10, fill: T.muted });

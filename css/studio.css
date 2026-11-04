@@ -417,10 +417,10 @@ html, body { background: #0c0f1d !important; }
   .layout { order: 2; flex: 1 1 0; display: grid !important; grid-template-columns: minmax(0, 1fr) !important; min-height: 0; padding: 8px !important; gap: 0 !important; }
   .sidebar { display: none !important; width: 100%; }
   .workspace { display: grid !important; grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: minmax(0, 1fr) !important; gap: 0 !important; }
-  body[data-view='files'] .sidebar { display: flex !important; }
-  body[data-view='files'] .workspace { display: none !important; }
-  body[data-view='editor'] .console-card, body[data-view='console'] .editor-card { display: none !important; }
-  body[data-view='console'] .console-card, body[data-view='editor'] .editor-card { display: flex !important; }
+  body[data-mobile-view='files'] .sidebar { display: flex !important; }
+  body[data-mobile-view='files'] .workspace { display: none !important; }
+  body[data-mobile-view='editor'] .console-card, body[data-mobile-view='console'] .editor-card { display: none !important; }
+  body[data-mobile-view='console'] .console-card, body[data-mobile-view='editor'] .editor-card { display: flex !important; }
   .editor-card, .console-card { height: 100%; border-radius: 12px; }
   .workspace-eyebrow { height: 48px; padding: 0 12px; }
   .workspace-caption { display: none; }

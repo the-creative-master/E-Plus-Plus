@@ -359,7 +359,7 @@
   window.addEventListener('resize', scaleStudio);
 </script>
 </head>
-<body>
+<body data-mobile-view="editor">
 
 <header class="topbar">
   <div class="brand">
@@ -1033,6 +1033,7 @@ set the image of the actor 'hero' to "hero2.png"</pre>
 <script src="js/game-library.js"></script>
 <script src="js/draw-library.js"></script>
 <script src="js/icons.js?v=1.4b1"></script>
+<script src="js/studio-mobile.js?v=1.4b1"></script>
 <script src="js/studio-editor.js"></script>
 <script src="js/diagnostics.js"></script>
 <script src="js/native-lexer-wasm.js"></script>
@@ -5285,14 +5286,9 @@ window.addEventListener('resize', () => {
   updateConsoleHint();
 });
 
-// Workspace navigation lives in js/ide.js (data-mobile-view -> setMobileView),
-// so this page only has to bind the two dialog buttons on the phone bar.
-document.querySelectorAll('.mobile-view-btn[data-action]').forEach(button => {
-  button.addEventListener('click', () => {
-    const target = document.getElementById(button.dataset.action);
-    if (target) target.click();
-  });
-});
+// Workspace navigation lives in js/studio-mobile.js: it owns the phone bar,
+// the <body data-mobile-view> attribute that css/studio.css keys off, and the
+// Learn/Settings buttons that have no rail on a phone.
 document.querySelectorAll('.side-tab').forEach(button => {
   button.addEventListener('click', () => {
     document.querySelectorAll('.side-tab').forEach(item => {

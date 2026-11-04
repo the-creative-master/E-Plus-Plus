@@ -1587,6 +1587,64 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
     'phones hide the desktop rail and use the bottom bar');
   ok('the phone layout really applies below 900px (no dead media queries)');
 
+  // The CSS shows one panel at a time by keying off <body data-mobile-view>.
+  // The default must be in the markup, or the first paint shows nothing.
+  assert.match(page, /<body[^>]*data-mobile-view="editor"/,
+    'the body names its starting view, or a phone paints an empty shell');
+  assert.ok(page.includes('js/studio-mobile.js'), 'the page loads the phone navigation module');
+  for (const attr of ['files', 'editor', 'console']) {
+    const studioCssRaw = readFileSync(join(root, 'css', 'studio.css'), 'utf8');
+    assert.ok(!studioCssRaw.includes("data-view='" + attr), 'css/studio.css must not key off data-view');
+    assert.ok(studioCssRaw.includes("data-mobile-view='" + attr + "'"),
+      'css/studio.css switches panels off data-mobile-view (' + attr + ')');
+    assert.ok(page.includes("data-view='" + attr) === false, 'nothing may key off data-view');
+  }
+  // The JS writes the same attribute the CSS reads.
+  const mobileModule = readFileSync(join(root, 'js', 'studio-mobile.js'), 'utf8');
+  assert.ok(mobileModule.includes("setAttribute('data-mobile-view'"), 'the module writes data-mobile-view');
+  ok('the starting view is in the markup and the navigation module is loaded');
+
+  // Exercise the navigation module the way a phone does.
+  {
+    const scope = vm.createContext({ EPP: {}, document: undefined });
+    vm.runInContext(readFileSync(join(root, 'js', 'studio-mobile.js'), 'utf8'), scope);
+    const Mobile = scope.EPP.Mobile;
+    assert.ok(Mobile && typeof Mobile.apply === 'function', 'the phone module exposes apply()');
+
+    const make = (view) => {
+      const classes = new Set();
+      return {
+        attrs: { 'data-mobile-view': view },
+        classes,
+        getAttribute(name) { return this.attrs[name] ?? null; },
+        setAttribute(name, value) { this.attrs[name] = String(value); },
+        classList: {
+          add(c) { classes.add(c); },
+          remove(c) { classes.delete(c); },
+          toggle(c, on) { (on ? classes.add(c) : classes.delete(c)); },
+          contains(c) { return classes.has(c); }
+        }
+      };
+    };
+    const body = make('files');
+    const buttons = ['files', 'editor', 'console'].map(make);
+
+    for (const view of ['files', 'editor', 'console']) {
+      const applied = Mobile.apply(view, { body, buttons });
+      assert.equal(applied, view);
+      assert.equal(body.getAttribute('data-mobile-view'), view, 'body follows the button');
+      const active = buttons.filter((b) => b.classList.contains('active')).map((b) => b.getAttribute('data-mobile-view'));
+      assert.deepEqual(active, [view], 'exactly one button is active for ' + view);
+      buttons.forEach((b) => {
+        const on = b.getAttribute('data-mobile-view') === view;
+        assert.equal(b.getAttribute('aria-pressed'), String(on), 'aria-pressed tracks ' + view);
+      });
+    }
+    assert.equal(Mobile.apply('code', { body, buttons }), 'editor', '"code" is the editor');
+    assert.equal(Mobile.apply('nonsense', { body, buttons }), 'editor', 'an unknown view falls back to the editor');
+    ok('the phone bar switches Files / Code / Output and marks the active button');
+  }
+
   // Every library card is bound to a registry name, so a build can hide it.
   const cards = page.match(/data-library="[^"]+"/g) || [];
   assert.ok(cards.length >= 11, 'every library card names its library (' + cards.length + ')');
