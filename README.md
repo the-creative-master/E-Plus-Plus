@@ -35,9 +35,13 @@ code, a plain-English name, and a fix, and there are exactly one hundred of them
   parser never invents them.
 - **The whole catalogue is documented** in `LANGUAGE.md` §14, and
   `node tests/errors-1.4b1.mjs` proves the 75/5/5/15 split.
-- **A clearer sidebar.** The activity bar was five unlabelled icons. It is now
-  grouped into Panels, Help and More, and every button carries its name:
-  Files, Libraries, Reference, Learn, Settings and Customize.
+- **A clearer sidebar, drawn icons, and phones that work.** The activity bar
+  was five unlabelled icons. It is now grouped into Panels, Help and More, and
+  every button carries its name: Files, Libraries, Reference, Learn, Settings
+  and Customize. Buttons no longer lean on font glyphs such as `▤` or `↗`:
+  `js/icons.js` draws them, so they look the same on every machine. And the
+  phone layout finally applies — every mobile rule used to sit inside a
+  `max-width: 0px` query, which can never match.
 
 ## Start the Studio
 

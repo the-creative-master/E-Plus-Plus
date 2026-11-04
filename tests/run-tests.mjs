@@ -1533,6 +1533,60 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
   assert.ok(page.includes("epp_idea_draft_1_2_1"), 'existing idea drafts remain available');
   ok('the page announces 1.4b1 while retaining existing progress');
 
+  // 1.4b1: every button draws a real icon, and every button is named.
+  const icons = readFileSync(join(root, 'js', 'icons.js'), 'utf8');
+  assert.ok(page.includes('js/icons.js'), 'the page loads the shared icon set');
+  const ids = new Set([...icons.matchAll(/^    (\w+): '/gm)].map(m => m[1]));
+  assert.ok(ids.size >= 20, 'the icon set covers the Studio controls, got ' + ids.size);
+  const used = [...page.matchAll(/data-icon="(\w+)"/g)].map(m => m[1]);
+  const unknown = [...new Set(used)].filter(id => !ids.has(id));
+  assert.deepEqual(unknown, [], 'every icon named in the page exists in the set');
+  assert.ok(used.length >= 10, 'the chrome uses the icon set, got ' + used.length + ' icons');
+
+  // The rail: an icon and a word on every button, in three named groups.
+  const rail = page.slice(page.indexOf('<nav class="activity-bar"'), page.indexOf('</nav>', page.indexOf('<nav class="activity-bar"')));
+  const railButtons = rail.match(/<button[\s\S]*?<\/button>/g) || [];
+  assert.ok(railButtons.length >= 6, 'the rail has its buttons');
+  for (const button of railButtons) {
+    assert.ok(/class="rail-label">[A-Za-z ]+</.test(button), 'a rail button lost its label: ' + button.slice(0, 90));
+    assert.ok(/data-icon="\w+"/.test(button), 'a rail button lost its icon: ' + button.slice(0, 90));
+    assert.ok(/aria-label="[^"]+"/.test(button), 'a rail button lost its accessible name');
+  }
+  assert.deepEqual([...rail.matchAll(/rail-group-label[^>]*>([^<]+)</g)].map(m => m[1]),
+    ['Panels', 'Help', 'More'], 'the rail groups its buttons');
+  ok('every sidebar button pairs a real icon with its name, in three groups');
+
+  // No decorative Unicode stand-ins for icons in the chrome we just rebuilt.
+  const retiredGlyphs = ['▤', '▥', '▧', '⌕', '⌧', '⌑', '☷'];
+  const strayGlyphs = retiredGlyphs.filter(g => page.includes(g));
+  assert.deepEqual(strayGlyphs, [], 'the chrome still draws a font glyph: ' + strayGlyphs.join(' '));
+  ok('no font-dependent glyphs stand in for icons');
+
+  // Phones: the mobile bar is the navigation, and it names every destination.
+  const bar = page.slice(page.indexOf('<nav class="mobile-view-nav"'), page.indexOf('</nav>', page.indexOf('<nav class="mobile-view-nav"')));
+  const barButtons = bar.match(/<button[\s\S]*?<\/button>/g) || [];
+  assert.equal(barButtons.length, 5, 'the phone bar has five destinations');
+  for (const button of barButtons) {
+    assert.ok(/data-(?:mobile-view|action)="/.test(button), 'a phone button goes nowhere');
+    assert.ok(/<span>[A-Za-z]+<\/span>/.test(button), 'a phone button is unlabelled: ' + button.slice(0, 90));
+    assert.ok(/data-icon="\w+"/.test(button), 'a phone button has no icon');
+  }
+  ok('the phone bar offers Files, Code, Learn, Settings and Output, all labelled');
+
+  // A media query that can never match means phones get the desktop shell.
+  // 1.4b1 shipped with every mobile rule inside (max-width: 0px); keep it out.
+  for (const file of ['css/studio.css', 'css/ide.css']) {
+    const css = readFileSync(join(root, file), 'utf8');
+    const dead = [...css.matchAll(/@media[^{]*max-width:\s*0px[^{]*\{/g)].map(m => m[0].trim());
+    assert.deepEqual(dead, [], file + ' has a media query that can never match: ' + dead.join(' '));
+  }
+  const studioCss = readFileSync(join(root, 'css', 'studio.css'), 'utf8');
+  assert.match(studioCss, /@media \(max-width: 900px\) \{[\s\S]*?mobile-view-nav/,
+    'the phone shell must apply at phone and tablet widths');
+  assert.match(studioCss, /@media \(max-width: 900px\) \{[\s\S]*?\.activity-bar \{ display: none !important; \}/,
+    'phones hide the desktop rail and use the bottom bar');
+  ok('the phone layout really applies below 900px (no dead media queries)');
+
   // Every library card is bound to a registry name, so a build can hide it.
   const cards = page.match(/data-library="[^"]+"/g) || [];
   assert.ok(cards.length >= 11, 'every library card names its library (' + cards.length + ')');

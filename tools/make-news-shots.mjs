@@ -9,7 +9,7 @@
  * Run: npm i --no-save sharp && node tools/make-news-shots.mjs
  * (sharp is not a project dependency; it is only needed to regenerate these.)
  */
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
@@ -133,14 +133,21 @@ function topbar(version, saved = 'Saved locally') {
   return s;
 }
 
-const RAIL_ICONS = {
-  files: '<path d="M4 6.5h6l2 2h8a1 1 0 0 1 1 1V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a1.5 1.5 0 0 1 1-1.5Z"/>',
-  libraries: '<path d="M4 4h4v16H4zM10 4h4v16h-4zM16 5l3-1 3 15-3 1z"/>',
-  guide: '<path d="M4 5c3-1 5-1 8 1v14c-3-2-5-2-8-1zM20 5c-3-1-5-1-8 1v14c3-2 5-2 8-1z"/>',
-  learn: '<path d="m3 9 9-5 9 5-9 5zM7 11v5c3 2 7 2 10 0v-5M21 9v7"/>',
-  settings: '<path d="m10 3-.5 2.2-2 .9-2-1.2-2 3.4 1.7 1.5v2.4l-1.7 1.5 2 3.4 2-1.2 2 .9L10 21h4l.5-2.2 2-.9 2 1.2 2-3.4-1.7-1.5V9.8l1.7-1.5-2-3.4-2 1.2-2-.9L14 3z"/><circle cx="12" cy="12" r="3"/>',
-  customize: '<path d="M4 7h8M16 7h4M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="14" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/>',
-};
+const ICONS = (() => {
+  // Draw with the same icon set the Studio uses (js/icons.js), so a screenshot
+  // can never drift from the interface it claims to show.
+  const scope = {};
+  new Function(readFileSync(path.join(root, 'js/icons.js'), 'utf8'))();
+  scope.EPP = globalThis.EPP || scope.EPP;
+  return scope.EPP.Icons;
+})();
+
+/** One icon at (x, y), scaled from its 24x24 box to `size`. */
+function icon(id, x, y, size, colour) {
+  const body = ICONS.get(id).replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
+  return `<g transform="translate(${x},${y}) scale(${size / 24})" color="${colour}" fill="none" stroke="${colour}"` +
+    ` stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${body}</g>`;
+}
 
 const RAIL = [
   ['group', 'Panels'],
@@ -153,6 +160,8 @@ const RAIL = [
   ['group', 'More'],
   ['customize', 'Customize'],
 ];
+
+const ICON_IDS = { files: 'files', libraries: 'libraries', guide: 'reference', learn: 'learn', settings: 'settings', customize: 'customize' };
 
 function rail(version, active) {
   const width = 84;
@@ -171,8 +180,7 @@ function rail(version, active) {
       s += rect(0, y + 6, 3, 38, T.accent, 2);
     }
     const colour = isActive ? '#f0eaff' : '#9390a8';
-    s += `<g transform="translate(${width / 2 - 10},${y + 7})" fill="none" stroke="${colour}" stroke-width="1.5"` +
-      ` stroke-linecap="round" stroke-linejoin="round"><svg width="20" height="20" viewBox="0 0 24 24">${RAIL_ICONS[key]}</svg></g>`;
+    s += icon(ICON_IDS[key], width / 2 - 10, y + 7, 20, colour);
     s += text(width / 2, y + 43, label, { size: 9, weight: 700, fill: colour, anchor: 'middle' });
     y += 53;
   }
@@ -231,7 +239,7 @@ function sidebarActive(version, activeTab = 'Files', content = null) {
 
   // search
   s += rect(x + 12, 244, SIDEBAR_W - 24, 28, '#212537', 8, `stroke="#383d51"`);
-  s += `<g transform="translate(${x + 22},252)" fill="none" stroke="#8d92a8" stroke-width="1.6"><svg width="14" height="14" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4 4"/></svg></g>`;
+  s += icon('search', x + 22, 252, 15, '#8d92a8');
   s += text(x + 44, 263, 'Search your files…', { size: 11, fill: '#7e8199' });
 
   // files
@@ -240,7 +248,7 @@ function sidebarActive(version, activeTab = 'Files', content = null) {
   let fy = 288;
   for (const [name, open] of files) {
     if (open) s += rect(x + 8, fy - 15, SIDEBAR_W - 16, 26, '#ffffff12', 6);
-    s += `<g transform="translate(${x + 18},${fy - 11})" fill="none" stroke="${open ? T.accent : '#8b8da4'}" stroke-width="1.5"><svg width="13" height="13" viewBox="0 0 24 24"><path d="M7 3h8l4 4v13H7z"/><path d="M15 3v5h4"/></svg></g>`;
+    s += icon('files', x + 18, fy - 11, 13, open ? T.accent : '#8b8da4');
     s += text(x + 38, fy, name, { size: 11, fill: open ? '#efeaff' : '#c3c5d6' });
     fy += 30;
   }
@@ -577,14 +585,14 @@ async function alpha3Tools(version) {
   s += rect(px + 16, py + 48, pw - 32, 30, '#22243a', 8, `stroke="#383d51"`);
   s += text(px + 30, py + 68, 'Search features and projects…', { size: 11, fill: '#7e8199' });
   s += text(px + 20, py + 104, 'FEATURES', { size: 8.5, weight: 800, fill: T.faint, spacing: 1.4 });
-  const feats = [['▸', 'Run code', 'Ctrl+Enter'], ['▥', 'Libraries', 'Add a library'],
-    ['▧', 'Reference', 'Golden rules'], ['⇧', 'EShare', 'Share a program'],
-    ['⌑', 'Project keys', 'Sealed projects'], ['⇩', 'Download E++.zip', 'Offline build']];
-  feats.forEach(([icon, name, hint], i) => {
+  const feats = [['run', 'Run code', 'Ctrl+Enter'], ['libraries', 'Libraries', 'Add a library'],
+    ['reference', 'Reference', 'Golden rules'], ['eshare', 'EShare', 'Share a program'],
+    ['keys', 'Project keys', 'Sealed projects'], ['download', 'Download E++.zip', 'Offline build']];
+  feats.forEach(([id, name, hint], i) => {
     const fy = py + 122 + i * 40;
     if (i === 0) s += rect(px + 12, fy - 20, pw - 24, 34, '#ffffff10', 7);
-    s += text(px + 28, fy, icon, { size: 12, fill: T.accent });
-    s += text(px + 52, fy, name, { size: 11.5, weight: 600 });
+    s += icon(id, px + 28, fy - 14, 17, T.accent);
+    s += text(px + 54, fy, name, { size: 11.5, weight: 600 });
     s += text(px + pw - 28, fy, hint, { size: 10, fill: T.muted, anchor: 'end' });
   });
   s += line(px + 20, py + 382, px + pw - 20, py + 382, '#2d3046');
@@ -624,15 +632,15 @@ async function alpha2Layout(version) {
   });
 
   s += text(dx + 24, dy + 178, 'SIDEBAR', { size: 8.5, weight: 800, fill: T.faint, spacing: 1.4 });
-  const items = [['▤', 'Files', 'Activity bar'], ['▥', 'Libraries', 'Activity bar'],
-    ['▧', 'Reference', 'Activity bar'], ['✦', 'Learn', 'Activity bar'],
-    ['⚙', 'Settings', 'Activity bar'], ['⇧', 'EShare', 'Activity bar']];
-  items.forEach(([icon, name, where], i) => {
+  const items = [['files', 'Files', 'Activity bar'], ['libraries', 'Libraries', 'Activity bar'],
+    ['reference', 'Reference', 'Activity bar'], ['learn', 'Learn', 'Activity bar'],
+    ['settings', 'Settings', 'Activity bar'], ['eshare', 'EShare', 'Activity bar']];
+  items.forEach(([id, name, where], i) => {
     const fy = dy + 200 + i * 44;
     s += rect(dx + 16, fy - 20, dw - 32, 38, i === 5 ? '#ffffff0d' : 'transparent', 7,
       i === 5 ? `stroke="#5a4f8a" stroke-dasharray="4 3"` : '');
     s += text(dx + 34, fy + 3, '⠿', { size: 12, fill: '#6f7288' });
-    s += text(dx + 58, fy + 3, icon, { size: 12, fill: T.accent });
+    s += icon(id, dx + 58, fy - 12, 17, T.accent);
     s += text(dx + 82, fy + 3, name, { size: 11.5, weight: 600 });
     s += rect(dx + dw - 158, fy - 12, 128, 26, '#22243a', 6, `stroke="#383d51"`);
     s += text(dx + dw - 94, fy + 5, where, { size: 10, fill: '#c9cbdb', anchor: 'middle' });
@@ -650,6 +658,56 @@ async function alpha2Layout(version) {
 }
 
 // ---------------------------------------------------------------------------
+// 1.4b1 — the phone layout: one panel at a time, five labelled buttons
+// ---------------------------------------------------------------------------
+async function betaPhone(version) {
+  const PW = 390;
+  const PH = 844;
+  const NAV_W = 390;
+  let s = rect(0, 0, PW, PH, T.bg);
+  // top bar
+  s += rect(0, 0, PW, 52, T.top);
+  s += rect(10, 12, 28, 28, T.accent, 7);
+  s += text(24, 31, 'E', { size: 14, weight: 700, fill: '#1a1730', anchor: 'middle' });
+  s += text(46, 30, 'E++ Studio', { size: 13, weight: 700 });
+  s += rect(150, 17, 46, 18, '#ffffff14', 9);
+  s += text(173, 30, version, { size: 9.5, weight: 700, fill: T.accent, anchor: 'middle' });
+  s += text(PW - 92, 30, 'Tools', { size: 11, fill: T.muted });
+  s += rect(PW - 62, 14, 52, 24, T.accent, 7);
+  s += text(PW - 36, 30, '▸ Run', { size: 10.5, weight: 700, fill: '#1a1730', anchor: 'middle' });
+
+  // the code card fills the phone
+  s += rect(8, 62, PW - 16, 600, T.panel, 12, `stroke="${T.border}"`);
+  s += text(20, 88, 'CODE EDITOR', { size: 8.5, weight: 800, fill: T.faint, spacing: 1.3 });
+  s += text(PW - 62, 88, 'Wrap', { size: 10, fill: T.muted });
+  const lines = ['note [Your first E++ program]', 'say "Hello, World!"', '',
+    'note [No quotes for math:]', 'say 1 plus 1', 'say 2 times 3', '',
+    'note [Quotes are strictly text:]', 'say "1 + 1"'];
+  lines.forEach((line, i) => {
+    s += text(30, 122 + i * 30, String(i + 1), { font: MONO, size: 10.5, fill: '#4b4d63', anchor: 'end' });
+    s += code(42, 122 + i * 30, line, 11.5);
+  });
+
+  // bottom navigation: five buttons, every one with a word
+  s += rect(0, 676, PW, PH - 676, '#12131f');
+  s += rect(8, 688, PW - 16, 66, '#1d1f30', 11, `stroke="${T.border}"`);
+  [['files', 'Files'], ['wrap', 'Code'], ['learn', 'Learn'], ['settings', 'Settings'], ['clearOutput', 'Output']]
+    .forEach(([id, label], i) => {
+      const cx = 8 + (PW - 16) / 5 * (i + 0.5);
+      const on = id === 'wrap';
+      if (on) s += rect(cx - 34, 693, 68, 56, '#3e3854', 9, `stroke="#665b7e"`);
+      const colour = on ? '#eee5ff' : '#9d9ab2';
+      s += icon(id, cx - 9, 701, 19, colour);
+      s += text(cx, 742, label, { size: 9.5, weight: 700, fill: colour, anchor: 'middle' });
+    });
+  s += text(PW / 2, 786, 'One panel at a time · no sideways scrolling', { size: 10, fill: T.muted, anchor: 'middle' });
+  s += text(PW / 2, 806, 'The desktop rail is hidden below 900px.', { size: 10, fill: T.faint, anchor: 'middle' });
+
+  await shot('news-phone-1.4b1.jpg', `<svg xmlns="http://www.w3.org/2000/svg" width="${PW}" height="${PH}" viewBox="0 0 ${PW} ${PH}">${s}</svg>`);
+  void NAV_W;
+}
+
+// ---------------------------------------------------------------------------
 const V_A2 = '1.4a2';
 const V_A3 = '1.4a3';
 const V_B1 = '1.4b1';
@@ -661,5 +719,6 @@ await betaError(V_B1);
 await betaSidebar(V_B1);
 await betaCatalogue(V_B1);
 await betaWarning(V_B1);
+await betaPhone(V_B1);
 
 console.log('done:', files.length, 'screenshots');

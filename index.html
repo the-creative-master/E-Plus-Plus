@@ -379,7 +379,7 @@
     </button>
     <div class="action-bar" id="studioActions">
       <div class="tools-hub-head"><div><span class="tools-kicker">YOUR STUDIO, ALL IN ONE PLACE</span><h2>Tools</h2></div><button id="btnEditFeatures" class="btn btn-small" type="button">Edit shortcuts</button></div>
-      <label class="tools-search"><span aria-hidden="true">⌕</span><input id="toolsSearch" type="search" aria-label="Search tools and projects" placeholder="Search tools and projects…" autocomplete="off"><kbd>Ctrl ⇧ P</kbd></label>
+      <label class="tools-search"><span class="epp-icon" data-icon="search" aria-hidden="true"></span><input id="toolsSearch" type="search" aria-label="Search tools and projects" placeholder="Search tools and projects…" autocomplete="off"><kbd>Ctrl ⇧ P</kbd></label>
       <div class="tools-hub-scroll"><a href="#toolsProjectList" id="toolsProjectJump" class="tools-project-jump">Jump to your projects ↓</a><div class="tools-section-title">FEATURES <span id="toolsFeatureCount"></span></div><div id="toolsFeatureList" class="tools-feature-list"></div><div class="tools-section-title tools-project-heading">YOUR PROJECTS <span id="toolsProjectCount"></span></div><div id="toolsProjectList" class="tools-project-list"></div></div>
       <div class="action-group file-actions legacy-actions" role="group" aria-label="Project actions">
         <span class="action-group-label">Project</span>
@@ -407,7 +407,7 @@
         <a id="btnNews" class="btn btn-small" href="news.html">News <span class="news-new">NEW</span></a>
       </div>
     </div>
-    <button id="btnSettings" class="btn btn-small settings-button" type="button" aria-label="Open settings" title="Settings">⚙ <span>Settings</span></button>
+    <button id="btnSettings" class="btn btn-small settings-button" type="button" aria-label="Open settings" title="Settings"><span class="epp-icon" data-icon="settings" aria-hidden="true"></span> <span>Settings</span></button>
     <div class="action-group run-actions">
       <button id="btnStop" data-component="stop" class="btn btn-stop" type="button" title="Stop the current program" disabled>■ <span>Stop</span></button>
       <button id="btnRun" data-component="run" class="btn btn-run" type="button" title="Run (Ctrl+Enter)">▶ <span>Run code</span></button>
@@ -418,10 +418,10 @@
 </header>
 
 <dialog id="eshareDialog" class="eshare-dialog" aria-labelledby="eshareTitle">
-  <div class="eshare-head"><div><span class="eshare-kicker">SHARE YOUR CREATIONS</span><h2 id="eshareTitle">EShare <span>↗</span></h2></div><button class="btn eshare-close" id="eshareClose" type="button" aria-label="Close EShare">✕</button></div>
+  <div class="eshare-head"><div><span class="eshare-kicker">SHARE YOUR CREATIONS</span><h2 id="eshareTitle">EShare <span class="epp-icon" data-icon="eshare" aria-hidden="true"></span></h2></div><button class="btn eshare-close" id="eshareClose" type="button" aria-label="Close EShare">✕</button></div>
   <p class="eshare-intro">Turn an E++ project into a code you can send anywhere. Everything happens on your device.</p>
   <div class="eshare-section-label">01 &nbsp; CHOOSE A PROJECT</div>
-  <div class="eshare-source-actions"><button class="btn eshare-source" id="eshareCurrent" type="button"><span class="eshare-source-icon">⌘</span><span><strong>Current project</strong><small>Share the file open in the editor</small></span></button><button class="btn eshare-source" id="eshareChoose" type="button"><span class="eshare-source-icon">⇧</span><span><strong>Choose a file</strong><small>Select an .enpp or .enppl file</small></span></button></div>
+  <div class="eshare-source-actions"><button class="btn eshare-source" id="eshareCurrent" type="button"><span class="eshare-source-icon epp-icon" data-icon="save" aria-hidden="true"></span><span><strong>Current project</strong><small>Share the file open in the editor</small></span></button><button class="btn eshare-source" id="eshareChoose" type="button"><span class="eshare-source-icon epp-icon" data-icon="import" aria-hidden="true"></span><span><strong>Choose a file</strong><small>Select an .enpp or .enppl file</small></span></button></div>
   <input id="eshareFile" type="file" accept=".enpp,.enppl" hidden>
   <div class="eshare-section-label">02 &nbsp; COPY YOUR CODE</div>
   <label class="eshare-output-label" for="eshareOutput"><span>EShare code</span><span id="eshareFileName">No project selected</span></label>
@@ -432,7 +432,7 @@
 <dialog id="importDialog" class="eshare-dialog import-dialog" aria-labelledby="importTitle">
   <div class="eshare-head"><div><span class="eshare-kicker">BRING SOMETHING IN</span><h2 id="importTitle">Import project</h2></div><button id="importClose" class="btn eshare-close" type="button" aria-label="Close import">✕</button></div>
   <p class="eshare-intro">Choose an E++ file, or paste an EShare code someone sent you.</p>
-  <button id="importChooseFile" class="btn eshare-source eshare-import-file" type="button"><span class="eshare-source-icon">⇧</span><span><strong>Choose file</strong><small>.enpp or .enppl</small></span><span class="eshare-arrow">↗</span></button>
+  <button id="importChooseFile" class="btn eshare-source eshare-import-file" type="button"><span class="eshare-source-icon epp-icon" data-icon="import" aria-hidden="true"></span><span><strong>Choose file</strong><small>.enpp or .enppl</small></span><span class="eshare-arrow">↗</span></button>
   <div class="eshare-section-label">OR PASTE AN EShare CODE</div>
   <label class="eshare-output-label" for="importShareCode">EShare code</label>
   <textarea id="importShareCode" placeholder="Paste the entire EShare code here…" spellcheck="false"></textarea>
@@ -510,17 +510,22 @@
   </div>
 </div>
 
-<nav class="mobile-view-nav" aria-label="Workspace panels">
-  <button class="mobile-view-btn" data-view="files" type="button" aria-controls="sidebar" aria-pressed="false">
-    <svg class="mobile-view-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M3.5 6.5h6l2 2H20a1 1 0 0 1 1 1v8.5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-10a1.5 1.5 0 0 1 .5-1.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
-    <span>Workspace</span>
-  </button>
-  <button class="mobile-view-btn active" data-view="editor" type="button" aria-controls="editorCard" aria-pressed="true">
-    <svg class="mobile-view-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m8 7-5 5 5 5m8-10 5 5-5 5m-2-12-4 14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<nav class="mobile-view-nav" aria-label="Switch between files, code and output">
+  <button class="mobile-view-btn" data-mobile-view="files" type="button" aria-controls="sidebar" aria-pressed="false"><span class="mobile-view-icon epp-icon" data-icon="files" aria-hidden="true"></span><span>Files</span></button>
+  <button class="mobile-view-btn active" data-mobile-view="editor" type="button" aria-controls="editorCard" aria-pressed="true">
+    <span class="mobile-view-icon epp-icon" data-icon="wrap" aria-hidden="true"></span>
     <span>Code</span>
   </button>
-  <button class="mobile-view-btn" data-view="console" type="button" aria-controls="consoleCard" aria-pressed="false">
-    <svg class="mobile-view-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="3" y="4.5" width="18" height="15" rx="3" stroke="currentColor" stroke-width="1.7"/><path d="m7 9 3 3-3 3m6 0h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <button class="mobile-view-btn" type="button" data-action="btnLearn" aria-label="Learn E++">
+    <span class="mobile-view-icon epp-icon" data-icon="learn" aria-hidden="true"></span>
+    <span>Learn</span>
+  </button>
+  <button class="mobile-view-btn" type="button" data-action="btnSettings" aria-label="Settings">
+    <span class="mobile-view-icon epp-icon" data-icon="settings" aria-hidden="true"></span>
+    <span>Settings</span>
+  </button>
+  <button class="mobile-view-btn" data-mobile-view="console" type="button" aria-controls="consoleCard" aria-pressed="false">
+    <span class="mobile-view-icon epp-icon" data-icon="clearOutput" aria-hidden="true"></span>
     <span>Output</span>
   </button>
 </nav>
@@ -528,14 +533,14 @@
 <main class="layout" id="mainLayout">
   <nav class="activity-bar" aria-label="Studio sidebar">
     <span class="rail-group-label" aria-hidden="true">Panels</span>
-    <button class="activity-item" type="button" data-component="explorer" data-activity="files" aria-controls="sidebar" aria-expanded="false" aria-label="Files" title="Files — open one of your saved programs"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6.5h6l2 2h8a1 1 0 0 1 1 1V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a1.5 1.5 0 0 1 1-1.5Z"/></svg><span class="rail-label">Files</span></button>
-    <button class="activity-item" type="button" data-component="libraries" data-activity="libraries" aria-controls="sidebar" aria-expanded="false" aria-label="Libraries" title="Libraries — add one to your program"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 4h4v16H4zM10 4h4v16h-4zM16 5l3-1 3 15-3 1z"/></svg><span class="rail-label">Libraries</span></button>
-    <button class="activity-item" type="button" data-component="guide" data-activity="guide" aria-controls="sidebar" aria-expanded="false" aria-label="Reference" title="Reference — the golden rules and syntax"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5c3-1 5-1 8 1v14c-3-2-5-2-8-1zM20 5c-3-1-5-1-8 1v14c3-2 5-2 8-1z"/></svg><span class="rail-label">Reference</span></button>
+    <button class="activity-item" type="button" data-component="explorer" data-activity="files" aria-controls="sidebar" aria-expanded="false" aria-label="Files" title="Files — open one of your saved programs"><span class="epp-icon" data-icon="files" aria-hidden="true"></span><span class="rail-label">Files</span></button>
+    <button class="activity-item" type="button" data-component="libraries" data-activity="libraries" aria-controls="sidebar" aria-expanded="false" aria-label="Libraries" title="Libraries — add one to your program"><span class="epp-icon" data-icon="libraries" aria-hidden="true"></span><span class="rail-label">Libraries</span></button>
+    <button class="activity-item" type="button" data-component="guide" data-activity="guide" aria-controls="sidebar" aria-expanded="false" aria-label="Reference" title="Reference — the golden rules and syntax"><span class="epp-icon" data-icon="reference" aria-hidden="true"></span><span class="rail-label">Reference</span></button>
     <span class="rail-group-label" aria-hidden="true">Help</span>
-    <button class="activity-item" type="button" data-component="learn" data-action="btnLearn" aria-label="Learn" title="Learn — one short card at a time"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3 9 9-5 9 5-9 5zM7 11v5c3 2 7 2 10 0v-5M21 9v7"/></svg><span class="rail-label">Learn</span></button>
-    <button class="activity-item" type="button" data-component="settings" data-action="btnSettings" aria-label="Settings" title="Settings — appearance and editor options"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m10 3-.5 2.2-2 .9-2-1.2-2 3.4 1.7 1.5v2.4l-1.7 1.5 2 3.4 2-1.2 2 .9L10 21h4l.5-2.2 2-.9 2 1.2 2-3.4-1.7-1.5V9.8l1.7-1.5-2-3.4-2 1.2-2-.9L14 3z"/><circle cx="12" cy="12" r="3"/></svg><span class="rail-label">Settings</span></button>
+    <button class="activity-item" type="button" data-component="learn" data-action="btnLearn" aria-label="Learn" title="Learn — one short card at a time"><span class="epp-icon" data-icon="learn" aria-hidden="true"></span><span class="rail-label">Learn</span></button>
+    <button class="activity-item" type="button" data-component="settings" data-action="btnSettings" aria-label="Settings" title="Settings — appearance and editor options"><span class="epp-icon" data-icon="settings" aria-hidden="true"></span><span class="rail-label">Settings</span></button>
     <span class="rail-group-label" aria-hidden="true">More</span>
-    <button id="btnSidebarEdit" class="activity-item sidebar-edit" type="button" title="Customize — choose which buttons appear in the sidebar and Tools" aria-label="Customize sidebar buttons"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h8M16 7h4M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="14" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg><span class="rail-label">Customize</span></button>
+    <button id="btnSidebarEdit" class="activity-item sidebar-edit" type="button" title="Customize — choose which buttons appear in the sidebar and Tools" aria-label="Customize sidebar buttons"><span class="epp-icon" data-icon="customize" aria-hidden="true"></span><span class="rail-label">Customize</span></button>
     <div id="extraSidebar" class="extra-sidebar"></div>
   </nav>
   <!-- Sidebar: Files, Libraries, Quick Reference -->
@@ -1027,6 +1032,7 @@ set the image of the actor 'hero' to "hero2.png"</pre>
 <script src="js/eshare.js"></script>
 <script src="js/game-library.js"></script>
 <script src="js/draw-library.js"></script>
+<script src="js/icons.js?v=1.4b1"></script>
 <script src="js/studio-editor.js"></script>
 <script src="js/diagnostics.js"></script>
 <script src="js/native-lexer-wasm.js"></script>
@@ -5279,19 +5285,13 @@ window.addEventListener('resize', () => {
   updateConsoleHint();
 });
 
-// Workspace navigation works on touch, keyboard, and narrow screens.
-function setMobileView(view) {
-  document.body.dataset.view = view;
-  document.querySelectorAll('.mobile-view-btn').forEach(button => {
-    const selected = button.dataset.view === view;
-    button.classList.toggle('active', selected);
-    button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+// Workspace navigation lives in js/ide.js (data-mobile-view -> setMobileView),
+// so this page only has to bind the two dialog buttons on the phone bar.
+document.querySelectorAll('.mobile-view-btn[data-action]').forEach(button => {
+  button.addEventListener('click', () => {
+    const target = document.getElementById(button.dataset.action);
+    if (target) target.click();
   });
-  if (view === 'editor') requestAnimationFrame(updateLineNumbers);
-}
-setMobileView('editor');
-document.querySelectorAll('.mobile-view-btn').forEach(button => {
-  button.addEventListener('click', () => setMobileView(button.dataset.view));
 });
 document.querySelectorAll('.side-tab').forEach(button => {
   button.addEventListener('click', () => {
