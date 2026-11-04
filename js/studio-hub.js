@@ -4,10 +4,10 @@
   const $ = id => document.getElementById(id);
   const key = 'epp_studio_shortcuts_1_4a3';
   const catalog = [
-    { id: 'explorer', name: 'Explorer', icon: '▤', activity: 'files', legacy: 'explorer' },
+    { id: 'explorer', name: 'Files', icon: '▤', activity: 'files', legacy: 'explorer' },
     { id: 'libraries', name: 'Libraries', icon: '▥', activity: 'libraries', legacy: 'libraries' },
-    { id: 'guide', name: 'Quick reference', icon: '▧', activity: 'guide', legacy: 'guide' },
-    { id: 'learn', name: 'Learn E++', icon: '✦', target: 'btnLearn', legacy: 'learn' },
+    { id: 'guide', name: 'Reference', icon: '▧', activity: 'guide', legacy: 'guide' },
+    { id: 'learn', name: 'Learn', icon: '✦', target: 'btnLearn', legacy: 'learn' },
     { id: 'settings', name: 'Settings', icon: '⚙', target: 'btnSettings', legacy: 'settings' },
     { id: 'new', name: 'New file', icon: '+', target: 'btnNew' },
     { id: 'save', name: 'Save file', icon: '↓', target: 'btnSave' },

@@ -526,14 +526,17 @@
 </nav>
 
 <main class="layout" id="mainLayout">
-  <nav class="activity-bar" aria-label="Studio activity">
-    <button class="activity-item" type="button" data-component="explorer" data-activity="files" aria-label="Explorer" title="Explorer" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3h8l4 4v13H7zM15 3v5h4M4 7v14h11"/></svg></button>
-    <button class="activity-item" type="button" data-component="libraries" data-activity="libraries" aria-label="Libraries" title="Libraries" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 4h4v16H4zM10 4h4v16h-4zM16 5l3-1 3 15-3 1z"/></svg></button>
-    <button class="activity-item" type="button" data-component="guide" data-activity="guide" aria-label="Quick reference" title="Quick reference" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5c3-1 5-1 8 1v14c-3-2-5-2-8-1zM20 5c-3-1-5-1-8 1v14c3-2 5-2 8-1z"/></svg></button>
-    <button class="activity-item" type="button" data-component="learn" data-action="btnLearn" aria-label="Learn E++" title="Learn E++"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3 9 9-5 9 5-9 5zM7 11v5c3 2 7 2 10 0v-5M21 9v7"/></svg></button>
-    <button class="activity-item" type="button" data-component="settings" data-action="btnSettings" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m10 3-.5 2.2-2 .9-2-1.2-2 3.4 1.7 1.5v2.4l-1.7 1.5 2 3.4 2-1.2 2 .9L10 21h4l.5-2.2 2-.9 2 1.2 2-3.4-1.7-1.5V9.8l1.7-1.5-2-3.4-2 1.2-2-.9L14 3z"/><circle cx="12" cy="12" r="3"/></svg></button>
+  <nav class="activity-bar" aria-label="Studio sidebar">
+    <span class="rail-group-label" aria-hidden="true">Panels</span>
+    <button class="activity-item" type="button" data-component="explorer" data-activity="files" aria-controls="sidebar" aria-expanded="false" aria-label="Files" title="Files — open one of your saved programs"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6.5h6l2 2h8a1 1 0 0 1 1 1V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a1.5 1.5 0 0 1 1-1.5Z"/></svg><span class="rail-label">Files</span></button>
+    <button class="activity-item" type="button" data-component="libraries" data-activity="libraries" aria-controls="sidebar" aria-expanded="false" aria-label="Libraries" title="Libraries — add one to your program"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 4h4v16H4zM10 4h4v16h-4zM16 5l3-1 3 15-3 1z"/></svg><span class="rail-label">Libraries</span></button>
+    <button class="activity-item" type="button" data-component="guide" data-activity="guide" aria-controls="sidebar" aria-expanded="false" aria-label="Reference" title="Reference — the golden rules and syntax"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5c3-1 5-1 8 1v14c-3-2-5-2-8-1zM20 5c-3-1-5-1-8 1v14c3-2 5-2 8-1z"/></svg><span class="rail-label">Reference</span></button>
+    <span class="rail-group-label" aria-hidden="true">Help</span>
+    <button class="activity-item" type="button" data-component="learn" data-action="btnLearn" aria-label="Learn" title="Learn — one short card at a time"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3 9 9-5 9 5-9 5zM7 11v5c3 2 7 2 10 0v-5M21 9v7"/></svg><span class="rail-label">Learn</span></button>
+    <button class="activity-item" type="button" data-component="settings" data-action="btnSettings" aria-label="Settings" title="Settings — appearance and editor options"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m10 3-.5 2.2-2 .9-2-1.2-2 3.4 1.7 1.5v2.4l-1.7 1.5 2 3.4 2-1.2 2 .9L10 21h4l.5-2.2 2-.9 2 1.2 2-3.4-1.7-1.5V9.8l1.7-1.5-2-3.4-2 1.2-2-.9L14 3z"/><circle cx="12" cy="12" r="3"/></svg><span class="rail-label">Settings</span></button>
+    <span class="rail-group-label" aria-hidden="true">More</span>
+    <button id="btnSidebarEdit" class="activity-item sidebar-edit" type="button" title="Customize — choose which buttons appear in the sidebar and Tools" aria-label="Customize sidebar buttons"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h8M16 7h4M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="14" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg><span class="rail-label">Customize</span></button>
     <div id="extraSidebar" class="extra-sidebar"></div>
-    <button id="btnSidebarEdit" class="activity-item sidebar-edit" type="button" title="Edit sidebar and Tools" aria-label="Edit sidebar and Tools">☷</button>
   </nav>
   <!-- Sidebar: Files, Libraries, Quick Reference -->
   <aside class="sidebar" id="sidebar">
@@ -547,9 +550,9 @@
       <span class="summary-sparkle" aria-hidden="true">✦</span>
     </div>
     <nav class="sidebar-tabs" aria-label="Workspace navigation">
-      <button type="button" class="side-tab active" data-panel="files" aria-pressed="true">Files</button>
-      <button type="button" class="side-tab" data-panel="libraries" aria-pressed="false">Libraries</button>
-      <button type="button" class="side-tab" data-panel="guide" aria-pressed="false">Guide</button>
+      <button type="button" class="side-tab active" data-panel="files" aria-pressed="true" title="Your saved programs">Files</button>
+      <button type="button" class="side-tab" data-panel="libraries" aria-pressed="false" title="Add a library to your program">Libraries</button>
+      <button type="button" class="side-tab" data-panel="guide" aria-pressed="false" title="Golden rules and syntax">Reference</button>
     </nav>
     <div class="sidebar-panel" id="filesPanel">
     <div class="sidebar-head">

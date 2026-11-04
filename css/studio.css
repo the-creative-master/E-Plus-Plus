@@ -691,13 +691,13 @@ html, body { background: #0c0f1d !important; }
   .action-bar .action-group-label { display: block; grid-column: 1 / -1; padding: 3px; color: #a8a8bd; font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
   .topbar .action-bar .btn-small, .topbar .action-bar #btnNew { min-height: 38px; padding: 8px 10px; text-align: left; background: #ffffff0a; border: 1px solid #ffffff16; color: #efedf8; }
   .dash-banner, .footer { display: none !important; }
-  .layout { grid-template-columns: 52px minmax(0, 1fr) !important; }
-  .layout.explorer-open { grid-template-columns: 52px 228px minmax(0, 1fr) !important; }
-  .activity-bar { display: flex; flex-direction: column; align-items: center; gap: 3px; height: 100%; padding: 8px 0; box-sizing: border-box; background: linear-gradient(180deg, #2a253c, #201e30); border-right: 1px solid #ffffff18; }
-  .activity-item { position: relative; display: grid; place-items: center; flex: 0 0 43px; width: 100%; padding: 0; border: 0; background: transparent; color: #9390a8; cursor: pointer; }
+  .layout { grid-template-columns: 84px minmax(0, 1fr) !important; }
+  .layout.explorer-open { grid-template-columns: 84px 232px minmax(0, 1fr) !important; }
+  .activity-bar { display: flex; flex-direction: column; align-items: stretch; gap: 2px; height: 100%; padding: 8px 0; box-sizing: border-box; background: linear-gradient(180deg, #2a253c, #201e30); border-right: 1px solid #ffffff18; }
+  .activity-item { position: relative; display: grid; place-items: center; gap: 3px; flex: 0 0 auto; width: 100%; padding: 7px 2px 6px; border: 0; background: transparent; color: #9390a8; cursor: pointer; font: inherit; }
   .activity-item:hover, .activity-item.active { color: #f0eaff; background: #ffffff08; }
   .activity-item.active::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px; background: var(--accent); border-radius: 0 3px 3px 0; box-shadow: 0 0 12px var(--accent); }
-  .activity-item svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .activity-item svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
   .activity-divider { width: 24px; height: 1px; margin: 5px 0; background: #ffffff1b; }
   .activity-spacer { flex: 1; }
   .layout > .sidebar { display: none !important; }
@@ -765,7 +765,8 @@ body {
 :root { --editor-font-size: 14px; }
 .layout .activity-bar { overflow-y: auto; }
 .launcher-top { display: flex; align-items: center; gap: 2px; }
-.launcher-top .activity-item { flex: 0 0 30px; width: 30px; height: 30px; border-radius: 6px; }
+.launcher-top .activity-item { flex: 0 0 30px; width: 30px; height: 30px; border-radius: 6px; padding: 0; }
+.launcher-top .activity-item .rail-label { display: none; }
 .launcher-top .activity-item svg { width: 17px; height: 17px; }
 .launcher-top .activity-item.active::before { inset: auto 4px 0; width: auto; height: 2px; }
 .no-line-numbers .line-numbers { display: none !important; }
@@ -840,6 +841,39 @@ dialog[open]::backdrop { animation: studio-backdrop-in 200ms ease-out both; }
 /* These rules affect Studio chrome only, not Draw/Game program animation. */
 .studio-motion-off .btn, .studio-motion-off .activity-item, .studio-motion-off .file-item, .studio-motion-off .side-tab, .studio-motion-off .theme-swatch, .studio-motion-off .layout-tile, .studio-motion-off .wrap-toggle, .studio-motion-off .toolbar-toggle, .studio-motion-off .tab { transition: none !important; }
 .studio-motion-off .theme-swatch, .studio-motion-off .layout.explorer-open > .sidebar, .studio-motion-off .topbar .action-bar.is-open, .studio-motion-off dialog[open], .studio-motion-off .tut-shell, .studio-motion-off .sug-shell, .studio-motion-off .pic-shell, .studio-motion-off .toast[style*="block"], .studio-motion-off dialog[open]::backdrop { animation: none !important; }
+
+/* 1.4b1: the rail names every button and groups them, so nothing is a guess.
+   Icons alone were ambiguous: the book was "Quick reference", the cap was
+   "Learn", and the grid glyph was "Edit sidebar and Tools". */
+.activity-bar .rail-label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activity-bar .rail-group-label {
+  display: block;
+  width: 100%;
+  padding: 9px 0 3px;
+  color: #6f6c85;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.activity-bar .rail-group-label:first-child { padding-top: 2px; }
+.activity-bar .extra-sidebar { display: contents; }
+.activity-bar .extra-sidebar:empty { display: none; }
+.activity-bar .hub-sidebar-item { flex: 0 0 auto; }
+.activity-bar .sidebar-edit { margin-top: 2px; color: #7d7a93; }
+.activity-bar .sidebar-edit:hover { color: #f0eaff; }
+
 @media (prefers-reduced-motion: reduce) {
   .btn, .activity-item, .file-item, .side-tab, .theme-swatch, .layout-tile, .wrap-toggle, .toolbar-toggle, .tab { transition: none !important; }
   .theme-swatch, .layout.explorer-open > .sidebar, .topbar .action-bar.is-open, dialog[open], .tut-shell, .sug-shell, .pic-shell, .toast[style*="block"], dialog[open]::backdrop { animation: none !important; }

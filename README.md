@@ -35,6 +35,9 @@ code, a plain-English name, and a fix, and there are exactly one hundred of them
   parser never invents them.
 - **The whole catalogue is documented** in `LANGUAGE.md` §14, and
   `node tests/errors-1.4b1.mjs` proves the 75/5/5/15 split.
+- **A clearer sidebar.** The activity bar was five unlabelled icons. It is now
+  grouped into Panels, Help and More, and every button carries its name:
+  Files, Libraries, Reference, Learn, Settings and Customize.
 
 ## Start the Studio
 
