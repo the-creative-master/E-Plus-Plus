@@ -16,16 +16,18 @@ public:
     int line;
     int col;
     std::string code;
-    LibraryError(const std::string& msg, int l, int c, const std::string& error_code = "E301")
+    LibraryError(const std::string& msg, int l, int c, const std::string& error_code = "E042")
         : std::runtime_error(msg), line(l), col(c), code(error_code) {}
 };
 
+// Every runtime failure names its general code (E001-E075).
 class RuntimeError : public std::runtime_error {
 public:
     int line;
     int col;
-    RuntimeError(const std::string& msg, int l, int c)
-        : std::runtime_error(msg), line(l), col(c) {}
+    std::string code;
+    RuntimeError(const std::string& msg, int l, int c, const std::string& error_code = "E011")
+        : std::runtime_error(msg), line(l), col(c), code(error_code) {}
 };
 
 class Interpreter : public ASTVisitor {

@@ -26,11 +26,11 @@ assert.deepEqual(simple.filter(t => t.type === 'NUMBER').map(t => t.value), [17.
 assert.equal(lexer.tokenize('say "A \\"quote\\" and Ω"')[1].value, 'A "quote" and Ω');
 assert.equal(lexer.tokenize("let 'any name 473' be 2")[1].value, 'any name 473');
 for (const [program, code, line, col] of [
-  ['say "unterminated', 'E102', 1, 5],
-  ["say ''", 'E202', 1, 5],
-  ['say 1 // comment', 'E101', 1, 7],
-  ['note [not closed', 'E101', 1, 1],
-  ['say 1\nsay "unfinished', 'E102', 2, 5]
+  ['say "unterminated', 'F004', 1, 5],
+  ["say ''", 'F006', 1, 5],
+  ['say 1 // comment', 'F011', 1, 7],
+  ['note [not closed', 'F007', 1, 1],
+  ['say 1\nsay "unfinished', 'F004', 2, 5]
 ]) {
   assert.throws(() => lexer.tokenize(program, 'different.enpp'), e =>
     e.code === code && e.filename === 'different.enpp' && e.line === line && e.col === col);
@@ -40,7 +40,7 @@ for (const [program, code, line, col] of [
 const context = vm.createContext({ TextEncoder, TextDecoder, WebAssembly, Uint8Array, DataView, Promise, Math });
 context.globalThis = context;
 vm.runInContext(readFileSync(path.join(root, 'js/native-lexer.js'), 'utf8'), context);
-await assert.rejects(context.EPP.NativeLexer.ready(), e => e.code === 'E601');
+await assert.rejects(context.EPP.NativeLexer.ready(), e => e.code === 'F001');
 
 // Fresh generated programs, not fixture names, exercise arbitrary literals,
 // identifiers, numeric operators, notes, blocks and errors. The C++ probe is
@@ -62,7 +62,7 @@ for (let i = 0; i < 128; i++) {
 }
 function actual(program) {
   try { return { ok: true, tokens: lexer.tokenize(program) }; }
-  catch (e) { return { ok: false, error: { code: e.code, message: e.reason, line: e.line, column: e.col } }; }
+  catch (e) { return { ok: false, error: { code: e.code, name: e.name, help: e.help, message: e.reason, line: e.line, column: e.col } }; }
 }
 const probeIndex = process.argv.indexOf('--probe');
 if (probeIndex >= 0) {

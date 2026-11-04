@@ -9,12 +9,21 @@
 
 namespace epp {
 
+// Release 1.4b1: every lexer failure is one of the fatal codes F001-F015.
+// A fatal error means the lexer cannot build a token stream, so the parser and
+// the program never run. `name` is the English catalogue name of the code and
+// `help` is the one-line fix shown under the reason.
 class LexError : public std::runtime_error {
 public:
     int line, col;
     std::string code;
-    LexError(const std::string& message, int l, int c, const std::string& error_code = "E102")
-        : std::runtime_error(message), line(l), col(c), code(error_code) {}
+    std::string name;
+    std::string help;
+    LexError(const std::string& message, int l, int c, const std::string& error_code = "F003",
+             const std::string& error_name = "Unrecognised Character",
+             const std::string& error_help = "E++ uses words for maths. Remove or replace this character.")
+        : std::runtime_error(message), line(l), col(c), code(error_code),
+          name(error_name), help(error_help) {}
 };
 
 enum class TokenType {
@@ -212,6 +221,8 @@ struct Token {
 struct LexIssue {
     std::string message;
     std::string code;
+    std::string name;   // the catalogue name of the code
+    std::string help;   // the catalogue fix for the code
     int line = 1;
     int col = 1;
 };
@@ -227,13 +238,23 @@ public:
     static std::string to_lower(const std::string& s);
 
 private:
+    // The largest program the lexer will accept, so a runaway paste cannot
+    // exhaust the browser's memory. Exceeding it is fatal (F002).
+    static const size_t MAX_SOURCE_LENGTH = 4u * 1024u * 1024u;
+    // Words are bounded too: a 10 MB "word" is never a mistake a person made.
+    static const size_t MAX_WORD_LENGTH = 256;
+
     std::string src;
     size_t cursor = 0;
     int line = 1;
     int col = 1;
     bool failed = false;
+    bool source_invalid = false;  // F001: the caller handed over no program
     LexIssue issue;
-    void report_error(const std::string& message, int l, int c, const std::string& code = "E102");
+    void report_error(const std::string& message, int l, int c, const std::string& code = "F003");
+    void report_catalogue(const std::string& code, int l, int c);
+    static const char* catalogue_name(const std::string& code);
+    static const char* catalogue_help(const std::string& code);
 
     bool is_at_end() const;
     char peek() const;

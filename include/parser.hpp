@@ -10,21 +10,29 @@
 
 namespace epp {
 
+// Release 1.4b1: a syntax error always carries one of the general codes
+// E001-E075. `name` is the catalogue name of that code, so the command line,
+// the Studio and E++.zip all print the same heading for the same mistake.
 class ParseError : public std::runtime_error {
 public:
     int line;
     int col;
     std::string code;
-    ParseError(const std::string& msg, int l, int c, const std::string& error_code = "E101")
-        : std::runtime_error(msg), line(l), col(c), code(error_code) {}
+    std::string name;
+    ParseError(const std::string& msg, int l, int c, const std::string& error_code = "E015",
+               const std::string& error_name = "Unknown Statement")
+        : std::runtime_error(msg), line(l), col(c), code(error_code), name(error_name) {}
 };
 
+// A LogicError is the parser saying "this is valid E++ but it does not mean
+// anything": unquoted text where a value belongs (E001).
 class LogicError : public std::runtime_error {
 public:
     int line;
     int col;
-    LogicError(const std::string& msg, int l, int c)
-        : std::runtime_error(msg), line(l), col(c) {}
+    std::string code;
+    LogicError(const std::string& msg, int l, int c, const std::string& error_code = "E001")
+        : std::runtime_error(msg), line(l), col(c), code(error_code) {}
 };
 
 class Parser {
@@ -35,6 +43,9 @@ public:
 private:
     std::vector<Token> tokens;
     size_t current = 0;
+
+    // The general code that explains why `expected` was not there.
+    static std::string code_for_missing(TokenType expected, const Token& found, const std::string& error_message);
 
     bool is_at_end() const;
     Token peek() const;

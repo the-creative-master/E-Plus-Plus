@@ -2,15 +2,40 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>E++ News | 1.4a3</title>
-  <link rel="stylesheet" href="css/news.css?v=1.4a3-hub">
+  <title>E++ News | 1.4b1</title>
+  <link rel="stylesheet" href="css/news.css?v=1.4b1-hub">
 </head>
 <body>
-  <header class="news-top"><a href="index.html" class="news-back">← <span>Back to Studio</span></a><span class="news-brand">E<span>++</span> <b>STUDIO / NEWS</b></span><span class="news-version">1.4a3 · ALPHA</span></header>
+  <header class="news-top"><a href="index.html" class="news-back">← <span>Back to Studio</span></a><span class="news-brand">E<span>++</span> <b>STUDIO / NEWS</b></span><span class="news-version">1.4b1 · BETA</span></header>
   <main class="news-main">
     <div class="news-kicker"><span></span> THE LATEST FROM E++ STUDIO</div>
+    <h1>Every error,<br><em>finally explained.</em></h1>
+    <p class="news-intro">E++ 1.4b1 is the error overhaul. Every message the language can print now has a permanent code, a plain-English name and a fix — one hundred of them, counted and documented.</p>
+    <div class="release-meta"><span>✦ &nbsp; RELEASE 1.4b1</span><span>ERROR OVERHAUL</span></div>
+    <figure class="news-hero"><img src="assets/news-errors-1.4b1.jpg" alt="E++ Studio 1.4b1 showing a warning card for W001 and a fatal error card for E018 in the Output panel"><figcaption>A warning that lets you work, and an error that tells you exactly what to fix.</figcaption></figure>
+    <div class="news-grid">
+      <article><span class="article-number">01 / THE COUNTS</span><h2>75 &middot; 5 &middot; 5 &middot; 15.</h2><p>Seventy-five general errors (E001-E075) stop the program where the mistake is. Five warnings (W001-W005) never do. Five Z codes (Z001-Z005) can only happen inside E++.zip. Fifteen fatal lexer errors (F001-F015) mean the source could not be read at all.</p></article>
+      <article><span class="article-number">02 / WARNINGS THAT LET YOU WORK</span><h2>"1 plus 1" still prints.</h2><p>An equation written inside double quotes is W001: E++ tells you the quotes are doing nothing, then prints exactly what you asked for. A library you add and never use is W003. A number written as text is W005.</p></article>
+      <article><span class="article-number">03 / A CLEARER SIDEBAR</span><h2>Every button says what it is.</h2><p>The activity bar was five icons with no words: a book, a cap and a grid. It is now grouped into Panels, Help and More, and every button carries its name — Files, Libraries, Reference, Learn, Settings and Customize. Nothing moved.</p></article>
+      <article><span class="article-number">04 / SMALL SCREENS</span><h2>Built for a phone again.</h2><p>Every phone rule in Studio's stylesheet sat inside a media query that could never match, so narrow screens were served the desktop shell. They now apply below 900px: one panel at a time, no sideways scrolling, and a bottom bar with Files, Code, Learn, Settings and Output.</p></article>
+    </div>
+    <figure class="news-figure"><img src="assets/news-warnings-1.4b1.jpg" alt="Warnings W001 and W005 listed in the Output panel while the program finishes normally"><figcaption>Warnings arrive as the program runs — and it still reaches the end.</figcaption></figure>
+    <figure class="news-figure"><img src="assets/news-catalogue-1.4b1.jpg" alt="The Studio Reference panel listing 75 general, 5 warning, 5 E++.zip and 15 fatal lexer codes"><figcaption>The whole catalogue, counted and documented: 75 · 5 · 5 · 15.</figcaption></figure>
+    <figure class="news-figure news-layout"><img src="assets/news-sidebar-1.4b1.jpg" alt="E++ Studio sidebar with grouped, labelled buttons: Panels, Help and More"><figcaption>The sidebar is clearer too: every button is grouped and named.</figcaption></figure>
+    <figure class="news-figure news-layout"><img src="assets/news-phone-1.4b1.jpg" alt="E++ Studio at 390px wide, three screens side by side: the full-width editor, the file list, and the output panel, each with the five-button bottom bar Files, Code, Learn, Settings and Output"><figcaption>On a phone, full width, one panel at a time: Code, Files and Output, switched from the bottom bar.</figcaption></figure>
+    <div class="news-bottom"><div><span class="article-number">THE SHAPE OF A MESSAGE</span><h2>Name, place, reason, fix.</h2><p>Every failure reads the same way in the Studio, the C++ command line and the Python engine: the code and its name, the file, line and column, the line itself with a caret, a reason, and the help that gets you unstuck. The whole catalogue is in LANGUAGE.md §14, and <code>node tests/errors-1.4b1.mjs</code> proves the split.</p></div><div class="news-figure-block"><pre class="news-code">[E++ Error E018: Unclosed Block]
+  --&gt; game.eppl:7:1
+   |
+     | repeat 3 times
+     | ^
+   = Reason: This repeat block has no matching ending.
+   = Help: Close the block with its own ending,
+           for example: end repeat</pre></div></div>
+
+    <section class="news-archive" aria-label="E++ 1.4a3 release notes">
+    <div class="news-kicker"><span></span> THE LATEST FROM E++ STUDIO</div>
     <h1>A little more<br><em>life in Studio.</em></h1>
-    <p class="news-intro">E++ 1.4a3 brings a little movement to your workspace, plus thoughtful improvements that make creating feel smoother.</p>
+    <p class="news-intro">E++ 1.4a3 brought a little movement to your workspace, plus thoughtful improvements that make creating feel smoother.</p>
     <div class="release-meta"><span>✦ &nbsp; RELEASE 1.4a3</span><span>STUDIO UPDATE</span></div>
     <figure class="news-hero"><img src="assets/news-studio-1.4a3.jpg" alt="E++ Studio 1.4a3 showing the editor and output console"><figcaption>Your workspace, with a little more life.</figcaption></figure>
     <div class="news-grid">
@@ -20,6 +45,8 @@
     <figure class="news-figure"><img src="assets/news-settings-1.4a3.jpg" alt="Studio settings with the new animation option and appearance reset"><figcaption>Your Studio, your pace. Find the new motion controls in Settings.</figcaption></figure>
     <figure class="news-figure news-layout"><img src="assets/news-tools-1.4a3.jpg" alt="Tools showing features and project shortcuts in E++ Studio"><figcaption>Tools brings your features and projects together.</figcaption></figure>
     <div class="news-bottom"><div><span class="article-number">ALSO IN THIS UPDATE</span><h2>Tools, supercharged.</h2><p>Open Tools with Ctrl+Shift+P to browse your features and projects. Customize which shortcuts appear in Tools and the sidebar. The explorer sorts files naturally, searches show a helpful empty state, and notifications stay visible for their full duration. EShare, presets and your existing projects are still right where you left them.</p></div><a href="index.html" class="news-cta">Open Studio &nbsp; ↗</a></div>
+    </section>
+
     <section class="news-archive" aria-label="E++ 1.4a2 release">
     <div class="news-kicker"><span></span> THE LATEST FROM E++ STUDIO</div>
     <h1>Make Studio<br><em>feel like yours.</em></h1>

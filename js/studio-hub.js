@@ -4,30 +4,30 @@
   const $ = id => document.getElementById(id);
   const key = 'epp_studio_shortcuts_1_4a3';
   const catalog = [
-    { id: 'explorer', name: 'Explorer', icon: '▤', activity: 'files', legacy: 'explorer' },
-    { id: 'libraries', name: 'Libraries', icon: '▥', activity: 'libraries', legacy: 'libraries' },
-    { id: 'guide', name: 'Quick reference', icon: '▧', activity: 'guide', legacy: 'guide' },
-    { id: 'learn', name: 'Learn E++', icon: '✦', target: 'btnLearn', legacy: 'learn' },
-    { id: 'settings', name: 'Settings', icon: '⚙', target: 'btnSettings', legacy: 'settings' },
-    { id: 'new', name: 'New file', icon: '+', target: 'btnNew' },
-    { id: 'save', name: 'Save file', icon: '↓', target: 'btnSave' },
-    { id: 'import', name: 'Import', icon: '↙', target: 'btnImport' },
-    { id: 'export', name: 'Export', icon: '↗', target: 'btnExport' },
-    { id: 'rename', name: 'Rename file', icon: '✎', target: 'btnRename' },
-    { id: 'delete', name: 'Delete file', icon: '×', target: 'btnDelete' },
-    { id: 'clear', name: 'Clear code', icon: '⌫', target: 'btnClear' },
-    { id: 'run', name: 'Run code', icon: '▶', target: 'btnRun' },
-    { id: 'stop', name: 'Stop program', icon: '■', target: 'btnStop' },
-    { id: 'wrap', name: 'Wrap lines', icon: '↵', target: 'btnWrap' },
-    { id: 'clearOutput', name: 'Clear output', icon: '⌧', target: 'btnClearConsole' },
-    { id: 'eshare', name: 'EShare', icon: '⇧', target: 'btnGallery' },
-    { id: 'image', name: 'Game images', icon: '▣', target: 'btnImage', gameOnly: true },
-    { id: 'keys', name: 'Project keys', icon: '⌑', target: 'btnKeys' },
-    { id: 'download', name: 'Download E++.zip', icon: '⇩', target: 'btnZip' },
-    { id: 'wiki', name: 'Wiki', icon: '?', target: 'btnWiki' },
-    { id: 'news', name: 'News', icon: '✳', target: 'btnNews' },
-    { id: 'suggest', name: 'Suggest an idea', icon: '✧', target: 'btnSuggest' },
-    { id: 'restore', name: 'Restore examples', icon: '⟳', target: 'btnRestoreExamples' }
+    { id: 'explorer', name: 'Files', icon: 'files', activity: 'files', legacy: 'explorer' },
+    { id: 'libraries', name: 'Libraries', icon: 'libraries', activity: 'libraries', legacy: 'libraries' },
+    { id: 'guide', name: 'Reference', icon: 'reference', activity: 'guide', legacy: 'guide' },
+    { id: 'learn', name: 'Learn', icon: 'learn', target: 'btnLearn', legacy: 'learn' },
+    { id: 'settings', name: 'Settings', icon: 'settings', target: 'btnSettings', legacy: 'settings' },
+    { id: 'new', name: 'New file', icon: 'new', target: 'btnNew' },
+    { id: 'save', name: 'Save file', icon: 'save', target: 'btnSave' },
+    { id: 'import', name: 'Import', icon: 'import', target: 'btnImport' },
+    { id: 'export', name: 'Export', icon: 'export', target: 'btnExport' },
+    { id: 'rename', name: 'Rename file', icon: 'rename', target: 'btnRename' },
+    { id: 'delete', name: 'Delete file', icon: 'delete', target: 'btnDelete' },
+    { id: 'clear', name: 'Clear code', icon: 'clear', target: 'btnClear' },
+    { id: 'run', name: 'Run code', icon: 'run', target: 'btnRun' },
+    { id: 'stop', name: 'Stop program', icon: 'stop', target: 'btnStop' },
+    { id: 'wrap', name: 'Wrap lines', icon: 'wrap', target: 'btnWrap' },
+    { id: 'clearOutput', name: 'Clear output', icon: 'clearOutput', target: 'btnClearConsole' },
+    { id: 'eshare', name: 'EShare', icon: 'eshare', target: 'btnGallery' },
+    { id: 'image', name: 'Game images', icon: 'image', target: 'btnImage', gameOnly: true },
+    { id: 'keys', name: 'Project keys', icon: 'keys', target: 'btnKeys' },
+    { id: 'download', name: 'Download E++.zip', icon: 'download', target: 'btnZip' },
+    { id: 'wiki', name: 'Wiki', icon: 'wiki', target: 'btnWiki' },
+    { id: 'news', name: 'News', icon: 'news', target: 'btnNews' },
+    { id: 'suggest', name: 'Suggest an idea', icon: 'suggest', target: 'btnSuggest' },
+    { id: 'restore', name: 'Restore examples', icon: 'restore', target: 'btnRestoreExamples' }
   ];
   const essential = ['explorer', 'libraries', 'settings', 'new', 'save', 'import', 'export', 'run', 'stop', 'eshare'];
   let preferences = {};
@@ -52,8 +52,16 @@
     const b = document.createElement('button');
     b.type = 'button'; b.className = area === 'sidebar' ? 'activity-item hub-sidebar-item' : 'tools-feature';
     b.title = item.name; b.setAttribute('aria-label', item.name); b.dataset.hubId = item.id;
-    const icon = document.createElement('span'); icon.className = 'hub-icon'; icon.textContent = item.icon; icon.setAttribute('aria-hidden', 'true');
+    const icon = document.createElement('span');
+    icon.className = 'hub-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.innerHTML = EPP.Icons.get(item.icon || 'files', 18);
     b.appendChild(icon);
+    // A lone icon is a guessing game; the name travels with it.
+    const label = document.createElement('span');
+    label.className = 'hub-label';
+    label.textContent = item.name;
+    b.appendChild(label);
     if (area === 'tools') { const label = document.createElement('span'); label.textContent = item.name; b.appendChild(label); }
     b.disabled = !available(item);
     b.addEventListener('click', () => activate(item));
@@ -94,7 +102,8 @@
     const host = $('featureEditorList'); host.replaceChildren();
     catalog.forEach(item => {
       const row = document.createElement('div'); row.className = 'feature-edit-row';
-      const title = document.createElement('span'); title.className = 'feature-edit-name'; title.textContent = item.icon + '  ' + item.name; row.appendChild(title);
+      const title = document.createElement('span'); title.className = 'feature-edit-name';
+      title.innerHTML = EPP.Icons.get(item.icon || 'files', 16) + '<span>' + item.name + '</span>'; row.appendChild(title);
       ['sidebar', 'tools'].forEach(area => {
         const label = document.createElement('label'); label.className = 'feature-check';
         const input = document.createElement('input'); input.type = 'checkbox'; input.checked = settings(item)[area];

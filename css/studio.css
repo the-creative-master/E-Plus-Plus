@@ -390,7 +390,8 @@ html, body { background: #0c0f1d !important; }
 }
 
 /* Phones and portrait tablets use the full screen for one focused panel. */
-@media (max-width: 0px) {
+@media (max-width: 900px) {
+  .activity-bar { display: none !important; }
   html, body { height: 100%; height: 100dvh; }
   body { min-height: 0; overflow: hidden; overscroll-behavior: none; }
   .topbar { order: 0; display: flex; min-height: 62px; gap: 8px; padding: max(8px, env(safe-area-inset-top)) 12px 8px; }
@@ -416,10 +417,10 @@ html, body { background: #0c0f1d !important; }
   .layout { order: 2; flex: 1 1 0; display: grid !important; grid-template-columns: minmax(0, 1fr) !important; min-height: 0; padding: 8px !important; gap: 0 !important; }
   .sidebar { display: none !important; width: 100%; }
   .workspace { display: grid !important; grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: minmax(0, 1fr) !important; gap: 0 !important; }
-  body[data-view='files'] .sidebar { display: flex !important; }
-  body[data-view='files'] .workspace { display: none !important; }
-  body[data-view='editor'] .console-card, body[data-view='console'] .editor-card { display: none !important; }
-  body[data-view='console'] .console-card, body[data-view='editor'] .editor-card { display: flex !important; }
+  body[data-mobile-view='files'] .sidebar { display: flex !important; }
+  body[data-mobile-view='files'] .workspace { display: none !important; }
+  body[data-mobile-view='editor'] .console-card, body[data-mobile-view='console'] .editor-card { display: none !important; }
+  body[data-mobile-view='console'] .console-card, body[data-mobile-view='editor'] .editor-card { display: flex !important; }
   .editor-card, .console-card { height: 100%; border-radius: 12px; }
   .workspace-eyebrow { height: 48px; padding: 0 12px; }
   .workspace-caption { display: none; }
@@ -463,13 +464,13 @@ html, body { background: #0c0f1d !important; }
   .library-card p { display: block; font-size: 12px; }
   .help-panel pre { max-height: none; }
   .mobile-view-nav {
-    order: 3; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;
+    order: 3; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px;
     flex: 0 0 auto; padding: 7px 10px max(7px, env(safe-area-inset-bottom));
     background: #171a2a; border-top: 1px solid #3b3e52; border-bottom: 0;
   }
   .mobile-view-btn {
     appearance: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-    min-width: 0; min-height: 52px; padding: 5px; border: 1px solid transparent; border-radius: 10px;
+    min-width: 0; min-height: 52px; padding: 5px 2px; font-size: 9.5px; font-weight: 700; border: 1px solid transparent; border-radius: 10px;
     background: transparent; color: #a8aabc; font-size: 11px; font-weight: 700; cursor: pointer;
   }
   .mobile-view-nav .mobile-view-icon { display: block; width: 19px; height: 19px; color: currentColor; }
@@ -486,7 +487,7 @@ html, body { background: #0c0f1d !important; }
   .btn-close { width: 44px; height: 44px; }
   .tut-nav-close { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: auto; border: 1px solid #454a5e; border-radius: 8px; background: #292d3e; color: #eeeaf8; font-size: 23px; cursor: pointer; }
   .tut-progress-label { margin-left: auto; }
-  .tut-lessons-toggle { display: inline-flex; min-height: 44px; align-items: center; white-space: nowrap; }
+  .tut-lessons-toggle { display: inline-flex; min-height: 44px; align-items: center; gap: 6px; white-space: nowrap; }
   .tut-card-head { padding: 12px; align-items: center; }
   .tut-card-head h2 { font-size: 17px; }
   .tut-card-body { padding: 14px 12px; overscroll-behavior: contain; }
@@ -505,7 +506,7 @@ html, body { background: #0c0f1d !important; }
 }
 
 /* On short phones, keep the drawing controls on one thumb-friendly row. */
-@media (max-width: 0px) and (max-height: 680px) {
+@media (max-width: 900px) and (max-height: 680px) {
   #drawCanvas { max-height: 18vh; }
   .draw-controls { display: flex; flex-wrap: nowrap; gap: 7px; }
   .draw-controls label { display: none; }
@@ -513,11 +514,11 @@ html, body { background: #0c0f1d !important; }
   .draw-arrows { flex: 1 1 auto; min-width: 0; }
 }
 
-@media (max-width: 0px) {
+@media (max-width: 620px) {
   .brand .build-badge { display: none; }
 }
 
-@media (max-width: 0px) {
+@media (max-width: 520px) {
   .topbar { padding-inline: 9px; }
   .brand h1 { font-size: 14px; }
   .build-badge { margin-left: 1px; }
@@ -530,17 +531,17 @@ html, body { background: #0c0f1d !important; }
 }
 
 /* Extra-narrow foldable screens still get full-size drawing buttons. */
-@media (max-width: 0px) {
+@media (max-width: 430px) {
   .brand h1 > span:first-child, .tab-file-meta small { display: none; }
 }
-@media (max-width: 0px) and (max-height: 680px) {
+@media (max-width: 900px) and (max-height: 680px) {
   .draw-controls { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 7px 10px; }
   .draw-controls label { display: block; }
   .draw-controls select { width: 100%; max-width: none; }
 }
 
 /* Keep useful editor space when a keyboard is open or a phone is landscape. */
-@media (max-width: 0px) and (max-height: 500px) {
+@media (max-width: 900px) and (max-height: 500px) {
   .topbar { min-height: 50px; padding-block: 5px; }
   .logo { width: 34px; height: 34px; flex-basis: 34px; }
   .dash-banner { display: none; }
@@ -589,7 +590,7 @@ html, body { background: #0c0f1d !important; }
 .gallery-card-description { margin: 10px 0; color: #cccbd9; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
 .gallery-card button { margin-top: 12px; }
 .gallery-empty { grid-column: 1 / -1; margin: 0; color: #b8b7c8; font-size: 13px; }
-@media (max-width: 0px) {
+@media (max-width: 700px) {
   .gallery-overlay { padding: 8px; }
   .gallery-shell { max-height: 94vh; }
   .gallery-head { padding: 16px; }
@@ -599,7 +600,7 @@ html, body { background: #0c0f1d !important; }
   .gallery-list { grid-template-columns: minmax(0, 1fr); }
   .gallery-browse button, .gallery-card button { min-height: 44px; }
 }
-@media (max-width: 0px) and (max-height: 680px) {
+@media (max-width: 900px) and (max-height: 680px) {
   .draw-controls { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 7px 10px; }
   .draw-controls label { display: block; }
   .draw-controls select { width: 100%; max-width: none; }
@@ -607,7 +608,7 @@ html, body { background: #0c0f1d !important; }
 }
 .pic-item-error { color: #ffbdc1; }
 .gallery-jump { display: none; }
-@media (max-width: 0px) {
+@media (max-width: 700px) {
   .gallery-jump { display: inline-flex; align-items: center; min-height: 44px; margin: 8px 0 0; padding: 0; border: 0; background: transparent; color: #d2c4ff; font: inherit; font-size: 12px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 }
 /* The console is a narrow side pane on small laptops; keep every Draw control visible. */
@@ -668,7 +669,7 @@ html, body { background: #0c0f1d !important; }
   .console-empty h3 { font-size: 13px; color: #aaa9c0; font-weight: 400; }
   .statusbar { min-height: 26px; padding-block: 4px; background: color-mix(in srgb, var(--accent) 20%, #181828); }
 }
-@media (max-width: 0px) { .settings-button span { display: none; } .settings-button { min-width: 40px; min-height: 40px; } }
+@media (max-width: 620px) { .settings-button span { display: none; } .settings-button { min-width: 44px; min-height: 44px; } }
 
 /* 1.4a1 activity rail: the canvas stays the focus; tools open on demand. */
 .activity-bar { display: none; }
@@ -691,13 +692,13 @@ html, body { background: #0c0f1d !important; }
   .action-bar .action-group-label { display: block; grid-column: 1 / -1; padding: 3px; color: #a8a8bd; font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
   .topbar .action-bar .btn-small, .topbar .action-bar #btnNew { min-height: 38px; padding: 8px 10px; text-align: left; background: #ffffff0a; border: 1px solid #ffffff16; color: #efedf8; }
   .dash-banner, .footer { display: none !important; }
-  .layout { grid-template-columns: 52px minmax(0, 1fr) !important; }
-  .layout.explorer-open { grid-template-columns: 52px 228px minmax(0, 1fr) !important; }
-  .activity-bar { display: flex; flex-direction: column; align-items: center; gap: 3px; height: 100%; padding: 8px 0; box-sizing: border-box; background: linear-gradient(180deg, #2a253c, #201e30); border-right: 1px solid #ffffff18; }
-  .activity-item { position: relative; display: grid; place-items: center; flex: 0 0 43px; width: 100%; padding: 0; border: 0; background: transparent; color: #9390a8; cursor: pointer; }
+  .layout { grid-template-columns: 84px minmax(0, 1fr) !important; }
+  .layout.explorer-open { grid-template-columns: 84px 232px minmax(0, 1fr) !important; }
+  .activity-bar { display: flex; flex-direction: column; align-items: stretch; gap: 2px; height: 100%; padding: 8px 0; box-sizing: border-box; background: linear-gradient(180deg, #2a253c, #201e30); border-right: 1px solid #ffffff18; }
+  .activity-item { position: relative; display: grid; place-items: center; gap: 3px; flex: 0 0 auto; width: 100%; padding: 7px 2px 6px; border: 0; background: transparent; color: #9390a8; cursor: pointer; font: inherit; }
   .activity-item:hover, .activity-item.active { color: #f0eaff; background: #ffffff08; }
   .activity-item.active::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px; background: var(--accent); border-radius: 0 3px 3px 0; box-shadow: 0 0 12px var(--accent); }
-  .activity-item svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .activity-item svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
   .activity-divider { width: 24px; height: 1px; margin: 5px 0; background: #ffffff1b; }
   .activity-spacer { flex: 1; }
   .layout > .sidebar { display: none !important; }
@@ -765,7 +766,8 @@ body {
 :root { --editor-font-size: 14px; }
 .layout .activity-bar { overflow-y: auto; }
 .launcher-top { display: flex; align-items: center; gap: 2px; }
-.launcher-top .activity-item { flex: 0 0 30px; width: 30px; height: 30px; border-radius: 6px; }
+.launcher-top .activity-item { flex: 0 0 30px; width: 30px; height: 30px; border-radius: 6px; padding: 0; }
+.launcher-top .activity-item .rail-label { display: none; }
 .launcher-top .activity-item svg { width: 17px; height: 17px; }
 .launcher-top .activity-item.active::before { inset: auto 4px 0; width: auto; height: 2px; }
 .no-line-numbers .line-numbers { display: none !important; }
@@ -818,7 +820,7 @@ body {
 .bottom-bar { display: flex; justify-content: space-between; align-items: center; flex: 0 0 23px; padding: 0 12px; background: color-mix(in srgb, var(--accent) 18%, #171723); color: #dad4eb; font-size: 10px; letter-spacing: .04em; }
 .bottom-bar span:last-child { color: var(--accent); font-weight: 700; }
 
-/* 1.4a3: soft, short interface motion; never animate code, output or canvases. */
+/* 1.4b1: soft, short interface motion; never animate code, output or canvases. */
 @keyframes studio-enter { from { opacity: 0; transform: translateY(9px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes studio-panel-in { from { opacity: 0; transform: translateX(-7px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes studio-toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -840,6 +842,39 @@ dialog[open]::backdrop { animation: studio-backdrop-in 200ms ease-out both; }
 /* These rules affect Studio chrome only, not Draw/Game program animation. */
 .studio-motion-off .btn, .studio-motion-off .activity-item, .studio-motion-off .file-item, .studio-motion-off .side-tab, .studio-motion-off .theme-swatch, .studio-motion-off .layout-tile, .studio-motion-off .wrap-toggle, .studio-motion-off .toolbar-toggle, .studio-motion-off .tab { transition: none !important; }
 .studio-motion-off .theme-swatch, .studio-motion-off .layout.explorer-open > .sidebar, .studio-motion-off .topbar .action-bar.is-open, .studio-motion-off dialog[open], .studio-motion-off .tut-shell, .studio-motion-off .sug-shell, .studio-motion-off .pic-shell, .studio-motion-off .toast[style*="block"], .studio-motion-off dialog[open]::backdrop { animation: none !important; }
+
+/* 1.4b1: the rail names every button and groups them, so nothing is a guess.
+   Icons alone were ambiguous: the book was "Quick reference", the cap was
+   "Learn", and the grid glyph was "Edit sidebar and Tools". */
+.activity-bar .rail-label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activity-bar .rail-group-label {
+  display: block;
+  width: 100%;
+  padding: 9px 0 3px;
+  color: #6f6c85;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.activity-bar .rail-group-label:first-child { padding-top: 2px; }
+.activity-bar .extra-sidebar { display: contents; }
+.activity-bar .extra-sidebar:empty { display: none; }
+.activity-bar .hub-sidebar-item { flex: 0 0 auto; }
+.activity-bar .sidebar-edit { margin-top: 2px; color: #7d7a93; }
+.activity-bar .sidebar-edit:hover { color: #f0eaff; }
+
 @media (prefers-reduced-motion: reduce) {
   .btn, .activity-item, .file-item, .side-tab, .theme-swatch, .layout-tile, .wrap-toggle, .toolbar-toggle, .tab { transition: none !important; }
   .theme-swatch, .layout.explorer-open > .sidebar, .topbar .action-bar.is-open, dialog[open], .tut-shell, .sug-shell, .pic-shell, .toast[style*="block"], dialog[open]::backdrop { animation: none !important; }
@@ -868,6 +903,9 @@ dialog[open]::backdrop { animation: studio-backdrop-in 200ms ease-out both; }
 .tools-feature:hover:not(:disabled), .tools-project:hover { border-color: #ffffff30; background: #ffffff13; }
 .tools-feature:disabled { opacity: .4; cursor: not-allowed; }
 .hub-icon, .tools-project-icon { display: inline-grid; place-items: center; width: 24px; height: 24px; flex: 0 0 24px; border-radius: 6px; background: #bba9fa1c; color: var(--accent); font-size: 15px; }
+.epp-icon { display: inline-grid; place-items: center; line-height: 0; }
+.epp-icon svg { width: 1em; height: 1em; display: block; }
+.hub-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; font-weight: 700; line-height: 1.1; }
 .tools-feature > span:last-child, .tools-project > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tools-project-list { display: flex; flex-direction: column; gap: 4px; }
 .tools-project { width: 100%; }
@@ -876,6 +914,7 @@ dialog[open]::backdrop { animation: studio-backdrop-in 200ms ease-out both; }
 .extra-sidebar { display: contents; }
 .activity-bar .hub-sidebar-item { flex-shrink: 0; }
 .activity-bar .hub-sidebar-item .hub-icon { background: transparent; font-size: 18px; }
+.activity-item .hub-icon .epp-icon, .activity-item .hub-icon svg { width: 20px; height: 20px; }
 .activity-bar .hub-sidebar-item:disabled { opacity: .3; cursor: not-allowed; }
 .hub-disabled { display: none !important; }
 .sidebar-edit { position: sticky !important; bottom: -8px; flex-shrink: 0; background: #252135 !important; color: var(--accent) !important; font-size: 19px; z-index: 2; }
@@ -898,3 +937,71 @@ dialog[open]::backdrop { animation: studio-backdrop-in 200ms ease-out both; }
 .feature-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 14px; color: #aaaabd; font-size: 11px; }
 .tools-project-jump { display: inline-block; margin: 0 2px 12px; color: var(--accent); font-size: 10px; font-weight: 700; text-decoration: none; }
 .tools-project-jump:hover { text-decoration: underline; }
+
+/* 1.4b1: real icons everywhere (js/icons.js). A button is never a mystery
+   glyph: the drawing scales with its label and inherits the text colour. */
+.epp-icon svg { stroke-width: 1.7; }
+.activity-item .epp-icon svg { width: 20px; height: 20px; }
+.sidebar-head .epp-icon svg, .btn .epp-icon svg { width: 15px; height: 15px; }
+.tools-feature .hub-icon svg { width: 18px; height: 18px; }
+.feature-edit-name { display: flex; align-items: center; gap: 8px; }
+.feature-edit-name .epp-icon svg { width: 16px; height: 16px; color: var(--accent); }
+
+/* ===================================================================
+   1.4b1: the phone shell, and it has the last word.
+
+   The scoped rules earlier in this file are written for the desktop shell
+   and use `@media all` with !important, so they keep winning below 900px:
+   `.layout` kept an 84px rail gutter and `.workspace` kept its two-row
+   desktop grid, which squeezed the editor into a sliver with the output
+   panel underneath. Rather than patch each one where it stands, the whole
+   phone shell is restated here - after every other rule in the file, at
+   equal-or-higher specificity - so nothing above can undo it.
+   =================================================================== */
+@media (max-width: 900px) {
+  /* One column: the rail is gone, so no gutter may remain. */
+  .layout,
+  .layout.explorer-open {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0 !important;
+    padding: 8px !important;
+  }
+  .layout .activity-bar { display: none !important; }
+
+  /* One panel at a time, chosen by <body data-mobile-view>. */
+  .layout > .sidebar { display: none; }
+  body[data-mobile-view='files'] .layout > .sidebar { display: flex !important; }
+  body[data-mobile-view='files'] .layout > .workspace { display: none !important; }
+  body[data-mobile-view='files'] .mobile-view-nav { display: grid !important; }
+
+  .layout > .workspace {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    gap: 0 !important;
+    min-height: 0;
+    height: auto;
+  }
+  .workspace > .editor-card,
+  .workspace > .console-card { min-height: 0; height: auto; }
+
+  body[data-mobile-view='editor'] .workspace > .console-card { display: none !important; }
+  body[data-mobile-view='console'] .workspace > .editor-card { display: none !important; }
+  body[data-mobile-view='editor'] .workspace > .editor-card { display: flex !important; }
+  body[data-mobile-view='console'] .workspace > .console-card { display: flex !important; }
+
+  .mobile-view-nav { display: grid !important; }
+
+  /* The studio strip is a desktop footer, but it comes after .layout in the
+     DOM with no order, so on a phone it floated up *above* the workspace and
+     stole a row. A phone has the tab bar down there instead. */
+  .bottom-bar { display: none !important; }
+
+  /* This row holds the Wrap button; at 29px the 44px control spilled over the
+     file tab below it. */
+  .editor-card > .workspace-eyebrow {
+    height: 46px !important;
+    flex: 0 0 46px !important;
+    padding: 0 12px !important;
+  }
+}

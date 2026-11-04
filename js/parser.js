@@ -199,12 +199,13 @@
         var term = prepared.blocks[b].modeChar === ',' ? ',"' : '"';
         throw new LexError('The Python code block never ends. Its closing ' + term + ' is missing.',
           prepared.blocks[b].line, prepared.blocks[b].column,
-          'Close the Python code with ' + term + ' at the end of the block.');
+          'Close the Python code with ' + term + ' at the end of the block.', 'F013');
       }
     }
     this.tokens = new Lexer(prepared.source).tokenize().filter(function (t) { return t.type !== 'COMMENT'; });
     this.pos = 0;
     this.loadedLibraries = {}; // canonical name -> true, in source order
+    this.usedFeatures = [];    // every library feature the source actually uses
     this.options = options || {};
   }
 
@@ -230,18 +231,34 @@
   Parser.prototype.expectWord = function (word, context) {
     var t = this.current();
     if (!this.isWord(word)) {
+      // 1.4b1: say which kind of nothing this is - the line ended, or the
+      // whole program did - instead of a flat "unexpected word".
+      if (t.type === 'NEWLINE') {
+        throw new ParseError('Expected the word "' + word + '"' + (context ? ' ' + context : '') +
+          ', but the line ended first.', t.line, t.column,
+          'Finish the sentence on one line, or continue it below.', 'E063');
+      }
+      if (t.type === 'EOF') {
+        throw new ParseError('Expected the word "' + word + '"' + (context ? ' ' + context : '') +
+          ', but the program ended first.', t.line, t.column,
+          'Finish the idea: a value, a condition or a block ending is missing.', 'E064');
+      }
       throw new ParseError(
         'Expected the word "' + word + '"' + (context ? ' ' + context : '') + ' but found ' + this.describe(t) + '.',
         t.line, t.column,
         'Check the sentence structure — E++ statements read like English sentences.'
-      );
+      , 'E062');
     }
     return this.advance();
   };
   Parser.prototype.expect = function (type, what) {
     var t = this.current();
     if (t.type !== type) {
-      throw new ParseError('Expected ' + what + ' but found ' + this.describe(t) + '.', t.line, t.column, null);
+      if (type === 'RPAREN') {
+        throw new ParseError('Expected ' + what + ' but found ' + this.describe(t) + '.', t.line, t.column,
+          'Add the closing ) where the maths ends.', 'E065');
+      }
+      throw new ParseError('Expected ' + what + ' but found ' + this.describe(t) + '.', t.line, t.column, null, 'E062');
     }
     return this.advance();
   };
@@ -254,6 +271,8 @@
 
   Parser.prototype.requireLibrary = function (feature, token) {
     if (!EPP.Libraries) return;
+    // A feature appearing in the source is a use of its library (W003).
+    this.usedFeatures.push(feature);
     // A feature may belong to more than one library (ImprovedWait contains
     // every ImprovedWaitLite feature, for example) — any added owner is enough.
     var owners = EPP.Libraries.ownersOf
@@ -269,7 +288,7 @@
       '"' + feature + '" belongs to the ' + owner + ' library, which has not been added yet.',
       token.line, token.column,
       why || ('Add this near the top of your program: add library "' + owner + '"')
-    );
+    , 'E042');
   };
 
   // ---------- program & statements ----------
@@ -279,8 +298,13 @@
     while (!this.atEnd()) {
       if (this.isWord('end') || this.isWord('otherwise')) {
         var t = this.current();
+        if (t.value.toLowerCase() === 'otherwise') {
+          throw new ParseError("'otherwise' needs an if above it: otherwise comes straight after its if.",
+            t.line, t.column,
+            'Put otherwise immediately after the if it belongs to.', 'E022');
+        }
         throw new ParseError('Unexpected "' + t.value + '" here — there is no matching opening statement.',
-          t.line, t.column, 'Remove it, or add the "if"/"repeat"/"while" statement it belongs to.');
+          t.line, t.column, 'Remove it, or add the "if"/"repeat"/"while" statement it belongs to.', 'E017');
       }
       body.push(this.parseStatement());
       this.skipSeparators();
@@ -290,6 +314,13 @@
 
   Parser.prototype.parseStatement = function () {
     var t = this.current();
+    // A stray otherwise/else at the top of a statement is E022 (it has no if),
+    // which reads better than the generic "unexpected ending" of E017.
+    if (t.type === 'WORD' && (t.value.toLowerCase() === 'otherwise' || t.value.toLowerCase() === 'else')) {
+      throw new ParseError("'" + t.value + "' needs an if above it. An if is closed by its own ending, and otherwise comes straight after it.",
+        t.line, t.column,
+        'Put otherwise immediately after the if it belongs to: if ... then ... / otherwise ...', 'E022');
+    }
     // A statement starting with a quoted name is a Draw movement:
     // 'hero' move up "10"
     if (t.type === 'VARIABLE') return this.parseMoveSprite();
@@ -297,7 +328,7 @@
       // A statement may also start with a value-less token error:
       throw new ParseError('Expected a statement but found ' + this.describe(t) + '.',
         t.line, t.column,
-        'Statements start with a word such as Define, say, ask, if, wait, add library or python code.');
+        'Statements start with a word such as Define, say, ask, if, wait, add library or python code.', 'E015');
     }
     var word = t.value.toLowerCase();
     switch (word) {
@@ -313,7 +344,7 @@
         // only after the Python library has been added.
         throw new ParseError('\"' + t.value + '\" is Python, not E++, so E++ will not run it on its own.',
           t.line, t.column,
-          'To run Python, first add the Python library with: add library \"Python\" — then put the Python inside python code, like this: python code \"print(1)\". If you just want E++ to show something, use the word say.');
+          'To run Python, first add the Python library with: add library \"Python\" — then put the Python inside python code, like this: python code \"print(1)\". If you just want E++ to show something, use the word say.', 'E048');
       case 'ask': return this.parseAsk();
       case 'wait': return this.parseWait();
       case 'create': return this.parseCreateActor();
@@ -326,6 +357,13 @@
       case 'cancel': return this.parseCancelWait();
       case 'library': return this.parseLibrary();
       case 'if': return this.parseIf();
+      // The same list twice: one for each spelling. Both are E022.
+      // eslint-disable-next-line no-fallthrough
+      case 'otherwise': case 'else': {
+        throw new ParseError("'" + t.value + "' needs an if above it. An if is closed by its own ending, and otherwise comes straight after it.",
+          t.line, t.column,
+          'Put otherwise immediately after the if it belongs to: if ... then ... / otherwise ...', 'E022');
+      }
       case 'repeat': return this.parseRepeat();
       case 'while': return this.parseWhile();
       case 'stop': return this.parseStop(t);
@@ -339,7 +377,7 @@
       default:
         throw new ParseError('I do not understand the statement starting with "' + t.value + '".',
           t.line, t.column,
-          'Statements start with Define, say, display, ask, if, Increase, Decrease, repeat, while, wait, python code or add library "..."');
+          'Statements start with Define, say, display, ask, if, Increase, Decrease, repeat, while, wait, python code or add library "..."', 'E015');
     }
   };
 
@@ -358,23 +396,23 @@
       var nameToken = this.current();
       if (nameToken.type !== 'STRING') {
         throw new ParseError('A library name must be written in double quotes, for example: add library "Math".',
-          nameToken.line, nameToken.column, null);
+          nameToken.line, nameToken.column, null, 'E044');
       }
       this.advance();
       if (this.options && this.options.fileName) {
         var fname = this.options.fileName;
         if (/\.eppl$/i.test(fname) && !/\.eppla$/i.test(fname)) {
           throw new LibraryError(
-            'Files ending in .eppl cannot use libraries. In E++, .eppl is strictly for files WITHOUT libraries, and .eppla is for files WITH libraries.',
+            'Files ending in .eppl cannot use libraries: a file that uses a library is an .eppla file.',
             nameToken.line, nameToken.column,
-            'Rename this file to "' + fname.replace(/\.eppl$/i, '.eppla') + '" to use libraries.');
+            'Rename this file to "' + fname.replace(/\.eppl$/i, '.eppla') + '" to use libraries.', 'E046');
         }
       }
       return this.finishAdd(nameToken, kw);
     }
     var t = this.current();
     throw new ParseError('Expected "library" after "add" but found ' + this.describe(t) + '.',
-      kw.line, kw.column, 'To add a library, write: add the "Math" library.');
+      kw.line, kw.column, 'To add a library, write: add the "Math" library.', 'E045');
   };
 
   /** Shared tail of every way of writing "add a library". */
@@ -382,21 +420,21 @@
     if (!EPP.Libraries || !EPP.Libraries.isKnown(nameToken.value)) {
       var available = EPP.Libraries ? EPP.Libraries.names().join(', ') : 'Math';
       throw new LibraryError('There is no library called "' + nameToken.value + '".',
-        nameToken.line, nameToken.column, 'Available libraries: ' + available + '.');
+        nameToken.line, nameToken.column, 'Available libraries: ' + available + '.', 'E043');
     }
     var canonical = EPP.Libraries.canonical(nameToken.value);
     if (EPP.Libraries.isAvailable && !EPP.Libraries.isAvailable(canonical)) {
       throw new LibraryError('The "' + canonical + '" library is not included in this build of E++.',
         nameToken.line, nameToken.column,
-        EPP.Libraries.whyUnavailable(canonical));
+        EPP.Libraries.whyUnavailable(canonical), EPP.Libraries.errorCode(canonical));
     }
     if (this.options && this.options.fileName) {
       var fname2 = this.options.fileName;
       if (/\.eppl$/i.test(fname2) && !/\.eppla$/i.test(fname2)) {
         throw new LibraryError(
-          'Files ending in .eppl cannot use libraries. In E++, .eppl is strictly for files WITHOUT libraries, and .eppla is for files WITH libraries.',
+          'Files ending in .eppl cannot use libraries: a file that uses a library is an .eppla file.',
           nameToken.line, nameToken.column,
-          'Rename this file to "' + fname2.replace(/\.eppl$/i, '.eppla') + '" to use libraries.');
+          'Rename this file to "' + fname2.replace(/\.eppl$/i, '.eppla') + '" to use libraries.', 'E046');
       }
     }
     this.loadedLibraries[canonical] = true;
@@ -407,7 +445,7 @@
     var t = this.current();
     if (t.type !== 'WORD') {
       throw new ParseError('Expected a variable name ' + context + ' but found ' + this.describe(t) + '.',
-        t.line, t.column, 'Variable names are single words, for example: name, score, answer2.');
+        t.line, t.column, 'Variable names are single words, for example: name, score, answer2.', 'E030');
     }
     this.advance();
     return t.value;
@@ -415,6 +453,17 @@
 
   Parser.prototype.parseDefine = function () {
     var kw = this.advance(); // Define
+    // `Define x as 1` is legal E++ (a name is its own quotes-free word), but
+    // `Define "x" as 1` is not: double quotes make it text. That mistake is
+    // E036, with the single-quoted fix written out.
+    if (this.current().type === 'STRING') {
+      var unquoted = this.current();
+      throw new ParseError(
+        '"' + unquoted.value + '" is text, not a variable name. Variables are written inside single quotes: ' +
+        '\'' + unquoted.value + '\'',
+        unquoted.line, unquoted.column,
+        'Variables use single quotes and text uses double quotes.', 'E036');
+    }
     // Quoted variable name form: define '<name>' as <value>
     // Also: define '<name>' as drawing sprite  (Draw library)
     // Also: define '<name>' as image "<filename>"  (Image library)
@@ -424,24 +473,24 @@
       if (!this.matchWord('as') && !this.matchWord('be') && !this.matchWord('to')) {
         var connector = this.current();
         throw new ParseError('Expected the word "as" after ' + quotedName + ' but found ' + this.describe(connector) + '.',
-          connector.line, connector.column, quotedConnector);
+          connector.line, connector.column, quotedConnector, 'E062');
       }
       // Check for "drawing sprite" (Draw library)
       if (this.isWord('drawing')) {
         if (EPP.Libraries && !EPP.Libraries.isAvailable('Draw')) {
           throw new LibraryError('The "Draw" library is not included in this build of E++.',
-            kw.line, kw.column, EPP.Libraries.whyUnavailable('Draw'));
+            kw.line, kw.column, EPP.Libraries.whyUnavailable('Draw'), 'Z002');
         }
         if (!this.loadedLibraries.Draw) {
           throw new LibraryError('Drawing sprites require the Draw library.', kw.line, kw.column,
-            'Add the library first: add the "Draw" library');
+            'Add the library first: add the "Draw" library', 'E042');
         }
         this.advance(); // drawing
         if (!this.matchWord('sprite')) {
           var badSprite = this.current();
           throw new ParseError('Expected the word "sprite" after "drawing" but found ' + this.describe(badSprite) + '.',
             badSprite.line, badSprite.column,
-            'Write it like this: define \'' + quotedName + '\' as drawing sprite.');
+            'Write it like this: define \'' + quotedName + '\' as drawing sprite.', 'E062');
         }
         return EPP.AST.DefineSprite(quotedName, kw);
       }
@@ -453,10 +502,17 @@
           var badImg = this.current();
           throw new ParseError('Expected a Base64 image string after "image" in the definition.',
             badImg.line, badImg.column,
-            'Write it like this: define \'' + quotedName + '\' as image "<base64-string>".');
+            'Write it like this: define \'' + quotedName + '\' as image "<base64-string>".', 'E003');
         }
         var source = this.parseExpression();
         return EPP.AST.DefineImage(quotedName, source, kw);
+      }
+      // 1.4b1: a definition with no value is E031, not a bare "missing value".
+      if (this.isSeparator(this.current()) || this.atEnd()) {
+        var noValue = this.current();
+        throw new ParseError('This definition has no value: ' + quotedName + ' needs something after "be".',
+          noValue.line, noValue.column,
+          "Give the variable a value, for example: let '" + quotedName + "' be 0", 'E031');
       }
       // Dev Build 5: regular variable definition with quoted name
       var value = this.parseExpression();
@@ -464,6 +520,12 @@
     }
     var name = this.parseName('after "Define"');
     this.expectWord('as', 'in a Define statement, for example: Define ' + name + ' as 10.');
+    if (this.isSeparator(this.current()) || this.atEnd()) {
+      var noValue2 = this.current();
+      throw new ParseError('This definition has no value: ' + name + ' needs something after "as".',
+        noValue2.line, noValue2.column,
+        'Give the variable a value, for example: Define ' + name + ' as 10.', 'E031');
+    }
     var value = this.parseExpression();
     return EPP.AST.Define(name, value, kw);
   };
@@ -474,12 +536,12 @@
     if (!this.matchWord('to')) {
       var bad = this.current();
       throw new ParseError('Expected "to" after "loopback" but found ' + this.describe(bad) + '.',
-        bad.line, bad.column, 'Write it like this: loopback to if');
+        bad.line, bad.column, 'Write it like this: loopback to if', 'E062');
     }
     if (!this.matchWord('if')) {
       var bad2 = this.current();
       throw new ParseError('Expected "if" after "loopback to" but found ' + this.describe(bad2) + '.',
-        bad2.line, bad2.column, 'loopback only goes back to an if, so write it like this: loopback to if');
+        bad2.line, bad2.column, 'loopback only goes back to an if, so write it like this: loopback to if', 'E062');
     }
     return EPP.AST.Loopback(kw);
   };
@@ -494,19 +556,19 @@
     if (!this.matchWord('if')) {
       var badIf = this.current();
       throw new ParseError('Expected "if" after "check" but found ' + this.describe(badIf) + '.',
-        badIf.line, badIf.column, 'Write it like this: check if \'cat\' exists.');
+        badIf.line, badIf.column, 'Write it like this: check if \'cat\' exists.', 'E062');
     }
     // Expect a variable reference (quoted name)
     var varToken = this.current();
     if (varToken.type !== 'VARIABLE') {
       throw new ParseError('Expected a variable name in single quotes after "if" but found ' + this.describe(varToken) + '.',
-        varToken.line, varToken.column, 'Write it like this: check if \'cat\' exists.');
+        varToken.line, varToken.column, 'Write it like this: check if \'cat\' exists.', 'E030');
     }
     this.advance(); // consume the variable token
     if (!this.matchWord('exists')) {
       var badExists = this.current();
       throw new ParseError('Expected "exists" after the variable but found ' + this.describe(badExists) + '.',
-        badExists.line, badExists.column, 'Write it like this: check if \'cat\' exists.');
+        badExists.line, badExists.column, 'Write it like this: check if \'cat\' exists.', 'E062');
     }
     return EPP.AST.CheckExists(varToken.value, kw);
   };
@@ -519,21 +581,21 @@
       var bad = this.current();
       throw new ParseError('Expected the word "move" after \'' + name + '\' but found ' + this.describe(bad) + '.',
         bad.line, bad.column,
-        'Move a sprite like this: \'' + name + '\' move up "10" — the direction is up, down, left or right, and the pixels go in double quotes.');
+        'Move a sprite like this: \'' + name + '\' move up "10" — the direction is up, down, left or right, and the pixels go in double quotes.', 'E062');
     }
     var dirToken = this.current();
     var direction = dirToken.type === 'WORD' ? dirToken.value.toLowerCase() : '';
     if (['up', 'down', 'left', 'right'].indexOf(direction) === -1) {
       throw new ParseError('Expected a direction (up, down, left or right) after "move" but found ' + this.describe(dirToken) + '.',
         dirToken.line, dirToken.column,
-        'Write it like this: \'' + name + '\' move up "10"');
+        'Write it like this: \'' + name + '\' move up "10"', 'E062');
     }
     this.advance(); // direction
     var pixelsToken = this.current();
     if (pixelsToken.type !== 'STRING') {
       throw new ParseError('The number of pixels must be written as text in double quotes, like "10", but found ' + this.describe(pixelsToken) + '.',
         pixelsToken.line, pixelsToken.column,
-        'Write it like this: \'' + name + '\' move ' + direction + ' "10"');
+        'Write it like this: \'' + name + '\' move ' + direction + ' "10"', 'E011');
     }
     this.advance(); // pixels
     return EPP.AST.MoveSprite(name, direction, pixelsToken.value, nameToken);
@@ -566,7 +628,16 @@
       var badGame = this.current();
       throw new ParseError('Expected "window" or "background" after "set the game" but found ' + this.describe(badGame) + '.',
         badGame.line, badGame.column,
-        'Write it like this: set the game window to 640 by 480 — or: set the game background to "night".');
+        'Write it like this: set the game window to 640 by 480 — or: set the game background to "night".', 'E062');
+    }
+
+    // set "score" to 3 — double quotes make the name text, not a variable.
+    if (this.current().type === 'STRING') {
+      var quotedName = this.current();
+      throw new ParseError('"' + quotedName.value + '" is text, not a variable name. Variables are written inside ' +
+        'single quotes: set \'' + quotedName.value + '\' to ...',
+        quotedName.line, quotedName.column,
+        'Variables use single quotes and text uses double quotes.', 'E036');
     }
 
     // set the size of the actor 'hero' to 2
@@ -580,13 +651,13 @@
         var badSize = this.current();
         throw new ParseError('Expected the word "actor" after "the size of" but found ' + this.describe(badSize) + '.',
           badSize.line, badSize.column,
-          'Write it like this: set the size of the actor \'hero\' to 2');
+          'Write it like this: set the size of the actor \'hero\' to 2', 'E062');
       }
       var sizeName = this.current();
       if (sizeName.type !== 'VARIABLE') {
         throw new ParseError('An actor needs a name in single quotes, but found ' + this.describe(sizeName) + '.',
           sizeName.line, sizeName.column,
-          'Write it like this: set the size of the actor \'hero\' to 2');
+          'Write it like this: set the size of the actor \'hero\' to 2', 'E030');
       }
       this.advance();
       this.expectWord('to', 'before the size, for example: set the size of the actor \'hero\' to 2.');
@@ -609,7 +680,7 @@
     var kw = this.advance(); // say / display / show
     if (this.isSeparator(this.current()) || this.atEnd()) {
       throw new ParseError('"' + kw.value + '" needs something after it.', kw.line, kw.column,
-        'For example: ' + kw.value + ' "Hello". or ' + kw.value + ' 1 plus 1.');
+        'For example: ' + kw.value + ' "Hello". or ' + kw.value + ' 1 plus 1.', 'E003');
     }
     // Release 1.2: show the actor 'hero' / hide the actor 'hero' (Game library)
     if (this.isWord('the') && this.isWord('actor', this.peek(1)) && this.peek(2) &&
@@ -698,7 +769,7 @@
       if (actorToken.type !== 'VARIABLE') {
         throw new ParseError('An actor needs a name in single quotes, but found ' + this.describe(actorToken) + '.',
           actorToken.line, actorToken.column,
-          'Write it like this: wait for the actor \'hero\' to finish');
+          'Write it like this: wait for the actor \'hero\' to finish', 'E030');
       }
       this.advance();
       this.expectWord('to', 'in "wait for the actor \'hero\' to finish".');
@@ -733,7 +804,7 @@
         if (atMostActor.type !== 'VARIABLE') {
           throw new ParseError('An actor needs a name in single quotes, but found ' + this.describe(atMostActor) + '.',
             atMostActor.line, atMostActor.column,
-            'Write it like this: wait at most 5 seconds for the actor \'hero\' to finish');
+            'Write it like this: wait at most 5 seconds for the actor \'hero\' to finish', 'E030');
         }
         this.advance();
         this.expectWord('to', 'in "wait at most 5 seconds for the actor \'hero\' to finish".');
@@ -764,7 +835,7 @@
         var badThen = this.current();
         throw new ParseError('"and then" needs an action after it, but the line ended.',
           badThen.line, badThen.column,
-          'Write it like this: wait 2 seconds and then say "Done!"');
+          'Write it like this: wait 2 seconds and then say "Done!"', 'E003');
       }
       return EPP.AST.WaitThen(duration, this.parseStatement(), null, kw);
     }
@@ -787,12 +858,12 @@
     if (!this.matchWord('by')) {
       var t = this.current();
       throw new ParseError(word + ' needs the word "by" before the amount, but found ' + this.describe(t) + '.',
-        t.line, t.column, 'Write it like this: ' + word + ' ' + name + ' by 1.');
+        t.line, t.column, 'Write it like this: ' + word + ' ' + name + ' by 1.', 'E062');
     }
     if (this.isSeparator(this.current()) || this.atEnd()) {
       var t2 = this.current();
       throw new ParseError(word + ' ' + name + ' by needs an amount after "by".',
-        t2.line, t2.column, 'For example: ' + word + ' ' + name + ' by 1.');
+        t2.line, t2.column, 'For example: ' + word + ' ' + name + ' by 1.', 'E038');
     }
     var amount = this.parseExpression();
     return isIncrease ? EPP.AST.Increase(name, amount, kw) : EPP.AST.Decrease(name, amount, kw);
@@ -806,18 +877,18 @@
       throw new LibraryError(
         'You cannot run Python code yet, because the Python library has not been added.',
         kw.line, kw.column,
-        'Add this line above your Python code: add library "Python" — then python code "..." will work.');
+        'Add this line above your Python code: add library "Python" — then python code "..." will work.', 'E047');
     }
     if (!this.matchWord('code')) {
       var t0 = this.current();
       throw new ParseError('Python statements start with the words "python code", but found ' + this.describe(t0) + ' after "python".',
-        t0.line, t0.column, 'Write it like this: python code "print(\'Hello\')"');
+        t0.line, t0.column, 'Write it like this: python code "print(\'Hello\')"', 'E048');
     }
     var token = this.current();
     if (token.type !== 'STRING') {
       throw new ParseError('The Python code must be written inside double quotes, but found ' + this.describe(token) + '.',
         token.line, token.column,
-        'For one line: python code "print(1 plus 2)" — for several lines, use commas: python code ",print(1)," and close the quote at the end.');
+        'For one line: python code "print(1 plus 2)" — for several lines, use commas: python code ",print(1)," and close the quote at the end.', 'E048');
     }
     this.advance();
     var code = token.value;
@@ -838,7 +909,7 @@
         ? 'This Python code block is empty — there is no Python code after the opening comma.'
         : 'The Python code is empty — there is nothing between the quotes.',
         token.line, token.column,
-        'Write some Python between the quotes, for example: python code "print(\'Hello\')"');
+        'Write some Python between the quotes, for example: python code "print(\'Hello\')"', 'E050');
     }
     return EPP.AST.PythonCode(code, kw, block);
   };
@@ -857,13 +928,13 @@
       var bad = this.current();
       throw new ParseError('Expected the word "actor" after "create" but found ' + this.describe(bad) + '.',
         bad.line, bad.column,
-        'Write it like this: create the actor \'hero\' with the image "hero.png" — the Image button in the toolbar writes this line for you.');
+        'Write it like this: create the actor \'hero\' with the image "hero.png" — the Image button in the toolbar writes this line for you.', 'E062');
     }
     var nameToken = this.current();
     if (nameToken.type !== 'VARIABLE') {
       throw new ParseError('An actor needs a name in single quotes, but found ' + this.describe(nameToken) + '.',
         nameToken.line, nameToken.column,
-        'Write it like this: create the actor \'hero\' with the image "hero.png"');
+        'Write it like this: create the actor \'hero\' with the image "hero.png"', 'E030');
     }
     this.advance();
     // The picture can come from the project's picture book instead:
@@ -879,7 +950,7 @@
       var badImage = this.current();
       throw new ParseError('Expected the word "image" after "with" but found ' + this.describe(badImage) + '.',
         badImage.line, badImage.column,
-        'Write it like this: create the actor \'hero\' with the image "hero.png"');
+        'Write it like this: create the actor \'hero\' with the image "hero.png"', 'E062');
     }
     var source = this.parseExpression();
     return EPP.AST.DefineActor(nameToken.value, source, kw);
@@ -903,7 +974,7 @@
         var badImage = this.current();
         throw new ParseError('Expected the word "image" after "link" but found ' + this.describe(badImage) + '.',
           badImage.line, badImage.column,
-          'Write it like this: link the image "hero.png" to the actor \'hero\'');
+          'Write it like this: link the image "hero.png" to the actor \'hero\'', 'E062');
       }
       var linkSource = this.parseExpression();
       this.expectWord('to', 'in "link the image \"hero.png\" to the actor \'hero\'".');
@@ -912,13 +983,13 @@
         var badTarget = this.current();
         throw new ParseError('Expected "actor" or "name" after "to" but found ' + this.describe(badTarget) + '.',
           badTarget.line, badTarget.column,
-          'Write it like this: link the image "hero.png" to the actor \'hero\'');
+          'Write it like this: link the image "hero.png" to the actor \'hero\'', 'E062');
       }
       var linkName = this.current();
       if (linkName.type !== 'VARIABLE') {
         throw new ParseError('An actor needs a name in single quotes, but found ' + this.describe(linkName) + '.',
           linkName.line, linkName.column,
-          'Write it like this: link the image "hero.png" to the actor \'hero\'');
+          'Write it like this: link the image "hero.png" to the actor \'hero\'', 'E030');
       }
       this.advance();
       return EPP.AST.LinkImage(linkName.value, linkSource, kw);
@@ -929,13 +1000,13 @@
       var badThe = this.current();
       throw new ParseError('Expected "the" after "set" but found ' + this.describe(badThe) + '.',
         badThe.line, badThe.column,
-        'Write it like this: set the image of the actor \'hero\' to "hero.png"');
+        'Write it like this: set the image of the actor \'hero\' to "hero.png"', 'E062');
     }
     if (!this.matchWord('image')) {
       var badSetImage = this.current();
       throw new ParseError('Expected "image" after "set the" but found ' + this.describe(badSetImage) + '.',
         badSetImage.line, badSetImage.column,
-        'Write it like this: set the image of the actor \'hero\' to "hero.png"');
+        'Write it like this: set the image of the actor \'hero\' to "hero.png"', 'E062');
     }
     this.expectWord('of', 'in "set the image of the actor \'hero\' to ...".');
     this.matchWord('the');
@@ -943,13 +1014,13 @@
       var badActor = this.current();
       throw new ParseError('Expected "actor" after "the image of" but found ' + this.describe(badActor) + '.',
         badActor.line, badActor.column,
-        'Write it like this: set the image of the actor \'hero\' to "hero.png"');
+        'Write it like this: set the image of the actor \'hero\' to "hero.png"', 'E062');
     }
     var actorToken = this.current();
     if (actorToken.type !== 'VARIABLE') {
       throw new ParseError('An actor needs a name in single quotes, but found ' + this.describe(actorToken) + '.',
         actorToken.line, actorToken.column,
-        'Write it like this: set the image of the actor \'hero\' to "hero.png"');
+        'Write it like this: set the image of the actor \'hero\' to "hero.png"', 'E030');
     }
     this.advance();
     this.expectWord('to', 'before the picture, for example: set the image of the actor \'hero\' to "hero.png".');
@@ -967,12 +1038,12 @@
       var bad = this.current();
       throw new ParseError('Expected the word "actor" after "put" but found ' + this.describe(bad) + '.',
         bad.line, bad.column,
-        'Write it like this: put the actor \'hero\' at 100 and 200');
+        'Write it like this: put the actor \'hero\' at 100 and 200', 'E062');
     }
     var nameToken = this.current();
     if (nameToken.type !== 'VARIABLE') {
       throw new ParseError('An actor needs a name in single quotes, but found ' + this.describe(nameToken) + '.',
-        nameToken.line, nameToken.column, 'Write it like this: put the actor \'hero\' at 100 and 200');
+        nameToken.line, nameToken.column, 'Write it like this: put the actor \'hero\' at 100 and 200', 'E030');
     }
     this.advance();
     this.expectWord('at', 'after the actor name, for example: put the actor \'hero\' at 100 and 200.');
@@ -990,7 +1061,7 @@
     if (!this.matchWord('game')) {
       var bad = this.current();
       throw new ParseError('Expected the word "game" after "play" but found ' + this.describe(bad) + '.',
-        bad.line, bad.column, 'Write it like this: play the game ... end the game');
+        bad.line, bad.column, 'Write it like this: play the game ... end the game', 'E062');
     }
     var part = this.parseBranch(kw);
     if (part.block) {
@@ -998,7 +1069,7 @@
       if (!this.isWord('end')) {
         var t = this.current();
         throw new ParseError('This "play the game" block never ends.', t.line, t.column,
-          'Close it with: end the game');
+          'Close it with: end the game', 'E018');
       }
       this.advance(); // end
       this.matchWord('the');
@@ -1031,12 +1102,12 @@
         var badA = this.current();
         throw new ParseError('Expected the word "actor" after "stop the" but found ' + this.describe(badA) + '.',
           badA.line, badA.column,
-          'Write it like this: stop the actor \'enemy\' — or just "stop" on its own to end a loop.');
+          'Write it like this: stop the actor \'enemy\' — or just "stop" on its own to end a loop.', 'E062');
       }
       var nameToken = this.current();
       if (nameToken.type !== 'VARIABLE') {
         throw new ParseError('An actor needs a name in single quotes, but found ' + this.describe(nameToken) + '.',
-          nameToken.line, nameToken.column, 'Write it like this: stop the actor \'enemy\'');
+          nameToken.line, nameToken.column, 'Write it like this: stop the actor \'enemy\'', 'E030');
       }
       this.advance();
       return EPP.AST.ActorAction(nameToken.value, 'stop', t);
@@ -1056,7 +1127,7 @@
     if (nameToken.type !== 'VARIABLE') {
       throw new ParseError('An actor needs a name in single quotes, but found ' + this.describe(nameToken) + '.',
         nameToken.line, nameToken.column,
-        'Write it like this: ' + action + ' the actor \'hero\'');
+        'Write it like this: ' + action + ' the actor \'hero\'', 'E030');
     }
     this.advance();
     return EPP.AST.ActorAction(nameToken.value, action, kw);
@@ -1070,12 +1141,12 @@
     if (!this.matchWord('wait')) {
       var bad = this.current();
       throw new ParseError('Expected the word "wait" after "cancel" but found ' + this.describe(bad) + '.',
-        bad.line, bad.column, 'Write it like this: cancel the wait \'intro\'');
+        bad.line, bad.column, 'Write it like this: cancel the wait \'intro\'', 'E062');
     }
     var nameToken = this.current();
     if (nameToken.type !== 'VARIABLE') {
       throw new ParseError('A named wait needs a name in single quotes, but found ' + this.describe(nameToken) + '.',
-        nameToken.line, nameToken.column, 'Write it like this: cancel the wait \'intro\'');
+        nameToken.line, nameToken.column, 'Write it like this: cancel the wait \'intro\'', 'E030');
     }
     this.advance();
     return EPP.AST.CancelWait(nameToken.value, kw);
@@ -1086,27 +1157,27 @@
     var nameToken = this.current();
     if (nameToken.type !== 'STRING') {
       throw new ParseError('A library name must be written in double quotes, for example: add library "Math".',
-        nameToken.line, nameToken.column, null);
+        nameToken.line, nameToken.column, null, 'E044');
     }
     this.advance();
     if (this.options && this.options.fileName) {
       var fname = this.options.fileName;
       if (/\.eppl$/i.test(fname) && !/\.eppla$/i.test(fname)) {
         throw new LibraryError(
-          'Files ending in .eppl cannot use libraries. In E++, .eppl is strictly for files WITHOUT libraries, and .eppla is for files WITH libraries.',
+          'Files ending in .eppl cannot use libraries: a file that uses a library is an .eppla file.',
           nameToken.line, nameToken.column,
-          'Rename this file to "' + fname.replace(/\.eppl$/i, '.eppla') + '" to use libraries.');
+          'Rename this file to "' + fname.replace(/\.eppl$/i, '.eppla') + '" to use libraries.', 'E046');
       }
     }
     if (!(this.matchWord('add') || this.matchWord('load') || this.matchWord('import'))) {
       var t = this.current();
       throw new ParseError('Expected the word "add" after the library name, or use: add library "' + nameToken.value + '".',
-        t.line, t.column, 'Write it like this: add library "' + nameToken.value + '".');
+        t.line, t.column, 'Write it like this: add library "' + nameToken.value + '".', 'E045');
     }
     if (!EPP.Libraries || !EPP.Libraries.isKnown(nameToken.value)) {
       var available = EPP.Libraries ? EPP.Libraries.names().join(', ') : 'Math';
       throw new LibraryError('There is no library called "' + nameToken.value + '".',
-        nameToken.line, nameToken.column, 'Available libraries: ' + available + '.');
+        nameToken.line, nameToken.column, 'Available libraries: ' + available + '.', 'E043');
     }
     var canonical = EPP.Libraries.canonical(nameToken.value);
     this.loadedLibraries[canonical] = true;
@@ -1175,7 +1246,7 @@
     var t = this.current();
     if (!this.isWord('end')) {
       throw new ParseError('This "' + kind + '" statement (started on line ' + openToken.line + ') never ends.',
-        t.line, t.column, 'Close it with: end ' + kind);
+        t.line, t.column, 'Close it with: end ' + kind, 'E018');
     }
     this.advance(); // end
     this.matchWord(kind);
@@ -1204,7 +1275,15 @@
     var kw = this.advance(); // if
     var firstCondition = this.parseCondition();
     var condition = firstCondition;
-    var thenToken = this.expectWord('then', 'after the if condition.');
+    // 1.4b1: a missing 'then' is E020, not the generic "expected the word"
+    // of E062 - it is the one word an if cannot do without.
+    if (!this.isWord('then')) {
+      var missingThen = this.current();
+      throw new ParseError('This if needs the word "then" after its condition, but found ' +
+        this.describe(missingThen) + '.', missingThen.line, missingThen.column,
+        'Write the decision like this: if 1 is 1 then say "Yes"', 'E020');
+    }
+    var thenToken = this.advance(); // then
     // `if ... then:` is the block form people write in the Studio; the colon
     // is decorative and the block is still closed by `end if`.
     if (this.current() && this.current().type === 'COLON') this.advance();
@@ -1214,6 +1293,9 @@
     var branches = [];
     var firstPart = this.parseBranch(thenToken);
     var outerBlock = firstPart.block;
+    // The chain itself starts on the `if` line; an `otherwise` that appears
+    // on that same line is only legal in the inline form.
+
     branches.push({ condition: condition, body: firstPart.body });
 
     for (;;) {
@@ -1292,6 +1374,13 @@
 
   Parser.prototype.parseWhile = function () {
     var kw = this.advance(); // while
+    // 1.4b1: `while` with nothing to test is E025.
+    var first = this.current();
+    if (!first || first.type === 'NEWLINE' || first.type === 'EOF' || first.type === 'PERIOD') {
+      throw new ParseError('This while loop has no condition to test.',
+        kw.line, kw.column,
+        "Write the loop like this: while 'count' is less than 4 do", 'E025');
+    }
     var condition = this.parseCondition();
     var marker = this.current();
     if (this.matchWord('do')) marker = this.tokens[this.pos - 1];
@@ -1347,7 +1436,7 @@
         this.isWord('number', this.peek(2))) {
       throw new ParseError('"not a number" needs a value to check, but nothing was written in front of it.',
         t0.line, t0.column,
-        'Write it in full, for example: if \'age\' is not a number then say "Numbers only, please." — or use it in a chain after an if about the same value: otherwise if not a number then ...');
+        'Write it in full, for example: if \'age\' is not a number then say "Numbers only, please." — or use it in a chain after an if about the same value: otherwise if not a number then ...', 'E027');
     }
     var left = this.parseExpression();
     var t = this.current();
@@ -1376,7 +1465,7 @@
         var badNeg = this.current();
         throw new ParseError('"is not touching" is written "is not touching" only in the other direction — E++ keeps it simple: use is touching and put the not in the branch.',
           badNeg.line, badNeg.column,
-          'Write: if \'hero\' is touching \'gem\' then ... — and use otherwise for the other case.');
+          'Write: if \'hero\' is touching \'gem\' then ... — and use otherwise for the other case.', 'E026');
       }
       this.requireLibrary('is touching', t);
       this.advance(); // touching
@@ -1425,7 +1514,7 @@
       if (!this.matchWord('number')) {
         var tnum = this.current();
         throw new ParseError('After "' + (negated ? 'is not a' : 'is a') + '" I expected the word "number", but found ' + this.describe(tnum) + '.',
-          tnum.line, tnum.column, 'Write it like this: if \'age\' is not a number then say "Numbers only, please."');
+          tnum.line, tnum.column, 'Write it like this: if \'age\' is not a number then say "Numbers only, please."', 'E026');
       }
       return EPP.AST.Condition(negated ? 'notNumber' : 'number', left, null, t);
     }
@@ -1471,7 +1560,7 @@
     var bad = this.current();
     throw new ParseError('After "is" I expected a comparison such as "equal to", "greater than", "lesser than", "a positive number", "in the range of" or "not a number", but found ' +
       this.describe(bad) + '.', bad.line, bad.column,
-      'For example: if \'score\' is equal to 10 then say "Perfect".');
+      'For example: if \'score\' is equal to 10 then say "Perfect".', 'E026');
   };
 
   // ---------- expressions ----------
@@ -1655,7 +1744,7 @@
         var constantName = constant && constant.type === 'WORD' ? constant.value.toLowerCase() : '';
         if (constantName !== 'pi' && constantName !== 'e') {
           throw new ParseError('Only pi and e have a fixed value here.', constant.line, constant.column,
-            'Write: the value of pi');
+            'Write: the value of pi', 'E027');
         }
         this.advance();
         return EPP.AST.MathConstant(constantName, t);
@@ -1682,7 +1771,7 @@
       if (RESERVED[word]) {
         throw new ParseError('Expected a value but found the word "' + t.value + '".',
           t.line, t.column,
-          'Values can be "text in quotes", \'a variable\', a number, or maths such as 1 plus 1.');
+          'Values can be "text in quotes", \'a variable\', a number, or maths such as 1 plus 1.', 'E003');
       }
 
       // Reject unquoted values during parsing, including in inactive branches.
@@ -1695,15 +1784,20 @@
       throw new ParseError((plural ? 'The words "' + text + '" do' : 'The word "' + text + '" does') +
         ' not mean anything in E++ yet — text requires double quotes and variables must be written inside single quotes.',
         first.line, first.column,
-        'Write "' + text + '" for text or use single quotes for a variable.');
+        'Write "' + text + '" for text or use single quotes for a variable.', 'E001');
     }
 
     throw new ParseError('Expected a value but found ' + this.describe(t) + '.',
       t.line, t.column,
-      'Values can be "text in quotes", \'a variable\', a number, or maths such as 1 plus 1.');
+      'Values can be "text in quotes", \'a variable\', a number, or maths such as 1 plus 1.', 'E003');
   };
 
   Parser.parse = function (source, options) { return new Parser(source, options).parse(); };
+  /**
+   * Release 1.4b1: the same parse, with the Parser left in the caller's hands
+   * so it can read `usedFeatures` (every library feature the source mentions).
+   */
+  Parser.instance = function (source, options) { return new Parser(source, options); };
 
   EPP.Parser = Parser;
   EPP.extractPythonBlocks = extractPythonBlocks;

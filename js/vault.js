@@ -351,22 +351,22 @@
     try {
       container = base64ToBytes(envelope);
     } catch (e) {
-      throw vaultError('E511', 'This is not an E++ vault', name,
+      throw vaultError('E056', 'Not An E++ Project', name,
         'The file contains characters that are not part of an E++ project file.',
         'Download the project again from the E++ Studio, or check the file was not edited by hand.');
     }
     if (container.length < HEADER_LENGTH + TAG_LENGTH) {
-      throw vaultError('E512', 'This E++ vault is too short', name,
+      throw vaultError('E057', 'Damaged Project File', name,
         'The file is smaller than its own header, so part of it is missing.',
         'Download the project again to get a complete file.');
     }
     if (container[0] !== MAGIC[0] || container[1] !== MAGIC[1] || container[2] !== MAGIC[2]) {
-      throw vaultError('E511', 'This is not an E++ vault', name,
+      throw vaultError('E056', 'Not An E++ Project', name,
         'The file does not start with the E++ vault signature.',
         'Only project files saved by the E++ Studio can be opened. Import a .enpp or .enppl file that E++ wrote.');
     }
     if (container[3] !== VERSION) {
-      throw vaultError('E513', 'This E++ vault was written by a different release', name,
+      throw vaultError('E058', 'Project Saved By Another Release', name,
         'The file format version is ' + container[3] + ', but this Studio writes and reads version ' + VERSION + '.',
         'Open the file with the release of E++ that created it, then download it again from this Studio.');
     }
@@ -379,7 +379,7 @@
     var derived = deriveKeys(master);
     var expected = hmacSha256(derived.tag, body);
     if (!constantTimeEqual(expected, tag)) {
-      throw vaultError('E520', 'This key does not open this project', name,
+      throw vaultError('E059', 'Key Does Not Open This Project', name,
         'The key was tried, but the file rejected it — either the key is from another project or the file has been changed.',
         'Import the project again and let the Studio try every saved key, or download the project again.');
     }
@@ -548,7 +548,7 @@
         var text = loadText(envelope, candidates[i].key, filename);
         return { ok: true, text: text, key: candidates[i].key, record: candidates[i].record, source: candidates[i].source, tried: i + 1 };
       } catch (error) {
-        if (error.code === 'E520') { lastWrongKey = error; continue; }
+        if (error.code === 'E059') { lastWrongKey = error; continue; }
         // Structural problem: trying more keys cannot help.
         return { ok: false, corrupt: true, error: error, tried: i + 1 };
       }

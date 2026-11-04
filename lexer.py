@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-E++ (E-Plus-Plus) 1.4a3 Lexer and Subsystem
+E++ (E-Plus-Plus) 1.4b1 Lexer and Subsystem
 Written in Python for direct execution and runtime integration.
 """
 
@@ -137,35 +137,35 @@ def save_epp(plaintext: str, key: bytes) -> str:
 
 
 def load_epp(ciphertext: str, key: bytes, filename: str = "<source>") -> str:
-    """Reads a 1.2 project file. Raises EppDiagnosticError with E511-E520."""
+    """Reads a 1.2 project file. Raises EppDiagnosticError with E056-E059."""
     if isinstance(key, str):
         key = bytes.fromhex(key)
     try:
         raw = base64.b64decode("".join(str(ciphertext).split()), validate=True)
     except Exception:
         raise EppDiagnosticError(
-            code="E511", name="This is not an E++ project", filename=filename,
+            code="E056", name="Not An E++ Project", filename=filename,
             line=1, col=1, source_line="",
             reason="The file contains characters that are not part of an E++ project file.",
             help_msg="Download the project again from the E++ Studio, or check the file was not edited by hand."
         )
     if len(raw) < VAULT_HEADER + VAULT_TAG:
         raise EppDiagnosticError(
-            code="E512", name="This E++ project file is too short", filename=filename,
+            code="E057", name="Damaged Project File", filename=filename,
             line=1, col=1, source_line="",
             reason="The file is smaller than its own header, so part of it is missing.",
             help_msg="Download the project again to get a complete file."
         )
     if raw[:3] != VAULT_MAGIC:
         raise EppDiagnosticError(
-            code="E511", name="This is not an E++ project", filename=filename,
+            code="E056", name="Not An E++ Project", filename=filename,
             line=1, col=1, source_line="",
             reason="The file does not start with the E++ project signature.",
             help_msg="Only project files saved by the E++ Studio can be opened."
         )
     if raw[3] != VAULT_VERSION:
         raise EppDiagnosticError(
-            code="E513", name="This project file was written by a different release", filename=filename,
+            code="E058", name="Project Saved By Another Release", filename=filename,
             line=1, col=1, source_line="",
             reason=f"The file format version is {raw[3]}, but this engine reads version {VAULT_VERSION}.",
             help_msg="Open the file with the release of E++ that created it, then download it again."
@@ -176,7 +176,7 @@ def load_epp(ciphertext: str, key: bytes, filename: str = "<source>") -> str:
     payload, tag = raw[:-VAULT_TAG], raw[-VAULT_TAG:]
     if not hmac.compare_digest(hmac.new(mac_key, payload, hashlib.sha256).digest(), tag):
         raise EppDiagnosticError(
-            code="E520", name="This key does not open this project", filename=filename,
+            code="E059", name="Key Does Not Open This Project", filename=filename,
             line=1, col=1, source_line="",
             reason="The key was tried, but the file rejected it — the key belongs to another project, or the file has changed.",
             help_msg="Pass the key that sealed this project with --key, or point --keyring at its keyring file."
@@ -186,7 +186,7 @@ def load_epp(ciphertext: str, key: bytes, filename: str = "<source>") -> str:
         return chacha20_xor(enc_key, nonce, body).decode("utf-8")
     except UnicodeDecodeError as exc:
         raise EppDiagnosticError(
-            code="E512", name="Damaged Project File", filename=filename,
+            code="E057", name="Damaged Project File", filename=filename,
             line=1, col=1, source_line="",
             reason=f"The decrypted stream is not valid UTF-8: {exc}",
             help_msg="The project may have been truncated."
@@ -234,19 +234,19 @@ def _open_vault_with_keys(text: str, filename: str, keys: Optional[List[bytes]] 
         try:
             return load_epp(text, candidate, filename)
         except EppDiagnosticError as exc:
-            if exc.code == "E520":
+            if exc.code == "E059":
                 last = exc
                 continue
             raise
     if last is not None:
         raise EppDiagnosticError(
-            code="E520", name="This key does not open this project", filename=filename,
+            code="E059", name="Key Does Not Open This Project", filename=filename,
             line=1, col=1, source_line="",
             reason=f"None of the {len(attempts)} key(s) that were tried open this project.",
             help_msg="Put the keyring the Studio exported next to the project (epp-keys.json), or set EPP_KEYRING."
         )
     raise EppDiagnosticError(
-        code="E521", name="No Key Available", filename=filename, line=1, col=1, source_line="",
+        code="E059", name="Key Does Not Open This Project", filename=filename, line=1, col=1, source_line="",
         reason="This project needs a key, and none was found.",
         help_msg="Export the keyring from the Studio (🔑 Keys) and save it as epp-keys.json next to the project, or set EPP_KEYRING."
     )
@@ -262,7 +262,7 @@ def open_vault(text: str, filename: str = "<source>", keyhex: Optional[str] = No
             keys.append(bytes.fromhex(keyhex.strip()))
         except ValueError:
             raise EppDiagnosticError(
-                code="E522", name="Bad Key", filename=filename, line=1, col=1, source_line="",
+                code="E059", name="Key Does Not Open This Project", filename=filename, line=1, col=1, source_line="",
                 reason="--key needs 64 hex characters (a 32-byte E++ project key).",
                 help_msg="Copy the key from epp-keys.json, or point --keyring at that file."
             )
@@ -276,18 +276,18 @@ def open_vault(text: str, filename: str = "<source>", keyhex: Optional[str] = No
         try:
             return load_epp(text, candidate, filename)
         except EppDiagnosticError as exc:
-            if exc.code == "E520":
+            if exc.code == "E059":
                 errors.append(exc)
                 continue
             raise
     if tried == 0:
         raise EppDiagnosticError(
-            code="E521", name="No Key Available", filename=filename, line=1, col=1, source_line="",
+            code="E059", name="Key Does Not Open This Project", filename=filename, line=1, col=1, source_line="",
             reason="This project needs a key, and none was supplied.",
             help_msg="Use --key <64 hex characters>, put epp-keys.json next to the project, or set EPP_KEYRING."
         )
     raise EppDiagnosticError(
-        code="E520", name="This key does not open this project", filename=filename, line=1, col=1, source_line="",
+        code="E059", name="Key Does Not Open This Project", filename=filename, line=1, col=1, source_line="",
         reason=f"None of the {tried} key(s) that were tried open this project.",
         help_msg="Pass the key that sealed it with --key, or import the keyring the Studio exported."
     )
@@ -565,8 +565,8 @@ class Lexer:
             if c == "/" and self.peek_next() == "/":
                 cur_line = self.get_source_line(start_line)
                 raise EppDiagnosticError(
-                    code="E101",
-                    name="Illegal Comment Syntax",
+                    code="F011",
+                    name="Comment Characters Are Not E++",
                     filename=self.filename,
                     line=start_line,
                     col=start_col,
@@ -577,8 +577,8 @@ class Lexer:
             if c == "#":
                 cur_line = self.get_source_line(start_line)
                 raise EppDiagnosticError(
-                    code="E101",
-                    name="Illegal Comment Syntax",
+                    code="F011",
+                    name="Comment Characters Are Not E++",
                     filename=self.filename,
                     line=start_line,
                     col=start_col,
@@ -662,8 +662,8 @@ class Lexer:
             unknown_char = self.advance()
             cur_line = self.get_source_line(start_line)
             raise EppDiagnosticError(
-                code="E101",
-                name="Unexpected Character",
+                code="F003",
+                name="Unrecognised Character",
                 filename=self.filename,
                 line=start_line,
                 col=start_col,
@@ -694,8 +694,8 @@ class Lexer:
         if self.peek() != "[":
             cur_line = self.get_source_line(start_line)
             raise EppDiagnosticError(
-                code="E101",
-                name="Invalid Note Syntax",
+                code="F008",
+                name="Note Without Brackets",
                 filename=self.filename,
                 line=start_line,
                 col=self.col,
@@ -709,7 +709,7 @@ class Lexer:
             if self.peek() == "\n":
                 cur_line = self.get_source_line(start_line)
                 raise EppDiagnosticError(
-                    code="E101",
+                    code="F007",
                     name="Unterminated Note",
                     filename=self.filename,
                     line=start_line,
@@ -722,7 +722,7 @@ class Lexer:
         if self.is_at_end():
             cur_line = self.get_source_line(start_line)
             raise EppDiagnosticError(
-                code="E101",
+                code="F007",
                 name="Unterminated Note",
                 filename=self.filename,
                 line=start_line,
@@ -801,7 +801,7 @@ class Lexer:
             if c == "\n":
                 cur_line = self.get_source_line(start_line)
                 raise EppDiagnosticError(
-                    code="E102",
+                    code="F004",
                     name="Unterminated String",
                     filename=self.filename,
                     line=start_line,
@@ -827,7 +827,7 @@ class Lexer:
         if self.is_at_end():
             cur_line = self.get_source_line(start_line)
             raise EppDiagnosticError(
-                code="E102",
+                code="F004",
                 name="Unterminated String",
                 filename=self.filename,
                 line=start_line,
@@ -849,7 +849,7 @@ class Lexer:
             if c == "\n":
                 cur_line = self.get_source_line(start_line)
                 raise EppDiagnosticError(
-                    code="E102",
+                    code="F005",
                     name="Unterminated Variable Name",
                     filename=self.filename,
                     line=start_line,
@@ -863,7 +863,7 @@ class Lexer:
         if self.is_at_end():
             cur_line = self.get_source_line(start_line)
             raise EppDiagnosticError(
-                code="E102",
+                code="F005",
                 name="Unterminated Variable Name",
                 filename=self.filename,
                 line=start_line,
@@ -876,7 +876,7 @@ class Lexer:
         self.advance() # closing '
         var_name = "".join(text)
         if not var_name.strip():
-            raise EppDiagnosticError(code="E202", name="Empty Variable Name", filename=self.filename,
+            raise EppDiagnosticError(code="F006", name="Empty Variable Reference", filename=self.filename,
                                      line=start_line, col=start_col, source_line=self.get_source_line(start_line),
                                      reason="A variable name cannot be empty.", help_msg="Put a name between the single quotes.")
         return Token(TokenType.VARIABLE, f"'{var_name}'", start_line, start_col, string_value=var_name)
@@ -931,4 +931,4 @@ if __name__ == "__main__":
         for t in tokens:
             print(t)
     else:
-        print("E++ 1.4a3 Lexer module loaded.")
+        print("E++ 1.4b1 Lexer module loaded.")

@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import vm from 'node:vm';
 import assert from 'node:assert';
+import { parse as parseCss, winner as cascadeWinner, studioTree } from '../tools/css-cascade.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const context = vm.createContext({
@@ -103,8 +104,9 @@ console.log('Interpreter: basics from the spec');
   ok('ask ... and save answer as ...');
 }
 {
-  const right = await run('ask "5 plus 6?" and save answer as output\nif \'output\' is equal to 11 then say "Correct!" otherwise say "Wrong!"', { answers: ['11'] });
-  const wrong = await run('ask "5 plus 6?" and save answer as output\nif \'output\' is equal to 11 then say "Correct!" otherwise say "Wrong!"', { answers: ['9'] });
+  const block = 'ask "5 plus 6?" and save answer as output\nif \'output\' is equal to 11 then\n  say "Correct!"\notherwise say "Wrong!"\nend if';
+  const right = await run(block, { answers: ['11'] });
+  const wrong = await run(block, { answers: ['9'] });
   assert.deepEqual([...right.output], ['Correct!']);
   assert.deepEqual([...wrong.output], ['Wrong!']);
   ok('if ... is equal to ... then ... otherwise ... (typed numbers compare as numbers)');
@@ -817,12 +819,12 @@ const VAULT_KEY = Uint8Array.from({ length: 32 }, (_, i) => i);
 {
   const sealed = EPP.Vault.saveText('say "secret"', VAULT_KEY);
   const otherKey = EPP.Vault.generateKey();
-  assert.throws(() => EPP.Vault.loadText(sealed, otherKey), (e) => e.code === 'E520');
+  assert.throws(() => EPP.Vault.loadText(sealed, otherKey), (e) => e.code === 'E059');
   const tampered = EPP.Vault.base64Decode(sealed);
   tampered[30] ^= 0x01;
-  assert.throws(() => EPP.Vault.loadText(EPP.Vault.base64Encode(tampered), VAULT_KEY), (e) => e.code === 'E520');
-  assert.throws(() => EPP.Vault.loadText('say "plain text"', VAULT_KEY), (e) => e.code === 'E511');
-  ok('wrong keys and edited files are rejected (E520), plaintext is not a vault (E511)');
+  assert.throws(() => EPP.Vault.loadText(EPP.Vault.base64Encode(tampered), VAULT_KEY), (e) => e.code === 'E059');
+  assert.throws(() => EPP.Vault.loadText('say "plain text"', VAULT_KEY), (e) => e.code === 'E056');
+  ok('wrong keys and edited files are rejected (E059), plaintext is not a vault (E056)');
 }
 
 {
@@ -1526,11 +1528,184 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
   assert.ok(/api\.fetchIdeas\(/.test(page), 'the panel reads the public list, not a local one');
 
   // The version the page announces matches this release everywhere it shows.
-  assert.ok(page.includes('<title>E++ Studio | 1.4a3</title>'), 'the tab title is 1.4a3');
-  assert.ok(page.includes('class="build-badge">1.4a3<'), 'the header badge is 1.4a3');
+  assert.ok(page.includes('<title>E++ Studio | 1.4b1</title>'), 'the tab title is 1.4b1');
+  assert.ok(page.includes('class="build-badge">1.4b1<'), 'the header badge is 1.4b1');
   assert.ok(page.includes("const DEFAULTS_VERSION = '1.4a2'"), 'new examples are added without overwriting existing files');
   assert.ok(page.includes("epp_idea_draft_1_2_1"), 'existing idea drafts remain available');
-  ok('the page announces 1.4a3 while retaining existing progress');
+  ok('the page announces 1.4b1 while retaining existing progress');
+
+  // 1.4b1: every button draws a real icon, and every button is named.
+  const icons = readFileSync(join(root, 'js', 'icons.js'), 'utf8');
+  assert.ok(page.includes('js/icons.js'), 'the page loads the shared icon set');
+  const ids = new Set([...icons.matchAll(/^    (\w+): '/gm)].map(m => m[1]));
+  assert.ok(ids.size >= 20, 'the icon set covers the Studio controls, got ' + ids.size);
+  const used = [...page.matchAll(/data-icon="(\w+)"/g)].map(m => m[1]);
+  const unknown = [...new Set(used)].filter(id => !ids.has(id));
+  assert.deepEqual(unknown, [], 'every icon named in the page exists in the set');
+  assert.ok(used.length >= 10, 'the chrome uses the icon set, got ' + used.length + ' icons');
+
+  // The rail: an icon and a word on every button, in three named groups.
+  const rail = page.slice(page.indexOf('<nav class="activity-bar"'), page.indexOf('</nav>', page.indexOf('<nav class="activity-bar"')));
+  const railButtons = rail.match(/<button[\s\S]*?<\/button>/g) || [];
+  assert.ok(railButtons.length >= 6, 'the rail has its buttons');
+  for (const button of railButtons) {
+    assert.ok(/class="rail-label">[A-Za-z ]+</.test(button), 'a rail button lost its label: ' + button.slice(0, 90));
+    assert.ok(/data-icon="\w+"/.test(button), 'a rail button lost its icon: ' + button.slice(0, 90));
+    assert.ok(/aria-label="[^"]+"/.test(button), 'a rail button lost its accessible name');
+  }
+  assert.deepEqual([...rail.matchAll(/rail-group-label[^>]*>([^<]+)</g)].map(m => m[1]),
+    ['Panels', 'Help', 'More'], 'the rail groups its buttons');
+  ok('every sidebar button pairs a real icon with its name, in three groups');
+
+  // No decorative Unicode stand-ins for icons in the chrome we just rebuilt.
+  const retiredGlyphs = ['▤', '▥', '▧', '⌕', '⌧', '⌑', '☷'];
+  const strayGlyphs = retiredGlyphs.filter(g => page.includes(g));
+  assert.deepEqual(strayGlyphs, [], 'the chrome still draws a font glyph: ' + strayGlyphs.join(' '));
+  ok('no font-dependent glyphs stand in for icons');
+
+  // Phones: the mobile bar is the navigation, and it names every destination.
+  const bar = page.slice(page.indexOf('<nav class="mobile-view-nav"'), page.indexOf('</nav>', page.indexOf('<nav class="mobile-view-nav"')));
+  const barButtons = bar.match(/<button[\s\S]*?<\/button>/g) || [];
+  assert.equal(barButtons.length, 5, 'the phone bar has five destinations');
+  for (const button of barButtons) {
+    assert.ok(/data-(?:mobile-view|action)="/.test(button), 'a phone button goes nowhere');
+    assert.ok(/<span>[A-Za-z]+<\/span>/.test(button), 'a phone button is unlabelled: ' + button.slice(0, 90));
+    assert.ok(/data-icon="\w+"/.test(button), 'a phone button has no icon');
+  }
+  ok('the phone bar offers Files, Code, Learn, Settings and Output, all labelled');
+
+  // A media query that can never match means phones get the desktop shell.
+  // 1.4b1 shipped with every mobile rule inside (max-width: 0px); keep it out.
+  for (const file of ['css/studio.css', 'css/ide.css']) {
+    const css = readFileSync(join(root, file), 'utf8');
+    const dead = [...css.matchAll(/@media[^{]*max-width:\s*0px[^{]*\{/g)].map(m => m[0].trim());
+    assert.deepEqual(dead, [], file + ' has a media query that can never match: ' + dead.join(' '));
+  }
+  const studioCss = readFileSync(join(root, 'css', 'studio.css'), 'utf8');
+  assert.match(studioCss, /@media \(max-width: 900px\) \{[\s\S]*?mobile-view-nav/,
+    'the phone shell must apply at phone and tablet widths');
+  assert.match(studioCss, /@media \(max-width: 900px\) \{[\s\S]*?\.activity-bar \{ display: none !important; \}/,
+    'phones hide the desktop rail and use the bottom bar');
+  ok('the phone layout really applies below 900px (no dead media queries)');
+
+  // The CSS shows one panel at a time by keying off <body data-mobile-view>.
+  // The default must be in the markup, or the first paint shows nothing.
+  assert.match(page, /<body[^>]*data-mobile-view="editor"/,
+    'the body names its starting view, or a phone paints an empty shell');
+  assert.ok(page.includes('js/studio-mobile.js'), 'the page loads the phone navigation module');
+  for (const attr of ['files', 'editor', 'console']) {
+    const studioCssRaw = readFileSync(join(root, 'css', 'studio.css'), 'utf8');
+    assert.ok(!studioCssRaw.includes("data-view='" + attr), 'css/studio.css must not key off data-view');
+    assert.ok(studioCssRaw.includes("data-mobile-view='" + attr + "'"),
+      'css/studio.css switches panels off data-mobile-view (' + attr + ')');
+    assert.ok(page.includes("data-view='" + attr) === false, 'nothing may key off data-view');
+  }
+  // The JS writes the same attribute the CSS reads.
+  const mobileModule = readFileSync(join(root, 'js', 'studio-mobile.js'), 'utf8');
+  assert.ok(mobileModule.includes("setAttribute('data-mobile-view'"), 'the module writes data-mobile-view');
+  ok('the starting view is in the markup and the navigation module is loaded');
+
+  // Exercise the navigation module the way a phone does.
+  {
+    const scope = vm.createContext({ EPP: {}, document: undefined });
+    vm.runInContext(readFileSync(join(root, 'js', 'studio-mobile.js'), 'utf8'), scope);
+    const Mobile = scope.EPP.Mobile;
+    assert.ok(Mobile && typeof Mobile.apply === 'function', 'the phone module exposes apply()');
+
+    const make = (view) => {
+      const classes = new Set();
+      return {
+        attrs: { 'data-mobile-view': view },
+        classes,
+        getAttribute(name) { return this.attrs[name] ?? null; },
+        setAttribute(name, value) { this.attrs[name] = String(value); },
+        classList: {
+          add(c) { classes.add(c); },
+          remove(c) { classes.delete(c); },
+          toggle(c, on) { (on ? classes.add(c) : classes.delete(c)); },
+          contains(c) { return classes.has(c); }
+        }
+      };
+    };
+    const body = make('files');
+    const buttons = ['files', 'editor', 'console'].map(make);
+
+    for (const view of ['files', 'editor', 'console']) {
+      const applied = Mobile.apply(view, { body, buttons });
+      assert.equal(applied, view);
+      assert.equal(body.getAttribute('data-mobile-view'), view, 'body follows the button');
+      const active = buttons.filter((b) => b.classList.contains('active')).map((b) => b.getAttribute('data-mobile-view'));
+      assert.deepEqual(active, [view], 'exactly one button is active for ' + view);
+      buttons.forEach((b) => {
+        const on = b.getAttribute('data-mobile-view') === view;
+        assert.equal(b.getAttribute('aria-pressed'), String(on), 'aria-pressed tracks ' + view);
+      });
+    }
+    assert.equal(Mobile.apply('code', { body, buttons }), 'editor', '"code" is the editor');
+    assert.equal(Mobile.apply('nonsense', { body, buttons }), 'editor', 'an unknown view falls back to the editor');
+    ok('the phone bar switches Files / Code / Output and marks the active button');
+  }
+
+  // ------------------------------------------------------------
+  // 1.4b1 follow-up: resolve the real cascade, panel by panel.
+  // 1.4b1 twice shipped a phone shell that never rendered, because
+  // nothing modelled specificity, source order or !important. This
+  // asks the stylesheets themselves what each panel's `display` is.
+  // ------------------------------------------------------------
+  {
+    const sheets = ['css/ide.css', 'css/studio.css']
+      .flatMap((file) => parseCss(readFileSync(join(root, file), 'utf8')));
+    // A panel is only on screen if it is not `display: none` and neither is any
+    // ancestor: hiding `.workspace` hides both cards inside it.
+    const shownAt = (tree, key, viewport) => {
+      for (let el = tree[key]; el; el = (el.parents || [])[0]) {
+        const won = cascadeWinner(sheets, el, 'display', viewport);
+        if (won && won.value === 'none') return false;
+      }
+      return true;
+    };
+    const phone = { width: 390, height: 844 };
+    const tablet = { width: 768, height: 1024 };
+    const desktop = { width: 1440, height: 900 };
+
+    for (const viewport of [phone, tablet]) {
+      for (const view of ['files', 'editor', 'console']) {
+        const tree = studioTree(view);
+        const expected = view === 'files' ? ['sidebar'] : view === 'editor' ? ['editorCard'] : ['consoleCard'];
+        const visible = ['sidebar', 'editorCard', 'consoleCard'].filter((key) => shownAt(tree, key, viewport));
+        assert.deepEqual(visible, expected,
+          view + ' at ' + viewport.width + 'px must show exactly ' + expected.join('/') + ', got ' + visible.join('/'));
+      }
+      // No dead desktop gutter: one column, one row, rail and studio strip gone.
+      const tree = studioTree('editor');
+      assert.equal(cascadeWinner(sheets, tree.layout, 'grid-template-columns', viewport).value, 'minmax(0, 1fr)',
+        'phones get the full width, not an 84px rail gutter');
+      assert.equal(cascadeWinner(sheets, tree.workspace, 'grid-template-rows', viewport).value, 'minmax(0, 1fr)',
+        'phones stack one panel, not the desktop editor+output rows');
+      assert.equal(cascadeWinner(sheets, tree.rail, 'display', viewport).value, 'none', 'the desktop rail is hidden');
+      assert.equal(cascadeWinner(sheets, tree.mobileNav, 'display', viewport).value, 'grid', 'the bottom tab bar shows');
+      assert.ok(!shownAt(tree, 'bottomBar', viewport), 'the studio strip stays off the phone screen');
+    }
+    ok('at 390px and 768px exactly one panel shows, full width, with the tab bar');
+
+    // Desktop is untouched by all of that.
+    const wide = studioTree('editor');
+    assert.equal(cascadeWinner(sheets, wide.layout, 'grid-template-columns', desktop).value, '84px minmax(0, 1fr)',
+      'the desktop rail column is unchanged');
+    assert.equal(cascadeWinner(sheets, wide.rail, 'display', desktop).value, 'flex', 'the desktop rail is unchanged');
+    assert.equal(cascadeWinner(sheets, wide.mobileNav, 'display', desktop).value, 'none',
+      'the phone tab bar stays off the desktop');
+    assert.ok(shownAt(wide, 'editorCard', desktop) && shownAt(wide, 'consoleCard', desktop),
+      'the desktop still shows the editor and its output together');
+    ok('1440px keeps the desktop shell: rail, editor and output side by side');
+
+    // The zoom shim must never shrink the phone shell. It used to scale the
+    // whole body by innerWidth/1100, so a 390px phone laid out a 1100px
+    // desktop canvas at 35% and the phone media queries never matched.
+    const shim = page.slice(page.indexOf('function scaleStudio()'), page.indexOf('window.addEventListener', page.indexOf('function scaleStudio()')));
+    assert.match(shim, /innerWidth <= 900 \? 1 :/, 'the desktop zoom shim must leave the phone shell at 1:1');
+    ok('the phone shell is not shrunk by the desktop zoom shim');
+  }
 
   // Every library card is bound to a registry name, so a build can hide it.
   const cards = page.match(/data-library="[^"]+"/g) || [];
