@@ -1,4 +1,4 @@
-/* E++ 1.4a3 Studio appearance and launcher layout. */
+/* E++ 1.4b1 Studio appearance and launcher layout. */
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);

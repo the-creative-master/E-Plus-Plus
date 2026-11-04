@@ -3,7 +3,7 @@
  * Builds E++.zip and epp_language.zip. Studio executes its embedded compiled
  * C++ lexer directly; these archives are downloadable distributions.
  *
- * E++.zip is the *standalone* build of E++ 1.4a3. The Studio and the zip carry
+ * E++.zip is the *standalone* build of E++ 1.4b1. The Studio and the zip carry
  * different halves of the game tooling, and only one of them at a time:
  *
  *   Studio (E++ Studio)          Draw, Game, ImprovedWait
@@ -197,11 +197,14 @@ function stripColorsFromDistribution() {
   const cppFile = path.join(STAGE, 'src/interpreter.cpp');
   let cpp = fs.readFileSync(cppFile, 'utf8');
   cpp = replaceOnce(cpp,
-    'norm == "draw" || norm == "drawing"',
-    'norm == "colors" || norm == "colours" || norm == "color" || norm == "colour" || norm == "draw" || norm == "drawing"', 'native library guard');
+    '    if (norm == "draw" || norm == "drawing"',
+    '    if (norm == "colors" || norm == "colours" || norm == "color" || norm == "colour") {\n' +
+    '        throw LibraryError("The Colors library is available in E++ Studio, not in E++.zip.", stmt->line, stmt->col, "Z001");\n' +
+    '    }\n' +
+    '    if (norm == "draw" || norm == "drawing"', 'native library guard');
   cpp = replaceOnce(cpp,
     'require_library("Colors", "Colored output", stmt->line, stmt->col);',
-    'throw LibraryError("The Colors library is available in E++ Studio, not in E++.zip.", stmt->line, stmt->col, "E302");', 'native colored say guard');
+    'throw LibraryError("The Colors library is available in E++ Studio, not in E++.zip.", stmt->line, stmt->col, "Z001");', 'native colored say guard');
   cpp = replaceBetween(cpp,
     '    if (!stmt->color.empty()) {\n        std::string ansi',
     '\n}\n\nvoid Interpreter::visitLetStmt',
@@ -213,10 +216,11 @@ function stripColorsFromDistribution() {
   python = replaceOnce(python,
     'if normalized in ("draw", "drawing", "sprites", "game", "improvedwait"):',
     'if normalized in ("colors", "colours", "color", "colour", "draw", "drawing", "sprites", "game", "improvedwait"):', 'Python library guard');
+
   python = replaceBetween(python, '        # Check Colors library keyword', '        # Check for separation method',
 `        # Colors is not included in this distribution.
         if tokens[0].type == TokenType.IDENTIFIER and tokens[0].lexeme.lower() in {"red", "green", "blue", "yellow", "cyan", "magenta"}:
-            raise self.diagnostic("E302", "Library Not In This Build", "The Colors library is available in E++ Studio, not E++.zip.",
+            raise self.diagnostic("Z001", "Colors Live In The Studio", "The Colors library is available in E++ Studio, not E++.zip.",
                                   "Use a plain say statement in this build.", line_num, col_num)
 
 `, 'Python colored say guard');
@@ -231,7 +235,7 @@ function stripColorsFromDistribution() {
   for (const name of fs.readdirSync(path.join(STAGE, 'src'))) {
     if (/\.(?:o|d)$/.test(name)) fs.rmSync(path.join(STAGE, 'src', name));
   }
-  const packageJson = { name: 'e-plus-plus-distribution', version: '1.4.0-alpha.3', private: true,
+  const packageJson = { name: 'e-plus-plus-distribution', version: '1.4.0-beta.1', private: true,
     scripts: { start: 'node server.js' }, engines: { node: '>=18' } };
   fs.writeFileSync(path.join(STAGE, 'package.json'), JSON.stringify(packageJson, null, 2) + '\n');
   const makefile = path.join(STAGE, 'Makefile');
@@ -263,7 +267,7 @@ function stampDistributionFlag() {
   html = html.split('\n').filter((line) => !line.includes('src="js/game-library.js"') && !line.includes('src="js/draw-library.js"')).join('\n');
 
   // Do not leave a hidden drawing demo, canvas, controls, or drawing execution
-  // handlers in the standalone page. Keep a small E302 guard so programs that
+  // handlers in the standalone page. Keep a small Z001/Z002 guard so programs that
   // ask for a drawing sprite get a useful explanation rather than failing.
   function stripBetween(start, end, replacement = '') {
     const first = html.indexOf(start);
@@ -279,7 +283,7 @@ function stampDistributionFlag() {
     .replace('Time & Colors Demonstration', 'Time Demonstration')
     .replace('Terminal colors and timers work smoothly.', 'Timers work smoothly.');
   stripBetween('      const colorMatch = content.match(', '      let separator = null;', String.raw`      if (/^(red|green|blue|yellow|cyan|magenta)\b\s*/i.test(content)) {
-        throw this.diagnostic('E302', 'Library Not In This Build',
+        throw this.diagnostic('Z001', 'Colors Live In The Studio',
           'The Colors library is available in E++ Studio, not inside E++.zip.',
           'Use a plain say statement in this build.', lineNum);
       }

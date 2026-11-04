@@ -191,8 +191,8 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
     assert((await run(page, 'add library "Draw"\ndefine \'p\' as drawing sprite\nset the speed of \'p\' to instant\n\'p\' move right "10000"\nsay "instant"')).includes('instant'));
     assert(Date.now() - instantStart < 1000);
     assert.equal(await page.evaluate(() => EPPStudioState().drawHost.get('p').x), 10000);
-    assert((await run(page, 'add library "Draw"\ndefine \'p\' as drawing sprite\nset the speed of \'p\' to 0')).includes('E407'));
-    assert((await run(page, 'say hello')).includes('E402'));
+    assert((await run(page, 'add library "Draw"\ndefine \'p\' as drawing sprite\nset the speed of \'p\' to 0')).includes('E064'));
+    assert((await run(page, 'say hello')).includes('E001'));
     assert((await run(page, 'add library "Colors"\nsay red "Studio color"')).includes('Studio color'));
     assert.equal(await page.locator('#consoleOutput .color-red').count(), 1, 'full Studio retains Colors');
 

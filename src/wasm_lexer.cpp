@@ -54,8 +54,14 @@ const char* epp_lexer_tokenize(const char* source, size_t size) {
     result.clear();
     if (lexer.has_error()) {
         const epp::LexIssue& issue = lexer.error();
+        // F001-F015 plus the catalogue name and fix, so the browser can show
+        // the same heading, reason and help as the native command line.
         result += "{\"ok\":false,\"error\":{\"code\":";
         quoted(result, issue.code);
+        result += ",\"name\":";
+        quoted(result, issue.name);
+        result += ",\"help\":";
+        quoted(result, issue.help);
         result += ",\"message\":";
         quoted(result, issue.message);
         result += ",\"line\":";

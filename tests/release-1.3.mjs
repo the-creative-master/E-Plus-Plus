@@ -17,27 +17,27 @@ function error(source, code, line) {
 }
 
 for (const [source, code, line] of [
-  ['fheneir', 'E101', 1],
-  ['say hello', 'E402', 1],
-  ['say hello world', 'E402', 1],
-  ['say "valid", hello', 'E402', 1],
-  ["let 'name' be Ada", 'E402', 1],
-  ['say "unclosed', 'E102', 1],
-  ["say ''", 'E202', 1],
-  ['say', 'E105', 1],
-  ['otherwise say "bad"', 'E104', 1],
-  ['note [unclosed', 'E101', 1],
-  ['say "ok" // not a note', 'E101', 1],
-  ['repeat 0 times\n  if 1 is 1 then:\n    say "x"\nend repeat', 'E106', 4],
-  ['if 1 is 2 then say hello world', 'E402', 1],
-  ['if 1 is 2 then let name be 1', 'E202', 1],
-  ["if 1 is 2 then let 'x' be", 'E105', 1],
-  ["if 1 is 2 then ask hello and save the output as 'x'", 'E402', 1],
-  ['repeat 0 times\n  repeat hello times\n  end repeat\nend repeat', 'E402', 2],
-  ["if 1 is 2 then:\n  let 'x' be hello\nend if", 'E402', 2],
-  ['repeat 0 times\n  fheneir\nend repeat', 'E101', 2],
-  ['if 1 is 1 then say "x" otherwise say "y"', 'E103', 1],
-  ['say the absolute value of hello', 'E402', 1]
+  ['fheneir', 'E015', 1],
+  ['say hello', 'E001', 1],
+  ['say hello world', 'E001', 1],
+  ['say "valid", hello', 'E001', 1],
+  ["let 'name' be Ada", 'E001', 1],
+  ['say "unclosed', 'E005', 1],
+  ["say ''", 'E007', 1],
+  ['say', 'E003', 1],
+  ['otherwise say "bad"', 'E022', 1],
+  ['note [unclosed', 'E015', 1],
+  ['say "ok" // not a note', 'F011', 1],
+  ['repeat 0 times\n  if 1 is 1 then:\n    say "x"\nend repeat', 'E019', 4],
+  ['if 1 is 2 then say hello world', 'E001', 1],
+  ['if 1 is 2 then let name be 1', 'E030', 1],
+  ["if 1 is 2 then let 'x' be", 'E031', 1],
+  ["if 1 is 2 then ask hello and save the output as 'x'", 'E001', 1],
+  ['repeat 0 times\n  repeat hello times\n  end repeat\nend repeat', 'E001', 2],
+  ["if 1 is 2 then:\n  let 'x' be hello\nend if", 'E001', 2],
+  ['repeat 0 times\n  fheneir\nend repeat', 'E015', 2],
+  ['if 1 is 1 then say "x" otherwise say "y"', 'E021', 1],
+  ['say the absolute value of hello', 'E001', 1]
 ]) error(source, code, line);
 
 for (const source of [

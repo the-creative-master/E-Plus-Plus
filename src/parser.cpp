@@ -55,10 +55,22 @@ bool Parser::match_any(const std::vector<TokenType>& types) {
     return false;
 }
 
+// Map "what the parser wanted" onto the general catalogue. Unterminated blocks
+// are E018, and everything else follows the token that was found instead:
+// the end of the line (E063), the end of the program (E064) or a real token
+// where something specific was required (E062).
+std::string Parser::code_for_missing(TokenType expected, const Token& found, const std::string& error_message) {
+    if (error_message.find("close ") != std::string::npos) return "E018";
+    if (expected == TokenType::TOKEN_RPAREN || error_message.find("')'") != std::string::npos) return "E065";
+    if (found.type == TokenType::TOKEN_EOF) return "E064";
+    if (found.type == TokenType::TOKEN_NEWLINE) return "E063";
+    return "E062";
+}
+
 Token Parser::consume(TokenType type, const std::string& error_message) {
     if (check(type)) return advance();
     Token tok = peek();
-    const std::string code = error_message.find("close ") != std::string::npos ? "E106" : "E101";
+    const std::string code = code_for_missing(type, tok, error_message);
     throw ParseError(error_message + " (found '" + tok.lexeme + "' at line " +
                      std::to_string(tok.line) + ", col " + std::to_string(tok.col) + ")",
                      tok.line, tok.col, code);
@@ -162,15 +174,17 @@ std::shared_ptr<Stmt> Parser::parse_statement() {
         return parse_check_statement();
     }
     if (tok.type == TokenType::KW_OTHERWISE) {
+        // 1.4b1: a stray `otherwise` is E022 (standalone); E021 is reserved for
+        // `otherwise` written on the same line as its `if ... then`.
         throw ParseError("Syntax Error at line " + std::to_string(tok.line) + ", col " + std::to_string(tok.col) +
                          ": 'otherwise' can only appear immediately on the next line after an 'if' statement.",
-                         tok.line, tok.col, "E104");
+                         tok.line, tok.col, "E022");
     }
 
     if (tok.type == TokenType::KW_END || tok.type == TokenType::KW_ELSE) {
-        throw ParseError("Unexpected block ending '" + tok.lexeme + "' without a matching opening.", tok.line, tok.col, "E106");
+        throw ParseError("Unexpected block ending '" + tok.lexeme + "' without a matching opening.", tok.line, tok.col, "E017");
     }
-    throw ParseError("Unknown statement '" + tok.lexeme + "'. Start with a command such as say, let, or if.", tok.line, tok.col, "E101");
+    throw ParseError("Unknown statement '" + tok.lexeme + "'. Start with a command such as say, let, or if.", tok.line, tok.col, "E015");
 }
 
 // say "Hello", "World" with the separation method of " - "
@@ -191,7 +205,7 @@ std::shared_ptr<Stmt> Parser::parse_say_statement() {
     std::vector<std::shared_ptr<Expr>> expressions;
     std::shared_ptr<Expr> separator = nullptr;
     if (is_at_end() || peek().type == TokenType::TOKEN_NEWLINE) {
-        throw ParseError("'say' needs a value to print.", line, col, "E105");
+        throw ParseError("'say' needs a value to print.", line, col, "E003");
     }
 
     while (!is_at_end() && peek().type != TokenType::TOKEN_NEWLINE) {
@@ -238,7 +252,7 @@ std::shared_ptr<Stmt> Parser::parse_say_statement() {
         // Check delimiters: comma or "and concat it with"
         if (match(TokenType::TOKEN_COMMA)) {
             if (is_at_end() || peek().type == TokenType::TOKEN_NEWLINE) {
-                throw ParseError("A comma needs another value after it.", previous().line, previous().col, "E105");
+                throw ParseError("A comma needs another value after it.", previous().line, previous().col, "E003");
             }
             // Check if comma is followed by "and concat it with" or "and concat with"
             if (match(TokenType::KW_AND)) {
@@ -297,7 +311,7 @@ std::shared_ptr<Stmt> Parser::parse_let_statement() {
                          ", col " + std::to_string(bad_tok.col) +
                          ": Variables in E++ must always be enclosed in single quotes like '" +
                          bad_tok.string_value + "', never double quotes! Double quotes are reserved for text strings.",
-                         bad_tok.line, bad_tok.col, "E202");
+                         bad_tok.line, bad_tok.col, "E036");
     }
 
     if (peek().type != TokenType::TOKEN_VARIABLE) {
@@ -305,7 +319,7 @@ std::shared_ptr<Stmt> Parser::parse_let_statement() {
         throw ParseError("Syntax Error at line " + std::to_string(bad_tok.line) +
                          ", col " + std::to_string(bad_tok.col) +
                          ": Expected variable name in single quotes (e.g. 'VariableName'), but found '" +
-                         bad_tok.lexeme + "'.", bad_tok.line, bad_tok.col, "E202");
+                         bad_tok.lexeme + "'.", bad_tok.line, bad_tok.col, "E030");
     }
 
     Token var_tok = advance();
@@ -326,7 +340,7 @@ std::shared_ptr<Stmt> Parser::parse_let_statement() {
         return word;
     };
     if (lower_word(peek().lexeme) == "drawing" && lower_word(peek_at(1).lexeme) == "sprite") {
-        throw ParseError("Drawing sprites are only available in the full E++ Studio, not E++.zip.", peek().line, peek().col, "E302");
+        throw ParseError("Drawing sprites are only available in the full E++ Studio, not E++.zip.", peek().line, peek().col, "Z002");
     }
 
     auto val_expr = parse_expression();
@@ -636,7 +650,7 @@ std::shared_ptr<Stmt> Parser::parse_if_statement() {
     if (peek().type == TokenType::KW_OTHERWISE) {
         throw ParseError("Syntax Error at line " + std::to_string(peek().line) +
                          ": 'otherwise' cannot be on the same line as 'if ... then'. In E++, 'otherwise' always has to be on the next line.",
-                         peek().line, peek().col);
+                         peek().line, peek().col, "E021");
     }
 
     auto then_stmt = parse_statement();
@@ -658,7 +672,7 @@ std::shared_ptr<Stmt> Parser::parse_if_statement() {
         if (peek().type == TokenType::KW_OTHERWISE || peek().type == TokenType::KW_ELSE) {
             throw ParseError("Syntax Error at line " + std::to_string(peek().line) +
                              ": 'otherwise' cannot be on the same line as 'if ... then'. In E++, 'otherwise' always has to be on the next line.",
-                             peek().line, peek().col);
+                             peek().line, peek().col, "E021");
         }
         if (match(TokenType::TOKEN_NEWLINE)) {
             if (peek().type == TokenType::KW_OTHERWISE || peek().type == TokenType::KW_ELSE) {
@@ -1014,7 +1028,7 @@ std::shared_ptr<Expr> Parser::parse_primary() {
     }
 
     throw ParseError("Expected a value, found '" + tok.lexeme + "' at line " +
-                     std::to_string(l) + ", col " + std::to_string(c), l, c, "E105");
+                     std::to_string(l) + ", col " + std::to_string(c), l, c, "E003");
 }
 
 // check if <expr> is [not] a number

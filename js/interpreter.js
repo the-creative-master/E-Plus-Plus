@@ -24,6 +24,27 @@
   var EPP = global.EPP || (global.EPP = {});
   var RuntimeError = EPP.RuntimeError;
   var LibraryError = EPP.LibraryError;
+  var Errors = EPP.Errors || {};
+  var errorOf = Errors.error || function (code, message, line, column, hint) {
+    return new RuntimeError(message, line, column, hint, code);
+  };
+  var warnAt = Errors.warning || function (code, message, line, column, hint) {
+    return { code: code, message: message, line: line, column: column, hint: hint };
+  };
+
+  /**
+   * Release 1.4b1: the W codes. A warning never stops the program; the
+   * interpreter collects them in `this.warnings` (through `onWarning`) and the
+   * Studio prints each one after the program finishes.
+   */
+  Interpreter.prototype.warn = function (code, message, line, column, hint) {
+    var record = warnAt(code, message, line, column, hint,
+      this.filename || null, (this.sourceLines && this.sourceLines[line - 1]) || '');
+    var shaped = record && record.warningRecord ? record.warningRecord() : record;
+    this.warnings.push(shaped);
+    if (typeof this.onWarning === 'function') this.onWarning(shaped);
+    return shaped;
+  };
 
   // ---------------- Fractions (exact rational numbers) ----------------
   function gcd(a, b) {
@@ -34,7 +55,7 @@
 
   function Fraction(numerator, denominator) {
     denominator = denominator === undefined ? 1 : denominator;
-    if (denominator === 0) throw new RuntimeError('A fraction cannot have zero underneath (division by zero).');
+    if (denominator === 0) throw new RuntimeError('A fraction cannot have zero underneath (division by zero).', null, null, null, 'E035');
     if (denominator < 0) { numerator = -numerator; denominator = -denominator; }
     var d = gcd(numerator, denominator);
     this.numerator = numerator / d;
@@ -58,13 +79,13 @@
   };
   Fraction.prototype.divide = function (o) {
     o = Fraction.from(o);
-    if (o.numerator === 0) throw new RuntimeError('Division by zero is not possible.');
+    if (o.numerator === 0) throw new RuntimeError('Division by zero is not possible.', null, null, null, 'E033');
     return new Fraction(this.numerator * o.denominator, this.denominator * o.numerator);
   };
   Fraction.from = function (value) {
     if (value instanceof Fraction) return value;
     var n = typeof value === 'number' ? value : Number(value);
-    if (!isFinite(n)) throw new RuntimeError('"' + value + '" is not a number.');
+    if (!isFinite(n)) throw new RuntimeError('"' + value + '" is not a number.', null, null, null, 'E011');
     if (Number.isInteger(n)) return new Fraction(n, 1);
     // Continued-fraction approximation (exact for values like 1/3 stored
     // as 0.3333333333333333 within floating point tolerance).
@@ -282,10 +303,18 @@
     this.maxSteps = options.maxSteps || 100000;
     this.maxLoopIterations = options.maxLoopIterations || 10000;
     this.cancelled = false;
+    // Release 1.4b1: W001-W005 are collected while the program runs and
+    // reported once it finishes; a warning never stops anything.
+    this.onWarning = typeof options.onWarning === 'function' ? options.onWarning : null;
+    this.filename = options.filename || null;
+    this.sourceLines = [];
+    this.warnings = [];
     this.reset();
   }
 
   Interpreter.prototype.reset = function () {
+    this.warnings = [];
+    this.usedLibraries = new Set();   // canonical names whose features ran
     this.variables = new Map();       // lowercased name -> value
     this.loadedLibraries = new Set(); // canonical library names
     this.sprites = new Map();         // lowercased name -> { name, x, y }
@@ -306,12 +335,12 @@
 
   Interpreter.prototype.checkRunning = function (node) {
     if (this.cancelled) {
-      throw new RuntimeError('Execution was stopped.', node && node.line, node && node.column, null);
+      throw new RuntimeError('Execution was stopped.', node && node.line, node && node.column, null, 'E070');
     }
     this.steps += 1;
     if (this.steps > this.maxSteps) {
       throw new RuntimeError('The program ran for too long and was stopped (over ' + this.maxSteps + ' steps).',
-        node && node.line, node && node.column, 'Check for a loop that never ends.');
+        node && node.line, node && node.column, 'Check for a loop that never ends.', 'E067');
     }
   };
 
@@ -320,7 +349,7 @@
     this.reset();
     this.cancelled = false;
     if (!program || program.type !== 'Program') {
-      throw new RuntimeError('The interpreter needs a parsed E++ program.');
+      throw new RuntimeError('The interpreter needs a parsed E++ program.', null, null, null, 'E015');
     }
     await this.executeBlock(program.body);
     return {
@@ -358,13 +387,13 @@
     if (!data) {
       throw new RuntimeError('The picture for \'' + clean + '\' is empty.',
         node.line, node.column,
-        'Give it a picture, for example: link the image "hero.png" to the actor \'' + clean + '\'.');
+        'Give it a picture, for example: link the image "hero.png" to the actor \'' + clean + '\'.', 'E071');
     }
     var Pictures = EPP.Pictures;
     if (Pictures && typeof Pictures.isImageSource === 'function' && !Pictures.isImageSource(data)) {
       throw new RuntimeError('"' + data + '" is not a picture.',
         node.line, node.column,
-        'Use a picture file such as "hero.png", or pick one with the 🖼 Image button.');
+        'Use a picture file such as "hero.png", or pick one with the 🖼 Image button.', 'E072');
     }
     var entry = { name: clean, source: data };
     this.pictures.set(clean.toLowerCase(), entry);
@@ -377,7 +406,7 @@
     if (!this.actors.has(actorKey)) {
       throw new RuntimeError('There is no actor called \'' + name + '\'.',
         node.line, node.column,
-        'Create it first: create the actor \'' + name + '\' — or link a picture to that name with: link the image "picture.png" to the actor \'' + name + '\'.');
+        'Create it first: create the actor \'' + name + '\' — or link a picture to that name with: link the image "picture.png" to the actor \'' + name + '\'.', 'E073');
     }
     return this.actors.get(actorKey);
   };
@@ -444,12 +473,12 @@
     if (seconds < 0) {
       throw new RuntimeError('Cannot wait for a negative amount of time (' + seconds + ' seconds).',
         timer && timer.node ? timer.node.line : null, timer && timer.node ? timer.node.column : null,
-        'Use a number of seconds that is 0 or more.');
+        'Use a number of seconds that is 0 or more.', 'E011');
     }
     var remaining = seconds * 1000;
     var slice = 25;
     while (remaining > 0) {
-      if (this.cancelled) throw new RuntimeError('Execution was stopped.', null, null, null);
+      if (this.cancelled) throw new RuntimeError('Execution was stopped.', null, null, null, 'E070');
       if (timer && timer.cancelled) return;
       var step = Math.min(slice, remaining);
       await this.delay(step / 1000);
@@ -475,7 +504,7 @@
         var gh = Math.round(this.toNumber(await this.evaluate(node.height), node, 'the game window height'));
         if (gw < 1 || gh < 1) {
           throw new RuntimeError('A game window needs a width and a height bigger than zero.',
-            node.line, node.column, 'For example: set the game window to 640 by 480');
+            node.line, node.column, 'For example: set the game window to 640 by 480', 'E011');
         }
         this.game.width = gw;
         this.game.height = gh;
@@ -534,11 +563,11 @@
         var size = this.toNumber(await this.evaluate(node.size), node, 'the actor size');
         if (size <= 0) {
           throw new RuntimeError('An actor size has to be bigger than zero.', node.line, node.column,
-            'For example: set the size of the actor \'hero\' to 2');
+            'For example: set the size of the actor \'hero\' to 2', 'E011');
         }
         if (size > 10) {
           throw new RuntimeError('An actor size is a multiplier: 1 is its normal size, and ' + size + ' would be ' + size + ' times bigger.', node.line, node.column,
-            'Try 2 for twice as big, or a number between 0.1 and 1 to shrink one.');
+            'Try 2 for twice as big, or a number between 0.1 and 1 to shrink one.', 'E011');
         }
         sizedActor.scale = size;
         this.emitGame('size', sizedActor);
@@ -572,7 +601,7 @@
           if (frames >= this.maxFrames) {
             throw new RuntimeError('The game ran for ' + frames + ' frames and was stopped.',
               node.line, node.column,
-              'Add "stop the game" somewhere in the loop, or raise the frame limit.');
+              'Add "stop the game" somewhere in the loop, or raise the frame limit.', 'E067');
           }
           await this.frame();
         }
@@ -625,7 +654,7 @@
           if (deadline === null && Date.now() - timer.startedAt > 60000) {
             throw new RuntimeError('This "wait until" has been waiting for a minute and the condition is still false.',
               node.line, node.column,
-              'Give it a deadline: wait at most 10 seconds until ...');
+              'Give it a deadline: wait at most 10 seconds until ...', 'E067');
           }
           await this.frame();
         }
@@ -652,6 +681,8 @@
         return;
       }
       case AST.SAY: {
+        // Release 1.4b1: a coloured say is what the Colors library is for.
+        if (node.color && this.usedLibraries) this.usedLibraries.add('Colors');
         // say a, b, c prints one line, the way the Studio's examples read.
         if (node.parts && node.parts.length) {
           var pieces = [];
@@ -668,26 +699,28 @@
       case AST.ASK: {
         var prompt = stringify(await this.evaluate(node.prompt));
         var answer = await this.input(prompt);
-        if (this.cancelled) throw new RuntimeError('Execution was stopped.', node.line, node.column, null);
+        if (this.cancelled) throw new RuntimeError('Execution was stopped.', node.line, node.column, null, 'E070');
         this.variables.set(node.name.toLowerCase(), answer === null || answer === undefined ? '' : String(answer));
         return;
       }
       case AST.WAIT: {
         var seconds = this.toNumber(await this.evaluate(node.duration), node, 'wait');
-        if (seconds < 0) throw new RuntimeError('Cannot wait for a negative amount of time (' + seconds + ' seconds).', node.line, node.column, 'Use a number of seconds that is 0 or more.');
+        if (seconds < 0) throw new RuntimeError('Cannot wait for a negative amount of time (' + seconds + ' seconds).', node.line, node.column, 'Use a number of seconds that is 0 or more.', 'E011');
         await this.delay(seconds);
-        if (this.cancelled) throw new RuntimeError('Execution was stopped.', node.line, node.column, null);
+        if (this.cancelled) throw new RuntimeError('Execution was stopped.', node.line, node.column, null, 'E070');
         return;
       }
       case AST.LIBRARY: {
         var canonical = EPP.Libraries.canonical(node.name);
         if (!canonical) {
           throw new LibraryError('There is no library called "' + node.name + '".', node.line, node.column,
-            'Available libraries: ' + EPP.Libraries.names().join(', ') + '.');
+            'Available libraries: ' + EPP.Libraries.names().join(', ') + '.', 'E043');
         }
         if (EPP.Libraries.isAvailable && !EPP.Libraries.isAvailable(canonical)) {
-          throw new LibraryError('The "' + canonical + '" library is not included in this build of E++.',
-            node.line, node.column, EPP.Libraries.whyUnavailable(canonical));
+          throw new LibraryError('The "' + canonical + '" library is not included in this build of E++: ' +
+            (EPP.Libraries.whyUnavailable(canonical) || 'it lives in the full Studio download.'),
+            node.line, node.column, EPP.Libraries.whyUnavailable(canonical),
+            EPP.Libraries.errorCode ? EPP.Libraries.errorCode(canonical) : 'Z003');
         }
         this.loadedLibraries.add(canonical);
         this.onLibrary(canonical);
@@ -722,7 +755,7 @@
         if (!target) {
           throw new RuntimeError('There is no if for this loopback to go back to.',
             node.line, node.column,
-            'loopback to if goes back to the closest if above it, so an if has to come before this line.');
+            'loopback to if goes back to the closest if above it, so an if has to come before this line.', 'E027');
         }
         var firstCondition = target.branches && target.branches.length
           ? target.branches[0].condition : target.condition;
@@ -748,7 +781,7 @@
           if (!/^-?\d+(\.\d+)?$/.test(String(node.pixels).trim())) {
             throw new RuntimeError('The actor can only move by a number of pixels, but "' + node.pixels + '" is not a number.',
               node.line, node.column,
-              'Write the pixels as numbers inside double quotes, for example: \'' + node.name + '\' move ' + node.direction + ' "10"');
+              'Write the pixels as numbers inside double quotes, for example: \'' + node.name + '\' move ' + node.direction + ' "10"', 'E011');
           }
           if (node.direction === 'up') actorToMove.y -= actorPixels;
           else if (node.direction === 'down') actorToMove.y += actorPixels;
@@ -760,14 +793,14 @@
         if (!this.sprites.has(moveKey)) {
           throw new RuntimeError('There is no sprite called \'' + node.name + '\' to move.',
             node.line, node.column,
-            'Create it first, for example: define \'' + node.name + '\' as drawing sprite. Then \'' + node.name + '\' move ' + node.direction + ' "10" will work.');
+            'Create it first, for example: define \'' + node.name + '\' as drawing sprite. Then \'' + node.name + '\' move ' + node.direction + ' "10" will work.', 'E075');
         }
         var moving = this.sprites.get(moveKey);
         var pixelText = String(node.pixels).trim();
         if (!/^-?\d+(\.\d+)?$/.test(pixelText)) {
           throw new RuntimeError('The sprite can only move by a number of pixels, but "' + node.pixels + '" is not a number.',
             node.line, node.column,
-            'Write the pixels as numbers inside double quotes, for example: \'' + node.name + '\' move ' + node.direction + ' "10"');
+            'Write the pixels as numbers inside double quotes, for example: \'' + node.name + '\' move ' + node.direction + ' "10"', 'E011');
         }
         var pixels = parseFloat(pixelText);
         if (node.direction === 'up') moving.y -= pixels;
@@ -790,7 +823,7 @@
         if (!this.images.has(dKey)) {
           throw new RuntimeError('There is no image called \'' + node.name + '\' to display.',
             node.line, node.column,
-            'Create it first, for example: define \'' + node.name + '\' as image "<base64-string>". Then display image \'' + node.name + '\' will work.');
+            'Create it first, for example: define \'' + node.name + '\' as image "<base64-string>". Then display image \'' + node.name + '\' will work.', 'E074');
         }
         var img = this.images.get(dKey);
         this.onImageDisplay({ name: img.name, source: img.source });
@@ -813,19 +846,19 @@
         if (!this.variables.has(key)) {
           throw new RuntimeError('Cannot ' + word + ' \'' + node.name + '\', because it has not been defined yet.',
             node.line, node.column,
-            'Define it first, for example: Define ' + node.name + ' as 0. Then ' + (isInc ? 'Increase' : 'Decrease') + ' ' + node.name + ' by 1 will work.');
+            'Define it first, for example: Define ' + node.name + ' as 0. Then ' + (isInc ? 'Increase' : 'Decrease') + ' ' + node.name + ' by 1 will work.', 'E028');
         }
         var current = this.variables.get(key);
         if (!isNumericLike(current)) {
           throw new RuntimeError('Cannot ' + word + ' \'' + node.name + '\', because it holds "' + stringify(current) + '", which is not a number.',
             node.line, node.column,
-            'Only numbers can go up or down. Give \'' + node.name + '\' a number first, for example: Define ' + node.name + ' as 0.');
+            'Only numbers can go up or down. Give \'' + node.name + '\' a number first, for example: Define ' + node.name + ' as 0.', 'E037');
         }
         var amount = await this.evaluate(node.amount);
         if (!isNumericLike(amount)) {
           throw new RuntimeError('Cannot ' + word + ' \'' + node.name + '\' by "' + stringify(amount) + '", because that amount is not a number.',
             node.line, node.column,
-            'Write a number after "by", for example: ' + (isInc ? 'Increase' : 'Decrease') + ' ' + node.name + ' by 1.');
+            'Write a number after "by", for example: ' + (isInc ? 'Increase' : 'Decrease') + ' ' + node.name + ' by 1.', 'E038');
         }
         var result;
         if (current instanceof Fraction || amount instanceof Fraction) {
@@ -845,7 +878,7 @@
         if (!this.loadedLibraries.has('Python')) {
           throw new LibraryError('You cannot run Python code yet, because the Python library has not been added.',
             node.line, node.column,
-            'Add this line above your Python code: add library "Python" — then python code "..." will work.');
+            'Add this line above your Python code: add library "Python" — then python code "..." will work.', 'E047');
         }
         var self = this;
         var executor = this.pythonExecutor;
@@ -863,7 +896,7 @@
         if (typeof executor !== 'function') {
           throw new RuntimeError('Python code cannot run here, because no Python runner is connected to this E++ IDE.',
             node.line, node.column,
-            'Open this file in the E++ IDE in a web browser, then press Run again.');
+            'Open this file in the E++ IDE in a web browser, then press Run again.', 'E047');
         }
         try {
           await executor(node.code, node);
@@ -874,14 +907,14 @@
           var match = /(?:^|\n)([A-Za-z_][A-Za-z0-9_.]*(?:Error|Exception|Interrupt|Iteration)[^\n]*)/.exec(rawMsg);
           var pyCode = match ? match[1] : rawMsg;
           throw new RuntimeError(pyCode, node.line, node.column,
-            'Check your Python code — it follows Python\u2019s own syntax and rules.');
+            'Check your Python code — it follows Python\u2019s own syntax and rules.', 'E048');
         }
-        if (this.cancelled) throw new RuntimeError('Execution was stopped.', node.line, node.column, null);
+        if (this.cancelled) throw new RuntimeError('Execution was stopped.', node.line, node.column, null, 'E070');
         return;
       }
       case AST.REPEAT: {
         var count = Math.floor(this.toNumber(await this.evaluate(node.count), node, 'repeat'));
-        if (count < 0) throw new RuntimeError('Cannot repeat a negative number of times (' + count + ').', node.line, node.column, null);
+        if (count < 0) throw new RuntimeError('Cannot repeat a negative number of times (' + count + ').', node.line, node.column, null, 'E011');
         for (var i = 0; i < count; i++) {
           this.guardLoop(node);
           try { await this.executeBlock(node.body); }
@@ -900,7 +933,7 @@
       case AST.STOP: throw new BreakSignal();
       case AST.NOTE: return;
       default:
-        throw new RuntimeError('The interpreter does not know how to run a "' + node.type + '" statement.', node.line, node.column, null);
+        throw new RuntimeError('The interpreter does not know how to run a "' + node.type + '" statement.', node.line, node.column, null, 'E015');
     }
   };
 
@@ -909,14 +942,14 @@
     this.loopIterations += 1;
     if (this.loopIterations > this.maxLoopIterations) {
       throw new RuntimeError('A loop ran more than ' + this.maxLoopIterations + ' times and was stopped.',
-        node.line, node.column, 'Make sure the loop can finish, or add conditions that eventually stop it.');
+        node.line, node.column, 'Make sure the loop can finish, or add conditions that eventually stop it.', 'E068');
     }
   };
 
   Interpreter.prototype.requireRuntimeLibrary = function (library, feature, node) {
     if (!this.loadedLibraries.has(library)) {
       throw new LibraryError('"' + feature + '" needs the ' + library + ' library.',
-        node.line, node.column, 'Add this near the top of your program: library "' + library + '" add');
+        node.line, node.column, 'Add this near the top of your program: library "' + library + '" add', 'E042');
     }
   };
 
@@ -1015,7 +1048,7 @@
     if (typeof value === 'string' && isNumericLike(value)) return parseFloat(value.trim());
     throw new RuntimeError('Expected a number for ' + (context || 'maths') + ' but got "' + stringify(value) + '".',
       node && node.line, node && node.column,
-      'Use a number, or a variable that holds a number.');
+      'Use a number, or a variable that holds a number.', 'E032');
   };
 
   Interpreter.prototype.evaluate = async function (node) {
@@ -1028,9 +1061,17 @@
       case AST.VARIABLE: {
         var key = node.name.toLowerCase();
         if (!this.variables.has(key)) {
+          // W002 - "you may have meant text": a name inside single quotes
+          // that reads like ordinary words is usually text that lost its
+          // double quotes. E++ still stops (the name is undefined), but the
+          // warning appears with the error so the cause is obvious.
+          if (/^[A-Za-z]+(?: [A-Za-z]+)+$/.test(node.name.trim())) {
+            this.warn('W002', "'" + node.name + "' is written as a variable, but it reads like text and was never defined.",
+              node.line, node.column);
+          }
           throw new RuntimeError('The variable \'' + node.name + '\' has not been defined yet.',
             node.line, node.column,
-            'Define it first, for example: Define ' + node.name + ' as 0.');
+            'Define it first, for example: Define ' + node.name + ' as 0.', 'E028');
         }
         return this.variables.get(key);
       }
@@ -1044,7 +1085,7 @@
           throw new RuntimeError(
             '"' + node.text + '" is a variable, but it is not written as one \u2014 variables must be written inside single quotes.',
             node.line, node.column,
-            "Write it with single quotes, like this: '" + node.text + "'.");
+            "Write it with single quotes, like this: '" + node.text + "'.", 'E002');
         }
         var plural = node.text.indexOf(' ') !== -1;
         throw new RuntimeError(
@@ -1053,7 +1094,7 @@
           ' not a variable, a number, or an E++ keyword.',
           node.line, node.column,
           'If you want these exact words, put them in double quotes, like this: say "' + node.text + '". ' +
-          'If you meant a variable, define it first (Define ' + node.text.split(' ')[0] + ' as ...) and write it with single quotes.');
+          'If you meant a variable, define it first (Define ' + node.text.split(' ')[0] + ' as ...) and write it with single quotes.', 'E001');
       }
 
       case AST.UNARY: {
@@ -1074,7 +1115,7 @@
         this.requireRuntimeLibrary('Math', 'square root of', node);
         var operand = this.toNumber(await this.evaluate(node.operand), node, '"square root of"');
         if (operand < 0) {
-          throw new RuntimeError('Cannot take the square root of a negative number (' + operand + ').', node.line, node.column, null);
+          throw new RuntimeError('Cannot take the square root of a negative number (' + operand + ').', node.line, node.column, null, 'E034');
         }
         return Math.sqrt(operand);
       }
@@ -1132,7 +1173,7 @@
       }
 
       default:
-        throw new RuntimeError('The interpreter does not know how to work out a "' + node.type + '" value.', node.line, node.column, null);
+        throw new RuntimeError('The interpreter does not know how to work out a "' + node.type + '" value.', node.line, node.column, null, 'E015');
     }
   };
 
@@ -1171,24 +1212,158 @@
       case 'minus': return a - b;
       case 'times': return a * b;
       case 'dividedBy':
-        if (b === 0) throw new RuntimeError('Division by zero is not possible.', node.line, node.column, 'Change the number after "divided by" so it is not zero.');
+        if (b === 0) throw new RuntimeError('Division by zero is not possible.', node.line, node.column, 'Change the number after "divided by" so it is not zero.', 'E066');
         return a / b;
       case 'powerOf': return Math.pow(a, b);
       default:
-        throw new RuntimeError('Unknown maths operator "' + op + '".', node.line, node.column, null);
+        throw new RuntimeError('Unknown maths operator "' + op + '".', node.line, node.column, null, 'E015');
     }
   };
 
   /**
    * Convenience entry point: lex + parse + run E++ source text.
-   * Returns the Interpreter so callers can inspect variables/libraries.
+   * Returns the Interpreter so callers can inspect variables/libraries and
+   * read the W001-W005 warnings the run produced (`interpreter.warnings`).
    */
   function run(source, options) {
+    options = options || {};
     var interpreter = new Interpreter(options);
+    interpreter.sourceLines = String(source === undefined || source === null ? '' : source).split('\n');
     return Promise.resolve()
-      .then(function () { return EPP.Parser.parse(source); })
+      .then(function () {
+        // Release 1.4b1: the lexer's own W001/W002 warnings ride along with
+        // the tokens; they never stop the program.
+        // A Python dash/comma block is raw Python that the lexer must never
+        // see (the parser extracts it first), so the pre-lex is skipped when
+        // the source contains one; the W warnings still come from the
+        // whole-program pass below.
+        var hasRawPython = /python\s+code\s*["']?\s*[",]/i.test(String(source || ''));
+        if (EPP.Lexer.analyse && !hasRawPython) {
+          var collected = EPP.Lexer.analyse(source, { filename: options.filename }).warnings || [];
+          for (var i = 0; i < collected.length; i++) interpreter.warnings.push(collected[i]);
+        }
+        var parser = EPP.Parser && EPP.Parser.instance
+          ? EPP.Parser.instance(source)
+          : null;
+        var program = parser ? parser.parse() : EPP.Parser.parse(source);
+        interpreter.usedFeatures = parser && parser.usedFeatures ? parser.usedFeatures.slice() : [];
+        return program;
+      })
       .then(function (program) { return interpreter.run(program); })
-      .then(function () { return interpreter; });
+      .then(function (result) {
+        reportSourceWarnings(interpreter, source);
+        result.warnings = interpreter.warnings;
+        return interpreter;
+      });
+  }
+
+  /**
+   * The warnings that need the whole program rather than one line:
+   *
+   *   W003  a library was added and never used
+   *   W005  a number was written as text ("2" where 2 was meant)
+   *
+   * Both are advisory, so neither can stop a program that already ran.
+   */
+  function reportSourceWarnings(interpreter, source) {
+    var sourceText = String(source === undefined || source === null ? '' : source);
+    var lines = sourceText.split('\n');
+
+    // W001: an equation was quoted, so E++ prints it instead of working it
+    // out. The pattern only fires when the quotes are needed to keep the
+    // arithmetic as text: "1 plus 1" does, "the answer is 1 plus 1" does not.
+    var equation = /^\s*(-?\d+(?:\.\d+)?\s+(?:plus|minus|times|multiplied\s+by|divided\s+by|modulo|mod|power\s+of|percent\s+of)\s+.*[\d')].*)$/i;
+    for (var n = 0; n < lines.length; n++) {
+      var text = lines[n];
+      var quoted = /"([^"\\]*(?:\\.[^"\\]*)*)"/g;
+      var match;
+      while ((match = quoted.exec(text))) {
+        var inner = match[1];
+        if (equation.test(inner)) {
+          interpreter.warnings.push(warningRecord('W001',
+            'The equation "' + inner + '" is in quotes, so E++ will print it exactly as written instead of working it out.',
+            n + 1, match.index + 1, text));
+        }
+      }
+      // W005: a quoted number where E++ expects an amount.
+      var quotedNumber = /^\s*(?:wait|sleep)\s+"(\s*-?\d+(?:\.\d+)?\s*)"/i.exec(text);
+      if (quotedNumber) {
+        interpreter.warnings.push(warningRecord('W005',
+          'The amount "' + quotedNumber[1].trim() + '" is text, but E++ reads it as the number ' +
+          quotedNumber[1].trim() + '. Writing it without quotes is clearer.',
+          n + 1, text.indexOf('"') + 1, text));
+      }
+    }
+
+    // W002: a name in single quotes that reads like text. The program still
+    // runs (it is a variable), but a word such as 'hello' that the author
+    // never defined is almost always text that lost its double quotes.
+    var defined = {};
+    var definedPattern = /\b(?:let|set|define|change)\s+'([^']+)'|\bas\s+'([^']+)'|\bfor\s+'([^']+)'/gi;
+    var defineMatch;
+    while ((defineMatch = definedPattern.exec(sourceText))) {
+      var definedName = (defineMatch[1] || defineMatch[2] || defineMatch[3] || '').toLowerCase();
+      if (definedName) defined[definedName] = true;
+    }
+    var hasQuotedText = /"[^"\\]*(?:\\.[^"\\]*)*"/.test(sourceText);
+    if (hasQuotedText) {
+      for (var v = 0; v < lines.length; v++) {
+        var quotePattern = /'([A-Za-z][A-Za-z0-9 _-]*)'/g;
+        var quoteMatch;
+        while ((quoteMatch = quotePattern.exec(lines[v]))) {
+          var name = quoteMatch[1].trim().toLowerCase();
+          if (defined[name]) continue;
+          // Only names that read like ordinary words, not names or counters.
+          if (!/^[a-z]+(?: [a-z]+)+$/.test(name)) continue;
+          if (interpreter.variables && interpreter.variables.has(name)) continue;
+          interpreter.warnings.push(warningRecord('W002',
+            "'" + quoteMatch[1] + "' is written as a variable, but the program never defines it and it reads like text.",
+            v + 1, quoteMatch.index + 1, lines[v]));
+        }
+      }
+    }
+
+    // W003: a library was added and nothing in the program used it. The
+    // parser records every library feature it saw, so this is decided by the
+    // whole program, including branches that did not run.
+    var used = interpreter.usedFeatures || [];
+    (interpreter.loadedLibraries || new Set()).forEach(function (name) {
+      var owners = [];
+      for (var u = 0; u < used.length; u++) {
+        if (EPP.Libraries && EPP.Libraries.ownersOf) {
+          owners = EPP.Libraries.ownersOf(used[u]);
+          if (owners.indexOf(name) !== -1) return;
+        }
+      }
+      var at = libraryLineOf(lines, name);
+      interpreter.warnings.push(warningRecord('W003',
+        'The ' + name + ' library was added, but nothing in this program uses it.',
+        at.line, at.column, lines[at.line - 1] || ''));
+    });
+
+    if (typeof interpreter.onWarning === 'function') {
+      for (var w = 0; w < interpreter.warnings.length; w++) {
+        var record = interpreter.warnings[w];
+        if (!record.reported) { record.reported = true; interpreter.onWarning(record); }
+      }
+    }
+    return interpreter.warnings;
+  }
+
+  function libraryLineOf(lines, name) {
+    var pattern = new RegExp('^\\s*add\\s+(?:the\\s+)?["\']?' + name + '["\']?\\s+library\\b|' +
+      '^\\s*add\\s+(?:the\\s+)?librar(?:y|ies)\\s+["\']?' + name + '["\']?', 'i');
+    for (var i = 0; i < lines.length; i++) {
+      if (pattern.test(lines[i])) {
+        return { line: i + 1, column: lines[i].search(/\S/) + 1 };
+      }
+    }
+    return { line: 1, column: 1 };
+  }
+
+  function warningRecord(code, message, line, column, sourceLine) {
+    var made = warnAt(code, message, line, column, null, null, sourceLine || '');
+    return made && made.warningRecord ? made.warningRecord() : made;
   }
 
   EPP.Fraction = Fraction;

@@ -16,7 +16,10 @@
 
   function runtimeError(reason) {
     return {
-      code: 'E601', name: 'C++ Lexer Unavailable', filename: 'js/native-lexer-wasm.js',
+      // Release 1.4b1: a lexer that cannot start is fatal F001 - the lexer
+      // never received a program it could read.
+      code: 'F001', name: 'Lexer Received Invalid Input', family: 'fatal',
+      filename: 'js/native-lexer-wasm.js',
       line: 1, col: 1, sourceLine: '', reason: reason,
       help: 'Keep js/native-lexer-wasm.js and js/native-lexer.js next to Studio, and use a browser with WebAssembly enabled.'
     };
@@ -66,7 +69,7 @@
         exports._initialize();
         instance = exports;
       } catch (error) {
-        if (error && error.code === 'E601') throw error;
+        if (error && error.code === 'F001') throw error;
         throw runtimeError('The compiled C++ lexer could not start: ' + (error && error.message || String(error)));
       }
     })().catch(function (error) { pending = null; throw error; });
@@ -93,15 +96,19 @@
       instance.epp_lexer_free(address);
     }
     if (!output.ok) {
+      // Release 1.4b1: the C++ lexer reports one of the fatal codes F001-F015
+      // together with its catalogue name and fix, so the browser prints exactly
+      // what the native command line prints.
       var issue = output.error;
       var sourceLines = source.split('\n');
       throw {
         code: issue.code,
-        name: issue.code === 'E202' ? 'Invalid Variable Name' : issue.code === 'E102' ? 'Quote Error' : 'Invalid Syntax',
+        name: issue.name || (global.EPP && EPP.Errors ? EPP.Errors.name(issue.code) : 'Fatal Lexer Error'),
+        family: 'fatal',
+        section: 'F',
         filename: filename || '<source>', line: issue.line, col: issue.column,
         sourceLine: sourceLines[issue.line - 1] || '', reason: issue.message,
-        help: issue.code === 'E101' ? 'Use note [text] for notes and close every note.' :
-          'Close quotes on the same line and give variables a name.'
+        help: issue.help || (global.EPP && EPP.Errors ? EPP.Errors.help(issue.code) : 'Check the program and try again.')
       };
     }
     return output.tokens;

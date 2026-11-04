@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-E++ (E-Plus-Plus) 1.4a3 Direct Python Runtime & Engine
+E++ (E-Plus-Plus) 1.4b1 Direct Python Runtime & Engine
 Uses the native Python lexer to run E++ and Python code directly, including
 project files saved by the Studio.
 """
@@ -28,6 +28,81 @@ from lexer import (
     key_from_hex, vault_fingerprint
 )
 
+# ==========================================================
+# Release 1.4b1 - the error catalogue (the same 100 codes as js/errors.js)
+# ==========================================================
+#   E001-E075  general errors
+#   W001-W005  warnings (the program still runs)
+#   Z001-Z005  E++.zip only (the full Studio reports an E code instead)
+#   F001-F015  fatal lexer errors
+ERROR_CATALOGUE = {
+    "E001": "Unquoted Text", "E002": "Bare Variable Name", "E003": "Missing Value",
+    "E004": "Unfinished Value", "E005": "Unterminated Double Quote",
+    "E006": "Unterminated Single Quote", "E007": "Empty Variable Name",
+    "E008": "Empty Value", "E009": "Invalid Character In A Variable Name",
+    "E010": "Value Out Of Range", "E011": "Value Is Not A Number",
+    "E012": "Unsupported Escape Sequence", "E013": "Equation Inside Quotes",
+    "E014": "Empty String", "E015": "Unknown Statement", "E016": "Empty Statement",
+    "E017": "Unexpected Block Ending", "E018": "Unclosed Block",
+    "E019": "Mismatched Block Ending", "E020": "Missing Then",
+    "E021": "Invalid Otherwise Placement", "E022": "Standalone Otherwise",
+    "E023": "Missing Repeat Count", "E024": "Invalid Repeat Count",
+    "E025": "Missing While Condition", "E026": "Invalid Comparison",
+    "E027": "Invalid Condition", "E028": "Undefined Variable",
+    "E029": "Variable Already Defined", "E030": "Invalid Variable Name",
+    "E031": "Missing Assignment Value", "E032": "Not A Number",
+    "E033": "Division By Zero (fraction)", "E034": "Square Root Of A Negative Number",
+    "E035": "Invalid Fraction", "E036": "Variables Are Not Quoted",
+    "E037": "Change Needs A Number", "E038": "Amount Must Be A Number",
+    "E039": "Ask Needs A Variable", "E040": "Missing Ask Question",
+    "E041": "Variable Name Is Too Long", "E042": "Library Not Added",
+    "E043": "Unknown Library", "E044": "Library Name Not Quoted",
+    "E045": "Invalid Library Statement", "E046": "Libraries Need An .eppla File",
+    "E047": "Python Library Not Added", "E048": "Python Code Is Not E++",
+    "E049": "Python Code Block Never Ends", "E050": "Empty Python Code",
+    "E051": "Library Already Added", "E052": "File Needs A Name",
+    "E053": "File Already Exists", "E054": "File Not Found",
+    "E055": "Wrong File Extension", "E056": "Not An E++ Project",
+    "E057": "Damaged Project File", "E058": "Project Saved By Another Release",
+    "E059": "Key Does Not Open This Project", "E060": "E++ Does Not Use This Punctuation",
+    "E061": "Symbols Are Not Values", "E062": "Unexpected Word",
+    "E063": "Unexpected End Of Line", "E064": "Unexpected End Of Program",
+    "E065": "Unclosed Parenthesis", "E066": "Division By Zero (numbers)",
+    "E067": "The Program Ran Too Long", "E068": "Endless Loop",
+    "E069": "Stop Used Outside A Repeat", "E070": "Execution Stopped",
+    "E071": "Picture Is Empty", "E072": "Value Is Not A Picture",
+    "E073": "Unknown Actor", "E074": "Unknown Image", "E075": "Sprite Not Defined",
+    "W001": "Text Looks Like An Equation", "W002": "Variable Name Looks Like Text",
+    "W003": "Library Added But Unused", "W004": "Continued On The Next Line",
+    "W005": "Number Written As Text",
+    "Z001": "Colors Live In The Studio", "Z002": "Draw Is Not In E++.zip",
+    "Z003": "Game Is Not In E++.zip", "Z004": "ImprovedWait Is Not In E++.zip",
+    "Z005": "JavaScript Runtime Is Not In E++.zip",
+    "F001": "Lexer Received Invalid Input", "F002": "The Program Is Too Large To Lex",
+    "F003": "Unrecognised Character", "F004": "Unterminated String",
+    "F005": "Unterminated Variable Name", "F006": "Empty Variable Reference",
+    "F007": "Unterminated Note", "F008": "Note Without Brackets",
+    "F009": "Line Contains A Null Character", "F010": "Unrecognised Number",
+    "F011": "Comment Characters Are Not E++", "F012": "Word Is Too Long",
+    "F013": "Unexpected End Of Input Inside A Value", "F014": "Invalid Escape Sequence",
+    "F015": "Lexer Could Not Build The Token Stream",
+}
+
+
+# The one-line fix each W code carries.
+ERROR_HELP = {
+    "W001": "Remove the quotes if you wanted the maths: say 1 plus 1",
+    "W002": "Use double quotes for text and single quotes for variables.",
+    "W003": "Remove the library line, or use one of its features.",
+    "W004": "One statement per line keeps the structure clear.",
+    "W005": "Write the number without double quotes, for example: wait 2 seconds",
+}
+
+
+def error_name(code: str, fallback: str = "E++ Error") -> str:
+    """The catalogue name for a code, so every engine prints the same heading."""
+    return ERROR_CATALOGUE.get(code, fallback)
+
 class Interpreter:
     def __init__(self, filename: str = "<stdin>"):
         self.filename = filename
@@ -37,6 +112,7 @@ class Interpreter:
         self.current_line_num = 1
         self.current_line_text = ""
         self.source_lines: List[str] = []
+        self.warnings: List[EppDiagnosticError] = []
 
     def norm(self, name: str) -> str:
         return name.lower().strip()
@@ -51,7 +127,7 @@ class Interpreter:
         if norm_name not in self.vars:
             cur_line = self.get_source_line(line)
             raise EppDiagnosticError(
-                code="E201",
+                code="E028",
                 name="Undefined Variable",
                 filename=self.filename,
                 line=line,
@@ -67,7 +143,7 @@ class Interpreter:
         if norm_lib not in self.libs:
             cur_line = self.get_source_line(line)
             raise EppDiagnosticError(
-                code="E301",
+                code="E042",
                 name="Library Not Added",
                 filename=self.filename,
                 line=line,
@@ -83,8 +159,18 @@ class Interpreter:
         return ""
 
     def diagnostic(self, code: str, name: str, reason: str, help_msg: str, line: int, col: int = 1):
-        return EppDiagnosticError(code=code, name=name, filename=self.filename, line=line, col=col,
-                                  source_line=self.get_source_line(line), reason=reason, help_msg=help_msg)
+        # 1.4b1: the catalogue name wins, so a code can never be printed with a
+        # heading the other engines would not use.
+        return EppDiagnosticError(code=code, name=error_name(code, name), filename=self.filename,
+                                  line=line, col=col, source_line=self.get_source_line(line),
+                                  reason=reason, help_msg=help_msg)
+
+    def warn(self, code: str, reason: str, line: int, col: int = 1):
+        """Collect a W001-W005 warning. A warning never stops the program."""
+        self.warnings.append(EppDiagnosticError(
+            code=code, name=error_name(code), filename=self.filename, line=line, col=col,
+            source_line=self.get_source_line(line), reason=reason,
+            help_msg=ERROR_HELP.get(code, "This is only a warning: the program still runs.")))
 
     def execute_python_code(self, py_code: str, line: int, col: int) -> str:
         self.require_lib("Python", "Running Python code", line, col)
@@ -93,7 +179,7 @@ class Interpreter:
         if re.search(r'\b(?:import\s+turtle|from\s+turtle|turtle\.)\b', py_code):
             cur_line = self.get_source_line(line)
             raise EppDiagnosticError(
-                code="E701",
+                code="E048",
                 name="Python Library Prohibited",
                 filename=self.filename,
                 line=line,
@@ -146,7 +232,7 @@ class Interpreter:
         except Exception as err:
             cur_line = self.get_source_line(line)
             raise EppDiagnosticError(
-                code="E702",
+                code="E048",
                 name="Python Runtime Exception",
                 filename=self.filename,
                 line=line,
@@ -180,7 +266,7 @@ class Interpreter:
         except EppDiagnosticError:
             raise
         except (ValueError, TypeError, OverflowError, ZeroDivisionError) as err:
-            code = "E403" if isinstance(err, ZeroDivisionError) else "E405"
+            code = "E066" if isinstance(err, ZeroDivisionError) else "E032"
             raise self.diagnostic(code, "Invalid Value", str(err) or "This operation needs valid numbers.",
                                   "Check the values used by this operation.", self.current_line_num)
 
@@ -222,23 +308,23 @@ class Interpreter:
                 masked = re.sub(pattern, lambda m: ' ' * len(m.group()), masked, flags=re.IGNORECASE)
             for t, pos in zip(parts, positions):
                 if t.type == TokenType.IDENTIFIER and masked[pos:pos + len(t.lexeme)].strip() and t.lexeme.lower() not in {"pi", "e", "true", "false"}:
-                    raise self.diagnostic("E402", "Unquoted Text", f"Unquoted text '{t.lexeme}' is not a value.",
+                    raise self.diagnostic("E001", "Unquoted Text", f"Unquoted text '{t.lexeme}' is not a value.",
                                           'Put text in double quotes, or use single quotes for a variable.', t.line, t.col)
 
         def check_statement(line):
             if not line: return
             first = line[0]
             if first.type not in allowed and not (first.type == TokenType.IDENTIFIER and first.lexeme.lower() in word_commands):
-                raise self.diagnostic("E101", "Unknown Statement", f"E++ does not recognize '{first.lexeme}' as a statement.",
+                raise self.diagnostic("E015", "Unknown Statement", f"E++ does not recognize '{first.lexeme}' as a statement.",
                                       "Start with a command such as say, let, or if.", first.line, first.col)
             if first.type == TokenType.KW_IF:
                 then = next((i for i, t in enumerate(line) if t.type == TokenType.KW_THEN), -1)
                 if then < 0:
-                    raise self.diagnostic("E101", "Invalid If", "Expected 'then' after the condition.",
+                    raise self.diagnostic("E015", "Invalid If", "Expected 'then' after the condition.",
                                           'For example: if 1 is 1 then say "Yes"', first.line, first.col)
                 if any(t.type == TokenType.KW_OTHERWISE for t in line[then + 1:]):
                     bad = next(t for t in line[then + 1:] if t.type == TokenType.KW_OTHERWISE)
-                    raise self.diagnostic("E103", "Invalid Otherwise Placement", "'otherwise' belongs on the next line.",
+                    raise self.diagnostic("E021", "Invalid Otherwise Placement", "'otherwise' belongs on the next line.",
                                           "Move otherwise to the next line.", bad.line, bad.col)
                 action = line[then + 1:]
                 if action and action[0].type != TokenType.COLON: check_statement(action)
@@ -249,7 +335,7 @@ class Interpreter:
                 value = line[1:]
                 if value and value[0].type == TokenType.IDENTIFIER and value[0].lexeme.lower() in colors: value = value[1:]
                 if not value:
-                    raise self.diagnostic("E105", "Missing Value", "'say' needs a value to print.",
+                    raise self.diagnostic("E003", "Missing Value", "'say' needs a value to print.",
                                           'For example: say "Hello"', first.line, first.col)
                 # Split at commas/concat so bare text in any output part is checked.
                 part = []
@@ -260,28 +346,34 @@ class Interpreter:
                 check_value(part)
             elif first.type in (TokenType.KW_LET, TokenType.KW_SET, TokenType.KW_DEFINE):
                 if len(line) < 2 or line[1].type != TokenType.VARIABLE:
-                    raise self.diagnostic("E202", "Invalid Variable Name", "Variable names must be in single quotes.",
+                    # 1.4b1: double quotes around a name is E036 ("variables are
+                    # not quoted"); a bare word is E030 ("invalid variable name").
+                    if len(line) >= 2 and line[1].type == TokenType.STRING:
+                        raise self.diagnostic("E036", "Variables Are Not Quoted",
+                                              "Variables use single quotes and text uses double quotes.",
+                                              "Write it like this: let 'name' be \"Ada\"", first.line, first.col)
+                    raise self.diagnostic("E030", "Invalid Variable Name", "Variable names must be in single quotes.",
                                           "For example: let 'name' be \"Ada\"", first.line, first.col)
                 if len(line) < 3 or line[2].type not in (TokenType.KW_BE, TokenType.KW_TO, TokenType.KW_AS):
-                    raise self.diagnostic("E101", "Invalid Assignment", "Expected 'be', 'as', or 'to' after the variable.",
+                    raise self.diagnostic("E015", "Invalid Assignment", "Expected 'be', 'as', or 'to' after the variable.",
                                           "For example: let 'name' be \"Ada\"", first.line, first.col)
                 if len(line) < 4:
-                    raise self.diagnostic("E105", "Missing Value", "The variable needs a value.",
+                    raise self.diagnostic("E003", "Missing Value", "The variable needs a value.",
                                           "For example: let 'name' be \"Ada\"", first.line, first.col)
                 if " ".join(t.lexeme.lower() for t in line[3:]) == "drawing sprite":
-                    raise self.diagnostic("E302", "Library Not In This Build", "Draw is available in E++ Studio, not E++.zip.",
+                    raise self.diagnostic("Z002", "Draw Is Not In E++.zip", "Draw is available in E++ Studio, not E++.zip.",
                                           "Open the full E++ Studio to use drawing sprites.", first.line, line[3].col)
                 check_value(line[3:])
             elif first.type == TokenType.KW_ASK:
                 split = next((i for i in range(1, len(line) - 1) if line[i].type == TokenType.KW_AND and line[i + 1].type == TokenType.KW_SAVE), -1)
                 if split < 2:
-                    raise self.diagnostic("E101", "Invalid Ask", "An ask needs a question and a variable for the answer.",
+                    raise self.diagnostic("E015", "Invalid Ask", "An ask needs a question and a variable for the answer.",
                                           "For example: ask \"Name?\" and save the output as 'name'", first.line, first.col)
                 check_value(line[1:split])
             elif first.type == TokenType.KW_REPEAT:
                 end = len(line) - (1 if line[-1].type == TokenType.COLON else 0)
                 if end < 3 or line[end - 1].lexeme.lower() not in ("time", "times"):
-                    raise self.diagnostic("E101", "Invalid Repeat", "A repeat needs a count followed by 'times'.",
+                    raise self.diagnostic("E015", "Invalid Repeat", "A repeat needs a count followed by 'times'.",
                                           "For example: repeat 3 times", first.line, first.col)
                 check_value(line[1:end - 1])
 
@@ -293,7 +385,7 @@ class Interpreter:
             if first.type == TokenType.KW_END:
                 ending = line[1].lexeme.lower() if len(line) == 2 else ""
                 if not stack or stack[-1][0] != ending:
-                    raise self.diagnostic("E106", "Unexpected Block End", "This ending does not match the open block.",
+                    raise self.diagnostic("E018", "Unexpected Block End", "This ending does not match the open block.",
                                           "Use end if, end repeat, or end while for the matching block.", first.line, first.col)
                 stack.pop()
                 previous_inline_if = False
@@ -302,7 +394,7 @@ class Interpreter:
                 is_block = then >= 0 and then + 1 < len(line) and line[then + 1].type == TokenType.COLON
                 if is_block:
                     if then + 2 < len(line):
-                        raise self.diagnostic("E101", "Invalid If Block", "Put a block's statements on the following lines.",
+                        raise self.diagnostic("E015", "Invalid If Block", "Put a block's statements on the following lines.",
                                               "For example: if 1 is 1 then: followed by a new line.", first.line, first.col)
                     stack.append(("if", first))
                 previous_inline_if = not is_block
@@ -311,14 +403,14 @@ class Interpreter:
                 previous_inline_if = False
             elif first.type in (TokenType.KW_OTHERWISE, TokenType.KW_ELSE):
                 if not previous_inline_if and not (stack and stack[-1][0] == "if"):
-                    raise self.diagnostic("E104", "Standalone Otherwise", "'otherwise' needs a preceding if.",
+                    raise self.diagnostic("E022", "Standalone Otherwise", "'otherwise' needs a preceding if.",
                                           "Put otherwise immediately after an if statement.", first.line, first.col)
                 previous_inline_if = False
             else:
                 previous_inline_if = False
         if stack:
             kind, first = stack[-1]
-            raise self.diagnostic("E106", "Unclosed Block", f"This {kind} has no matching ending.",
+            raise self.diagnostic("E018", "Unclosed Block", f"This {kind} has no matching ending.",
                                   f"Close it with: end {kind}", first.line, first.col)
 
     def parse_and_execute(self, tokens: List[Token]):
@@ -369,27 +461,33 @@ class Interpreter:
                 library_first = j < len(declaration) and declaration[j].type == TokenType.KW_LIBRARY
                 if library_first: j += 1
                 if j >= len(declaration) or declaration[j].type not in (TokenType.STRING, TokenType.IDENTIFIER):
-                    raise self.diagnostic("E101", "Invalid Library Declaration", "Expected a library name.",
+                    raise self.diagnostic("E015", "Invalid Library Declaration", "Expected a library name.",
                                           'Use: add the "Math" library', line_num, col_num)
                 name_token = declaration[j]
                 lib_name = name_token.string_value if name_token.type == TokenType.STRING else name_token.lexeme
                 j += 1
                 if not library_first:
                     if j >= len(declaration) or declaration[j].type != TokenType.KW_LIBRARY:
-                        raise self.diagnostic("E101", "Invalid Library Declaration", "Expected 'library' after the name.",
+                        raise self.diagnostic("E015", "Invalid Library Declaration", "Expected 'library' after the name.",
                                               'Use: add the "Math" library', line_num, col_num)
                     j += 1
                 if j != len(declaration):
-                    raise self.diagnostic("E101", "Invalid Library Declaration", "Unexpected text after the library name.",
+                    raise self.diagnostic("E015", "Invalid Library Declaration", "Unexpected text after the library name.",
                                           'Use: add the "Math" library', line_num, declaration[j].col)
                 normalized = self.norm(lib_name)
+                # 1.4b1: the Z code names the library (Z001 Colors, Z002 Draw,
+                # Z003 Game, Z004 ImprovedWait). E++.zip adds the colors aliases
+                # to this list, because the Studio really ships Colors.
                 if normalized in ("draw", "drawing", "sprites", "game", "improvedwait"):
-                    raise self.diagnostic("E302", "Library Not In This Build",
+                    build_code = ("Z001" if normalized in ("colors", "colours", "color", "colour")
+                                  else "Z002" if normalized in ("draw", "drawing", "sprites")
+                                  else "Z004" if normalized == "improvedwait" else "Z003")
+                    raise self.diagnostic(build_code, "Library Not In This Build",
                                           f"The '{lib_name}' library is available in E++ Studio, not E++.zip.",
                                           "Open the full E++ Studio to use this library.", line_num, name_token.col)
                 known = {"python", "math", "random", "strings", "text", "colors", "time", "files", "system", "console", "keyboard", "improvedwaitlite"}
                 if normalized not in known:
-                    raise self.diagnostic("E303", "Unknown Library", f"There is no library called '{lib_name}'.",
+                    raise self.diagnostic("E043", "Unknown Library", f"There is no library called '{lib_name}'.",
                                           "Check the library name and spelling.", line_num, name_token.col)
                 self.libs.add("strings" if normalized == "text" else normalized)
                 idx = end
@@ -405,16 +503,16 @@ class Interpreter:
                 if header and header[-1].type == TokenType.COLON: header.pop()
                 if kind == "repeat":
                     if not header or header[-1].lexeme.lower() not in ("times", "time"):
-                        raise self.diagnostic("E101", "Invalid Repeat", "A repeat needs a count followed by 'times'.",
+                        raise self.diagnostic("E015", "Invalid Repeat", "A repeat needs a count followed by 'times'.",
                                               "For example: repeat 3 times", line_num, col_num)
                     count_tokens = header[:-1]
                     if not count_tokens:
-                        raise self.diagnostic("E105", "Missing Repeat Count", "The repeat count is missing.",
+                        raise self.diagnostic("E003", "Missing Repeat Count", "The repeat count is missing.",
                                               "For example: repeat 3 times", line_num, col_num)
                 else:
                     if header and header[-1].type == TokenType.KW_DO: header.pop()
                     if not header:
-                        raise self.diagnostic("E105", "Missing While Condition", "The while condition is missing.",
+                        raise self.diagnostic("E003", "Missing While Condition", "The while condition is missing.",
                                               "For example: while 'n' is less than 3 do", line_num, col_num)
                 body_start = end_header + (1 if end_header < n and tokens[end_header].type == TokenType.NEWLINE else 0)
                 j, depth, at_start = body_start, 1, True
@@ -430,24 +528,24 @@ class Interpreter:
                         at_start = False
                     j += 1
                 if depth:
-                    raise self.diagnostic("E106", "Unclosed Block", f"This {kind} has no matching end {kind}.",
+                    raise self.diagnostic("E018", "Unclosed Block", f"This {kind} has no matching end {kind}.",
                                           f"Close the block with: end {kind}", line_num, col_num)
                 body = tokens[body_start:j]
                 idx = j + 2
                 if idx < n and tokens[idx].type not in (TokenType.NEWLINE, TokenType.EOF):
-                    raise self.diagnostic("E101", "Unexpected Text", f"Unexpected text after end {kind}.",
+                    raise self.diagnostic("E015", "Unexpected Text", f"Unexpected text after end {kind}.",
                                           "Put each statement on its own line.", tokens[idx].line, tokens[idx].col)
                 if kind == "repeat":
                     count = self.eval_expr(count_tokens, line_num, count_tokens[0].col)
                     if not isinstance(count, (int, float)) or not math.isfinite(count) or count < 0 or int(count) != count or count > 100000:
-                        raise self.diagnostic("E405", "Invalid Repeat Count", "Repeat needs a whole number from 0 to 100000.",
+                        raise self.diagnostic("E032", "Invalid Repeat Count", "Repeat needs a whole number from 0 to 100000.",
                                               "For example: repeat 3 times", line_num, col_num)
                     for _ in range(int(count)): self.parse_and_execute(body)
                 else:
                     rounds = 0
                     while self.eval_condition(header, line_num, col_num):
                         if rounds >= 100000:
-                            raise self.diagnostic("E405", "Endless Loop", "The while loop exceeded 100000 iterations.",
+                            raise self.diagnostic("E032", "Endless Loop", "The while loop exceeded 100000 iterations.",
                                                   "Change a value in the loop so the condition becomes false.", line_num, col_num)
                         self.parse_and_execute(body)
                         rounds += 1
@@ -496,7 +594,7 @@ class Interpreter:
                     if tokens[chk_idx].type == TokenType.KW_OTHERWISE:
                         cur_line = self.get_source_line(line_num)
                         raise EppDiagnosticError(
-                            code="E103",
+                            code="E021",
                             name="Invalid Otherwise Syntax",
                             filename=self.filename,
                             line=line_num,
@@ -516,7 +614,7 @@ class Interpreter:
                 if not match(TokenType.KW_THEN):
                     cur_line = self.get_source_line(line_num)
                     raise EppDiagnosticError(
-                        code="E101",
+                        code="E015",
                         name="Syntax Error in If Statement",
                         filename=self.filename,
                         line=line_num,
@@ -570,7 +668,7 @@ class Interpreter:
                         at_start = False
 
                     if depth != 0:
-                        raise self.diagnostic("E106", "Unclosed Block", "This if has no matching end if.",
+                        raise self.diagnostic("E018", "Unclosed Block", "This if has no matching end if.",
                                               "Close the block with: end if", line_num, col_num)
                     active_tokens = then_tokens if cond_result else else_tokens
                     sub_interp = Interpreter(self.filename)
@@ -609,7 +707,7 @@ class Interpreter:
                     idx = saved_idx
 
                 if not then_stmt_tokens:
-                    raise self.diagnostic("E105", "Missing If Action", "There is no statement after 'then'.",
+                    raise self.diagnostic("E003", "Missing If Action", "There is no statement after 'then'.",
                                           'Write an action after then, or use then: and end if.', line_num, col_num)
                 if cond_result:
                     if then_stmt_tokens:
@@ -623,7 +721,7 @@ class Interpreter:
             if tok.type == TokenType.KW_OTHERWISE:
                 cur_line = self.get_source_line(line_num)
                 raise EppDiagnosticError(
-                    code="E104",
+                    code="E022",
                     name="Standalone Otherwise",
                     filename=self.filename,
                     line=line_num,
@@ -657,7 +755,7 @@ class Interpreter:
             if len(tokens) > 1 and tokens[1].type == TokenType.STRING:
                 cur_line = self.get_source_line(line_num)
                 raise EppDiagnosticError(
-                    code="E202",
+                    code="E030",
                     name="Golden Rule 2 Violation",
                     filename=self.filename,
                     line=line_num,
@@ -671,7 +769,7 @@ class Interpreter:
                 cur_line = self.get_source_line(line_num)
                 bad_name = len(tokens) > 1 and tokens[1].type != TokenType.VARIABLE
                 raise EppDiagnosticError(
-                    code="E202" if bad_name else "E101",
+                    code="E030" if bad_name else "E015",
                     name="Syntax Error in Variable Assignment",
                     filename=self.filename,
                     line=line_num,
@@ -683,11 +781,11 @@ class Interpreter:
 
             var_name = tokens[1].string_value
             if tokens[2].type not in (TokenType.KW_BE, TokenType.KW_AS, TokenType.KW_TO):
-                raise self.diagnostic("E101", "Invalid Assignment", "Expected 'be', 'as', or 'to' after the variable.",
+                raise self.diagnostic("E015", "Invalid Assignment", "Expected 'be', 'as', or 'to' after the variable.",
                                       "For example: let 'Name' be \"Sam\"", line_num, tokens[2].col)
             rhs_idx = 3
             if rhs_idx >= len(tokens):
-                raise self.diagnostic("E105", "Missing Value", "The assignment needs a value.",
+                raise self.diagnostic("E003", "Missing Value", "The assignment needs a value.",
                                       "For example: let 'Name' be \"Sam\"", line_num, col_num)
             val = self.eval_expr(tokens[rhs_idx:], line_num, tokens[rhs_idx].col)
             self.set_var(var_name, val)
@@ -698,20 +796,20 @@ class Interpreter:
         if first.type == TokenType.KW_ASK:
             and_idx = next((i for i, t in enumerate(tokens) if t.type == TokenType.KW_AND), -1)
             if and_idx <= 1 or and_idx + 1 >= len(tokens) or tokens[and_idx + 1].type != TokenType.KW_SAVE:
-                raise self.diagnostic("E101", "Invalid Ask", "Expected a prompt and 'and save ... as'.",
+                raise self.diagnostic("E015", "Invalid Ask", "Expected a prompt and 'and save ... as'.",
                                       "For example: ask \"Name?\" and save the output as 'Name'", line_num, col_num)
             j = and_idx + 2
             while j < len(tokens) and tokens[j].type in (TokenType.KW_THE, TokenType.KW_IT, TokenType.KW_OUTPUT, TokenType.KW_ANSWER, TokenType.KW_RESULT): j += 1
             if j >= len(tokens) or tokens[j].type not in (TokenType.KW_AS, TokenType.KW_IN):
-                raise self.diagnostic("E101", "Invalid Ask", "Expected 'as' before the destination variable.",
+                raise self.diagnostic("E015", "Invalid Ask", "Expected 'as' before the destination variable.",
                                       "Use a single-quoted name: as 'Name'", line_num, col_num)
             j += 1
             if j >= len(tokens) or tokens[j].type != TokenType.VARIABLE:
                 bad_col = tokens[j].col if j < len(tokens) else col_num
-                raise self.diagnostic("E202", "Invalid Variable Name", "The answer needs a single-quoted variable name.",
+                raise self.diagnostic("E030", "Invalid Variable Name", "The answer needs a single-quoted variable name.",
                                       "For example: as 'Name'", line_num, bad_col)
             if j + 1 != len(tokens):
-                raise self.diagnostic("E101", "Invalid Ask", "Unexpected text after the answer variable.",
+                raise self.diagnostic("E015", "Invalid Ask", "Unexpected text after the answer variable.",
                                       "Put each statement on its own line.", line_num, tokens[j + 1].col)
             prompt_val = str(self.eval_expr(tokens[1:and_idx], line_num, tokens[1].col))
             try:
@@ -727,15 +825,15 @@ class Interpreter:
 
         if first.type == TokenType.KW_CHECK:
             if len(tokens) < 5 or tokens[1].type != TokenType.KW_IF:
-                raise self.diagnostic("E101", "Invalid Type Check", "Expected check if <value> is [not] a number.",
+                raise self.diagnostic("E015", "Invalid Type Check", "Expected check if <value> is [not] a number.",
                                       'For example: check if "hello" is not a number', line_num, col_num)
             is_idx = next((i for i, t in enumerate(tokens) if t.type == TokenType.KW_IS), -1)
             if is_idx < 2:
-                raise self.diagnostic("E101", "Invalid Type Check", "Expected 'is' in the type check.",
+                raise self.diagnostic("E015", "Invalid Type Check", "Expected 'is' in the type check.",
                                       'For example: check if "hello" is a number', line_num, col_num)
             rest = [t.lexeme.lower() for t in tokens[is_idx + 1:]]
             if rest not in (["a", "number"], ["number"], ["not", "a", "number"], ["not", "number"]):
-                raise self.diagnostic("E101", "Invalid Type Check", "Expected 'a number' or 'not a number'.",
+                raise self.diagnostic("E015", "Invalid Type Check", "Expected 'a number' or 'not a number'.",
                                       'For example: check if "hello" is not a number', line_num, col_num)
             value = self.eval_expr(tokens[2:is_idx], line_num, tokens[2].col)
             try:
@@ -828,13 +926,13 @@ class Interpreter:
                     print(res)
             return
 
-        code = "E106" if first.type in (TokenType.KW_END, TokenType.KW_ELSE) else "E101"
+        code = "E018" if first.type in (TokenType.KW_END, TokenType.KW_ELSE) else "E015"
         raise self.diagnostic(code, "Unknown Statement", f"E++ does not recognize '{first.lexeme}' as a statement.",
                               'Start with a command such as say, let, or if.', line_num, col_num)
 
     def execute_say(self, tokens: List[Token], line_num: int, col_num: int):
         if not tokens:
-            raise self.diagnostic("E105", "Missing Value", "'say' needs a value to print.",
+            raise self.diagnostic("E003", "Missing Value", "'say' needs a value to print.",
                                   'For example: say "Hello"', line_num, col_num)
 
         # Check Colors library keyword
@@ -855,7 +953,7 @@ class Interpreter:
                 color_code = color_map[col_word]
                 tokens = tokens[1:]
                 if not tokens:
-                    raise self.diagnostic("E105", "Missing Value", "A colored say needs a value to print.",
+                    raise self.diagnostic("E003", "Missing Value", "A colored say needs a value to print.",
                                           'For example: say red "Hello"', line_num, col_num)
 
         # Check for separation method
@@ -924,7 +1022,7 @@ class Interpreter:
             t = tokens[i]
             if t.type == TokenType.COMMA:
                 if not cur:
-                    raise self.diagnostic("E105", "Missing Value", "A comma needs a value before it.",
+                    raise self.diagnostic("E003", "Missing Value", "A comma needs a value before it.",
                                           'Separate values like: say "Hello", "world"', t.line, t.col)
                 res.append(cur)
                 cur = []
@@ -932,7 +1030,7 @@ class Interpreter:
                 if i < len(tokens) and tokens[i].type == TokenType.KW_AND and i + 1 < len(tokens) and tokens[i + 1].type == TokenType.KW_CONCAT:
                     i += 1
                 if i == len(tokens):
-                    raise self.diagnostic("E105", "Missing Value", "A comma needs a value after it.",
+                    raise self.diagnostic("E003", "Missing Value", "A comma needs a value after it.",
                                           'Separate values like: say "Hello", "world"', t.line, t.col)
                 continue
             if t.type == TokenType.KW_CONCAT:
@@ -1005,7 +1103,7 @@ class Interpreter:
     def eval_expr(self, tokens: List[Token], line: int, col: int, allow_raw_words: bool = False) -> Any:
         tokens = [t for t in tokens if t.type not in (TokenType.NEWLINE, TokenType.EOF)]
         if not tokens:
-            raise self.diagnostic("E105", "Missing Value", "An expression needs a value.",
+            raise self.diagnostic("E003", "Missing Value", "An expression needs a value.",
                                   'Use a number, "text", or a single-quoted variable.', line, col)
 
         # Single string literal
@@ -1039,7 +1137,7 @@ class Interpreter:
         def divided_parts(part, word):
             where = next((i for i, t in enumerate(part) if t.lexeme.lower() == word), -1)
             if where <= 0 or where == len(part) - 1:
-                raise self.diagnostic("E105", "Missing Value", f"Expected values on both sides of '{word}'.",
+                raise self.diagnostic("E003", "Missing Value", f"Expected values on both sides of '{word}'.",
                                       "Check the library expression's arguments.", line, col)
             return part[:where], part[where + 1:]
 
@@ -1059,12 +1157,12 @@ class Interpreter:
             if "with" in words:
                 at = words.index("with")
                 if words[-1] != "sides":
-                    raise self.diagnostic("E105", "Invalid Dice", "Expected a number followed by 'sides'.", "For example: roll a dice with 6 sides", line, col)
+                    raise self.diagnostic("E003", "Invalid Dice", "Expected a number followed by 'sides'.", "For example: roll a dice with 6 sides", line, col)
                 sides = int(evaluate(tokens[at + 1:-1]))
             elif tok_str in ("roll a dice", "roll dice"):
                 sides = 6
             else:
-                raise self.diagnostic("E105", "Invalid Dice", "The dice expression is incomplete.", "For example: roll a dice", line, col)
+                raise self.diagnostic("E003", "Invalid Dice", "The dice expression is incomplete.", "For example: roll a dice", line, col)
             if sides < 1: raise ValueError("A dice needs at least one side.")
             return random.randint(1, sides)
 
@@ -1188,17 +1286,17 @@ class Interpreter:
                 res = calculate(ast.parse(safe_eval_str, mode="eval"))
                 return int(res) if isinstance(res, float) and res.is_integer() else res
             except ZeroDivisionError:
-                raise self.diagnostic("E403", "Division By Zero", "A number cannot be divided by zero.",
+                raise self.diagnostic("E066", "Division By Zero", "A number cannot be divided by zero.",
                                       "Use a divisor other than zero.", line, col)
             except (ValueError, SyntaxError, OverflowError):
-                raise self.diagnostic("E105", "Invalid Expression", "This arithmetic expression is incomplete or invalid.",
+                raise self.diagnostic("E003", "Invalid Expression", "This arithmetic expression is incomplete or invalid.",
                                       "Check the operands and matching parentheses.", line, col)
 
         bad = next((t for t in tokens if t.type == TokenType.IDENTIFIER), None)
         if bad:
-            raise self.diagnostic("E402", "Unquoted Text", f"Unquoted text '{bad.lexeme}' is not a value.",
+            raise self.diagnostic("E001", "Unquoted Text", f"Unquoted text '{bad.lexeme}' is not a value.",
                                   'Put text in double quotes, or use single quotes for a variable.', line, bad.col)
-        raise self.diagnostic("E105", "Invalid Expression", "This expression could not be understood.",
+        raise self.diagnostic("E003", "Invalid Expression", "This expression could not be understood.",
                               'Use a number, "text", or a single-quoted variable.', line, col)
 
 
@@ -1208,7 +1306,7 @@ class Interpreter:
 # ==========================================
 
 def _usage():
-    print("E++ [1.4a3] Python Direct Engine")
+    print("E++ [1.4b1] Python Direct Engine")
     print("Usage:")
     print("  python3 epp.py <file.enpp|file.enppl>             Run a program")
     print("  python3 epp.py -e '<code string>'                 Run inline code")
@@ -1243,7 +1341,7 @@ def _split_global_flags(args):
             bytes.fromhex(keyhex.strip())
         except ValueError:
             raise EppDiagnosticError(
-                code="E522", name="Bad Key", filename="<cli>", line=1, col=1, source_line="",
+                code="E059", name="Key Does Not Open This Project", filename="<cli>", line=1, col=1, source_line="",
                 reason="--key needs 64 hex characters (a 32-byte E++ vault key).",
                 help_msg="Copy the key from epp-keys.json, or pass --keyring that file."
             )
@@ -1295,7 +1393,7 @@ def main():
     if arg in ("--save", "--seal", "--encrypt") and len(rest) > 1:
         src_path = rest[1]
         if not os.path.exists(src_path):
-            print(f"[E++ Error E404: File Not Found] File '{src_path}' does not exist.")
+            print(f"[E++ Error E054: File Not Found] File '{src_path}' does not exist.")
             sys.exit(1)
         with open(src_path, "r", encoding="utf-8") as handle:
             content = handle.read()
@@ -1314,7 +1412,7 @@ def main():
     if arg in ("--open", "--unseal", "--decrypt") and len(rest) > 1:
         src_path = rest[1]
         if not os.path.exists(src_path):
-            print(f"[E++ Error E404: File Not Found] File '{src_path}' does not exist.")
+            print(f"[E++ Error E054: File Not Found] File '{src_path}' does not exist.")
             sys.exit(1)
         with open(src_path, "r", encoding="utf-8") as handle:
             content = handle.read()
@@ -1338,7 +1436,7 @@ def main():
     # Run a file, opening it first if it belongs to E++.
     filename = arg
     if not os.path.exists(filename):
-        print(f"[E++ Error E404: File Not Found] File '{filename}' does not exist.")
+        print(f"[E++ Error E054: File Not Found] File '{filename}' does not exist.")
         sys.exit(1)
 
     with open(filename, "r", encoding="utf-8") as handle:

@@ -115,7 +115,7 @@
             { p: 'This program is broken on purpose. Run it and read the message: E++ tells you which line it stopped on and what it wanted instead.' },
             { code: 'let "Name" be "Ada"\nsay "Hello, ", \'Name\'' },
             { p: 'The error is about the **name** of the variable, not the text. Text lives in double quotes; a variable name lives in single quotes.' },
-            { tip: 'Every error E++ prints has three parts: the code (like E202), the reason, and a Help line that shows the shape it expects.' }
+            { tip: 'Every error E++ prints has three parts: the code (like E036), the reason, and a Help line that shows the shape it expects.' }
           ],
           starter: 'let "Name" be "Ada"\nsay "Hello, ", \'Name\'\n',
           solution: 'let \'Name\' be "Ada"\nsay "Hello, ", \'Name\'\n',

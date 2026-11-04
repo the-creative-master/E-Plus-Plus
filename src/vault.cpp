@@ -367,16 +367,16 @@ std::string load_project(const std::string& ciphertext, const VaultKey& key, con
     try {
         raw = base64_decode(ciphertext);
     } catch (...) {
-        throw std::runtime_error("[E++ Error E511: Not an E++ vault] The file is not a sealed E++ project.");
+        throw std::runtime_error("[E++ Error E056: Not An E++ Project] The file is not a sealed E++ project.");
     }
     if (raw.size() < VAULT_HEADER + VAULT_TAG) {
-        throw std::runtime_error("[E++ Error E512: Truncated vault] The file is smaller than its own header.");
+        throw std::runtime_error("[E++ Error E057: Damaged Project File] The file is smaller than its own header.");
     }
     if (raw[0] != VAULT_MAGIC[0] || raw[1] != VAULT_MAGIC[1] || raw[2] != VAULT_MAGIC[2]) {
-        throw std::runtime_error("[E++ Error E511: Not an E++ vault] The file does not start with the E++ vault signature.");
+        throw std::runtime_error("[E++ Error E056: Not An E++ Project] The file does not start with the E++ vault signature.");
     }
     if (raw[3] != VAULT_VERSION) {
-        throw std::runtime_error("[E++ Error E513: Different vault version] This file was written by another release of E++.");
+        throw std::runtime_error("[E++ Error E058: Project Saved By Another Release] This file was written by another release of E++.");
     }
 
     std::vector<uint8_t> enc_label = string_bytes("E++ Vault v1 encryption");
@@ -396,7 +396,7 @@ std::string load_project(const std::string& ciphertext, const VaultKey& key, con
         return std::vector<uint8_t>(digest.begin(), digest.end());
     }();
     if (!constant_time_equal(expected, tag)) {
-        throw std::runtime_error("[E++ Error E520: Wrong key] This key does not open this project.");
+        throw std::runtime_error("[E++ Error E059: Key Does Not Open This Project] This key does not open this project.");
     }
     std::vector<uint8_t> body(payload.begin() + VAULT_HEADER, payload.end());
     std::vector<uint8_t> plain = chacha20_xor(enc_key, nonce, body);
@@ -457,13 +457,13 @@ std::string open_vault(const std::string& ciphertext, const std::string& filenam
             return load_project(ciphertext, key, filename);
         } catch (const std::runtime_error& error) {
             std::string message = error.what();
-            if (message.find("E520") == std::string::npos) throw;
+            if (message.find("E059") == std::string::npos) throw;
             last_error = message;
         }
     }
     if (last_error.empty()) {
         throw std::runtime_error(
-            "[E++ Error E521: No key available] This project is sealed. Pass --key <64 hex characters> or save the "
+            "[E++ Error E059: Key Does Not Open This Project] This project is sealed. Pass --key <64 hex characters> or save the "
             "Studio's epp-keys.json next to the project (or set EPP_KEYRING).");
     }
     throw std::runtime_error(last_error + " (no saved key opened it)");

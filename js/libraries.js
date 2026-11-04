@@ -263,6 +263,25 @@
     distribution: ['Game', 'ImprovedWait', 'Draw', 'Colors']
   };
 
+  /*
+   * Release 1.4b1: a build error names the Z code that explains it.
+   *
+   *   Z001  Colors       Z004  ImprovedWait
+   *   Z002  Draw         Z005  the JavaScript runtime
+   *   Z003  Game
+   *
+   * The codes are "E++.zip only": the Studio raises an ordinary E error for
+   * anything it genuinely cannot do, and E++.zip raises the Z code with the
+   * same English explanation.
+   */
+  var BUILD_ERROR_CODES = {
+    Colors: 'Z001',
+    Draw: 'Z002',
+    Game: 'Z003',
+    ImprovedWait: 'Z004',
+    ImprovedWaitLite: 'Z004'
+  };
+
   // Empty by default: a full build has every library until it says otherwise.
   var UNAVAILABLE = {};
 
@@ -342,6 +361,12 @@
     whyUnavailable: function (name) {
       var canonicalName = canonical(name);
       return canonicalName ? (UNAVAILABLE[canonicalName] || null) : null;
+    },
+
+    /** The Z code for a build error about this library (Z001-Z005). */
+    errorCode: function (name) {
+      var canonicalName = canonical(name);
+      return canonicalName ? (BUILD_ERROR_CODES[canonicalName] || 'Z003') : 'Z003';
     },
 
     /** Used by the E++.zip build (and by tests) to hide a library. */

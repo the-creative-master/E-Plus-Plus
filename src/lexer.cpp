@@ -178,11 +178,62 @@ Lexer::Lexer(const std::string& source) : src(source) {
 #endif
 }
 
+// F001-F015: the fifteen ways the lexer itself can give up. The names and
+// fixes are the same strings js/errors.js prints, so a fatal error reads the
+// same in the browser, on the command line and in E++.zip.
+const char* Lexer::catalogue_name(const std::string& code) {
+    if (code == "F001") return "Lexer Received Invalid Input";
+    if (code == "F002") return "The Program Is Too Large To Lex";
+    if (code == "F003") return "Unrecognised Character";
+    if (code == "F004") return "Unterminated String";
+    if (code == "F005") return "Unterminated Variable Name";
+    if (code == "F006") return "Empty Variable Reference";
+    if (code == "F007") return "Unterminated Note";
+    if (code == "F008") return "Note Without Brackets";
+    if (code == "F009") return "Line Contains A Null Character";
+    if (code == "F010") return "Unrecognised Number";
+    if (code == "F011") return "Comment Characters Are Not E++";
+    if (code == "F012") return "Word Is Too Long";
+    if (code == "F013") return "Unexpected End Of Input Inside A Value";
+    if (code == "F014") return "Invalid Escape Sequence";
+    if (code == "F015") return "Lexer Could Not Build The Token Stream";
+    return "Fatal Lexer Error";
+}
+
+const char* Lexer::catalogue_help(const std::string& code) {
+    if (code == "F001") return "Pass the program as text (a string) to the lexer.";
+    if (code == "F002") return "Split the program into smaller files.";
+    if (code == "F003") return "E++ uses words for maths. Remove or replace this character.";
+    if (code == "F004") return "Close the string, for example: say \"Hello\".";
+    if (code == "F005") return "Close it, for example: say 'name'.";
+    if (code == "F006") return "Put a variable name between the single quotes.";
+    if (code == "F007") return "Notes need square brackets: note [Your note]";
+    if (code == "F008") return "Write notes like this: note [Your note]";
+    if (code == "F009") return "Remove the invisible NUL character (it usually arrives from a binary file).";
+    if (code == "F010") return "Write numbers as digits, for example 42 or 3.5.";
+    if (code == "F011") return "E++ notes do not use // or #. Use: note [Your note]";
+    if (code == "F012") return "Keep words to 256 characters or fewer.";
+    if (code == "F013") return "Finish the value before the line or the program ends.";
+    if (code == "F014") return "E++ understands the escapes for a new line, a tab, a double quote and a backslash inside double quotes.";
+    if (code == "F015") return "This is a bug in E++: report it with the program that caused it.";
+    return "Check the program and try again.";
+}
+
 void Lexer::report_error(const std::string& message, int l, int c, const std::string& code) {
     if (!failed) {
-        issue = {message, code, l, c};
+        issue.message = message;
+        issue.code = code;
+        issue.name = catalogue_name(code);
+        issue.help = catalogue_help(code);
+        issue.line = l;
+        issue.col = c;
         failed = true;
     }
+}
+
+// Record a fatal issue using the catalogue's own wording.
+void Lexer::report_catalogue(const std::string& code, int l, int c) {
+    report_error(std::string(catalogue_name(code)) + ".", l, c, code);
 }
 
 bool Lexer::is_at_end() const {
@@ -223,10 +274,10 @@ void Lexer::skip_whitespace_and_comments() {
         if (c == ' ' || c == '\t' || c == '\r') {
             advance();
         } else if (c == '/' && peek_next() == '/') {
-            report_error("E++ does not use // comments. Use note [text].", line, col, "E101");
+            report_error("E++ does not use // comments. Use note [text].", line, col, "F011");
             return;
         } else if (c == '#') {
-            report_error("E++ does not use # comments. Use note [text].", line, col, "E101");
+            report_error("E++ does not use # comments. Use note [text].", line, col, "F011");
             return;
         } else {
             break;
@@ -269,6 +320,43 @@ static bool is_py_block_header(const std::string& s, size_t pos) {
 }
 
 std::vector<Token> Lexer::tokenize() {
+    // F001: the lexer was handed something that is not a program. The C++
+    // constructor always receives a string, but the browser ABI can hand over
+    // a null or missing buffer, so both builds check first.
+    if (source_invalid) {
+        report_catalogue("F001", 1, 1);
+#ifndef EPP_BROWSER_PLAINTEXT
+        throw LexError(issue.message, issue.line, issue.col, issue.code, issue.name, issue.help);
+#else
+        return {};
+#endif
+    }
+    // F002: a program this large is not a program anyone typed.
+    if (src.size() > MAX_SOURCE_LENGTH) {
+        report_error("This program is larger than the 4 MB the lexer will read.", 1, 1, "F002");
+#ifndef EPP_BROWSER_PLAINTEXT
+        throw LexError(issue.message, issue.line, issue.col, issue.code, issue.name, issue.help);
+#else
+        return {};
+#endif
+    }
+    // F009: a NUL byte means this is not text. Report the line it is on.
+    for (size_t n = 0; n < src.size(); n++) {
+        if (src[n] == '\0') {
+            int nul_line = 1, nul_col = 1;
+            for (size_t m = 0; m < n; m++) {
+                if (src[m] == '\n') { nul_line++; nul_col = 1; } else { nul_col++; }
+            }
+            report_error("This line contains a NUL character (code 0), which is not part of an E++ program.",
+                         nul_line, nul_col, "F009");
+#ifndef EPP_BROWSER_PLAINTEXT
+            throw LexError(issue.message, issue.line, issue.col, issue.code, issue.name, issue.help);
+#else
+            return {};
+#endif
+        }
+    }
+
     std::vector<Token> tokens;
     while (!is_at_end()) {
         skip_whitespace_and_comments();
@@ -336,9 +424,21 @@ std::vector<Token> Lexer::tokenize() {
         tokens.push_back(std::move(token));
     }
 
+    // F015: the token stream is only trustworthy when the scan ended cleanly.
+    // Two things would mean it did not: a failure was flagged without a reason
+    // being recorded, or the loop stopped with source left unread (a scan
+    // function that forgot to advance). Both are E++ bugs, and both are
+    // reported as one instead of handing the parser a broken token stream.
+    if (!failed && !is_at_end()) {
+        report_catalogue("F015", line, col);
+    }
+    if (failed && issue.code.empty()) {
+        report_catalogue("F015", line, col);
+    }
+
     if (failed) {
 #ifndef EPP_BROWSER_PLAINTEXT
-        throw LexError(issue.message, issue.line, issue.col, issue.code);
+        throw LexError(issue.message, issue.line, issue.col, issue.code, issue.name, issue.help);
 #else
         return {};
 #endif
@@ -389,8 +489,12 @@ Token Lexer::scan_token() {
                 return scan_word();
             }
 
-            std::string s(1, c);
-            return Token(TokenType::TOKEN_IDENTIFIER, s, start_line, start_col);
+            // F003: a character the lexer cannot make sense of. Handing it
+            // on as an identifier would only confuse the parser later.
+            report_error("Unexpected character \"" + std::string(1, c) +
+                         "\". E++ uses words for operators (plus, minus, times...).",
+                         start_line, start_col, "F003");
+            return Token(TokenType::TOKEN_EOF, "", start_line, start_col);
         }
     }
 }
@@ -399,6 +503,8 @@ Token Lexer::scan_number() {
     int start_line = line;
     int start_col = col;
     std::string text;
+    int decimals = 0;
+    int stops = 0;
 
     while (!is_at_end() && std::isdigit(static_cast<unsigned char>(peek()))) {
         text.push_back(advance());
@@ -406,10 +512,26 @@ Token Lexer::scan_number() {
 
     if (peek() == '.' && std::isdigit(static_cast<unsigned char>(peek_next()))) {
         text.push_back(advance()); // Consume '.'
+        decimals++;
         while (!is_at_end() && std::isdigit(static_cast<unsigned char>(peek()))) {
             text.push_back(advance());
         }
     }
+
+    // F010: a number with more than one decimal point, or a number so long it
+    // cannot mean anything, is not a number. Both are fatal: what follows
+    // would otherwise be read as a statement of its own.
+    if (peek() == '.' && std::isdigit(static_cast<unsigned char>(peek_next()))) {
+        report_error("This number has more than one decimal point. Write it as 2.5, not 2.5.5.",
+                     start_line, start_col, "F010");
+        return Token(TokenType::TOKEN_EOF, "", start_line, start_col);
+    }
+    if (text.size() > 40) {
+        report_error("This number has too many digits to be a number E++ can store.",
+                     start_line, start_col, "F010");
+        return Token(TokenType::TOKEN_EOF, "", start_line, start_col);
+    }
+    (void)decimals; (void)stops;
 
     Token tok(TokenType::TOKEN_NUMBER, text, start_line, start_col);
     // strtod gives the same out-of-range behaviour in both builds without
@@ -445,7 +567,7 @@ Token Lexer::scan_string() {
     }
 
     if (is_at_end() || peek() == '\n') {
-        report_error("Unterminated string. Add the closing double quote (\").", start_line, start_col);
+        report_error("Unterminated string. Add the closing double quote (\").", start_line, start_col, "F004");
         return Token(TokenType::TOKEN_EOF, "", start_line, start_col);
     }
     advance(); // closing double quote
@@ -468,12 +590,12 @@ Token Lexer::scan_variable() {
     }
 
     if (is_at_end() || peek() == '\n') {
-        report_error("Unterminated variable name. Add the closing single quote (').", start_line, start_col);
+        report_error("Unterminated variable name. Add the closing single quote (').", start_line, start_col, "F005");
         return Token(TokenType::TOKEN_EOF, "", start_line, start_col);
     }
     advance(); // closing single quote
     if (text.find_first_not_of(" \t\r") == std::string::npos) {
-        report_error("A variable name cannot be empty.", start_line, start_col, "E202");
+        report_error("A variable name cannot be empty.", start_line, start_col, "F006");
         return Token(TokenType::TOKEN_EOF, "", start_line, start_col);
     }
 
@@ -491,6 +613,13 @@ Token Lexer::scan_word() {
         char c = peek();
         if (std::isalnum(static_cast<unsigned char>(c)) || c == '_') {
             text.push_back(advance());
+            // F012: no E++ word is this long, so stop rather than grow a
+            // string without limit.
+            if (text.size() > MAX_WORD_LENGTH) {
+                report_error("This word is longer than the 256 characters a word may have.",
+                             start_line, start_col, "F012");
+                return Token(TokenType::TOKEN_EOF, "", start_line, start_col);
+            }
         } else {
             break;
         }
@@ -514,7 +643,7 @@ Token Lexer::scan_word() {
                 note_text += advance();
             }
             if (is_at_end() || peek() != ']') {
-                report_error("Unterminated note. Close it with ].", start_line, start_col, "E101");
+                report_error("Unterminated note. Close it with ].", start_line, start_col, "F007");
                 return Token(TokenType::TOKEN_EOF, "", start_line, start_col);
             }
             advance(); // consume ']'
@@ -522,7 +651,7 @@ Token Lexer::scan_word() {
             tok.string_value = note_text;
             return tok;
         } else {
-            report_error("Notes must use the syntax: note [Note]", start_line, start_col, "E101");
+            report_error("Notes must use the syntax: note [Note]", start_line, start_col, "F008");
             return Token(TokenType::TOKEN_EOF, "", start_line, start_col);
         }
     }

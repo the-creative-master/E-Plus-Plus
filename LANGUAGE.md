@@ -1,8 +1,8 @@
-# The E++ Language Reference (1.4a3)
+# The E++ Language Reference (1.4b1)
 
 > **"Looks like English, feels like english, and is english"**
 
-This is the reference for **E++ 1.4a3**. It covers the language itself, the
+This is the reference for **E++ 1.4b1**. It covers the language itself, the
 project files you download and import, and the libraries that ship with this
 release.
 
@@ -30,7 +30,7 @@ release.
   python3 epp.py --keyring epp-keys.json project.enppl
   ```
 
-- A file that E++ did not write is refused (`E511`) instead of half-read. Copy
+- A file that E++ did not write is refused (`E056`) instead of half-read. Copy
   the code into a new file in the Studio instead, or write it from the CLI:
 
   ```bash
@@ -62,8 +62,8 @@ saved as `.enppl`.
 ### Migrating to 1.3
 
 Literal text must always be quoted: `say hello` and `let 'Student' be Sam`
-now report `E402`; write `say "hello"` and `let 'Student' be "Sam"`.
-Unrecognized statements are errors (`E101`), not implicit output. Syntax
+now report `E001`; write `say "hello"` and `let 'Student' be "Sam"`.
+Unrecognized statements are errors (`E015`), not implicit output. Syntax
 checks also inspect inactive branches. Libraries still have their own grammar:
 for example `add library Math` is a library declaration, not a text value.
 
@@ -76,7 +76,7 @@ note [This is a comment note in E++]
 note [Notes are ignored during execution and document your program]
 ```
 
-`//` and `#` are rejected with `E101`.
+`//` and `#` are rejected with `F011`.
 
 ---
 
@@ -89,8 +89,9 @@ if 'Score' is greater than 50 then say "Passed!"
 otherwise say "Failed."
 ```
 
-- `otherwise` on the same line as `if ... then` ➔ `E103`.
-- A standalone `otherwise` ➔ `E104`.
+- `otherwise` on the same line as `if ... then` ➔ `E021`.
+- A standalone `otherwise` ➔ `E022`.
+- A block ended with the wrong word ➔ `E019`; a block that never ends ➔ `E018`.
 
 ### Block form
 
@@ -196,14 +197,14 @@ run the python code:
 Multi-line blocks preserve indentation, comments and strings. Studio translates
 a subset of Python to JavaScript and provides partial standard-library shims;
 it is **not** a full Python interpreter. The Python CLI uses its installed
-Python runtime. `turtle` is prohibited in every engine (`E701`).
+Python runtime. `turtle` is prohibited in every engine (`E048`).
 
 ---
 
 ## 9A. The Draw library (Studio only)
 
 Draw is available in the **full E++ Studio only**. `E++.zip` and the C++ and
-Python CLI runtimes do not include it; adding Draw there reports `E302`.
+Python CLI runtimes do not include it; adding Draw there reports `Z002`.
 
 ```text
 add the "Draw" library
@@ -407,7 +408,7 @@ ships inside `E++.zip`.
 ## 12. Maths, randomness and words (`Math`, `Random`, `Strings`)
 
 Library words read like the rest of E++. A library has to be added before its
-words mean anything (`E301` if it is not):
+words mean anything (`E042` if it is not):
 
 ```text
 add the "Math" library
@@ -456,7 +457,7 @@ where two pieces would otherwise run together, so `say "Hi-", 'Word'` prints
 | ImprovedWait | ❌ | ✅ |
 
 This table describes the browser workspaces. The command-line engines have
-no canvas and report `E302` for Draw and Game. The ZIP’s C++ and Python
+no canvas and report `Z002`/`Z003` for Draw and Game. The ZIP’s C++ and Python
 engines also reject Colors, including after rebuilding its sources; the full
 repository CLI runners still support Colors. Adding an unavailable library
 reports its reason instead of pretending it exists. The legacy JavaScript core
@@ -467,36 +468,152 @@ panel instead.
 
 ## 14. Diagnostics
 
+Every message E++ prints has a code. 1.4b1 defines exactly one hundred of them:
+
+| Family | Count | Meaning |
+| --- | --- | --- |
+| `E001`-`E075` | 75 | General errors. The program stops. |
+| `W001`-`W005` | 5 | Warnings. The program keeps running. |
+| `Z001`-`Z005` | 5 | Only ever raised by `E++.zip`, the standalone distribution. |
+| `F001`-`F015` | 15 | Fatal lexer errors. Raised while reading the source; the parser never raises them. |
+
+An error looks like this:
+
+```
+[E++ Error E018: Unclosed Block]
+  --> game.eppl:7:1
+   |
+     | repeat 3 times
+     | ^
+   = Reason: This repeat block has no matching ending.
+   = Help: Close the block with its own ending, for example: end repeat
+```
+
+A warning is printed the same way but prefixed `[E++ Warning W001: ...]`, and
+the program carries on. `EPP.Diagnostics.warnings()` returns them for the
+Studio pre-flight, and `EPP.run(source, { onWarning })` streams them live.
+
 Studio tokenizes programs with the same `src/lexer.cpp` as the C++ CLI,
 compiled to WebAssembly. Its browser evaluator is JavaScript, not the native
 C++ parser and interpreter. If the compiled lexer cannot load, execution stops
-with `E601`; there is no silent alternate lexer.
+with `F001`; there is no silent alternate lexer.
 
-| Code | Meaning |
-| --- | --- |
-| `E101` | Unknown or malformed statement, invalid note or comment |
-| `E102` | Unterminated string or variable name |
-| `E103` | `otherwise` placed on the same line as `if ... then` |
-| `E104` | `otherwise` without a preceding `if` |
-| `E105` | Missing or incomplete value |
-| `E106` | Missing or mismatched block ending |
-| `E201` | Undefined variable or unknown actor |
-| `E202` | Golden Rule 2 violation (double quotes for a variable) |
-| `E301` | Library not added |
-| `E302` | Library not part of this build |
-| `E303` | Unknown library name |
-| `E401` | Golden Rule 1 violation (math in quotes) |
-| `E402` | Golden Rule 3 violation (unquoted text word in string context) |
-| `E403` | Division by zero |
-| `E404` | File not found |
-| `E405` | Invalid value or loop limit |
-| `E407` | Invalid drawing distance, speed or color |
-| `E511` | Not an E++ project file |
-| `E512` | Truncated or damaged project file |
-| `E513` | Written by a different release |
-| `E520` | The key does not open this project |
-| `E521` | No key available |
-| `E522` | Bad `--key` (needs 64 hex characters) |
-| `E601` | The compiled C++ browser lexer is unavailable |
-| `E701` | Python `turtle` is prohibited |
-| `E702` | Python runtime exception |
+### General errors (75)
+
+| Code | Name | What to do |
+| --- | --- | --- |
+| `E001` | Unquoted Text | Put text in double quotes, or use single quotes for a variable. |
+| `E002` | Bare Variable Name | Write the variable name inside single quotes, for example: let 'score' be 0 |
+| `E003` | Missing Value | Give the statement a value to use, for example: say "Hello" |
+| `E004` | Unfinished Value | Finish the value, for example: say 2 plus 3 |
+| `E005` | Unterminated Double Quote | Close the string with a second double quote (") on the same line. |
+| `E006` | Unterminated Single Quote | Close the variable name with a second single quote (') on the same line. |
+| `E007` | Empty Variable Name | Put a name between the single quotes, for example: 'score' |
+| `E008` | Empty Value | Give the statement something between the quotes, or remove the quotes. |
+| `E009` | Invalid Character In A Variable Name | Use letters, digits, spaces, underscores or hyphens inside the quotes. |
+| `E010` | Value Out Of Range | Use a smaller value, for example: repeat 10 times |
+| `E011` | Value Is Not A Number | Use a number, or a variable that holds a number. |
+| `E012` | Unsupported Escape Sequence | E++ understands \n, \t, \", \\ and \r inside double quotes. |
+| `E013` | Equation Inside Quotes | Remove the quotes so E++ can work out the maths: say 1 plus 1 |
+| `E014` | Empty String | Write something between the quotes: say "Hello" |
+| `E015` | Unknown Statement | Statements start with a word such as say, let, if, repeat, while, note or add library. |
+| `E016` | Empty Statement | Remove the leftover punctuation or put a statement on that line. |
+| `E017` | Unexpected Block Ending | Remove the leftover ending, or open the block it belongs to. |
+| `E018` | Unclosed Block | Close the block with its own ending, for example: end repeat |
+| `E019` | Mismatched Block Ending | An if closes with end if, a repeat with end repeat and a while with end while. |
+| `E020` | Missing Then | Write the decision like this: if 1 is 1 then say "Yes" |
+| `E021` | Invalid Otherwise Placement | Move otherwise to the line straight after its if. |
+| `E022` | Standalone Otherwise | Put otherwise immediately after the if it belongs to. |
+| `E023` | Missing Repeat Count | Write the loop like this: repeat 3 times |
+| `E024` | Invalid Repeat Count | Repeat needs a whole number from 0 to 100000, for example: repeat 3 times |
+| `E025` | Missing While Condition | Write the loop like this: while 'count' is less than 4 do |
+| `E026` | Invalid Comparison | Compare with "equal to", "greater than", "less than" or the number tests. |
+| `E027` | Invalid Condition | Write a condition such as: if 'score' is greater than 10 then |
+| `E028` | Undefined Variable | Define the variable first, for example: let 'score' be 0 |
+| `E029` | Variable Already Defined | Pick another name, or change the existing variable with Set. |
+| `E030` | Invalid Variable Name | Write the name in single quotes, for example: let 'score' be 0 |
+| `E031` | Missing Assignment Value | Give the variable a value, for example: let 'score' be 0 |
+| `E032` | Not A Number | Use a number, or a variable that holds a number, in the maths. |
+| `E033` | Division By Zero (fraction) | A fraction cannot have zero underneath. Change the number after "divided by". |
+| `E034` | Square Root Of A Negative Number | Square roots need a number that is zero or more. |
+| `E035` | Invalid Fraction | A fraction cannot have zero underneath. |
+| `E036` | Variables Are Not Quoted | Variables use single quotes and text uses double quotes. |
+| `E037` | Change Needs A Number | Only numbers can go up or down: define 'score' as 0 first. |
+| `E038` | Amount Must Be A Number | Write a number after "by", for example: Increase 'score' by 1 |
+| `E039` | Ask Needs A Variable | Save the answer like this: ask "Name?" and save the output as 'name' |
+| `E040` | Missing Ask Question | Give the ask a question, for example: ask "Your name?" and save the output as 'name' |
+| `E041` | Variable Name Is Too Long | Keep variable names to 64 characters or fewer. |
+| `E042` | Library Not Added | Add the library before using what it unlocks, for example: add library "Math" |
+| `E043` | Unknown Library | Check the spelling, or look at the Libraries panel for the full list. |
+| `E044` | Library Name Not Quoted | Write the library name in double quotes, for example: add library "Math" |
+| `E045` | Invalid Library Statement | Write it like this: add library "Math" |
+| `E046` | Libraries Need An .eppla File | Rename the file so it ends in .eppla: a file that uses libraries is an .eppla file. |
+| `E047` | Python Library Not Added | Add this line above the Python code: add library "Python" |
+| `E048` | Python Code Is Not E++ | To run Python, add the Python library and use: python code "..." |
+| `E049` | Python Code Block Never Ends | Close the Python block with its own closing quote. |
+| `E050` | Empty Python Code | Put the Python code between the quotes: python code "print(1)" |
+| `E051` | Library Already Added | Remove the repeated line; the library is already loaded. |
+| `E052` | File Needs A Name | Give the file a name such as hello.eppl or game.eppla. |
+| `E053` | File Already Exists | Pick a different name, or open the existing file. |
+| `E054` | File Not Found | Create the file first, or pick another one in the explorer. |
+| `E055` | Wrong File Extension | Files that use libraries are .eppla files; files without libraries are .eppl files. |
+| `E056` | Not An E++ Project | Open a project file that E++ saved, or start a new .eppl file. |
+| `E057` | Damaged Project File | Download the project again to get a complete file. |
+| `E058` | Project Saved By Another Release | Open the project with the release that saved it, then save it again. |
+| `E059` | Key Does Not Open This Project | Import the project in the browser that saved it, or add its key. |
+| `E060` | E++ Does Not Use This Punctuation | E++ uses words for maths: plus, minus, times, divided by. |
+| `E061` | Symbols Are Not Values | Names start with a letter or an underscore. |
+| `E062` | Wrong Decimal Separator | Write decimal numbers with a full stop: 2.5 |
+| `E063` | Unexpected End Of Line | Finish the statement, or continue it on the next line. |
+| `E064` | Unexpected End Of Program | Finish the idea: a value, a condition or a block ending is missing. |
+| `E065` | Unclosed Parenthesis | Add the closing ) where the maths ends. |
+| `E066` | Division By Zero (numbers) | Change the number after "divided by" so it is not zero. |
+| `E067` | The Program Ran Too Long | Check for a loop that never ends. |
+| `E068` | Endless Loop | Make sure the loop can finish, or add conditions that eventually stop it. |
+| `E069` | Stop Used Outside A Repeat | stop ends a repeat loop, so put it inside repeat ... end repeat. |
+| `E070` | Execution Stopped | Press Run again when you are ready. |
+| `E071` | Picture Is Empty | Link a picture file to the actor: link the image "hero.png" to the actor 'hero' |
+| `E072` | Value Is Not A Picture | Use a picture file such as "hero.png", or pick one with the Image button. |
+| `E073` | Unknown Actor | Create the actor first: create the actor 'hero' with the image "hero.png" |
+| `E074` | Unknown Image | Define the image first: define 'cat' as image "<picture>" |
+| `E075` | Sprite Not Defined | Define the sprite first: define 'pencil' as drawing sprite |
+
+### Warnings (5)
+
+| Code | Name | What to do |
+| --- | --- | --- |
+| `W001` | Text Looks Like An Equation | Remove the quotes if you wanted the maths: say 1 plus 1 |
+| `W002` | Variable Name Looks Like Text | Use double quotes for text and single quotes for variables. |
+| `W003` | Library Added But Unused | Remove the library line, or use one of its features. |
+| `W004` | Continued On The Next Line | One statement per line keeps the structure clear. |
+| `W005` | Number Written As Text | Write the number without double quotes, for example: wait 2 seconds |
+
+### E++.zip only (5)
+
+| Code | Name | What to do |
+| --- | --- | --- |
+| `Z001` | Colors Live In The Studio | Download the full E++ Studio to print in color. In E++.zip use a plain say statement. |
+| `Z002` | Draw Is Not In E++.zip | Download the full E++ Studio to draw with sprites. |
+| `Z003` | Game Is Not In E++.zip | Download the full E++ Studio to create games and actors. |
+| `Z004` | ImprovedWait Is Not In E++.zip | In E++.zip use ImprovedWaitLite: add library "ImprovedWaitLite" |
+| `Z005` | JavaScript Runtime Is Not In E++.zip | Use the native engine or epp.py in E++.zip, or download the full Studio for the JavaScript runtime. |
+
+### Fatal lexer errors (15)
+
+| Code | Name | What to do |
+| --- | --- | --- |
+| `F001` | Lexer Received Invalid Input | Pass the program as text (a string) to the lexer. |
+| `F002` | The Program Is Too Large To Lex | Split the program into smaller files. |
+| `F003` | Unrecognised Character | E++ uses words for maths. Remove or replace this character. |
+| `F004` | Unterminated String | Close the string, for example: say "Hello". |
+| `F005` | Unterminated Variable Name | Close it, for example: say 'name'. |
+| `F006` | Empty Variable Reference | Put a variable name between the single quotes. |
+| `F007` | Unterminated Note | Notes need square brackets: note [Your note] |
+| `F008` | Note Without Brackets | Write notes like this: note [Your note] |
+| `F009` | Line Contains A Null Character | Remove the invisible NUL character (it usually arrives from a binary file). |
+| `F010` | Unrecognised Number | Write numbers as digits, for example 42 or 3.5. |
+| `F011` | Comment Characters Are Not E++ | E++ notes do not use // or #. Use: note [Your note] |
+| `F012` | Word Is Too Long | Keep words to 256 characters or fewer. |
+| `F013` | Unexpected End Of Input Inside A Value | Finish the value before the line or the program ends. |
+| `F014` | Invalid Escape Sequence | E++ understands \n, \t, \", \\ and \r inside double quotes. |
+| `F015` | Lexer Could Not Build The Token Stream | This is a bug in E++: report it with the program that caused it. |

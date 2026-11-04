@@ -1,4 +1,4 @@
-# E++ 1.4a3
+# E++ 1.4b1
 
 E++ is a small, English-like programming language with a browser Studio, a C++ command-line engine and a Python runner. Write text in double quotes, variables in single quotes, and maths as numbers and words.
 
@@ -8,15 +8,33 @@ say "Hello, ", 'name'
 say 2 plus 3 times 4
 ```
 
-## What’s new in 1.4a3
+## What’s new in 1.4b1
 
-- **Tools hub:** press **Ctrl+Shift+P** (Cmd+Shift+P on Mac) to open Tools and search features and every local project. Use Edit shortcuts in Tools or the sidebar to choose which features appear in each place.
-- **Studio in motion:** subtle animations bring menus, panels, dialogs, controls and notifications to life. Disable Studio animations in Settings; the system reduced-motion preference is always respected. Neither option changes your Draw or Game programs.
-- **Smoother customization:** reset appearance without touching your files, layout or auto-rename preference. Theme selection and launcher movement also retain keyboard focus.
-- **A tidier explorer:** files are sorted naturally, and searches explain when there are no matches. Notifications stay visible for their full duration, even when several arrive together.
-- **Release news:** open Tools → News for the 1.4a3 highlights. Existing EShare, editable launcher layouts, color themes and default-on library file renaming remain available.
+1.4b1 is the error overhaul. Every message E++ can print now has a permanent
+code, a plain-English name, and a fix, and there are exactly one hundred of them:
 
-Settings, layouts and working files stay on this device. Existing files are not overwritten by automatic renaming or EShare imports.
+| Family | Count | What it is |
+| --- | --- | --- |
+| `E001`-`E075` | 75 | General errors. The program stops at the problem. |
+| `W001`-`W005` | 5 | Warnings. Something looks odd, but the program keeps running. |
+| `Z001`-`Z005` | 5 | Only possible in `E++.zip`, the standalone distribution. |
+| `F001`-`F015` | 15 | Fatal lexer errors. The source cannot be read at all. |
+
+- **Named errors.** `[E++ Error E018: Unclosed Block]` with the file, line,
+  column, the source line, a reason and a fix — in the Studio, the C++ CLI and
+  the Python engine, from the same catalogue (`js/errors.js`, `epp.py`,
+  `src/main.cpp`).
+- **Warnings that do not stop you.** An equation inside double quotes is
+  `W001`: you still get your output. `EPP.Diagnostics.warnings()` lists them
+  before you run, and `EPP.run(source, { onWarning })` streams them live.
+- **Build-only codes.** Libraries that live only in the Studio raise `Z001`
+  (Colors), `Z002` (Draw) or `Z003` (Game) inside `E++.zip`, instead of a
+  generic "not in this build".
+- **The lexer is fatal.** Unclosed strings, bad characters and unreadable
+  numbers now fail as `F004`, `F003`, `F010` while the source is read — the
+  parser never invents them.
+- **The whole catalogue is documented** in `LANGUAGE.md` §14, and
+  `node tests/errors-1.4b1.mjs` proves the 75/5/5/15 split.
 
 ## Start the Studio
 
@@ -41,7 +59,7 @@ say "Hello, world!"
 say 7 plus 5
 ```
 
-Text needs double quotes. `say hello` is an error (`E402`), not a shortcut for printing text.
+Text needs double quotes. `say hello` is an error (`E001`), not a shortcut for printing text.
 
 ### 2. Variables and questions
 

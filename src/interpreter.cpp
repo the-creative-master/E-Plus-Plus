@@ -529,12 +529,17 @@ void Interpreter::visitAskStmt(AskStmt* stmt) {
 
 void Interpreter::visitAddLibraryStmt(AddLibraryStmt* stmt) {
     std::string norm = normalize_name(stmt->library_name);
+    // 1.4b1: each Studio-only library has its own Z code, so the message says
+    // exactly which thing is missing from E++.zip.
     if (norm == "draw" || norm == "drawing" || norm == "sprites" || norm == "game" || norm == "improvedwait") {
-        throw LibraryError("The '" + stmt->library_name + "' library is only available in E++ Studio, not in E++.zip.", stmt->line, stmt->col, "E302");
+        std::string zip_code = "Z002";
+        if (norm == "game") zip_code = "Z003";
+        else if (norm == "improvedwait") zip_code = "Z004";
+        throw LibraryError("The '" + stmt->library_name + "' library is only available in E++ Studio, not in E++.zip.", stmt->line, stmt->col, zip_code);
     }
     static const std::unordered_set<std::string> known = {"python", "math", "random", "strings", "text", "colors", "time", "files", "system", "console", "keyboard", "improvedwaitlite"};
     if (known.find(norm) == known.end()) {
-        throw LibraryError("There is no library called '" + stmt->library_name + "'.", stmt->line, stmt->col, "E303");
+        throw LibraryError("There is no library called '" + stmt->library_name + "'.", stmt->line, stmt->col, "E043");
     }
     if (norm == "text") norm = "strings";
     loaded_libraries.insert(norm);

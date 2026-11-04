@@ -1,6 +1,11 @@
 /* Project No Wrongs: non-executing structural checks for Studio and E++.zip.
  * The evaluator still checks values and libraries when it runs them; these
  * checks catch malformed code even in an if branch which never executes.
+ *
+ * Release 1.4b1: the codes here are the 1.4b1 catalogue codes (E001-E075,
+ * F011), not the retired 1.3 numbers. validate(source, filename) still throws
+ * the first problem it finds; validate(source, filename, { warnings: true })
+ * also returns the W001-W005 hints for code that is odd but legal.
  */
 (function (global) {
   'use strict';
@@ -47,7 +52,7 @@
       var words = /[A-Za-z_][\w-]*/g, match;
       while ((match = words.exec(masked))) {
         if (/^(?:plus|minus|times|multiplied|divided|by|mod|modulo|and|pi|e|true|false)$/i.test(match[0])) continue;
-        fail('E402', 'Unquoted Text', "Unquoted text '" + match[0] + "' is not a value.",
+        fail('E001', 'Unquoted Text', "Unquoted text '" + match[0] + "' is not a value.",
           'Put text in double quotes, or use single quotes for a variable.', n, column + match.index);
       }
     }
@@ -56,26 +61,26 @@
       if (!trimmed) return;
       var column = offset + statement.indexOf(trimmed) + 1;
       if (!starters.test(trimmed) && !/^'[^']+'\s+move\b/i.test(trimmed)) {
-        fail('E101', 'Unknown Statement', 'E++ does not recognize this statement.',
+        fail('E015', 'Unknown Statement', 'E++ does not recognize this statement.',
           'Start with a command such as say, let, or if.', n, column);
       }
       var say = trimmed.match(/^(?:say|tell)(?:\s+(.*))?$/i);
       if (say) {
         var value = (say[1] || '').trim();
         value = value.replace(/^(?:red|green|blue|yellow|cyan|magenta)\s+/i, '');
-        if (!value) fail('E105', 'Missing Value', "'say' needs a value to print.", 'For example: say "Hello"', n, column);
+        if (!value) fail('E003', 'Missing Value', "'say' needs a value to print.", 'For example: say "Hello"', n, column);
         var found = lines[n].indexOf(value, column - 1);
         checkValue(value, n, found < 0 ? column : found + 1);
       }
       var variableCommand = /^(?:let|define)\b/i.test(trimmed) || (/^set\b/i.test(trimmed) && !/^set\s+the\b/i.test(trimmed));
       if (variableCommand) {
         var nameMatch = trimmed.match(/^(?:let|set|define)\s+'([^']+)'(?:\s+(?:be|to|as)\b)?/i);
-        if (!nameMatch) fail('E202', 'Invalid Variable Name', 'Variable names must be in single quotes.',
+        if (!nameMatch) fail('E030', 'Invalid Variable Name', 'Variable names must be in single quotes.',
           "For example: let 'name' be \"Ada\"", n, column);
         var assignment = trimmed.match(/^(?:let|set|define)\s+'([^']+)'\s+(?:be|to|as)\s+(.+)$/i);
         if (!assignment) {
           var missing = /\b(?:be|to|as)\s*$/i.test(trimmed);
-          fail(missing ? 'E105' : 'E101', missing ? 'Missing Value' : 'Invalid Assignment',
+          fail('E031', missing ? 'Missing Assignment Value' : 'Invalid Assignment',
             missing ? 'The variable needs a value.' : "Expected 'be', 'as', or 'to' after the variable.",
             "For example: let 'name' be \"Ada\"", n, column);
         }
@@ -86,14 +91,14 @@
       }
       var ask = trimmed.match(/^ask\s+(.+?)\s+and\s+save\s+(?:the\s+|it\s+)?(?:output|answer|result)?\s*as\s+'([^']+)'$/i);
       if (/^ask\b/i.test(trimmed)) {
-        if (!ask) fail('E101', 'Invalid Ask', 'An ask needs a question and a variable to save the answer.',
+        if (!ask) fail('E039', 'Ask Needs A Variable', 'An ask needs a question and a variable to save the answer.',
           "For example: ask \"Name?\" and save the output as 'name'", n, column);
         var askPos = lines[n].indexOf(ask[1], column - 1);
         checkValue(ask[1], n, askPos + 1);
       }
       if (/^repeat\b/i.test(trimmed)) {
         var repeat = trimmed.match(/^repeat\s+(.+?)\s+times?\s*:?$/i);
-        if (!repeat) fail('E101', 'Invalid Repeat', "A repeat needs a count and 'times'.", 'For example: repeat 3 times', n, column);
+        if (!repeat) fail('E023', 'Missing Repeat Count', "A repeat needs a count and 'times'.", 'For example: repeat 3 times', n, column);
         var repeatPos = lines[n].indexOf(repeat[1], column - 1);
         checkValue(repeat[1], n, repeatPos + 1);
       }
@@ -107,7 +112,7 @@
       }
       if (/^note\b/i.test(text)) {
         if (!/^note\s*\[[^\]]*\]\s*$/i.test(text)) {
-          fail('E101', 'Invalid Note', 'Notes need square brackets.', 'For example: note [Your note]', n, raw.indexOf(text) + 1);
+          fail('E015', 'Unknown Statement', 'Notes need square brackets.', 'For example: note [Your note]', n, raw.indexOf(text) + 1);
         }
         continue;
       }
@@ -118,7 +123,7 @@
         if (quote) {
           if (ch === '\\' && quote === '"' && i + 1 < raw.length) { value += ch + raw[++i]; mask += '  '; continue; }
           if (ch === quote) {
-            if (quote === "'" && !value.trim()) fail('E202', 'Empty Variable Name', 'A variable name cannot be empty.', "Put a name between single quotes, like 'name'.", n, start + 1);
+            if (quote === "'" && !value.trim()) fail('E007', 'Empty Variable Name', 'A variable name cannot be empty.', "Put a name between single quotes, like 'name'.", n, start + 1);
             quote = null;
           } else value += ch;
           mask += ' ';
@@ -128,25 +133,32 @@
           quote = ch; start = i; value = ''; mask += ' ';
         } else { mask += ch; }
       }
-      if (quote) fail('E102', 'Unterminated Quote', 'This ' + (quote === '"' ? 'string' : 'variable name') + ' is not closed.',
+      if (quote) fail('E005', 'Unterminated Double Quote', 'This ' + (quote === '"' ? 'string' : 'variable name') + ' is not closed.',
         'Add the closing ' + (quote === '"' ? 'double' : 'single') + ' quote on this line.', n, start + 1);
       var commentAt = mask.indexOf('//');
       if (commentAt < 0) commentAt = mask.indexOf('#');
-      if (commentAt >= 0) fail('E101', 'Illegal Comment', 'E++ notes do not use // or #.', 'Use: note [Your note]', n, commentAt + 1);
+      if (commentAt >= 0) fail('F011', 'Comment Characters Are Not E++', 'E++ notes do not use // or #.', 'Use: note [Your note]', n, commentAt + 1);
       if (/^(?:run\s+)?(?:the\s+)?python\s+code\s*:\s*$/i.test(text)) { inPython = true; previousInlineIf = false; continue; }
       checkStatement(raw, n, 0);
       var end = text.match(/^end\s+(if|repeat|while|the\s+game)\s*$/i);
       if (/^end\b/i.test(text)) {
         var name = end && end[1].toLowerCase().replace(/\s+/g, ' ');
-        if (!name || !stack.length || stack[stack.length - 1].kind !== name) {
-          fail('E106', 'Unexpected Block End', 'This block ending has no matching opening statement.',
+        if (!stack.length) {
+          fail('E017', 'Unexpected Block Ending', 'This block ending has no matching opening statement.',
             'Use end if, end repeat, end while, or end the game to close its matching block.', n, raw.indexOf(text) + 1);
+        }
+        // 1.4b1: an ending that closes the wrong kind of block is E019; the
+        // block it should have closed is still open, so say which one.
+        if (!name || stack[stack.length - 1].kind !== name) {
+          var opening = stack[stack.length - 1];
+          fail('E019', 'Mismatched Block Ending', 'This ' + opening.kind + ' block needs "end ' + opening.kind + '", not "end' + (name ? ' ' + name : '') + '".',
+            'An if closes with end if, a repeat with end repeat and a while with end while.', n, raw.indexOf(text) + 1);
         }
         stack.pop(); previousInlineIf = false; continue;
       }
       if (/^(?:otherwise|else)\b/i.test(text)) {
         if (!(stack.length && stack[stack.length - 1].kind === 'if') && !previousInlineIf) {
-          fail('E104', 'Standalone Otherwise', "'otherwise' needs a preceding if.", 'Put otherwise immediately after an if statement.', n, raw.indexOf(text) + 1);
+          fail('E022', 'Standalone Otherwise', "'otherwise' needs a preceding if.", 'Put otherwise immediately after an if statement.', n, raw.indexOf(text) + 1);
         }
         var otherAction = text.replace(/^(?:otherwise|else)\s*:?[\s]*/i, '');
         if (otherAction) checkStatement(otherAction, n, raw.indexOf(otherAction));
@@ -154,9 +166,9 @@
       }
       if (/^if\b/i.test(text)) {
         var ifMatch = text.match(/^if\s+.+?\s+then\s*:?[\s]*(.*)$/i);
-        if (!ifMatch) fail('E101', 'Invalid If', "An if needs a condition and 'then'.", 'For example: if 1 is 1 then say "Yes"', n, raw.indexOf(text) + 1);
+        if (!ifMatch) fail('E020', 'Missing Then', "An if needs a condition and 'then'.", 'For example: if 1 is 1 then say "Yes"', n, raw.indexOf(text) + 1);
         var maskedOtherwise = /\botherwise\b/i.exec(mask);
-        if (maskedOtherwise) fail('E103', 'Invalid Otherwise Placement', "'otherwise' belongs on the next line.", 'Move otherwise to the next line after the if.', n, maskedOtherwise.index + 1);
+        if (maskedOtherwise) fail('E021', 'Invalid Otherwise Placement', "'otherwise' belongs on the next line.", 'Move otherwise to the next line after the if.', n, maskedOtherwise.index + 1);
         if (ifMatch[1]) { checkStatement(ifMatch[1], n, raw.indexOf(ifMatch[1])); previousInlineIf = true; }
         else { stack.push({ kind: 'if', line: n }); previousInlineIf = false; }
         continue;
@@ -168,11 +180,57 @@
     }
     if (stack.length) {
       var open = stack[stack.length - 1];
-      fail('E106', 'Unclosed Block', 'This ' + open.kind + ' block has no matching ending.',
+      fail('E018', 'Unclosed Block', 'This ' + open.kind + ' block has no matching ending.',
         'Close it with: end ' + open.kind, open.line, (lines[open.line].search(/\S/) + 1));
     }
     return true;
   }
-  EPP.Diagnostics = { validate: validate };
+  function isWarning(option) {
+    return !!(option && typeof option === 'object' && option.warnings);
+  }
+
+  /**
+   * The advisory half of the pre-flight. None of these stop a program; each is
+   * a W001-W005 record with the same shape as a problem (code, name, reason,
+   * help, filename, line, col, sourceLine).
+   */
+  function warnings(source, filename) {
+    var lines = String(source || '').split('\n');
+    var found = [];
+    function note(code, reason, help, n, col) {
+      var known = EPP.Errors && EPP.Errors.entry ? EPP.Errors.entry(code) : null;
+      found.push(problem(code, known ? known.name : code, reason, help,
+        filename, n + 1, col || 1, lines[n]));
+    }
+    for (var n = 0; n < lines.length; n++) {
+      var text = lines[n];
+      // W001: an equation inside double quotes stays text.
+      var quoted = /"([^"\\]*(?:\\.[^"\\]*)*)"/g, match;
+      while ((match = quoted.exec(text))) {
+        if (/^\s*-?\d+(?:\.\d+)?\s+(?:plus|minus|times|multiplied\s+by|divided\s+by|modulo|mod|power\s+of|percent\s+of)\s+.*[\d')].*$/i.test(match[1])) {
+          note('W001', 'The equation "' + match[1] + '" is in quotes, so E++ prints it instead of working it out.',
+            'Remove the quotes if you wanted the maths: say 1 plus 1', n, match.index + 1);
+        }
+      }
+      // W005: a quoted number where E++ expects an amount.
+      var amount = /^\s*(?:wait|sleep)\s+"(\s*-?\d+(?:\.\d+)?\s*)"/i.exec(text);
+      if (amount) {
+        note('W005', 'The amount "' + amount[1].trim() + '" is text, but E++ reads it as a number.',
+          'Write the number without quotes, for example: wait 2 seconds', n, text.indexOf('"') + 1);
+      }
+    }
+    return found;
+  }
+
+  EPP.Diagnostics = {
+    validate: function (source, filename, options) {
+      var ok = validate(source, filename);
+      return isWarning(options) ? { ok: true, warnings: warnings(source, filename) } : ok;
+    },
+    warnings: warnings,
+    codes: function () {
+      return EPP.Errors && EPP.Errors.families ? EPP.Errors.families() : [];
+    }
+  };
   if (typeof module !== 'undefined' && module.exports) module.exports = EPP.Diagnostics;
 })(typeof window !== 'undefined' ? window : globalThis);

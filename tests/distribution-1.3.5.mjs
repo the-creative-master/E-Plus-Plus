@@ -31,10 +31,10 @@ try {
       assert((result.stdout + result.stderr).includes(error), `${label} ${executable}: ${result.stdout + result.stderr}`);
     }
     for (const [executable, args] of [[path.join(dir, 'epp'), []], ['python3', [path.join(dir, 'epp.py')]]]) {
-      for (const name of ['Colors', 'colours', 'color', 'colour', 'Draw', 'Game']) run(executable, args, `add library "${name}"`, 'E302');
-      run(executable, args, 'say red "not supported"', 'E302');
-      run(executable, args, 'say hello', 'E402');
-      run(executable, args, 'if 1 is 2 then say hello', 'E402');
+      for (const [name, code] of [['Colors', 'Z001'], ['colours', 'Z001'], ['color', 'Z001'], ['colour', 'Z001'], ['Draw', 'Z002'], ['Game', 'Z003']]) run(executable, args, `add library "${name}"`, code);
+      run(executable, args, 'say red "not supported"', 'Z001');
+      run(executable, args, 'say hello', 'E001');
+      run(executable, args, 'if 1 is 2 then say hello', 'E001');
     }
     const context = vm.createContext({ console, setTimeout, clearTimeout, Promise, Math, JSON, Date, Map, Set, Error, Number, String, Array, Object, RegExp, Uint8Array, Uint32Array, DataView, TextEncoder, TextDecoder, Symbol });
     context.window = context; context.globalThis = context;
@@ -62,7 +62,7 @@ try {
   execFileSync('make', ['-B', 'epp'], { cwd: outer, stdio: 'pipe' });
   for (const source of ['add library "Colors"', 'say red "blocked"']) {
     const result = spawnSync(path.join(outer, 'epp'), ['-e', source], { cwd: outer, encoding: 'utf8' });
-    assert(result.status !== 0 && (result.stdout + result.stderr).includes('E302'), 'recompiled native source must still reject Colors');
+    assert(result.status !== 0 && (result.stdout + result.stderr).includes('Z001'), 'recompiled native source must still reject Colors');
   }
   console.log('Both extracted archives reject Colors/Draw/Game across JS, Python and native runtimes, including a native rebuild; strict errors remain.');
 } finally { await fs.rm(temp, { recursive: true, force: true }); }

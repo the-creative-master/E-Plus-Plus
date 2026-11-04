@@ -73,9 +73,9 @@ const server = http.createServer((req, res) => {
     assert((await run('say 328147 plus 29')).split('\n').includes('328276'));
     await page.evaluate(() => { EPP.NativeLexer.tokenize = window.__nativeTokenize; });
     assert((await run('say 328147 plus 29')).split('\n').includes('328176'));
-    assert((await run('say "unfinished')).includes('E102'));
-    assert((await run('say hello')).includes('E402'));
-    assert((await run('fheneir')).includes('E101'));
+    assert((await run('say "unfinished')).includes('F004'));
+    assert((await run('say hello')).includes('E001'));
+    assert((await run('fheneir')).includes('E015'));
 
     const draw = await run('add library "Draw"\ndefine \'surprise cursor\' as drawing sprite\n\'surprise cursor\' move right "37"\nsay "done"');
     assert(draw.split('\n').includes('done'), draw);
@@ -84,10 +84,10 @@ const server = http.createServer((req, res) => {
     // Never silently use a JS fallback when the C++ module is unavailable.
     await page.evaluate(() => {
       window.__nativeReady = EPP.NativeLexer.ready;
-      EPP.NativeLexer.ready = () => Promise.reject({ code: 'E601', name: 'C++ Lexer Unavailable', filename: 'lexer', line: 1, col: 1, sourceLine: '', reason: 'test unavailable', help: 'restore lexer' });
+      EPP.NativeLexer.ready = () => Promise.reject({ code: 'F001', name: 'Lexer Received Invalid Input', filename: 'lexer', line: 1, col: 1, sourceLine: '', reason: 'test unavailable', help: 'restore lexer' });
     });
     const failed = await run('say "must not execute"');
-    assert(failed.includes('E601') && !failed.includes('Finished successfully'), failed);
+    assert(failed.includes('F001') && !failed.includes('Finished successfully'), failed);
     await page.evaluate(() => { EPP.NativeLexer.ready = window.__nativeReady; });
     assert.deepEqual(errors, []);
     await page.close();
@@ -102,7 +102,7 @@ const server = http.createServer((req, res) => {
     await missing.locator('#btnRun').click();
     await missing.waitForFunction(() => document.querySelector('#btnStop').disabled);
     const missingOutput = await missing.locator('#consoleOutput').innerText();
-    assert(missingOutput.includes('E601') && !missingOutput.includes('Finished successfully'), missingOutput);
+    assert(missingOutput.includes('F001') && !missingOutput.includes('Finished successfully'), missingOutput);
     await missing.close();
 
     // `file://` must load the same compiled lexer without fetching a ZIP.

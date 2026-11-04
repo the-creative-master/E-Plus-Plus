@@ -103,8 +103,9 @@ console.log('Interpreter: basics from the spec');
   ok('ask ... and save answer as ...');
 }
 {
-  const right = await run('ask "5 plus 6?" and save answer as output\nif \'output\' is equal to 11 then say "Correct!" otherwise say "Wrong!"', { answers: ['11'] });
-  const wrong = await run('ask "5 plus 6?" and save answer as output\nif \'output\' is equal to 11 then say "Correct!" otherwise say "Wrong!"', { answers: ['9'] });
+  const block = 'ask "5 plus 6?" and save answer as output\nif \'output\' is equal to 11 then\n  say "Correct!"\notherwise say "Wrong!"\nend if';
+  const right = await run(block, { answers: ['11'] });
+  const wrong = await run(block, { answers: ['9'] });
   assert.deepEqual([...right.output], ['Correct!']);
   assert.deepEqual([...wrong.output], ['Wrong!']);
   ok('if ... is equal to ... then ... otherwise ... (typed numbers compare as numbers)');
@@ -817,12 +818,12 @@ const VAULT_KEY = Uint8Array.from({ length: 32 }, (_, i) => i);
 {
   const sealed = EPP.Vault.saveText('say "secret"', VAULT_KEY);
   const otherKey = EPP.Vault.generateKey();
-  assert.throws(() => EPP.Vault.loadText(sealed, otherKey), (e) => e.code === 'E520');
+  assert.throws(() => EPP.Vault.loadText(sealed, otherKey), (e) => e.code === 'E059');
   const tampered = EPP.Vault.base64Decode(sealed);
   tampered[30] ^= 0x01;
-  assert.throws(() => EPP.Vault.loadText(EPP.Vault.base64Encode(tampered), VAULT_KEY), (e) => e.code === 'E520');
-  assert.throws(() => EPP.Vault.loadText('say "plain text"', VAULT_KEY), (e) => e.code === 'E511');
-  ok('wrong keys and edited files are rejected (E520), plaintext is not a vault (E511)');
+  assert.throws(() => EPP.Vault.loadText(EPP.Vault.base64Encode(tampered), VAULT_KEY), (e) => e.code === 'E059');
+  assert.throws(() => EPP.Vault.loadText('say "plain text"', VAULT_KEY), (e) => e.code === 'E056');
+  ok('wrong keys and edited files are rejected (E059), plaintext is not a vault (E056)');
 }
 
 {
@@ -1526,11 +1527,11 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
   assert.ok(/api\.fetchIdeas\(/.test(page), 'the panel reads the public list, not a local one');
 
   // The version the page announces matches this release everywhere it shows.
-  assert.ok(page.includes('<title>E++ Studio | 1.4a3</title>'), 'the tab title is 1.4a3');
-  assert.ok(page.includes('class="build-badge">1.4a3<'), 'the header badge is 1.4a3');
+  assert.ok(page.includes('<title>E++ Studio | 1.4b1</title>'), 'the tab title is 1.4b1');
+  assert.ok(page.includes('class="build-badge">1.4b1<'), 'the header badge is 1.4b1');
   assert.ok(page.includes("const DEFAULTS_VERSION = '1.4a2'"), 'new examples are added without overwriting existing files');
   assert.ok(page.includes("epp_idea_draft_1_2_1"), 'existing idea drafts remain available');
-  ok('the page announces 1.4a3 while retaining existing progress');
+  ok('the page announces 1.4b1 while retaining existing progress');
 
   // Every library card is bound to a registry name, so a build can hide it.
   const cards = page.match(/data-library="[^"]+"/g) || [];

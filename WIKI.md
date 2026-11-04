@@ -1,4 +1,4 @@
-# E++ 1.4a3 Wiki
+# E++ 1.4b1 Wiki
 
 An approachable guide to E++, from your first line to games, animated drawings and shared projects. For exact syntax and diagnostic codes, see [LANGUAGE.md](LANGUAGE.md).
 
@@ -170,15 +170,48 @@ Build the native engine with `make`, run tests with `make test` and `npm test`, 
 
 ## Errors and troubleshooting
 
-- **E101 / E102 / E105 / E106:** unknown or incomplete statement, unfinished quote, missing value or missing block ending. Check the indicated line and help text.
-- **E201 / E202:** unknown variable or actor, or a variable name written incorrectly. Use single quotes for names and define them first.
-- **E301 / E302 / E303:** add the necessary library, use the full Studio for a Studio-only library, or check its spelling.
-- **E402:** a literal word such as `hello` needs double quotes. `say "hello"` is valid.
-- **E403 / E407:** division by zero, or invalid Draw distance, speed or color. A speed is positive or `instant`.
-- **E511–E522:** a sealed project is damaged or its key is missing. Import the keyring saved with that project.
-- **E601:** the compiled C++ lexer could not load. Keep `js/native-lexer.js` and `js/native-lexer-wasm.js` alongside Studio and reload.
-- **EShare code rejected:** copy the entire code again. If sharing an encrypted file, import the matching keyring first.
-- **Picture is a tile:** choose Image, unlink the failed picture and upload a valid local file. A remote URL can be unavailable or blocked.
+Every message has a permanent code in 1.4b1. The split is exact:
+
+| Family | Count | What it means |
+| --- | --- | --- |
+| `E001`-`E075` | 75 | General errors. The program stops at the mistake. |
+| `W001`-`W005` | 5 | Warnings. The program keeps running. |
+| `Z001`-`Z005` | 5 | Only possible inside `E++.zip`, the standalone build. |
+| `F001`-`F015` | 15 | Fatal lexer errors: the source cannot be read. |
+
+The full catalogue, code by code with its fix, is in `LANGUAGE.md` §14. The
+short version, by area:
+
+- **`E001`-`E014` values and quotes:** text needs double quotes, variables need
+  single quotes. `E005` is an unfinished `"`, `E007` an empty `'name'`.
+- **`E015`-`E027` statements and blocks:** `E015` is a word E++ does not know,
+  `E017` an ending with no opening, `E018` a block that never closes, `E019`
+  the wrong ending, `E020` a missing `then`, `E021`/`E022` `otherwise` in the
+  wrong place.
+- **`E028`-`E041` variables:** `E028` undefined, `E030` a name without single
+  quotes, `E031` a definition with no value, `E032`/`E037`/`E038` maths on
+  something that is not a number.
+- **`E042`-`E051` libraries:** `E042` library not added, `E043` unknown name,
+  `E044` name not in double quotes, `E046` a library file that is not `.eppla`.
+- **`E052`-`E055` files, `E056`-`E059` saved projects:** a damaged archive is
+  `E057`; a key that does not open the project is `E059`.
+- **`E066`-`E070` running:** `E066` division by zero, `E068` an endless loop.
+- **`E071`-`E075` pictures, sprites and Game:** an unknown actor is `E073`.
+
+Warnings never stop the program. `W001` is an equation inside double quotes
+(`say "1 plus 1"` prints `1 plus 1`), `W002` a variable name that looks like
+text, `W003` a library added but never used, `W004` a statement continued on
+the next line, `W005` a number written as text. Studio lists them before you
+run, and the engines report them live.
+
+`Z001` Colors, `Z002` Draw, `Z003` Game and `Z004` ImprovedWait only exist in
+the full Studio, so `E++.zip` names them precisely instead of saying "not in
+this build". `Z005` covers a build without the JavaScript runtime.
+
+`F001`-`F015` come from the lexer, before parsing: `F003` a character that is
+not E++, `F004` an unclosed string, `F007` an unclosed `note [`, `F011` a `//`
+comment, `F013` a Python block that never ends. If the compiled C++ lexer
+cannot load at all, Studio reports `F001` and refuses to guess.
 
 ## Keyboard and accessibility
 
