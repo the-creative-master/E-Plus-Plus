@@ -82,6 +82,15 @@
       });
     });
 
+    // Nobody taps Run to stare at the code: on a phone the output is a
+    // separate panel, so follow the run into it.
+    var runButton = doc.getElementById('btnRun');
+    if (runButton) {
+      runButton.addEventListener('click', function () {
+        if (global.matchMedia && global.matchMedia('(max-width: 900px)').matches) setView('console');
+      });
+    }
+
     // Start from the markup if it names a view, otherwise Code.
     setView(read(doc));
 

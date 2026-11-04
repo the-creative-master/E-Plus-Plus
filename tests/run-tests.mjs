@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import vm from 'node:vm';
 import assert from 'node:assert';
+import { parse as parseCss, winner as cascadeWinner, studioTree } from '../tools/css-cascade.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const context = vm.createContext({
@@ -1643,6 +1644,67 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
     assert.equal(Mobile.apply('code', { body, buttons }), 'editor', '"code" is the editor');
     assert.equal(Mobile.apply('nonsense', { body, buttons }), 'editor', 'an unknown view falls back to the editor');
     ok('the phone bar switches Files / Code / Output and marks the active button');
+  }
+
+  // ------------------------------------------------------------
+  // 1.4b1 follow-up: resolve the real cascade, panel by panel.
+  // 1.4b1 twice shipped a phone shell that never rendered, because
+  // nothing modelled specificity, source order or !important. This
+  // asks the stylesheets themselves what each panel's `display` is.
+  // ------------------------------------------------------------
+  {
+    const sheets = ['css/ide.css', 'css/studio.css']
+      .flatMap((file) => parseCss(readFileSync(join(root, file), 'utf8')));
+    // A panel is only on screen if it is not `display: none` and neither is any
+    // ancestor: hiding `.workspace` hides both cards inside it.
+    const shownAt = (tree, key, viewport) => {
+      for (let el = tree[key]; el; el = (el.parents || [])[0]) {
+        const won = cascadeWinner(sheets, el, 'display', viewport);
+        if (won && won.value === 'none') return false;
+      }
+      return true;
+    };
+    const phone = { width: 390, height: 844 };
+    const tablet = { width: 768, height: 1024 };
+    const desktop = { width: 1440, height: 900 };
+
+    for (const viewport of [phone, tablet]) {
+      for (const view of ['files', 'editor', 'console']) {
+        const tree = studioTree(view);
+        const expected = view === 'files' ? ['sidebar'] : view === 'editor' ? ['editorCard'] : ['consoleCard'];
+        const visible = ['sidebar', 'editorCard', 'consoleCard'].filter((key) => shownAt(tree, key, viewport));
+        assert.deepEqual(visible, expected,
+          view + ' at ' + viewport.width + 'px must show exactly ' + expected.join('/') + ', got ' + visible.join('/'));
+      }
+      // No dead desktop gutter: one column, one row, rail and studio strip gone.
+      const tree = studioTree('editor');
+      assert.equal(cascadeWinner(sheets, tree.layout, 'grid-template-columns', viewport).value, 'minmax(0, 1fr)',
+        'phones get the full width, not an 84px rail gutter');
+      assert.equal(cascadeWinner(sheets, tree.workspace, 'grid-template-rows', viewport).value, 'minmax(0, 1fr)',
+        'phones stack one panel, not the desktop editor+output rows');
+      assert.equal(cascadeWinner(sheets, tree.rail, 'display', viewport).value, 'none', 'the desktop rail is hidden');
+      assert.equal(cascadeWinner(sheets, tree.mobileNav, 'display', viewport).value, 'grid', 'the bottom tab bar shows');
+      assert.ok(!shownAt(tree, 'bottomBar', viewport), 'the studio strip stays off the phone screen');
+    }
+    ok('at 390px and 768px exactly one panel shows, full width, with the tab bar');
+
+    // Desktop is untouched by all of that.
+    const wide = studioTree('editor');
+    assert.equal(cascadeWinner(sheets, wide.layout, 'grid-template-columns', desktop).value, '84px minmax(0, 1fr)',
+      'the desktop rail column is unchanged');
+    assert.equal(cascadeWinner(sheets, wide.rail, 'display', desktop).value, 'flex', 'the desktop rail is unchanged');
+    assert.equal(cascadeWinner(sheets, wide.mobileNav, 'display', desktop).value, 'none',
+      'the phone tab bar stays off the desktop');
+    assert.ok(shownAt(wide, 'editorCard', desktop) && shownAt(wide, 'consoleCard', desktop),
+      'the desktop still shows the editor and its output together');
+    ok('1440px keeps the desktop shell: rail, editor and output side by side');
+
+    // The zoom shim must never shrink the phone shell. It used to scale the
+    // whole body by innerWidth/1100, so a 390px phone laid out a 1100px
+    // desktop canvas at 35% and the phone media queries never matched.
+    const shim = page.slice(page.indexOf('function scaleStudio()'), page.indexOf('window.addEventListener', page.indexOf('function scaleStudio()')));
+    assert.match(shim, /innerWidth <= 900 \? 1 :/, 'the desktop zoom shim must leave the phone shell at 1:1');
+    ok('the phone shell is not shrunk by the desktop zoom shim');
   }
 
   // Every library card is bound to a registry name, so a build can hide it.

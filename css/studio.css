@@ -487,7 +487,7 @@ html, body { background: #0c0f1d !important; }
   .btn-close { width: 44px; height: 44px; }
   .tut-nav-close { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: auto; border: 1px solid #454a5e; border-radius: 8px; background: #292d3e; color: #eeeaf8; font-size: 23px; cursor: pointer; }
   .tut-progress-label { margin-left: auto; }
-  .tut-lessons-toggle { display: inline-flex; min-height: 44px; align-items: center; white-space: nowrap; }
+  .tut-lessons-toggle { display: inline-flex; min-height: 44px; align-items: center; gap: 6px; white-space: nowrap; }
   .tut-card-head { padding: 12px; align-items: center; }
   .tut-card-head h2 { font-size: 17px; }
   .tut-card-body { padding: 14px 12px; overscroll-behavior: contain; }
@@ -947,8 +947,61 @@ dialog[open]::backdrop { animation: studio-backdrop-in 200ms ease-out both; }
 .feature-edit-name { display: flex; align-items: center; gap: 8px; }
 .feature-edit-name .epp-icon svg { width: 16px; height: 16px; color: var(--accent); }
 
-/* 1.4b1: on phones the rail becomes a bottom bar with words, because a
-   labelled icon column costs more width than a phone has. */
+/* ===================================================================
+   1.4b1: the phone shell, and it has the last word.
+
+   The scoped rules earlier in this file are written for the desktop shell
+   and use `@media all` with !important, so they keep winning below 900px:
+   `.layout` kept an 84px rail gutter and `.workspace` kept its two-row
+   desktop grid, which squeezed the editor into a sliver with the output
+   panel underneath. Rather than patch each one where it stands, the whole
+   phone shell is restated here - after every other rule in the file, at
+   equal-or-higher specificity - so nothing above can undo it.
+   =================================================================== */
 @media (max-width: 900px) {
+  /* One column: the rail is gone, so no gutter may remain. */
+  .layout,
+  .layout.explorer-open {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0 !important;
+    padding: 8px !important;
+  }
   .layout .activity-bar { display: none !important; }
+
+  /* One panel at a time, chosen by <body data-mobile-view>. */
+  .layout > .sidebar { display: none; }
+  body[data-mobile-view='files'] .layout > .sidebar { display: flex !important; }
+  body[data-mobile-view='files'] .layout > .workspace { display: none !important; }
+  body[data-mobile-view='files'] .mobile-view-nav { display: grid !important; }
+
+  .layout > .workspace {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    gap: 0 !important;
+    min-height: 0;
+    height: auto;
+  }
+  .workspace > .editor-card,
+  .workspace > .console-card { min-height: 0; height: auto; }
+
+  body[data-mobile-view='editor'] .workspace > .console-card { display: none !important; }
+  body[data-mobile-view='console'] .workspace > .editor-card { display: none !important; }
+  body[data-mobile-view='editor'] .workspace > .editor-card { display: flex !important; }
+  body[data-mobile-view='console'] .workspace > .console-card { display: flex !important; }
+
+  .mobile-view-nav { display: grid !important; }
+
+  /* The studio strip is a desktop footer, but it comes after .layout in the
+     DOM with no order, so on a phone it floated up *above* the workspace and
+     stole a row. A phone has the tab bar down there instead. */
+  .bottom-bar { display: none !important; }
+
+  /* This row holds the Wrap button; at 29px the 44px control spilled over the
+     file tab below it. */
+  .editor-card > .workspace-eyebrow {
+    height: 46px !important;
+    flex: 0 0 46px !important;
+    padding: 0 12px !important;
+  }
 }

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>E++ Studio | 1.4b1</title>
-<link rel="stylesheet" href="css/ide.css?v=1.4b1">
+<link rel="stylesheet" href="css/ide.css?v=1.4b1-phone">
 <style>
   /* Color classes for Terminal */
   .color-red { color: #f87171 !important; }
@@ -343,19 +343,24 @@
     color: #7dd3fc;
   }
 </style>
-<link rel="stylesheet" href="css/studio.css?v=1.4b1-hub">
+<link rel="stylesheet" href="css/studio.css?v=1.4b1-phone">
 <script>
   try { if (JSON.parse(localStorage.getItem('epp_studio_appearance_1_4a2') || '{}').animations === false) document.documentElement.classList.add('studio-motion-off'); } catch (_) {}
-  // Keep one desktop workspace on every screen. CSS zoom preserves normal
-  // layout, hit testing and scrolling while fitting the canvas to the viewport.
+  // Wide-but-narrow desktops (900-1100px) keep the desktop shell and are
+  // zoomed down to fit. At 900px and below the phone shell takes over and
+  // must be drawn 1:1: zooming it to ~0.35 rendered a microscopic mock of
+  // the desktop instead of a usable phone layout.
   function scaleStudio() {
-    const scale = Math.min(1, window.innerWidth / 1100);
+    const scale = window.innerWidth <= 900 ? 1 : Math.min(1, window.innerWidth / 1100);
     const root = document.documentElement.style;
     root.setProperty('--studio-scale', String(scale));
     root.setProperty('--studio-width', (window.innerWidth / scale) + 'px');
     root.setProperty('--studio-height', (window.innerHeight / scale) + 'px');
   }
   scaleStudio();
+  // Exposed so tests/run-tests.mjs can drive the real formula instead of
+  // re-implementing it: scaleStudio(390) must not shrink the phone shell.
+  window.EPPScaleStudio = scaleStudio;
   window.addEventListener('resize', scaleStudio);
 </script>
 </head>
@@ -882,7 +887,7 @@ set the image of the actor 'hero' to "hero2.png"</pre>
           <h2 id="tutTitle">Tutorials</h2>
         </div>
         <div class="tut-head-actions">
-          <button id="tutLessonsToggle" class="btn btn-small tut-lessons-toggle" type="button" aria-controls="tutNav" aria-expanded="false">☰ Lessons</button>
+          <button id="tutLessonsToggle" class="btn btn-small tut-lessons-toggle" type="button" aria-controls="tutNav" aria-expanded="false"><span class="epp-icon" data-icon="list" aria-hidden="true"></span> <span>Lessons</span></button>
           <button id="tutClose" class="btn-close" type="button" aria-label="Close tutorials">×</button>
         </div>
       </header>
@@ -901,13 +906,13 @@ set the image of the actor 'hero' to "hero2.png"</pre>
       </div>
       <footer class="tut-card-foot">
         <div class="tut-foot-left">
-          <button id="tutHint" class="btn btn-small" type="button">💡 Hint</button>
-          <button id="tutSolution" class="btn btn-small" type="button" style="display:none;">👀 Show the answer</button>
-          <button id="tutReset" class="btn btn-small" type="button" title="Put the starting code back">↺ Reset</button>
+          <button id="tutHint" class="btn btn-small" type="button"><span class="epp-icon" data-icon="suggest" aria-hidden="true"></span> <span>Hint</span></button>
+          <button id="tutSolution" class="btn btn-small" type="button" style="display:none;"><span class="epp-icon" data-icon="eye" aria-hidden="true"></span> <span>Show the answer</span></button>
+          <button id="tutReset" class="btn btn-small" type="button" title="Put the starting code back"><span class="epp-icon" data-icon="restore" aria-hidden="true"></span> <span>Reset</span></button>
         </div>
         <div class="tut-foot-right">
-          <button id="tutBack" class="btn btn-small" type="button">← Back</button>
-          <button id="tutTry" class="btn btn-small" type="button" title="Copy this code into the editor and run it there">↗ Try in the editor</button>
+          <button id="tutBack" class="btn btn-small" type="button"><span class="epp-icon" data-icon="back" aria-hidden="true"></span> <span>Back</span></button>
+          <button id="tutTry" class="btn btn-small" type="button" title="Copy this code into the editor and run it there"><span class="epp-icon" data-icon="open" aria-hidden="true"></span> <span>Try in the editor</span></button>
           <button id="tutCheck" class="btn btn-run btn-small" type="button">▶ Run &amp; check</button>
           <button id="tutNext" class="btn btn-small btn-accent" type="button" disabled>Next →</button>
         </div>
@@ -1032,8 +1037,8 @@ set the image of the actor 'hero' to "hero2.png"</pre>
 <script src="js/eshare.js"></script>
 <script src="js/game-library.js"></script>
 <script src="js/draw-library.js"></script>
-<script src="js/icons.js?v=1.4b1"></script>
-<script src="js/studio-mobile.js?v=1.4b1"></script>
+<script src="js/icons.js?v=1.4b1-phone"></script>
+<script src="js/studio-mobile.js?v=1.4b1-phone"></script>
 <script src="js/studio-editor.js"></script>
 <script src="js/diagnostics.js"></script>
 <script src="js/native-lexer-wasm.js"></script>
@@ -5810,7 +5815,7 @@ function renderTutorialCard() {
   if (!current) return;
   const { deck, course, step, key } = current;
 
-  document.getElementById('tutCourseName').innerText = course.icon + '  ' + course.title;
+  document.getElementById('tutCourseName').innerText = course.title;
   document.getElementById('tutTitle').innerText = step.title;
   document.getElementById('tutGoal').innerHTML = formatTutorialText(step.goal);
   document.getElementById('tutStepCounter').innerText =

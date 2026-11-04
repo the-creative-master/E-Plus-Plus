@@ -46,7 +46,10 @@
     suggest: '<path d="M9.5 18h5M10.5 21h3"/><path d="M12 3a6 6 0 0 1 3.5 10.8c-.6.5-.9 1.2-.9 2H9.4c0-.8-.3-1.5-.9-2A6 6 0 0 1 12 3z"/>',
     restore: '<path d="M4 10a8 8 0 1 1 2.3 6.3"/><path d="M3.5 4.5v6h6"/>',
     close: '<path d="m6 6 12 12M18 6 6 18"/>',
-    search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4 4"/>'
+    search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4 4"/>',
+    eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+    back: '<path d="M10 5 3.5 12 10 19"/><path d="M3.5 12H20"/>',
+    list: '<path d="M4 7h16M4 12h16M4 17h10"/>'
   };
 
   function get(id, size) {
