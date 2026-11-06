@@ -264,7 +264,7 @@
   };
 
   /*
-   * Release 1.4b1: a build error names the Z code that explains it.
+   * Release 1.4rc1: a build error names the Z code that explains it.
    *
    *   Z001  Colors       Z004  ImprovedWait
    *   Z002  Draw         Z005  the JavaScript runtime

@@ -529,7 +529,7 @@ void Interpreter::visitAskStmt(AskStmt* stmt) {
 
 void Interpreter::visitAddLibraryStmt(AddLibraryStmt* stmt) {
     std::string norm = normalize_name(stmt->library_name);
-    // 1.4b1: each Studio-only library has its own Z code, so the message says
+    // 1.4rc1: each Studio-only library has its own Z code, so the message says
     // exactly which thing is missing from E++.zip.
     if (norm == "draw" || norm == "drawing" || norm == "sprites" || norm == "game" || norm == "improvedwait") {
         std::string zip_code = "Z002";

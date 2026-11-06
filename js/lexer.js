@@ -1,5 +1,5 @@
 /*
- * E++ Lexer (tokenizer) - Release 1.4b1.
+ * E++ Lexer (tokenizer) - Release 1.4rc1.
  *
  * Turns raw E++ source text into a token stream. E++ is deliberately
  * English-like:
@@ -13,7 +13,7 @@
  * and column so the parser, error reporter and syntax highlighter can all
  * point back at the original text.
  *
- * ERROR POLICY (1.4b1). The lexer owns the fifteen fatal codes F001-F015.
+ * ERROR POLICY (1.4rc1). The lexer owns the fifteen fatal codes F001-F015.
  * A fatal error means the lexer cannot produce a trustworthy token stream, so
  * nothing is handed to the parser: the program never starts. Everything the
  * lexer merely *notices* - a variable name that looks like text, a string that
@@ -135,7 +135,7 @@
       // A `note:` at the start of a statement is a free-text comment: the
       // rest of the line is ignored, even if it contains symbols like +.
       // Notes must use square brackets, so the two ways of getting them wrong
-      // are fatal (F007, F008) rather than a silently dropped line.
+      // use E064 for an unclosed note and F008 for invalid note syntax.
       if (/[A-Za-z_]/.test(ch) && this.atStatementStart() && /^note\b/i.test(src.slice(this.index, this.index + 5))) {
         var noteStart = this.index;
         var noteLine = this.line, noteColumn = this.column;
@@ -177,7 +177,7 @@
     this.advance('[');
     while (this.index < src.length && src[this.index] !== ']' && src[this.index] !== '\n') this.advance(src[this.index]);
     if (src[this.index] !== ']') {
-      throw this.fatal('F007', 'This note never ends. Close it with ].', line, column,
+      throw Errors.error('E064', 'This note never ends. Close it with ].', line, column,
         'Notes need square brackets: note [Your note]');
     }
     this.advance(']');

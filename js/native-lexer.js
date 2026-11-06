@@ -16,9 +16,9 @@
 
   function runtimeError(reason) {
     return {
-      // Release 1.4b1: a lexer that cannot start is fatal F001 - the lexer
-      // never received a program it could read.
-      code: 'F001', name: 'Lexer Received Invalid Input', family: 'fatal',
+      // The compiled lexer failing to boot is a critical lexer failure. F codes
+      // are not used for ordinary source/parser mistakes.
+      code: 'F015', name: 'Lexer Runtime Unavailable', family: 'fatal',
       filename: 'js/native-lexer-wasm.js',
       line: 1, col: 1, sourceLine: '', reason: reason,
       help: 'Keep js/native-lexer-wasm.js and js/native-lexer.js next to Studio, and use a browser with WebAssembly enabled.'
@@ -96,16 +96,23 @@
       instance.epp_lexer_free(address);
     }
     if (!output.ok) {
-      // Release 1.4b1: the C++ lexer reports one of the fatal codes F001-F015
+      // Release 1.4rc1: the C++ lexer reports one of the fatal codes F001-F015
       // together with its catalogue name and fix, so the browser prints exactly
       // what the native command line prints.
       var issue = output.error;
+      // An unclosed note is a general end-of-program mistake, not a fatal
+      // lexer failure. Normalize older compiled lexer builds as well.
+      if (issue.code === 'F007') {
+        issue.code = 'E064';
+        issue.name = 'Unexpected End Of Program';
+        issue.help = 'Close the note with ].';
+      }
       var sourceLines = source.split('\n');
       throw {
         code: issue.code,
         name: issue.name || (global.EPP && EPP.Errors ? EPP.Errors.name(issue.code) : 'Fatal Lexer Error'),
-        family: 'fatal',
-        section: 'F',
+        family: issue.code.charAt(0) === 'F' ? 'fatal' : 'general',
+        section: issue.code.charAt(0),
         filename: filename || '<source>', line: issue.line, col: issue.column,
         sourceLine: sourceLines[issue.line - 1] || '', reason: issue.message,
         help: issue.help || (global.EPP && EPP.Errors ? EPP.Errors.help(issue.code) : 'Check the program and try again.')

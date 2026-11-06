@@ -3,7 +3,7 @@
  * Builds E++.zip and epp_language.zip. Studio executes its embedded compiled
  * C++ lexer directly; these archives are downloadable distributions.
  *
- * E++.zip is the *standalone* build of E++ 1.4b1. The Studio and the zip carry
+ * E++.zip is the *standalone* build of E++ 1.4rc1. The Studio and the zip carry
  * different halves of the game tooling, and only one of them at a time:
  *
  *   Studio (E++ Studio)          Draw, Game, ImprovedWait

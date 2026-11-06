@@ -197,9 +197,9 @@
     for (var b = 0; b < prepared.blocks.length; b++) {
       if (prepared.blocks[b].unterminated) {
         var term = prepared.blocks[b].modeChar === ',' ? ',"' : '"';
-        throw new LexError('The Python code block never ends. Its closing ' + term + ' is missing.',
+        throw EPP.Errors.error('E064', 'The Python code block never ends. Its closing ' + term + ' is missing.',
           prepared.blocks[b].line, prepared.blocks[b].column,
-          'Close the Python code with ' + term + ' at the end of the block.', 'F013');
+          'Close the Python code with ' + term + ' at the end of the block.');
       }
     }
     this.tokens = new Lexer(prepared.source).tokenize().filter(function (t) { return t.type !== 'COMMENT'; });
@@ -231,7 +231,7 @@
   Parser.prototype.expectWord = function (word, context) {
     var t = this.current();
     if (!this.isWord(word)) {
-      // 1.4b1: say which kind of nothing this is - the line ended, or the
+      // 1.4rc1: say which kind of nothing this is - the line ended, or the
       // whole program did - instead of a flat "unexpected word".
       if (t.type === 'NEWLINE') {
         throw new ParseError('Expected the word "' + word + '"' + (context ? ' ' + context : '') +
@@ -507,7 +507,7 @@
         var source = this.parseExpression();
         return EPP.AST.DefineImage(quotedName, source, kw);
       }
-      // 1.4b1: a definition with no value is E031, not a bare "missing value".
+      // 1.4rc1: a definition with no value is E031, not a bare "missing value".
       if (this.isSeparator(this.current()) || this.atEnd()) {
         var noValue = this.current();
         throw new ParseError('This definition has no value: ' + quotedName + ' needs something after "be".',
@@ -1275,7 +1275,7 @@
     var kw = this.advance(); // if
     var firstCondition = this.parseCondition();
     var condition = firstCondition;
-    // 1.4b1: a missing 'then' is E020, not the generic "expected the word"
+    // 1.4rc1: a missing 'then' is E020, not the generic "expected the word"
     // of E062 - it is the one word an if cannot do without.
     if (!this.isWord('then')) {
       var missingThen = this.current();
@@ -1374,7 +1374,7 @@
 
   Parser.prototype.parseWhile = function () {
     var kw = this.advance(); // while
-    // 1.4b1: `while` with nothing to test is E025.
+    // 1.4rc1: `while` with nothing to test is E025.
     var first = this.current();
     if (!first || first.type === 'NEWLINE' || first.type === 'EOF' || first.type === 'PERIOD') {
       throw new ParseError('This while loop has no condition to test.',
@@ -1794,7 +1794,7 @@
 
   Parser.parse = function (source, options) { return new Parser(source, options).parse(); };
   /**
-   * Release 1.4b1: the same parse, with the Parser left in the caller's hands
+   * Release 1.4rc1: the same parse, with the Parser left in the caller's hands
    * so it can read `usedFeatures` (every library feature the source mentions).
    */
   Parser.instance = function (source, options) { return new Parser(source, options); };

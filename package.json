@@ -1,7 +1,7 @@
 {
   "name": "e-plus-plus",
-  "version": "1.4.0-beta.1",
-  "description": "E++ 1.4b1: the error overhaul - 75 E errors, 5 W warnings, 5 Z distribution and 15 F fatal codes.",
+  "version": "1.4.0-rc.1",
+  "description": "E++ 1.4rc1: release candidate error and Studio updates - 75 E errors, 5 W warnings, 5 Z distribution and 15 F fatal codes.",
   "private": true,
   "type": "commonjs",
   "scripts": {

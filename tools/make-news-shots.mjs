@@ -721,4 +721,72 @@ await betaCatalogue(V_B1);
 await betaWarning(V_B1);
 await betaPhone(V_B1);
 
+// 1.4rc1 — compact expandable sidebar and the corrected general note error.
+const rcSidebar = frame(
+  topbar('1.4rc1') +
+  rect(0, 54, 68, H - 54, T.rail) +
+  text(34, 82, 'E++', { size: 14, weight: 800, fill: T.accent, anchor: 'middle' }) +
+  [['Files', 126], ['Libraries', 188], ['Reference', 250]].map(([label, y], i) =>
+    rect(9, y - 25, 50, 54, i === 0 ? '#353047' : T.rail, 9, `stroke="${i === 0 ? T.accentDim : T.railEdge}"`) +
+    text(34, y, ['▤', '◇', '⌕'][i], { size: 19, fill: T.accent, anchor: 'middle' }) +
+    text(34, y + 18, label, { size: 8, fill: T.muted, anchor: 'middle' })).join('') +
+  rect(9, 298, 50, 54, '#292638', 9, `stroke="${T.border}"`) +
+  text(34, 324, '+', { size: 18, fill: T.accent, anchor: 'middle' }) +
+  text(34, 343, 'More', { size: 8, fill: T.text, weight: 700, anchor: 'middle' }) +
+  rect(68, 54, 310, H - 54, T.side) +
+  text(94, 96, 'YOUR FILES', { size: 10, weight: 800, fill: T.accent, spacing: 1 }) +
+  text(94, 130, 'hello.enpp', { size: 14, weight: 700 }) +
+  rect(400, 76, 1014, 612, T.panel, 12, `stroke="${T.border}"`) +
+  text(430, 112, 'CODE EDITOR', { size: 9, weight: 800, fill: T.faint, spacing: 1 }) +
+  code(450, 160, 'note [Your first E++ program in pure .enpp', 14) +
+  code(450, 194, 'say "Hello, World!"', 14) +
+  rect(400, 710, 1014, 144, '#10111d', 10, `stroke="${T.border}"`) +
+  text(426, 748, '[E++ Error E064: Unexpected End Of Program]', { font: MONO, size: 13, weight: 700, fill: T.amber }) +
+  text(426, 778, 'hello.enpp:1:1  ·  The note is missing its closing bracket.', { font: MONO, size: 11, fill: T.text }) +
+  text(426, 808, 'Help: Close the note with ].', { font: MONO, size: 11, fill: T.green })
+);
+await shot('news-sidebar-1.4rc1.jpg', rcSidebar);
+
+const rcError = frame(
+  topbar('1.4rc1') + rail('1.4rc1', 'files') + sidebarActive('1.4rc1') +
+  editorWrite(['note [Your first E++ program in pure .enpp', 'say "Hello, World!"'], 'CODE EDITOR', 1, 1, 528) +
+  consolePanel((x, y) => text(x + 16, y + 24, '[E++ Error E064: Unexpected End Of Program]', { font: MONO, size: 13, weight: 700, fill: T.amber }) +
+    text(x + 16, y + 52, 'hello.enpp:1:1', { font: MONO, size: 11, fill: T.text }) +
+    text(x + 16, y + 80, 'The note was not closed before the end of the line.', { font: MONO, size: 11, fill: T.muted }) +
+    text(x + 16, y + 108, 'Help: Close the note with ].', { font: MONO, size: 11, fill: T.green }), 460) + statusbar()
+);
+await shot('news-errors-1.4rc1.jpg', rcError);
+
+// 1.4rc1 — the Studio is replaced by the E++ Terminal.
+const terminalRows = [
+  ' E++ workspace directory',
+  '',
+  '06/11/2026  11:10 AM    <DIR>          assets',
+  '06/11/2026  11:10 AM    <DIR>          css',
+  '06/11/2026  11:10 AM    <DIR>          examples',
+  '06/11/2026  11:10 AM    <DIR>          include',
+  '06/11/2026  11:10 AM    <DIR>          js',
+  '06/11/2026  11:10 AM    <DIR>          src',
+  '06/11/2026  11:10 AM    <DIR>          tests',
+  '06/11/2026  11:10 AM    <DIR>          tools',
+  '06/11/2026  11:10 AM           18,420  README.md',
+  '06/11/2026  11:10 AM           25,019  LANGUAGE.md',
+  '06/11/2026  11:10 AM            2,400  hello.enpp',
+  '               3 File(s)         45,839 bytes',
+  '               8 Dir(s)   125,000,000 bytes free',
+  ''
+];
+const terminalNews = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` +
+  rect(0, 0, W, H, '#050505') +
+  rect(1, 1, W - 2, 34, '#292929') +
+  rect(0, 35, W, H - 35, '#000') +
+  text(18, 23, '▣  E++ Terminal', { size: 12, fill: '#f1f1f1' }) +
+  text(W - 72, 23, '—   □   ×', { size: 12, fill: '#f1f1f1' }) +
+  text(10, 58, 'E++>dir', { font: MONO, size: 15, fill: '#00ff41' }) +
+  terminalRows.map((row, i) => text(10, 82 + i * 23, row, { font: MONO, size: 14, fill: '#00ff41' })).join('') +
+  text(10, 82 + terminalRows.length * 23, 'E++>', { font: MONO, size: 15, fill: '#00ff41' }) +
+  rect(73, 82 + terminalRows.length * 23 - 14, 10, 18, '#00ff41') +
+  '</svg>';
+await shot('news-terminal-1.4rc1.jpg', terminalNews);
+
 console.log('done:', files.length, 'screenshots');

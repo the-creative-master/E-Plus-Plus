@@ -1,4 +1,4 @@
-# E++ 1.4b1
+# E++ 1.4rc1
 
 E++ is a small, English-like programming language with a browser Studio, a C++ command-line engine and a Python runner. Write text in double quotes, variables in single quotes, and maths as numbers and words.
 
@@ -8,9 +8,9 @@ say "Hello, ", 'name'
 say 2 plus 3 times 4
 ```
 
-## What’s new in 1.4b1
+## What’s new in 1.4rc1
 
-1.4b1 is the error overhaul. Every message E++ can print now has a permanent
+1.4rc1 is the error overhaul. Every message E++ can print now has a permanent
 code, a plain-English name, and a fix, and there are exactly one hundred of them:
 
 | Family | Count | What it is |
@@ -34,7 +34,7 @@ code, a plain-English name, and a fix, and there are exactly one hundred of them
   numbers now fail as `F004`, `F003`, `F010` while the source is read — the
   parser never invents them.
 - **The whole catalogue is documented** in `LANGUAGE.md` §14, and
-  `node tests/errors-1.4b1.mjs` proves the 75/5/5/15 split.
+  `node tests/errors-1.4rc1.mjs` proves the 75/5/5/15 split.
 - **A clearer sidebar, drawn icons, and phones that work.** The activity bar
   was five unlabelled icons. It is now grouped into Panels, Help and More, and
   every button carries its name: Files, Libraries, Reference, Learn, Settings

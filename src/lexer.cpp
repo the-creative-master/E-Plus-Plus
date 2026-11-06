@@ -182,13 +182,14 @@ Lexer::Lexer(const std::string& source) : src(source) {
 // fixes are the same strings js/errors.js prints, so a fatal error reads the
 // same in the browser, on the command line and in E++.zip.
 const char* Lexer::catalogue_name(const std::string& code) {
+    if (code == "E064") return "Unexpected End Of Program";
     if (code == "F001") return "Lexer Received Invalid Input";
     if (code == "F002") return "The Program Is Too Large To Lex";
     if (code == "F003") return "Unrecognised Character";
     if (code == "F004") return "Unterminated String";
     if (code == "F005") return "Unterminated Variable Name";
     if (code == "F006") return "Empty Variable Reference";
-    if (code == "F007") return "Unterminated Note";
+    if (code == "F007") return "Reserved Lexer Code";
     if (code == "F008") return "Note Without Brackets";
     if (code == "F009") return "Line Contains A Null Character";
     if (code == "F010") return "Unrecognised Number";
@@ -201,13 +202,14 @@ const char* Lexer::catalogue_name(const std::string& code) {
 }
 
 const char* Lexer::catalogue_help(const std::string& code) {
+    if (code == "E064") return "Close the note with ].";
     if (code == "F001") return "Pass the program as text (a string) to the lexer.";
     if (code == "F002") return "Split the program into smaller files.";
     if (code == "F003") return "E++ uses words for maths. Remove or replace this character.";
     if (code == "F004") return "Close the string, for example: say \"Hello\".";
     if (code == "F005") return "Close it, for example: say 'name'.";
     if (code == "F006") return "Put a variable name between the single quotes.";
-    if (code == "F007") return "Notes need square brackets: note [Your note]";
+    if (code == "F007") return "Unterminated notes are general program errors and use E064.";
     if (code == "F008") return "Write notes like this: note [Your note]";
     if (code == "F009") return "Remove the invisible NUL character (it usually arrives from a binary file).";
     if (code == "F010") return "Write numbers as digits, for example 42 or 3.5.";
@@ -643,7 +645,7 @@ Token Lexer::scan_word() {
                 note_text += advance();
             }
             if (is_at_end() || peek() != ']') {
-                report_error("Unterminated note. Close it with ].", start_line, start_col, "F007");
+                report_error("Unterminated note. Close it with ].", start_line, start_col, "E064");
                 return Token(TokenType::TOKEN_EOF, "", start_line, start_col);
             }
             advance(); // consume ']'

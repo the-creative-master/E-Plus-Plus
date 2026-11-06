@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-E++ (E-Plus-Plus) 1.4b1 Lexer and Subsystem
+E++ (E-Plus-Plus) 1.4rc1 Lexer and Subsystem
 Written in Python for direct execution and runtime integration.
 """
 
@@ -709,8 +709,8 @@ class Lexer:
             if self.peek() == "\n":
                 cur_line = self.get_source_line(start_line)
                 raise EppDiagnosticError(
-                    code="F007",
-                    name="Unterminated Note",
+                    code="E064",
+                    name="Unexpected End Of Program",
                     filename=self.filename,
                     line=start_line,
                     col=start_col,
@@ -722,8 +722,8 @@ class Lexer:
         if self.is_at_end():
             cur_line = self.get_source_line(start_line)
             raise EppDiagnosticError(
-                code="F007",
-                name="Unterminated Note",
+                code="E064",
+                name="Unexpected End Of Program",
                 filename=self.filename,
                 line=start_line,
                 col=start_col,
@@ -931,4 +931,4 @@ if __name__ == "__main__":
         for t in tokens:
             print(t)
     else:
-        print("E++ 1.4b1 Lexer module loaded.")
+        print("E++ 1.4rc1 Lexer module loaded.")

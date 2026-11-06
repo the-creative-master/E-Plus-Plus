@@ -84,10 +84,10 @@ const server = http.createServer((req, res) => {
     // Never silently use a JS fallback when the C++ module is unavailable.
     await page.evaluate(() => {
       window.__nativeReady = EPP.NativeLexer.ready;
-      EPP.NativeLexer.ready = () => Promise.reject({ code: 'F001', name: 'Lexer Received Invalid Input', filename: 'lexer', line: 1, col: 1, sourceLine: '', reason: 'test unavailable', help: 'restore lexer' });
+      EPP.NativeLexer.ready = () => Promise.reject({ code: 'F015', name: 'Lexer Runtime Unavailable', filename: 'lexer', line: 1, col: 1, sourceLine: '', reason: 'test unavailable', help: 'restore lexer' });
     });
     const failed = await run('say "must not execute"');
-    assert(failed.includes('F001') && !failed.includes('Finished successfully'), failed);
+    assert(failed.includes('Lexer Runtime Unavailable') && failed.includes('F015') && !failed.includes('Finished successfully'), failed);
     await page.evaluate(() => { EPP.NativeLexer.ready = window.__nativeReady; });
     assert.deepEqual(errors, []);
     await page.close();
@@ -102,7 +102,7 @@ const server = http.createServer((req, res) => {
     await missing.locator('#btnRun').click();
     await missing.waitForFunction(() => document.querySelector('#btnStop').disabled);
     const missingOutput = await missing.locator('#consoleOutput').innerText();
-    assert(missingOutput.includes('F001') && !missingOutput.includes('Finished successfully'), missingOutput);
+    assert(missingOutput.includes('Lexer Runtime Unavailable') && missingOutput.includes('F015') && !missingOutput.includes('Finished successfully'), missingOutput);
     await missing.close();
 
     // `file://` must load the same compiled lexer without fetching a ZIP.

@@ -1,5 +1,5 @@
 /*
- * E++ Release 1.4b1 - the error system.
+ * E++ Release 1.4rc1 - the error system.
  *
  * EVERY failure E++ reports is one of one hundred catalogued codes:
  *
@@ -150,7 +150,7 @@
     F004: ['Unterminated String', 'Close the string, for example: say "Hello".'],
     F005: ['Unterminated Variable Name', 'Close it, for example: say \'name\'.'],
     F006: ['Empty Variable Reference', 'Put a variable name between the single quotes.'],
-    F007: ['Unterminated Note', 'Notes need square brackets: note [Your note]'],
+    F007: ['Reserved Lexer Code', 'Unterminated notes are general program errors and use E064.'],
     F008: ['Note Without Brackets', 'Write notes like this: note [Your note]'],
     F009: ['Line Contains A Null Character', 'Remove the invisible NUL character (it usually arrives from a binary file).'],
     F010: ['Unrecognised Number', 'Write numbers as digits, for example 42 or 3.5.'],
@@ -322,7 +322,7 @@
     if (!known.known) {
       // A code outside the catalogue is a bug in the engine, and saying so is
       // better than quietly reporting it under E015's name.
-      made.message = (message || known.name) + ' (raised with ' + code + ', which is not a 1.4b1 code)';
+      made.message = (message || known.name) + ' (raised with ' + code + ', which is not a 1.4rc1 code)';
       made.reason = made.message;
     }
     return made;

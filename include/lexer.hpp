@@ -9,7 +9,7 @@
 
 namespace epp {
 
-// Release 1.4b1: every lexer failure is one of the fatal codes F001-F015.
+// Release 1.4rc1: every lexer failure is one of the fatal codes F001-F015.
 // A fatal error means the lexer cannot build a token stream, so the parser and
 // the program never run. `name` is the English catalogue name of the code and
 // `help` is the one-line fix shown under the reason.

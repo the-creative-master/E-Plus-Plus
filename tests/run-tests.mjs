@@ -1528,13 +1528,45 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
   assert.ok(/api\.fetchIdeas\(/.test(page), 'the panel reads the public list, not a local one');
 
   // The version the page announces matches this release everywhere it shows.
-  assert.ok(page.includes('<title>E++ Studio | 1.4b1</title>'), 'the tab title is 1.4b1');
-  assert.ok(page.includes('class="build-badge">1.4b1<'), 'the header badge is 1.4b1');
+  assert.ok(page.includes('<title>E++ Studio | 1.4rc1</title>'), 'the tab title is 1.4rc1');
+  assert.ok(page.includes('class="build-badge">1.4rc1<'), 'the header badge is 1.4rc1');
   assert.ok(page.includes("const DEFAULTS_VERSION = '1.4a2'"), 'new examples are added without overwriting existing files');
   assert.ok(page.includes("epp_idea_draft_1_2_1"), 'existing idea drafts remain available');
-  ok('the page announces 1.4b1 while retaining existing progress');
+  assert.match(page, /for="terminalMode"[\s\S]*?Terminal mode[\s\S]*?id="terminalMode"/,
+    'Settings exposes the persistent Terminal mode toggle');
+  assert.match(readFileSync(join(root, 'js', 'studio-customize.js'), 'utf8'), /terminalMode[\s\S]*?terminal-mode/,
+    'Terminal mode is stored and toggles the global theme class');
+  assert.match(readFileSync(join(root, 'css', 'studio.css'), 'utf8'), /body > \*:not\(#terminalModeScreen\)[\s\S]*?terminal-session[\s\S]*?color: #00ff41/,
+    'Terminal mode hides Studio and shows the E++-branded terminal');
+  assert.match(page, /E\+\+ Terminal[\s\S]*?id="terminalModeOutput"[\s\S]*?id="terminalModeExitInput"/,
+    'Terminal mode includes a terminal window, listing and command input');
+  const terminalModule = readFileSync(join(root, 'js', 'studio-customize.js'), 'utf8');
+  assert.match(terminalModule, /event\.key !== 'Escape'[\s\S]*?settingsDialog/,
+    'Escape exits the terminal and returns to Settings');
+  assert.match(terminalModule, /terminalEvaluator\) terminalEvaluator = new EppEvaluator\(\)[\s\S]*?evaluator\.run\(command/,
+    'terminal input executes real E++ source through one persistent Studio evaluator');
+  assert.match(page, /<textarea id="terminalModeExitInput"/,
+    'Terminal accepts multiline E++ programs as well as single statements');
+  assert.match(terminalModule, /terminalEvaluator\.cancel\(\)/,
+    'Escape cancels active Draw/Game and other long-running E++ programs');
+  assert.match(terminalModule, /function terminalHasOpenBlocks[\s\S]*?pythonStart[\s\S]*?const stack = \[\]/,
+    'Terminal detects incomplete multiline Python and E++ blocks before submitting');
+  assert.match(terminalModule, /setRangeText\('\\n'[\s\S]*?resizeTerminalInput/,
+    'the terminal input grows while composing multiline source');
+  assert.match(terminalModule, /commands: 'Full E\+\+ source is accepted[\s\S]*Draw sprites[\s\S]*Game actors/,
+    'Terminal help advertises the complete Studio language and visual libraries');
+  assert.doesNotMatch(terminalModule, /is not recognized|unknown shell command/i,
+    'ordinary E++ source is never rejected as an unknown shell command');
+  assert.match(page, /studio-customize\.js\?v=1\.4rc1-epp-repl-2/,
+    'the evaluator-backed terminal script bypasses previously cached shell-only code');
+  const releaseNews = readFileSync(join(root, 'news.html'), 'utf8');
+  assert.doesNotMatch(releaseNews, /THE LATEST FROM E\+\+ STUDIO[\s\S]*?1\.4a3/,
+    'older release entries are not presented as the latest');
+  assert.match(releaseNews, /assets\/news-terminal-1\.4rc1\.jpg/,
+    'the RC news includes the Terminal mode screenshot');
+  ok('the page announces 1.4rc1, keeps prior release labels accurate, and exposes Terminal mode');
 
-  // 1.4b1: every button draws a real icon, and every button is named.
+  // 1.4rc1: every button draws a real icon, and every button is named.
   const icons = readFileSync(join(root, 'js', 'icons.js'), 'utf8');
   assert.ok(page.includes('js/icons.js'), 'the page loads the shared icon set');
   const ids = new Set([...icons.matchAll(/^    (\w+): '/gm)].map(m => m[1]));
@@ -1554,8 +1586,10 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
     assert.ok(/aria-label="[^"]+"/.test(button), 'a rail button lost its accessible name');
   }
   assert.deepEqual([...rail.matchAll(/rail-group-label[^>]*>([^<]+)</g)].map(m => m[1]),
-    ['Panels', 'Help', 'More'], 'the rail groups its buttons');
-  ok('every sidebar button pairs a real icon with its name, in three groups');
+    ['Panels', 'Help'], 'always-visible shortcuts stay grouped');
+  assert.match(rail, /<details class="rail-expand">[\s\S]*?<summary[^>]*>[\s\S]*?<span class="rail-label">More<\/span>/,
+    'secondary shortcuts are tucked into an expandable More group');
+  ok('sidebar shortcuts are labelled, with secondary actions collapsed under More');
 
   // No decorative Unicode stand-ins for icons in the chrome we just rebuilt.
   const retiredGlyphs = ['▤', '▥', '▧', '⌕', '⌧', '⌑', '☷'];
@@ -1575,7 +1609,7 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
   ok('the phone bar offers Files, Code, Learn, Settings and Output, all labelled');
 
   // A media query that can never match means phones get the desktop shell.
-  // 1.4b1 shipped with every mobile rule inside (max-width: 0px); keep it out.
+  // 1.4rc1 shipped with every mobile rule inside (max-width: 0px); keep it out.
   for (const file of ['css/studio.css', 'css/ide.css']) {
     const css = readFileSync(join(root, file), 'utf8');
     const dead = [...css.matchAll(/@media[^{]*max-width:\s*0px[^{]*\{/g)].map(m => m[0].trim());
@@ -1647,8 +1681,8 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
   }
 
   // ------------------------------------------------------------
-  // 1.4b1 follow-up: resolve the real cascade, panel by panel.
-  // 1.4b1 twice shipped a phone shell that never rendered, because
+  // 1.4rc1 follow-up: resolve the real cascade, panel by panel.
+  // 1.4rc1 twice shipped a phone shell that never rendered, because
   // nothing modelled specificity, source order or !important. This
   // asks the stylesheets themselves what each panel's `display` is.
   // ------------------------------------------------------------
