@@ -10,7 +10,7 @@
 
 void print_banner() {
     std::cout << "=========================================================\n";
-    std::cout << "   E++ Programming Language [1.4b1]                 \n";
+    std::cout << "   E++ Programming Language [1.4rc1]                 \n";
     std::cout << "   \"Looks like English, feels like english, and is english\"\n";
     std::cout << "=========================================================\n";
 }
@@ -38,7 +38,7 @@ void print_help() {
     std::cout << "  say the square root of 2\n";
 }
 
-// Release 1.4b1: one reporter for every family.
+// Release 1.4rc1: one reporter for every family.
 //
 //   [E++ Error F004: Unterminated String]     a fatal lexer error
 //     --> file.epp:3:7
@@ -80,7 +80,7 @@ static void print_deterministic_error(const std::string& code, const std::string
 // The English names of the general codes the native engine can raise. The
 // strings match js/errors.js exactly; epp.py has the same table.
 static std::string error_name(const std::string& code) {
-    // 1.4b1: the whole catalogue, mirrored from js/errors.js (75 E, 5 W,
+    // 1.4rc1: the whole catalogue, mirrored from js/errors.js (75 E, 5 W,
     // 5 Z and 15 F codes). Keep this list in step with the catalogue.
     if (code == "E001") return "Unquoted Text";
     if (code == "E002") return "Bare Variable Name";
@@ -173,7 +173,7 @@ static std::string error_name(const std::string& code) {
     if (code == "F004") return "Unterminated String";
     if (code == "F005") return "Unterminated Variable Name";
     if (code == "F006") return "Empty Variable Reference";
-    if (code == "F007") return "Unterminated Note";
+    if (code == "F007") return "Reserved Lexer Code";
     if (code == "F008") return "Note Without Brackets";
     if (code == "F009") return "Line Contains A Null Character";
     if (code == "F010") return "Unrecognised Number";
@@ -278,7 +278,7 @@ static std::string error_help(const std::string& code) {
     if (code == "F004") return "Close the string, for example: say \"Hello\".";
     if (code == "F005") return "Close it, for example: say 'name'.";
     if (code == "F006") return "Put a variable name between the single quotes.";
-    if (code == "F007") return "Notes need square brackets: note [Your note]";
+    if (code == "F007") return "Unterminated notes are general program errors and use E064.";
     if (code == "F008") return "Write notes like this: note [Your note]";
     if (code == "F009") return "Remove the invisible NUL character (it usually arrives from a binary file).";
     if (code == "F010") return "Write numbers as digits, for example 42 or 3.5.";

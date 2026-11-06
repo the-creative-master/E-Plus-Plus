@@ -1,4 +1,4 @@
-# E++ 1.4b1 Wiki
+# E++ 1.4rc1 Wiki
 
 An approachable guide to E++, from your first line to games, animated drawings and shared projects. For exact syntax and diagnostic codes, see [LANGUAGE.md](LANGUAGE.md).
 
@@ -170,7 +170,7 @@ Build the native engine with `make`, run tests with `make test` and `npm test`, 
 
 ## Errors and troubleshooting
 
-Every message has a permanent code in 1.4b1. The split is exact:
+Every message has a permanent code in 1.4rc1. The split is exact:
 
 | Family | Count | What it means |
 | --- | --- | --- |
@@ -208,10 +208,10 @@ run, and the engines report them live.
 the full Studio, so `E++.zip` names them precisely instead of saying "not in
 this build". `Z005` covers a build without the JavaScript runtime.
 
-`F001`-`F015` come from the lexer, before parsing: `F003` a character that is
-not E++, `F004` an unclosed string, `F007` an unclosed `note [`, `F011` a `//`
-comment, `F013` a Python block that never ends. If the compiled C++ lexer
-cannot load at all, Studio reports `F001` and refuses to guess.
+F codes are reserved for lexer failures; parser mistakes use E codes. An
+unterminated Python block is a general end-of-program error (`E064`). If the
+compiled C++ lexer cannot boot, Studio reports a critical lexer failure (`F015`)
+and refuses to guess or silently fall back.
 
 ## Keyboard and accessibility
 

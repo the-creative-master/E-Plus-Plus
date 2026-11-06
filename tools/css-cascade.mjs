@@ -1,7 +1,7 @@
 /**
  * A small CSS cascade resolver, used by tests to ask "what value wins here?"
  *
- * It exists because eyeballing a stylesheet is how 1.4b1 shipped a phone
+ * It exists because eyeballing a stylesheet is how 1.4rc1 shipped a phone
  * layout that kept an 84px desktop-rail gutter: a later `@media all` block
  * with `!important` beat the phone block, and nothing in the test suite
  * modelled specificity or source order.

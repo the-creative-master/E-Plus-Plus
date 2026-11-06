@@ -24,7 +24,7 @@ errors = [
     ("let \"name\" be 1", "E036"), ("let name be 1", "E030"),
     ("say", "E003"), ("say 1 plus", "E003"), ("say 'missing'", "E028"),
     ("say 1 divided by 0", "E066"), ("otherwise say \"no\"", "E022"),
-    ("note [unclosed", "F007"),
+    ("note [unclosed", "E064"),
     ("if 1 is 2 then say hello", "E001"),
     ("if 1 is 2 then say \"x\", hello", "E001"),
     ("if 1 is 2 then let name be 1", "E030"),

@@ -100,6 +100,6 @@ const { GalleryStore, createServer } = require('../server.js');
     assert.equal(await page.locator('#consoleCard').isVisible(), true);
     assert.equal(await page.locator('.bottom-bar').isVisible(), true);
     assert.deepEqual(errors, []);
-    console.log('1.4b1 motion, settings, accessibility, explorer, News and small-screen checks passed.');
+    console.log('1.4rc1 motion, settings, accessibility, explorer, News and small-screen checks passed.');
   } finally { if (browser) await browser.close(); if (server) await new Promise(resolve => server.close(resolve)); fs.rmSync(temp, { recursive: true, force: true }); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

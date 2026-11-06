@@ -1,8 +1,8 @@
-# The E++ Language Reference (1.4b1)
+# The E++ Language Reference (1.4rc1)
 
 > **"Looks like English, feels like english, and is english"**
 
-This is the reference for **E++ 1.4b1**. It covers the language itself, the
+This is the reference for **E++ 1.4rc1**. It covers the language itself, the
 project files you download and import, and the libraries that ship with this
 release.
 
@@ -468,7 +468,7 @@ panel instead.
 
 ## 14. Diagnostics
 
-Every message E++ prints has a code. 1.4b1 defines exactly one hundred of them:
+Every message E++ prints has a code. 1.4rc1 defines exactly one hundred of them:
 
 | Family | Count | Meaning |
 | --- | --- | --- |
@@ -496,7 +496,7 @@ Studio pre-flight, and `EPP.run(source, { onWarning })` streams them live.
 Studio tokenizes programs with the same `src/lexer.cpp` as the C++ CLI,
 compiled to WebAssembly. Its browser evaluator is JavaScript, not the native
 C++ parser and interpreter. If the compiled lexer cannot load, execution stops
-with `F001`; there is no silent alternate lexer.
+with the critical lexer failure `F015`; there is no silent alternate lexer.
 
 ### General errors (75)
 
@@ -608,7 +608,7 @@ with `F001`; there is no silent alternate lexer.
 | `F004` | Unterminated String | Close the string, for example: say "Hello". |
 | `F005` | Unterminated Variable Name | Close it, for example: say 'name'. |
 | `F006` | Empty Variable Reference | Put a variable name between the single quotes. |
-| `F007` | Unterminated Note | Notes need square brackets: note [Your note] |
+| `F007` | Reserved Lexer Code | Not emitted. An unterminated note is the general error `E064`. |
 | `F008` | Note Without Brackets | Write notes like this: note [Your note] |
 | `F009` | Line Contains A Null Character | Remove the invisible NUL character (it usually arrives from a binary file). |
 | `F010` | Unrecognised Number | Write numbers as digits, for example 42 or 3.5. |

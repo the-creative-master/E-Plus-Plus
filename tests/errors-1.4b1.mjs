@@ -65,7 +65,7 @@ console.log('1.4b1: the catalogue');
   assert.equal(errors.Errors.exists('Q001'), false);
   const stray = errors.error('E999', 'not a real code');
   assert.equal(stray.code, 'E015');
-  assert.match(stray.message, /E999, which is not a 1.4b1 code/);
+  assert.match(stray.message, /E999, which is not a 1.4rc1 code/);
   ok('a code outside the catalogue falls back to E015 and says so');
 }
 
@@ -170,7 +170,7 @@ console.log('\n1.4b1: fatal lexer errors (F001-F015)');
     ["say ''", 'F006'],
     ['say 1 // comment', 'F011'],
     ['say 1 # comment', 'F011'],
-    ['note [not closed', 'F007'],
+    ['note [not closed', 'E064'],
     ['note nope', 'F008'],
     ['say 2.5.5', 'F010'],
     ['say @', 'F003'],
@@ -180,8 +180,13 @@ console.log('\n1.4b1: fatal lexer errors (F001-F015)');
   for (const [source, code] of cases) {
     const error = fatal(source);
     assert.equal(error.code, code, JSON.stringify(source) + ' -> ' + code);
-    assert.equal(error.family, 'fatal');
-    assert.match(error.category, /^Fatal Lexer Error: /);
+    if (code === 'E064') {
+      assert.equal(error.family, 'general');
+      assert.equal(error.category, 'Unexpected End Of Program');
+    } else {
+      assert.equal(error.family, 'fatal');
+      assert.match(error.category, /^Fatal Lexer Error: /);
+    }
     assert.ok(error.hint && error.hint.length > 8, code + ' carries its fix');
   }
   ok('F001, F003-F011 and F014 are raised where they belong');
@@ -198,13 +203,13 @@ console.log('\n1.4b1: fatal lexer errors (F001-F015)');
   // Every fatal code is unique to the lexer: the parser never raises one.
   const parserSource = readFileSync(join(root, 'js', 'parser.js'), 'utf8');
   const parserCodes = [...parserSource.matchAll(/'(F\d{3})'/g)].map((m) => m[1]);
-  assert.deepEqual([...new Set(parserCodes)], ['F013'],
-    'the parser only names F013, for a raw Python block the lexer never sees');
-  ok('the parser never raises a lexer code (except the F013 it finds before lexing)');
+  assert.deepEqual([...new Set(parserCodes)], [],
+    'the parser never raises lexer-family codes');
+  ok('the parser never raises an F error');
 
-  // F013: an unterminated dash-mode Python block is caught before lexing.
-  assert.throws(() => EPP.Parser.parse('python code ",print(1)\nprint(2)\n'), (e) => e.code === 'F013');
-  ok('F013: a Python block that never ends is fatal');
+  // An unterminated Python block is a source/program error, not a lexer failure.
+  assert.throws(() => EPP.Parser.parse('python code ",print(1)\nprint(2)\n'), (e) => e.code === 'E064');
+  ok('E064: a Python block that never ends is a general end-of-program error');
 }
 
 // ------------------------------------------------------------------

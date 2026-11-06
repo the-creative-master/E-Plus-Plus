@@ -1,4 +1,4 @@
-/* E++ 1.4b1 Studio appearance and launcher layout. */
+/* E++ 1.4rc1 Studio appearance and launcher layout. */
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
@@ -24,14 +24,68 @@
   function save(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) {} }
   function read(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (_) { return null; } }
   const saved = read(OPTIONS_KEY) || {};
-  const options = { fontSize: [12, 14, 16, 18].includes(saved.fontSize) ? saved.fontSize : 14, lineNumbers: typeof saved.lineNumbers === 'boolean' ? saved.lineNumbers : true, animations: typeof saved.animations === 'boolean' ? saved.animations : true };
+  const options = { fontSize: [12, 14, 16, 18].includes(saved.fontSize) ? saved.fontSize : 14, lineNumbers: typeof saved.lineNumbers === 'boolean' ? saved.lineNumbers : true, animations: typeof saved.animations === 'boolean' ? saved.animations : true, terminalMode: saved.terminalMode === true };
+  let terminalPendingAsk = null;
+  // Keep one full Studio evaluator for the lifetime of Terminal mode so variables,
+  // declared libraries, sprites, actors and running state persist across submissions.
+  let terminalEvaluator = null;
+  const terminalCommands = {
+    help: 'E++ Terminal runs the full Studio E++ evaluator. Enter any E++ statement or program here; press Enter to continue an open block, use Shift+Enter for a manual newline, and Ctrl+Enter to run immediately. All Studio libraries, including Draw and Game, are supported. Utilities: commands, dir, clear, ver, help, exit. Escape returns to Settings.',
+    commands: 'Full E++ source is accepted (not a shell-only whitelist): say/tell, define/let/set, increase/decrease, ask, if/otherwise/end if, repeat/end repeat, while/end while, loopback, note, add library, Python blocks, Draw sprites and pen/movement commands, Game actors and controls, Keyboard, waits, files, images, math, random, strings, time, colors, console, and system statements. Add the needed library with add library "Name". Use Shift+Enter to enter multiline blocks. See Quick Reference for exact statement forms.',
+    dir: ' E++ workspace\n\n<DIR>  assets\n<DIR>  css\n<DIR>  examples\n<DIR>  include\n<DIR>  js\n<DIR>  src\n<DIR>  tests\n<DIR>  tools\n        E++.zip\n        LANGUAGE.md\n        README.md\n        WIKI.md\n        hello.enpp',
+    ver: 'E++ Studio [Version 1.4rc1]'
+  };
+  function terminalWrite(text) {
+    const output = $('terminalModeOutput');
+    output.textContent += String(text) + '\n';
+    output.scrollTop = output.scrollHeight;
+  }
+  function terminalHasOpenBlocks(source) {
+    const lines = source.split(/\r?\n/);
+    const pythonStart = lines.findIndex(line => /^(?:run\s+)?(?:the\s+)?python\s+code\s*:\s*$/i.test(line.trim()));
+    if (pythonStart >= 0) {
+      const eppStart = /^(?:say|tell|let|define|ask|add|note|run|if|otherwise)\b/i;
+      const closesPython = lines.slice(pythonStart + 1).some(line =>
+        line.trim() && !/^[ \t]/.test(line) && eppStart.test(line.trim()));
+      if (!closesPython) return true;
+    }
+    const stack = [];
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line || /^note\b/i.test(line)) continue;
+      if (/^end\s+(repeat|while|if)\b/i.test(line)) {
+        const close = line.match(/^end\s+(repeat|while|if)\b/i)[1].toLowerCase();
+        if (stack[stack.length - 1] === close) stack.pop();
+        continue;
+      }
+      if (/^repeat\b/i.test(line) && /\btimes\s*:?[\s]*$/i.test(line)) stack.push('repeat');
+      else if (/^while\b/i.test(line) && /\bdo\s*:?[\s]*$/i.test(line)) stack.push('while');
+      else if (/^if\b/i.test(line) && /\bthen\s*:?[\s]*$/i.test(line)) stack.push('if');
+    }
+    return stack.length > 0;
+  }
+  function resizeTerminalInput() {
+    const input = $('terminalModeExitInput');
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, window.innerHeight * 0.35) + 'px';
+  }
+  function resetTerminal() {
+    $('terminalModeOutput').textContent = 'C:\\E++> dir\n' + terminalCommands.dir + '\n\n';
+  }
   function applyOptions() {
     document.documentElement.style.setProperty('--editor-font-size', options.fontSize + 'px');
     document.body.classList.toggle('no-line-numbers', !options.lineNumbers);
     $('editorFontSize').value = String(options.fontSize);
     $('showLineNumbers').checked = options.lineNumbers;
     $('studioAnimations').checked = options.animations;
+    $('terminalMode').checked = options.terminalMode;
+    document.documentElement.classList.toggle('terminal-mode', options.terminalMode);
+    $('terminalModeScreen').hidden = !options.terminalMode;
     document.documentElement.classList.toggle('studio-motion-off', !options.animations);
+    if (options.terminalMode) {
+      resetTerminal();
+      requestAnimationFrame(() => $('terminalModeExitInput').focus());
+    }
     requestAnimationFrame(updateLineNumbers);
   }
   function paintPalette() {
@@ -53,6 +107,84 @@
   $('accentColor').addEventListener('input', paintPalette);
   $('editorFontSize').addEventListener('change', event => { options.fontSize = Number(event.target.value); applyOptions(); save(OPTIONS_KEY, options); });
   $('studioAnimations').addEventListener('change', event => { options.animations = event.target.checked; applyOptions(); save(OPTIONS_KEY, options); });
+  $('terminalMode').addEventListener('change', event => {
+    options.terminalMode = event.target.checked;
+    if (options.terminalMode) {
+      const settings = $('settingsDialog');
+      if (settings && settings.open && typeof settings.close === 'function') settings.close();
+    }
+    applyOptions(); save(OPTIONS_KEY, options);
+  });
+  $('terminalModeScreen').addEventListener('click', () => $('terminalModeExitInput').focus());
+  $('terminalModeExitInput').addEventListener('input', resizeTerminalInput);
+  $('terminalModeExitInput').addEventListener('keydown', async event => {
+    if (event.key !== 'Enter') return;
+    const input = event.currentTarget;
+    if (event.shiftKey) return; // Shift+Enter always inserts a newline.
+    if (!event.ctrlKey && !event.metaKey && terminalHasOpenBlocks(input.value)) {
+      event.preventDefault();
+      const start = input.selectionStart;
+      input.setRangeText('\n', start, input.selectionEnd, 'end');
+      resizeTerminalInput();
+      return;
+    }
+    event.preventDefault();
+    const command = input.value.trim();
+    const normalized = command.toLowerCase();
+    input.value = '';
+    resizeTerminalInput();
+    if (terminalPendingAsk) {
+      const answer = terminalPendingAsk; terminalPendingAsk = null;
+      $('terminalModePrompt').textContent = 'C:\\E++>';
+      answer(command);
+      return;
+    }
+    if (!command) return;
+    if (normalized === 'clear' || normalized === 'cls') {
+      $('terminalModeOutput').textContent = '';
+      return;
+    }
+    terminalWrite('C:\\E++> ' + command);
+    if (normalized === 'exit') {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      return;
+    }
+    if (Object.prototype.hasOwnProperty.call(terminalCommands, normalized)) {
+      terminalWrite(terminalCommands[normalized]); terminalWrite(''); return;
+    }
+
+    // Use the same unrestricted evaluator as Studio. Keep its state between
+    // submissions so variables and added libraries remain available; multiline
+    // programs can be entered with Shift+Enter.
+    if (!terminalEvaluator) terminalEvaluator = new EppEvaluator();
+    const evaluator = terminalEvaluator;
+    try {
+      await evaluator.run(command, text => terminalWrite(text), prompt => new Promise(resolve => {
+        terminalWrite('? ' + prompt);
+        $('terminalModePrompt').textContent = '?';
+        terminalPendingAsk = resolve;
+        input.focus();
+      }));
+    } catch (error) {
+      terminalWrite((error.code ? error.code + ': ' : '') + (error.reason || error.message || String(error)));
+      if (error.help) terminalWrite('Help: ' + error.help);
+    } finally {
+      $('terminalModePrompt').textContent = 'C:\\E++>';
+      input.focus();
+    }
+  });
+  document.addEventListener('keydown', event => {
+    if (!options.terminalMode || event.key !== 'Escape') return;
+    event.preventDefault(); event.stopPropagation();
+    if (terminalPendingAsk) { const answer = terminalPendingAsk; terminalPendingAsk = null; answer(''); }
+    if (terminalEvaluator) terminalEvaluator.cancel();
+    terminalEvaluator = null;
+    if (activeEvaluator && typeof activeEvaluator.cancel === 'function') activeEvaluator.cancel();
+    options.terminalMode = false;
+    applyOptions(); save(OPTIONS_KEY, options);
+    $('settingsDialog').showModal();
+    $('terminalMode').focus();
+  }, true);
   $('showLineNumbers').addEventListener('change', event => { options.lineNumbers = event.target.checked; applyOptions(); save(OPTIONS_KEY, options); });
   $('settingsWrap').addEventListener('change', event => {
     if ($('btnWrap').getAttribute('aria-pressed') !== String(event.target.checked)) $('btnWrap').click();
@@ -60,7 +192,7 @@
   $('btnWrap').addEventListener('click', () => { $('settingsWrap').checked = $('btnWrap').getAttribute('aria-pressed') === 'true'; });
   $('settingsWrap').checked = $('btnWrap').getAttribute('aria-pressed') === 'true';
   $('resetAppearance').addEventListener('click', () => {
-    options.fontSize = 14; options.lineNumbers = true; options.animations = true;
+    options.fontSize = 14; options.lineNumbers = true; options.animations = true; options.terminalMode = false;
     $('accentColor').value = '#b7a4ff';
     $('accentColor').dispatchEvent(new Event('input', { bubbles: true }));
     if ($('btnWrap').getAttribute('aria-pressed') === 'true') $('btnWrap').click();

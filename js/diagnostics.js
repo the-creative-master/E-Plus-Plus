@@ -2,7 +2,7 @@
  * The evaluator still checks values and libraries when it runs them; these
  * checks catch malformed code even in an if branch which never executes.
  *
- * Release 1.4b1: the codes here are the 1.4b1 catalogue codes (E001-E075,
+ * Release 1.4rc1: the codes here are the 1.4rc1 catalogue codes (E001-E075,
  * F011), not the retired 1.3 numbers. validate(source, filename) still throws
  * the first problem it finds; validate(source, filename, { warnings: true })
  * also returns the W001-W005 hints for code that is odd but legal.
@@ -147,7 +147,7 @@
           fail('E017', 'Unexpected Block Ending', 'This block ending has no matching opening statement.',
             'Use end if, end repeat, end while, or end the game to close its matching block.', n, raw.indexOf(text) + 1);
         }
-        // 1.4b1: an ending that closes the wrong kind of block is E019; the
+        // 1.4rc1: an ending that closes the wrong kind of block is E019; the
         // block it should have closed is still open, so say which one.
         if (!name || stack[stack.length - 1].kind !== name) {
           var opening = stack[stack.length - 1];
