@@ -10,38 +10,7 @@ say 2 plus 3 times 4
 
 ## What’s new in 1.4rc1
 
-1.4rc1 is the error overhaul. Every message E++ can print now has a permanent
-code, a plain-English name, and a fix, and there are exactly one hundred of them:
-
-| Family | Count | What it is |
-| --- | --- | --- |
-| `E001`-`E075` | 75 | General errors. The program stops at the problem. |
-| `W001`-`W005` | 5 | Warnings. Something looks odd, but the program keeps running. |
-| `Z001`-`Z005` | 5 | Only possible in `E++.zip`, the standalone distribution. |
-| `F001`-`F015` | 15 | Fatal lexer errors. The source cannot be read at all. |
-
-- **Named errors.** `[E++ Error E018: Unclosed Block]` with the file, line,
-  column, the source line, a reason and a fix — in the Studio, the C++ CLI and
-  the Python engine, from the same catalogue (`js/errors.js`, `epp.py`,
-  `src/main.cpp`).
-- **Warnings that do not stop you.** An equation inside double quotes is
-  `W001`: you still get your output. `EPP.Diagnostics.warnings()` lists them
-  before you run, and `EPP.run(source, { onWarning })` streams them live.
-- **Build-only codes.** Libraries that live only in the Studio raise `Z001`
-  (Colors), `Z002` (Draw) or `Z003` (Game) inside `E++.zip`, instead of a
-  generic "not in this build".
-- **The lexer is fatal.** Unclosed strings, bad characters and unreadable
-  numbers now fail as `F004`, `F003`, `F010` while the source is read — the
-  parser never invents them.
-- **The whole catalogue is documented** in `LANGUAGE.md` §14, and
-  `node tests/errors-1.4rc1.mjs` proves the 75/5/5/15 split.
-- **A clearer sidebar, drawn icons, and phones that work.** The activity bar
-  was five unlabelled icons. It is now grouped into Panels, Help and More, and
-  every button carries its name: Files, Libraries, Reference, Learn, Settings
-  and Customize. Buttons no longer lean on font glyphs such as `▤` or `↗`:
-  `js/icons.js` draws them, so they look the same on every machine. And the
-  phone layout finally applies — every mobile rule used to sit inside a
-  `max-width: 0px` query, which can never match.
+1.4rc1 isn't really a big update, it fixes some things like F errors, and adds some things like terminal mode
 
 ## Start the Studio
 
@@ -54,6 +23,7 @@ npm start
 Open `http://localhost:8000` on that machine. On smaller screens, the same workspace scales down to fit. Use the activity bar for files and libraries and the **Tools** menu for project actions. The editor saves personal working copies in this browser. **Learn** opens the interactive lessons; **Wiki** opens the offline guide in the same tab, with a link back to Studio.
 
 You can also open `index.html` directly for offline editing, Draw, Game and EShare.
+Or just open the github pages link I attached LIKE A NORMAL PERSON :/
 
 ## Quick tutorials
 
