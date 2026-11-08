@@ -10,17 +10,35 @@
   <main class="news-main">
     <section class="news-current" aria-label="E++ 1.4 release">
       <div class="news-kicker"><span></span> RELEASE 1.4</div>
-      <h1>A calmer sidebar.<br><em>Clearer errors.</em></h1>
-      <p class="news-intro">E++ 1.4 adds an E++-only terminal with full library support, forever loops and a built-in version expression, alongside clearer errors and a more flexible Studio.</p>
+      <h1>All E++.<br><em>Now in your terminal.</em></h1>
+      <p class="news-intro">E++ 1.4 closes the release-candidate cycle with an E++-only Terminal, support for the Studio libraries, new forever loops, and a built-in version value for programs that introduce the release they run on.</p>
       <div class="release-meta"><span>✦ &nbsp; RELEASE 1.4</span><span>STABLE RELEASE</span></div>
+      <div class="news-grid">
+        <article><span class="article-number">01 / TERMINAL MODE</span><h2>Your whole E++ toolkit.</h2><p>Run E++ programs in a clean terminal view with the Studio libraries available, including colored output and console control. The Wiki and News open from the terminal too; Escape returns to Settings.</p></article>
+        <article><span class="article-number">02 / CONTROL FLOW</span><h2>Repeat. Or keep going.</h2><p>Counted <code>repeat</code> loops are joined by <code>forever ... end forever</code> blocks for work that should continue until stopped.</p></article>
+        <article><span class="article-number">03 / SELF-REPORTING PROGRAMS</span><h2>Let E++ introduce itself.</h2><p>The built-in <code>the version of E++</code> expression gives a program its runtime version without hard-coding it into every message.</p></article>
+      </div>
+      <div class="news-bottom"><div><span class="article-number">A VERSION-AWARE SHOWCASE</span><h2>One source, current version.</h2><p>Capture the version once, then reuse it in greetings and completion messages:</p></div><div class="news-figure-block"><pre class="news-code">let 'Eversion' be the version of E++
+say "Welcome to E++ ", 'Eversion'
+
+forever
+  say "Running E++ ", 'Eversion'
+end forever</pre></div></div>
+    </section>
+
+    <section class="news-archive" aria-label="E++ 1.4rc1 release candidate">
+      <div class="news-kicker"><span></span> RELEASE CANDIDATE 1</div>
+      <h1>A calmer sidebar.<br><em>Clearer errors.</em></h1>
+      <p class="news-intro">E++ 1.4rc1 tightens the error families and makes a busy Studio easier to navigate. Extra sidebar shortcuts now stay tucked away until you expand More.</p>
+      <div class="release-meta"><span>✦ &nbsp; RELEASE 1.4rc1</span><span>RELEASE CANDIDATE</span></div>
       <figure class="news-hero"><img src="assets/news-sidebar-1.4rc1.jpg" alt="E++ Studio with its compact sidebar and an expandable More shortcuts group"><figcaption>Keep the everyday destinations visible; expand More only when you need the extra shortcuts.</figcaption></figure>
       <div class="news-grid">
         <article><span class="article-number">01 / A SHORTER SIDEBAR</span><h2>More when you need it.</h2><p>Files, Libraries and Reference stay easy to reach. Less-used shortcuts and custom sidebar actions are grouped under More, so the sidebar doesn’t turn into a long wall of buttons.</p></article>
         <article><span class="article-number">02 / ERROR CODES</span><h2>Notes are not fatal lexer errors.</h2><p>An unclosed note is a general end-of-program mistake: it now reports E064, not F007. F codes are reserved for lexer failures; a lexer that cannot boot remains a critical F015 failure.</p></article>
         <article><span class="article-number">03 / MODULAR EDITOR</span><h2>Know where each shortcut goes.</h2><p>The layout editor explains what belongs in the original position, sidebar, top bar or Removed area. Presets describe what they do, and changes save automatically.</p></article>
-        <article><span class="article-number">04 / TERMINAL MODE</span><h2>Run E++ right here.</h2><p>Turn on Terminal mode in Settings and the Studio UI is replaced by a green-on-black terminal. Enter full E++ programs with any Studio library, type wiki or news to open the reference pages, and press Escape to return to Settings.</p></article>
+        <article><span class="article-number">04 / TERMINAL MODE</span><h2>Run E++ right here.</h2><p>Turn on Terminal mode in Settings and the Studio UI is replaced by a terminal window: a green-on-black directory listing, an E++&gt; prompt and a blinking input cursor. Type E++ statements to run them; dir, help, clear and ver are available too. Press Escape to return to Settings.</p></article>
       </div>
-      <figure class="news-figure"><img src="assets/news-terminal-1.4rc1.jpg" alt="An E++ Terminal with a green-on-black screen and E++ prompt"><figcaption>The Studio controls disappear, replaced by an E++-only terminal. All Studio libraries work here; press Escape to return to Settings.</figcaption></figure>
+      <figure class="news-figure"><img src="assets/news-terminal-1.4rc1.jpg" alt="An E++ Terminal with a green-on-black directory listing and E++ prompt"><figcaption>The Studio controls disappear, replaced by E++ Terminal. Run statements directly, or press Escape to return to Settings.</figcaption></figure>
       <figure class="news-figure"><img src="assets/news-errors-1.4rc1.jpg" alt="E++ Studio reporting an unclosed note as E064 Unexpected End Of Program"><figcaption>An unclosed note is a general program error (E064), not F007.</figcaption></figure>
     </section>
 

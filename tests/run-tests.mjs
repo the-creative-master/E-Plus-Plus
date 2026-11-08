@@ -1581,6 +1581,11 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
   assert.match(page, /studio-customize\.js\?v=1\.4-epp-repl-4/,
     'the evaluator-backed terminal script bypasses previously cached shell-only code');
   const releaseNews = readFileSync(join(root, 'news.html'), 'utf8');
+  const release14 = releaseNews.indexOf('RELEASE 1.4</span>');
+  const releaseRc1 = releaseNews.indexOf('RELEASE 1.4rc1</span>');
+  const releaseB1 = releaseNews.indexOf('RELEASE 1.4b1</span>');
+  assert.ok(release14 >= 0 && release14 < releaseRc1 && releaseRc1 < releaseB1,
+    'the 1.4 release is newest while the 1.4rc1 News entry remains archived beneath it');
   assert.doesNotMatch(releaseNews, /THE LATEST FROM E\+\+ STUDIO[\s\S]*?1\.4a3/,
     'older release entries are not presented as the latest');
   assert.match(releaseNews, /assets\/news-terminal-1\.4rc1\.jpg/,
