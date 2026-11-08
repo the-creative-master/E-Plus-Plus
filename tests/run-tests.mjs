@@ -26,7 +26,7 @@ context.globalThis = context;
 
 for (const file of [
   'errors.js', 'lexer.js', 'ast.js', 'libraries.js', 'keyboard.js', 'parser.js',
-  'python-runner.js', 'interpreter.js', 'files.js', 'highlight.js', 'standalone-generator.js',
+  'python-runner.js', 'interpreter.js', 'diagnostics.js', 'files.js', 'highlight.js', 'standalone-generator.js',
   'vault.js', 'ideas.js', 'a11y.js', 'pictures.js', 'game-library.js', 'tutorials.js'
 ]) {
   vm.runInContext(readFileSync(join(root, 'js', file), 'utf8'), context, { filename: file });
@@ -85,6 +85,12 @@ console.log('Parser / AST');
   assert.equal(ast.body[0].type, 'Define');
   assert.equal(ast.body[0].value.type, 'Binary');
   ok('builds AST nodes for Define + maths');
+  assert.equal(EPP.VERSION, '1.4');
+  const versionAst = EPP.Parser.parse("let 'Eversion' be the version of E++");
+  assert.equal(versionAst.body[0].type, 'Define');
+  assert.equal(versionAst.body[0].value.type, 'Literal');
+  assert.equal(versionAst.body[0].value.value, EPP.VERSION);
+  ok('parses the built-in E++ version as a variable value');
 }
 
 console.log('Interpreter: basics from the spec');
@@ -120,6 +126,13 @@ console.log('Interpreter: basics from the spec');
   const { output } = await run('Define n as 0.\nwhile \'n\' is less than 3 do\n  Set n to \'n\' plus 1.\nend while\nsay \'n\'');
   assert.deepEqual([...output], ['3']);
   ok('while loops with is less than');
+}
+{
+  const source = "let 'Eversion' be the version of E++\nsay 'Eversion'\nforever\n  say \"once\"\n  stop\nend forever";
+  assert.doesNotThrow(() => EPP.Diagnostics.validate(source, 'version-and-forever.enppl'));
+  const { output } = await run(source);
+  assert.deepEqual([...output], [EPP.VERSION, 'once']);
+  ok('version expression and forever/end forever blocks run through the interpreter');
 }
 {
   const { output } = await run('if 2 is greater than 1 then\n  say "big"\notherwise say "small"\nend if');
@@ -1528,8 +1541,8 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
   assert.ok(/api\.fetchIdeas\(/.test(page), 'the panel reads the public list, not a local one');
 
   // The version the page announces matches this release everywhere it shows.
-  assert.ok(page.includes('<title>E++ Studio | 1.4rc1</title>'), 'the tab title is 1.4rc1');
-  assert.ok(page.includes('class="build-badge">1.4rc1<'), 'the header badge is 1.4rc1');
+  assert.ok(page.includes('<title>E++ Studio | 1.4</title>'), 'the tab title is 1.4');
+  assert.ok(page.includes('class="build-badge">1.4<'), 'the header badge is 1.4');
   assert.ok(page.includes("const DEFAULTS_VERSION = '1.4a2'"), 'new examples are added without overwriting existing files');
   assert.ok(page.includes("epp_idea_draft_1_2_1"), 'existing idea drafts remain available');
   assert.match(page, /for="terminalMode"[\s\S]*?Terminal mode[\s\S]*?id="terminalMode"/,
@@ -1553,18 +1566,35 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
     'Terminal detects incomplete multiline Python and E++ blocks before submitting');
   assert.match(terminalModule, /setRangeText\('\\n'[\s\S]*?resizeTerminalInput/,
     'the terminal input grows while composing multiline source');
-  assert.match(terminalModule, /commands: 'Full E\+\+ source is accepted[\s\S]*Draw sprites[\s\S]*Game actors/,
-    'Terminal help advertises the complete Studio language and visual libraries');
+  assert.match(terminalModule, /terminalPages = \{ wiki: 'wiki\.html', news: 'news\.html' \}/,
+    'Terminal provides direct Wiki and News navigation');
+  assert.match(terminalModule, /All Studio libraries are available/,
+    'Terminal advertises the complete Studio library set');
+  assert.match(terminalModule, /colorClass\) => terminalWrite\(text, colorClass\)/,
+    'Terminal preserves Colors library output instead of flattening it');
+  assert.match(terminalModule, /normalized === 'powershell'[\s\S]*E\+\+ PowerShell edition coming soon\./,
+    'Terminal includes the requested PowerShell edition easter egg');
+  assert.doesNotMatch(terminalModule, /terminalCommands|normalized === '(?:clear|cls|exit)'|\b(?:commands|dir|ver):/,
+    'Terminal has no non-E++ shell utilities');
   assert.doesNotMatch(terminalModule, /is not recognized|unknown shell command/i,
     'ordinary E++ source is never rejected as an unknown shell command');
-  assert.match(page, /studio-customize\.js\?v=1\.4rc1-epp-repl-2/,
+  assert.match(page, /studio-customize\.js\?v=1\.4-epp-repl-4/,
     'the evaluator-backed terminal script bypasses previously cached shell-only code');
   const releaseNews = readFileSync(join(root, 'news.html'), 'utf8');
+  const release14 = releaseNews.indexOf('RELEASE 1.4</span>');
+  const releaseRc1 = releaseNews.indexOf('RELEASE 1.4rc1</span>');
+  const releaseB1 = releaseNews.indexOf('RELEASE 1.4b1</span>');
+  assert.ok(release14 >= 0 && release14 < releaseRc1 && releaseRc1 < releaseB1,
+    'the 1.4 release is newest while the 1.4rc1 News entry remains archived beneath it');
+  for (const screenshot of ['news-terminal-1.4.jpg', 'news-showcase-1.4.jpg']) {
+    assert.ok(releaseNews.includes('assets/' + screenshot), 'the 1.4 News section includes ' + screenshot);
+    assert.ok(readFileSync(join(root, 'assets', screenshot)).length > 1000, screenshot + ' is present');
+  }
   assert.doesNotMatch(releaseNews, /THE LATEST FROM E\+\+ STUDIO[\s\S]*?1\.4a3/,
     'older release entries are not presented as the latest');
   assert.match(releaseNews, /assets\/news-terminal-1\.4rc1\.jpg/,
     'the RC news includes the Terminal mode screenshot');
-  ok('the page announces 1.4rc1, keeps prior release labels accurate, and exposes Terminal mode');
+  ok('the page announces 1.4, keeps prior release labels accurate, and exposes Terminal mode');
 
   // 1.4rc1: every button draws a real icon, and every button is named.
   const icons = readFileSync(join(root, 'js', 'icons.js'), 'utf8');

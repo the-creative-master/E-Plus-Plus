@@ -26,7 +26,7 @@
 '<head>\n' +
 '<meta charset="UTF-8">\n' +
 '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
-'<title>E++ Standalone Runtime — 1.4rc1 · legacy pure-code export</title>\n' +
+'<title>E++ Standalone Runtime — 1.4 · legacy pure-code export</title>\n' +
 '<style>\n' +
 '  :root {\n' +
 '    --bg: #0b1120;\n' +
@@ -115,7 +115,7 @@
 '    <div class="logo">E++</div>\n' +
 '    <div>\n' +
 '      <strong>E++ Standalone Runtime</strong>\n' +
-'      <span class="badge">1.4rc1 · legacy pure-code export</span>\n' +
+'      <span class="badge">1.4 · legacy pure-code export</span>\n' +
 '      <span class="badge badge-warn">Pure .eppl (No Libraries)</span>\n' +
 '    </div>\n' +
 '  </div>\n' +
@@ -143,7 +143,7 @@
 '      <button id="btnClear" class="btn" style="padding: 3px 8px; font-size: 11px;">Clear</button>\n' +
 '    </div>\n' +
 '    <div class="console-out" id="consoleOut">\n' +
-'      <div class="console-line system">E++ Standalone Runtime (1.4rc1 · legacy pure-code export) Ready.</div>\n' +
+'      <div class="console-line system">E++ Standalone Runtime (1.4 · legacy pure-code export) Ready.</div>\n' +
 '      <div class="console-line system">This legacy export supports pure code. The full E++.zip also supports libraries.</div>\n' +
 '      <div class="console-line prompt">Type "save project as name.eppl" below to save your code.</div>\n' +
 '    </div>\n' +

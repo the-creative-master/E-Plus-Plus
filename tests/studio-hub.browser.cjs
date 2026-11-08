@@ -55,7 +55,7 @@ const { GalleryStore, createServer } = require('../server.js');
     await page.locator('#toolsSearch').fill('news');
     await page.locator('#toolsFeatureList [data-hub-id="news"]').click();
     await page.waitForURL('**/news.html');
-    assert((await page.locator('body').innerText()).indexOf('RELEASE 1.4rc1') < (await page.locator('body').innerText()).indexOf('RELEASE 1.4a2'));
+    assert((await page.locator('body').innerText()).indexOf('RELEASE 1.4') < (await page.locator('body').innerText()).indexOf('RELEASE 1.4a2'));
     assert.equal(await page.locator('img').evaluateAll(imgs => imgs.every(i => i.complete && i.naturalWidth > 0)), true);
     assert.deepEqual(errors, []);
     console.log('Studio Tools hub, shortcut toggles, persistence, projects and news archive checks passed.');

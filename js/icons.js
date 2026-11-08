@@ -1,4 +1,4 @@
-/* E++ icon set (1.4rc1).
+/* E++ icon set (1.4).
  *
  * Every icon is a 24x24 stroke drawing, so buttons, the Tools list and the
  * sidebar all use the same shapes. Before this file the Studio mixed Unicode

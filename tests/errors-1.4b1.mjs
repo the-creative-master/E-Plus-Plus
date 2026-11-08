@@ -65,7 +65,7 @@ console.log('1.4b1: the catalogue');
   assert.equal(errors.Errors.exists('Q001'), false);
   const stray = errors.error('E999', 'not a real code');
   assert.equal(stray.code, 'E015');
-  assert.match(stray.message, /E999, which is not a 1.4rc1 code/);
+  assert.match(stray.message, /E999, which is not a 1.4 code/);
   ok('a code outside the catalogue falls back to E015 and says so');
 }
 

@@ -1,5 +1,5 @@
 /*
- * E++ Lexer (tokenizer) - Release 1.4rc1.
+ * E++ Lexer (tokenizer) - Release 1.4.
  *
  * Turns raw E++ source text into a token stream. E++ is deliberately
  * English-like:
@@ -13,7 +13,7 @@
  * and column so the parser, error reporter and syntax highlighter can all
  * point back at the original text.
  *
- * ERROR POLICY (1.4rc1). The lexer owns the fifteen fatal codes F001-F015.
+ * ERROR POLICY (1.4). The lexer owns the fifteen fatal codes F001-F015.
  * A fatal error means the lexer cannot produce a trustworthy token stream, so
  * nothing is handed to the parser: the program never starts. Everything the
  * lexer merely *notices* - a variable name that looks like text, a string that
@@ -313,6 +313,13 @@
 
   Lexer.prototype.readWord = function () {
     var rest = this.source.slice(this.index);
+    // E++ is a language name in phrases such as `the version of E++`, not
+    // arithmetic punctuation. Keep the spelling as one word token.
+    if (/^e\+\+/i.test(rest)) {
+      this.push(TokenType.WORD, rest.slice(0, 3), rest.slice(0, 3));
+      this.advance(rest.slice(0, 3));
+      return;
+    }
     var match = /^[A-Za-z_][A-Za-z0-9_-]*/.exec(rest);
     if (!match) {
       throw this.fatal('F003', 'Unexpected character "' + rest.charAt(0) + '".',

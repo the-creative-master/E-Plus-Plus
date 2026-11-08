@@ -10,7 +10,7 @@
 
 namespace epp {
 
-// Release 1.4rc1: a syntax error always carries one of the general codes
+// Release 1.4: a syntax error always carries one of the general codes
 // E001-E075. `name` is the catalogue name of that code, so the command line,
 // the Studio and E++.zip all print the same heading for the same mistake.
 class ParseError : public std::runtime_error {

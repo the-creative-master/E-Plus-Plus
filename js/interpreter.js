@@ -33,7 +33,7 @@
   };
 
   /**
-   * Release 1.4rc1: the W codes. A warning never stops the program; the
+   * Release 1.4: the W codes. A warning never stops the program; the
    * interpreter collects them in `this.warnings` (through `onWarning`) and the
    * Studio prints each one after the program finishes.
    */
@@ -303,7 +303,7 @@
     this.maxSteps = options.maxSteps || 100000;
     this.maxLoopIterations = options.maxLoopIterations || 10000;
     this.cancelled = false;
-    // Release 1.4rc1: W001-W005 are collected while the program runs and
+    // Release 1.4: W001-W005 are collected while the program runs and
     // reported once it finishes; a warning never stops anything.
     this.onWarning = typeof options.onWarning === 'function' ? options.onWarning : null;
     this.filename = options.filename || null;
@@ -681,7 +681,7 @@
         return;
       }
       case AST.SAY: {
-        // Release 1.4rc1: a coloured say is what the Colors library is for.
+        // Release 1.4: a coloured say is what the Colors library is for.
         if (node.color && this.usedLibraries) this.usedLibraries.add('Colors');
         // say a, b, c prints one line, the way the Studio's examples read.
         if (node.parts && node.parts.length) {
@@ -924,6 +924,14 @@
       }
       case AST.WHILE: {
         while (await this.evaluateCondition(node.condition)) {
+          this.guardLoop(node);
+          try { await this.executeBlock(node.body); }
+          catch (e) { if (e && e.isBreakSignal) break; throw e; }
+        }
+        return;
+      }
+      case AST.FOREVER: {
+        while (true) {
           this.guardLoop(node);
           try { await this.executeBlock(node.body); }
           catch (e) { if (e && e.isBreakSignal) break; throw e; }
@@ -1231,7 +1239,7 @@
     interpreter.sourceLines = String(source === undefined || source === null ? '' : source).split('\n');
     return Promise.resolve()
       .then(function () {
-        // Release 1.4rc1: the lexer's own W001/W002 warnings ride along with
+        // Release 1.4: the lexer's own W001/W002 warnings ride along with
         // the tokens; they never stop the program.
         // A Python dash/comma block is raw Python that the lexer must never
         // see (the parser extracts it first), so the pre-lex is skipped when

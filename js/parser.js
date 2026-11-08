@@ -71,7 +71,7 @@
   var RESERVED = {
     plus: 1, minus: 1, times: 1, divided: 1, by: 1, power: 1, percent: 1,
     square: 1, root: 1, of: 1, as: 1, is: 1, equal: 1, greater: 1, less: 1,
-    than: 1, then: 1, otherwise: 1, 'if': 1, end: 1, repeat: 1, 'while': 1,
+    than: 1, then: 1, otherwise: 1, 'if': 1, end: 1, repeat: 1, 'while': 1, forever: 1,
     'do': 1, and: 1, not: 1, different: 1, from: 1, between: 1, or: 1,
     contains: 1
   };
@@ -231,7 +231,7 @@
   Parser.prototype.expectWord = function (word, context) {
     var t = this.current();
     if (!this.isWord(word)) {
-      // 1.4rc1: say which kind of nothing this is - the line ended, or the
+      // 1.4: say which kind of nothing this is - the line ended, or the
       // whole program did - instead of a flat "unexpected word".
       if (t.type === 'NEWLINE') {
         throw new ParseError('Expected the word "' + word + '"' + (context ? ' ' + context : '') +
@@ -366,6 +366,7 @@
       }
       case 'repeat': return this.parseRepeat();
       case 'while': return this.parseWhile();
+      case 'forever': return this.parseForever();
       case 'stop': return this.parseStop(t);
       case 'break': this.advance(); return EPP.AST.Stop(t);
       case 'note': return this.parseNote();
@@ -507,7 +508,7 @@
         var source = this.parseExpression();
         return EPP.AST.DefineImage(quotedName, source, kw);
       }
-      // 1.4rc1: a definition with no value is E031, not a bare "missing value".
+      // 1.4: a definition with no value is E031, not a bare "missing value".
       if (this.isSeparator(this.current()) || this.atEnd()) {
         var noValue = this.current();
         throw new ParseError('This definition has no value: ' + quotedName + ' needs something after "be".',
@@ -1275,7 +1276,7 @@
     var kw = this.advance(); // if
     var firstCondition = this.parseCondition();
     var condition = firstCondition;
-    // 1.4rc1: a missing 'then' is E020, not the generic "expected the word"
+    // 1.4: a missing 'then' is E020, not the generic "expected the word"
     // of E062 - it is the one word an if cannot do without.
     if (!this.isWord('then')) {
       var missingThen = this.current();
@@ -1372,9 +1373,16 @@
     return EPP.AST.Repeat(count, part.body, kw);
   };
 
+  Parser.prototype.parseForever = function () {
+    var kw = this.advance();
+    var part = this.parseBranch(kw);
+    if (part.block) this.expectEnd('forever', kw);
+    return EPP.AST.Forever(part.body, kw);
+  };
+
   Parser.prototype.parseWhile = function () {
     var kw = this.advance(); // while
-    // 1.4rc1: `while` with nothing to test is E025.
+    // 1.4: `while` with nothing to test is E025.
     var first = this.current();
     if (!first || first.type === 'NEWLINE' || first.type === 'EOF' || first.type === 'PERIOD') {
       throw new ParseError('This while loop has no condition to test.',
@@ -1664,6 +1672,23 @@
     if (t.type === 'WORD') {
       var word = t.value.toLowerCase();
 
+      // Built-in version value: `the version of E++` is available without a
+      // library, so showcase programs can identify the runtime dynamically.
+      if (word === 'the' && this.isWord('version', this.peek(1)) && this.isWord('of', this.peek(2))) {
+        var versionName = this.peek(3);
+        if (versionName && versionName.type === 'WORD' && versionName.value.toLowerCase() === 'e++') {
+          this.advance(); this.advance(); this.advance(); this.advance();
+          return EPP.AST.Literal(EPP.VERSION || '1.4', t);
+        }
+        // Accept token streams from the native lexer, which represents the
+        // two plus signs as punctuation instead of one E++ word.
+        if (versionName && versionName.type === 'WORD' && versionName.value.toLowerCase() === 'e' &&
+            this.peek(4) && this.peek(4).value === '+' && this.peek(5) && this.peek(5).value === '+') {
+          for (var vi = 0; vi < 6; vi += 1) this.advance();
+          return EPP.AST.Literal(EPP.VERSION || '1.4', t);
+        }
+      }
+
       // Release 1.2 — Keyboard: the key pressed  [Keyboard]
       if (word === 'the' && this.isWord('key', this.peek(1)) && this.isWord('pressed', this.peek(2))) {
         this.requireLibrary('the key pressed', t);
@@ -1794,7 +1819,7 @@
 
   Parser.parse = function (source, options) { return new Parser(source, options).parse(); };
   /**
-   * Release 1.4rc1: the same parse, with the Parser left in the caller's hands
+   * Release 1.4: the same parse, with the Parser left in the caller's hands
    * so it can read `usedFeatures` (every library feature the source mentions).
    */
   Parser.instance = function (source, options) { return new Parser(source, options); };

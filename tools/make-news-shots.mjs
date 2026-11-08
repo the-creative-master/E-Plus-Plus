@@ -789,4 +789,63 @@ const terminalNews = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" heigh
   '</svg>';
 await shot('news-terminal-1.4rc1.jpg', terminalNews);
 
+// Stable 1.4 — updated terminal behavior and the version-aware showcase.
+const terminal14Lines = [
+  ['E++ Terminal [Version 1.4]', '#00ff41'],
+  ['E++ source runs here. Studio libraries are available.', '#00ff41'],
+  ['Type wiki or news for the reference pages. Escape returns to Settings.', '#00ff41'],
+  ['', '#00ff41'],
+  [String.raw`C:\E++> let 'Eversion' be the version of E++`, '#00ff41'],
+  [String.raw`C:\E++> add the "Colors" library`, '#00ff41'],
+  [String.raw`C:\E++> say cyan "Welcome to E++ ", 'Eversion'`, '#00ff41'],
+  ['Welcome to E++ 1.4', '#4de8ff'],
+  [String.raw`C:\E++> repeat 3 times`, '#00ff41'],
+  ['  say "E++ keeps moving forward!"', '#00ff41'],
+  ['end repeat', '#00ff41'],
+  ['E++ keeps moving forward!', '#00ff41'],
+  ['E++ keeps moving forward!', '#00ff41'],
+  ['E++ keeps moving forward!', '#00ff41'],
+  [String.raw`C:\E++> powershell`, '#00ff41'],
+  ['E++ PowerShell edition coming soon.', '#00ff41'],
+  [String.raw`C:\E++>`, '#00ff41'],
+];
+const terminal14 = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` +
+  rect(0, 0, W, H, '#000') + rect(1, 1, W - 2, H - 2, '#000', 5, 'stroke="#737373" stroke-width="2"') +
+  rect(2, 2, W - 4, 40, '#252525') + text(20, 27, '▣  E++ Terminal', { size: 15, fill: '#f2f2f2' }) +
+  text(W - 115, 27, '—     □     ×', { size: 14, fill: '#f2f2f2' }) +
+  terminal14Lines.map(([lineText, fill], i) => text(24, 86 + i * 34, lineText, { font: MONO, size: 18, fill })).join('') +
+  rect(105, 86 + terminal14Lines.length * 34 - 25, 11, 23, '#00ff41') + '</svg>';
+await shot('news-terminal-1.4.jpg', terminal14);
+
+const showcase14Lines = [
+  ['note [E++ 1.4 Grand Showcase]', '#88869b'],
+  ["let 'Eversion' be the version of E++", '#d7c8ff'],
+  ['add the "Colors" library', '#d7c8ff'],
+  ['', '#e8e8e8'],
+  [String.raw`say cyan "Welcome to E++ ", 'Eversion'`, '#76dcf1'],
+  ['repeat 3 times', '#d7c8ff'],
+  ['  say "Readable code. Real possibilities."', '#91d9ae'],
+  ['end repeat', '#d7c8ff'],
+  ['', '#e8e8e8'],
+  ['forever', '#d7c8ff'],
+  [String.raw`  say "E++ ", 'Eversion', " is ready!"`, '#91d9ae'],
+  ['end forever', '#d7c8ff'],
+];
+let showcase14 = '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">';
+showcase14 += rect(0, 0, W, H, T.bg) + rect(0, 0, W, 54, T.top) + line(0, 54, W, 54, T.border);
+showcase14 += text(22, 34, 'E++ Studio', { size: 20, fill: T.accent, weight: 700 });
+showcase14 += rect(1300, 14, 96, 27, '#26243a', 13, 'stroke="#7469ad"') + text(1324, 33, 'v1.4 · RELEASE', { size: 11, fill: '#c8bdff', weight: 700 });
+showcase14 += rect(0, 55, 68, H - 55, T.rail) + rect(68, 55, 280, H - 55, T.side) + line(348, 55, 348, H, T.border);
+showcase14 += text(92, 92, 'YOUR FILES', { size: 11, fill: T.accent, weight: 700 });
+showcase14 += rect(82, 113, 252, 38, '#2a2739', 7) + text(100, 138, 'release_showcase.enppl', { size: 13, fill: T.text, weight: 600 });
+showcase14 += rect(372, 75, 1048, 510, T.panel, 12, `stroke="${T.border}"`) + text(397, 105, 'CODE EDITOR  /  release_showcase.enppl', { size: 11, fill: T.faint, weight: 700 });
+showcase14 += showcase14Lines.map(([lineText, fill], i) => text(440, 146 + i * 32, lineText, { font: MONO, size: 16, fill })).join('');
+showcase14 += rect(372, 608, 1048, 244, '#10111d', 12, `stroke="${T.border}"`) + text(397, 642, 'OUTPUT', { size: 11, fill: T.accent, weight: 700 }) + line(397, 654, 1395, 654, T.border);
+showcase14 += text(401, 689, 'Welcome to E++ 1.4', { font: MONO, size: 16, fill: '#4de8ff' });
+showcase14 += text(401, 723, 'Readable code. Real possibilities.', { font: MONO, size: 14, fill: '#d8d7e4' });
+showcase14 += text(401, 749, 'Readable code. Real possibilities.', { font: MONO, size: 14, fill: '#d8d7e4' });
+showcase14 += text(401, 775, 'Readable code. Real possibilities.', { font: MONO, size: 14, fill: '#d8d7e4' });
+showcase14 += text(401, 814, 'E++ 1.4 is ready!', { font: MONO, size: 14, fill: '#00ff41' }) + '</svg>';
+await shot('news-showcase-1.4.jpg', showcase14);
+
 console.log('done:', files.length, 'screenshots');

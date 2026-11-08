@@ -1,8 +1,8 @@
-/* E++ Studio phone navigation (1.4rc1).
+/* E++ Studio phone navigation (1.4).
  *
  * Below 900px the Studio shows one panel at a time: Files, Code or Output.
  * The choice lives on <body data-mobile-view="...">, and css/studio.css keys
- * its panel rules off that same attribute. The two must agree - 1.4rc1 shipped
+ * its panel rules off that same attribute. The two must agree - 1.4 shipped
  * with the buttons setting `data-view` while the CSS (and js/ide.js, which is
  * the legacy IDE and is not loaded here) used `data-mobile-view`, so nothing
  * switched and the editor was crushed into a sliver.
