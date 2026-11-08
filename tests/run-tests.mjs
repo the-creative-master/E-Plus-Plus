@@ -1586,6 +1586,10 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
   const releaseB1 = releaseNews.indexOf('RELEASE 1.4b1</span>');
   assert.ok(release14 >= 0 && release14 < releaseRc1 && releaseRc1 < releaseB1,
     'the 1.4 release is newest while the 1.4rc1 News entry remains archived beneath it');
+  for (const screenshot of ['news-terminal-1.4.jpg', 'news-showcase-1.4.jpg']) {
+    assert.ok(releaseNews.includes('assets/' + screenshot), 'the 1.4 News section includes ' + screenshot);
+    assert.ok(readFileSync(join(root, 'assets', screenshot)).length > 1000, screenshot + ' is present');
+  }
   assert.doesNotMatch(releaseNews, /THE LATEST FROM E\+\+ STUDIO[\s\S]*?1\.4a3/,
     'older release entries are not presented as the latest');
   assert.match(releaseNews, /assets\/news-terminal-1\.4rc1\.jpg/,
