@@ -2,7 +2,7 @@
  * The evaluator still checks values and libraries when it runs them; these
  * checks catch malformed code even in an if branch which never executes.
  *
- * Release 1.4rc1: the codes here are the 1.4rc1 catalogue codes (E001-E075,
+ * Release 1.4: the codes here are the 1.4 catalogue codes (E001-E075,
  * F011), not the retired 1.3 numbers. validate(source, filename) still throws
  * the first problem it finds; validate(source, filename, { warnings: true })
  * also returns the W001-W005 hints for code that is odd but legal.
@@ -17,7 +17,7 @@
   function validate(source, filename) {
     var lines = String(source || '').split('\n');
     var stack = [], inPython = false, previousInlineIf = false;
-    var starters = /^(?:say|tell|let|set|define|ask|add|note|run|python|if|otherwise|else|end|repeat|while|check|wait|sleep|cancel|clear|read|write|append|create|put|show|hide|pause|resume|stop|play|link|lift|lower)\b/i;
+    var starters = /^(?:say|tell|let|set|define|ask|add|note|run|python|if|otherwise|else|end|repeat|while|forever|check|wait|sleep|cancel|clear|read|write|append|create|put|show|hide|pause|resume|stop|play|link|lift|lower)\b/i;
     function fail(code, name, reason, help, n, col) {
       throw problem(code, name, reason, help, filename, n + 1, col || 1, lines[n]);
     }
@@ -39,6 +39,7 @@
         } else masked += ch;
       }
       var phrases = [
+        /\bthe\s+version\s+of\s+E\+\+/gi,
         /\b(?:(?:and\s+)?concat\s+(?:it\s+)?with|with\s+(?:the\s+)?sep[ae]ration\s+(?:method\s+)?of)\b/gi,
         /\b(?:the\s+)?(?:length|uppercase|lowercase|reverse|trim|square\s+root|absolute\s+value|minimum|maximum|first\s+letter|last\s+letter|value)\s+of\b/gi,
         /\bthe\s+trimmed\b/gi,
@@ -140,14 +141,14 @@
       if (commentAt >= 0) fail('F011', 'Comment Characters Are Not E++', 'E++ notes do not use // or #.', 'Use: note [Your note]', n, commentAt + 1);
       if (/^(?:run\s+)?(?:the\s+)?python\s+code\s*:\s*$/i.test(text)) { inPython = true; previousInlineIf = false; continue; }
       checkStatement(raw, n, 0);
-      var end = text.match(/^end\s+(if|repeat|while|the\s+game)\s*$/i);
+      var end = text.match(/^end\s+(if|repeat|while|forever|the\s+game)\s*$/i);
       if (/^end\b/i.test(text)) {
         var name = end && end[1].toLowerCase().replace(/\s+/g, ' ');
         if (!stack.length) {
           fail('E017', 'Unexpected Block Ending', 'This block ending has no matching opening statement.',
-            'Use end if, end repeat, end while, or end the game to close its matching block.', n, raw.indexOf(text) + 1);
+            'Use the matching ending: end if, end repeat, end while, end forever, or end the game.', n, raw.indexOf(text) + 1);
         }
-        // 1.4rc1: an ending that closes the wrong kind of block is E019; the
+        // 1.4: an ending that closes the wrong kind of block is E019; the
         // block it should have closed is still open, so say which one.
         if (!name || stack[stack.length - 1].kind !== name) {
           var opening = stack[stack.length - 1];
@@ -176,6 +177,7 @@
       previousInlineIf = false;
       if (/^repeat\b/i.test(text)) stack.push({ kind: 'repeat', line: n });
       else if (/^while\b/i.test(text)) stack.push({ kind: 'while', line: n });
+      else if (/^forever\s*:?$/i.test(text)) stack.push({ kind: 'forever', line: n });
       else if (/^play\s+the\s+game\s*:?\s*$/i.test(text)) stack.push({ kind: 'the game', line: n });
     }
     if (stack.length) {

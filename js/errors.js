@@ -1,5 +1,5 @@
 /*
- * E++ Release 1.4rc1 - the error system.
+ * E++ Release 1.4 - the error system.
  *
  * EVERY failure E++ reports is one of one hundred catalogued codes:
  *
@@ -322,7 +322,7 @@
     if (!known.known) {
       // A code outside the catalogue is a bug in the engine, and saying so is
       // better than quietly reporting it under E015's name.
-      made.message = (message || known.name) + ' (raised with ' + code + ', which is not a 1.4rc1 code)';
+      made.message = (message || known.name) + ' (raised with ' + code + ', which is not a 1.4 code)';
       made.reason = made.message;
     }
     return made;

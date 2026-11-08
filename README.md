@@ -1,4 +1,4 @@
-# E++ 1.4rc1
+# E++ 1.4
 
 E++ is a small, English-like programming language with a browser Studio, a C++ command-line engine and a Python runner. Write text in double quotes, variables in single quotes, and maths as numbers and words.
 
@@ -8,9 +8,9 @@ say "Hello, ", 'name'
 say 2 plus 3 times 4
 ```
 
-## What’s new in 1.4rc1
+## What’s new in 1.4
 
-1.4rc1 isn't really a big update, it fixes some things like F errors, and adds some things like terminal mode
+E++ 1.4 brings the language and Studio together with an E++-only terminal that supports the Studio libraries, `forever` loops, and `the version of E++` for version-aware programs. It also includes the clearer error catalogue and flexible Studio layout.
 
 ## Start the Studio
 

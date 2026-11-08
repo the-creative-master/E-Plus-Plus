@@ -174,7 +174,7 @@ std::shared_ptr<Stmt> Parser::parse_statement() {
         return parse_check_statement();
     }
     if (tok.type == TokenType::KW_OTHERWISE) {
-        // 1.4rc1: a stray `otherwise` is E022 (standalone); E021 is reserved for
+        // 1.4: a stray `otherwise` is E022 (standalone); E021 is reserved for
         // `otherwise` written on the same line as its `if ... then`.
         throw ParseError("Syntax Error at line " + std::to_string(tok.line) + ", col " + std::to_string(tok.col) +
                          ": 'otherwise' can only appear immediately on the next line after an 'if' statement.",

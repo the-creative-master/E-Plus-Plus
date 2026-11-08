@@ -96,7 +96,7 @@
       instance.epp_lexer_free(address);
     }
     if (!output.ok) {
-      // Release 1.4rc1: the C++ lexer reports one of the fatal codes F001-F015
+      // Release 1.4: the C++ lexer reports one of the fatal codes F001-F015
       // together with its catalogue name and fix, so the browser prints exactly
       // what the native command line prints.
       var issue = output.error;

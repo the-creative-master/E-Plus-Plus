@@ -10,7 +10,7 @@
 
 void print_banner() {
     std::cout << "=========================================================\n";
-    std::cout << "   E++ Programming Language [1.4rc1]                 \n";
+    std::cout << "   E++ Programming Language [1.4]                 \n";
     std::cout << "   \"Looks like English, feels like english, and is english\"\n";
     std::cout << "=========================================================\n";
 }
@@ -38,7 +38,7 @@ void print_help() {
     std::cout << "  say the square root of 2\n";
 }
 
-// Release 1.4rc1: one reporter for every family.
+// Release 1.4: one reporter for every family.
 //
 //   [E++ Error F004: Unterminated String]     a fatal lexer error
 //     --> file.epp:3:7
@@ -80,7 +80,7 @@ static void print_deterministic_error(const std::string& code, const std::string
 // The English names of the general codes the native engine can raise. The
 // strings match js/errors.js exactly; epp.py has the same table.
 static std::string error_name(const std::string& code) {
-    // 1.4rc1: the whole catalogue, mirrored from js/errors.js (75 E, 5 W,
+    // 1.4: the whole catalogue, mirrored from js/errors.js (75 E, 5 W,
     // 5 Z and 15 F codes). Keep this list in step with the catalogue.
     if (code == "E001") return "Unquoted Text";
     if (code == "E002") return "Bare Variable Name";

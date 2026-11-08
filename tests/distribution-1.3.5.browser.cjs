@@ -45,7 +45,7 @@ if (!browserPath) throw new Error('Set EPP_BROWSER to a Chromium or Chrome execu
     await page.locator('#eshareClose').click();
     await page.locator('#btnTools').click();
     await page.locator('#toolsFeatureList [data-hub-id="wiki"]').click();
-    assert.equal(await page.locator('h1').innerText(), 'E++ 1.4rc1 Wiki');
+    assert.equal(await page.locator('h1').innerText(), 'E++ 1.4 Wiki');
     await page.locator('.wiki-header .back').click();
     await page.waitForFunction(() => document.querySelector('#editor').value.includes('square root of 144'));
     assert.equal(await page.locator('#editor').inputValue(), 'add library "Math"\nsay the square root of 144');
@@ -66,7 +66,7 @@ if (!browserPath) throw new Error('Set EPP_BROWSER to a Chromium or Chrome execu
     await offline.locator('#eshareClose').click();
     await offline.locator('#btnTools').click();
     await offline.locator('#toolsFeatureList [data-hub-id="wiki"]').click();
-    assert.equal(await offline.locator('h1').innerText(), 'E++ 1.4rc1 Wiki', 'the extracted wiki opens from file://');
+    assert.equal(await offline.locator('h1').innerText(), 'E++ 1.4 Wiki', 'the extracted wiki opens from file://');
     await offline.locator('.wiki-header .back').click();
     await offline.waitForFunction(() => document.querySelector('#editor').value.includes('say 4123 plus 719'));
     assert.equal(await offline.locator('#editor').inputValue(), 'say 4123 plus 719', 'offline wiki navigation keeps the editor draft');

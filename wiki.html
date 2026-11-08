@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark light">
-<title>E++ 1.4rc1 Wiki</title>
+<title>E++ 1.4 Wiki</title>
 <link rel="stylesheet" href="css/wiki.css">
 </head>
 <body>
 <a class="skip" href="#wiki-content">Skip to guide</a>
-<header class="wiki-header"><a href="index.html" class="back">← Back to Studio</a><span>THE E++ GUIDE <strong>1.4rc1</strong></span></header>
+<header class="wiki-header"><a href="index.html" class="back">← Back to Studio</a><span>THE E++ GUIDE <strong>1.4</strong></span></header>
 <main id="wiki-content" class="wiki-content">
-<h1 id="e-14b1-wiki">E++ 1.4rc1 Wiki</h1>
+<h1 id="e-14-wiki">E++ 1.4 Wiki</h1>
 <p>An approachable guide to E++, from your first line to games, animated drawings and shared projects. For exact syntax and diagnostic codes, see <a href="LANGUAGE.md">LANGUAGE.md</a>.</p>
 <h2 id="contents">Contents</h2>
 <ul><li><a href="#what-is-e">What is E++?</a></li>
@@ -74,7 +74,10 @@ while &#x27;count&#x27; is less than 4 do
   say &#x27;count&#x27;
   let &#x27;count&#x27; be &#x27;count&#x27; plus 1
 end while</code></pre>
-<p>Place <code>otherwise</code> on the next line, not after the first <code>say</code>. Blocks can also use <code>if ... then:</code>, <code>else:</code> and <code>end if</code>. Close every <code>repeat</code>, <code>while</code>, and block <code>if</code> with the corresponding <code>end</code>. Syntax is checked even in a branch that does not run.</p>
+<p>Place <code>otherwise</code> on the next line, not after the first <code>say</code>. Blocks can also use <code>if ... then:</code>, <code>else:</code> and <code>end if</code>. Close every <code>repeat</code>, <code>while</code>, <code>forever</code>, and block <code>if</code> with the corresponding <code>end</code>. Syntax is checked even in a branch that does not run.</p>
+<p>A <code>forever</code> block repeats until stopped. The built-in <code>the version of E++</code> expression returns the current runtime version:</p>
+<pre><code>let &#x27;Eversion&#x27; be the version of E++
+say &quot;E++ &quot;, &#x27;Eversion&#x27;</code></pre>
 <h2 id="tutorial-add-a-library">Tutorial: add a library</h2>
 <p>A library unlocks extra words. Use a <code>.enppl</code> project and add it before using its features:</p>
 <pre><code>add library &quot;Math&quot;
@@ -121,7 +124,7 @@ put the actor &#x27;hero&#x27; at 0 and 0
 <p>In the full Studio: Math, Random, Strings, Colors, Console, Time, Files, System, Python, Keyboard, Draw, Game and ImprovedWait are available. In <code>E++.zip</code>: Colors, Draw, Game and ImprovedWait are unavailable, while ImprovedWaitLite is available. The archived native and Python runners also reject Colors. The full repository’s native and Python runners retain Colors. Availability does not imply identical OS, filesystem, Python or graphical behavior across engines.</p>
 <p>Build the native engine with <code>make</code>, run tests with <code>make test</code> and <code>npm test</code>, and rebuild the archives with <code>make zip</code>. Browser regression tests require Playwright and a local Chromium executable; see the repository test scripts.</p>
 <h2 id="errors-and-troubleshooting">Errors and troubleshooting</h2>
-<p>Every message has a permanent code in 1.4rc1. The split is exact:</p>
+<p>Every message has a permanent code in 1.4. The split is exact:</p>
 <p>| Family | Count | What it means | | --- | --- | --- | | <code>E001</code>-<code>E075</code> | 75 | General errors. The program stops at the mistake. | | <code>W001</code>-<code>W005</code> | 5 | Warnings. The program keeps running. | | <code>Z001</code>-<code>Z005</code> | 5 | Only possible inside <code>E++.zip</code>, the standalone build. | | <code>F001</code>-<code>F015</code> | 15 | Fatal lexer errors: the source cannot be read. |</p>
 <p>The full catalogue, code by code with its fix, is in <code>LANGUAGE.md</code> §14. The short version, by area:</p>
 <ul><li><strong><code>E001</code>-<code>E014</code> values and quotes:</strong> text needs double quotes, variables need</li></ul>
@@ -138,7 +141,7 @@ put the actor &#x27;hero&#x27; at 0 and 0
 <li><strong><code>E071</code>-<code>E075</code> pictures, sprites and Game:</strong> an unknown actor is <code>E073</code>.</li></ul>
 <p>Warnings never stop the program. <code>W001</code> is an equation inside double quotes (<code>say &quot;1 plus 1&quot;</code> prints <code>1 plus 1</code>), <code>W002</code> a variable name that looks like text, <code>W003</code> a library added but never used, <code>W004</code> a statement continued on the next line, <code>W005</code> a number written as text. Studio lists them before you run, and the engines report them live.</p>
 <p><code>Z001</code> Colors, <code>Z002</code> Draw, <code>Z003</code> Game and <code>Z004</code> ImprovedWait only exist in the full Studio, so <code>E++.zip</code> names them precisely instead of saying &quot;not in this build&quot;. <code>Z005</code> covers a build without the JavaScript runtime.</p>
-<p>F codes are reserved for lexer failures. An unterminated note is reported as the general error <code>E064</code>; it is not an F error. If the compiled C++ lexer cannot boot, Studio reports the critical lexer failure <code>F015</code> and refuses to guess.</p>
+<p>F codes are reserved for lexer failures; parser mistakes use E codes. An unterminated Python block is a general end-of-program error (<code>E064</code>). If the compiled C++ lexer cannot boot, Studio reports a critical lexer failure (<code>F015</code>) and refuses to guess or silently fall back.</p>
 <h2 id="keyboard-and-accessibility">Keyboard and accessibility</h2>
 <p>Use <code>Ctrl+Enter</code> or <code>Cmd+Enter</code> to run, and <code>Ctrl+S</code> or <code>Cmd+S</code> to save. Press <code>Ctrl+Shift+P</code> (<code>Cmd+Shift+P</code> on Mac) to open Tools and search Studio features and local projects. Use Edit shortcuts in Tools or the sidebar to choose which features appear in each location. Dialogs retain keyboard focus and close with Escape. The mobile workspace and Draw controls have touch targets; the canvas is keyboard-focusable. The Output panel is a live region. Use browser zoom, high-contrast mode and line wrapping as needed.</p>
 <footer><a href="index.html">← Return to the Studio</a> · <a href="LANGUAGE.md">Language reference</a></footer>

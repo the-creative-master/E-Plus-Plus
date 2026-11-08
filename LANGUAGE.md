@@ -1,8 +1,8 @@
-# The E++ Language Reference (1.4rc1)
+# The E++ Language Reference (1.4)
 
 > **"Looks like English, feels like english, and is english"**
 
-This is the reference for **E++ 1.4rc1**. It covers the language itself, the
+This is the reference for **E++ 1.4**. It covers the language itself, the
 project files you download and import, and the libraries that ship with this
 release.
 
@@ -148,6 +148,16 @@ end while
 say "The sum is ", 'Total'
 ```
 
+**Repeat forever.** Use `forever` and `end forever` for a block that runs until
+it is stopped. Every E++ runtime keeps a loop safety limit; the Studio Terminal
+can also interrupt a running program with Escape.
+
+```text
+forever
+    say "Still running"
+end forever
+```
+
 ---
 
 ## 6. Variables and asking
@@ -160,7 +170,14 @@ ask "What is your name?" and save the output as 'Name'
 say "Hello ", 'name', ", welcome to E++!"
 ```
 
-Variable names are case-insensitive in use, and `let` re-assigns cleanly:
+Variable names are case-insensitive in use, and `let` re-assigns cleanly. The
+built-in expression `the version of E++` returns the version of the runtime, so
+examples can introduce themselves without hard-coding a release number:
+
+```text
+let 'Eversion' be the version of E++
+say "Welcome to E++ ", 'Eversion'
+```
 
 ```text
 let 'Score' be 'Score' plus 1
@@ -468,7 +485,7 @@ panel instead.
 
 ## 14. Diagnostics
 
-Every message E++ prints has a code. 1.4rc1 defines exactly one hundred of them:
+Every message E++ prints has a code. 1.4 defines exactly one hundred of them:
 
 | Family | Count | Meaning |
 | --- | --- | --- |

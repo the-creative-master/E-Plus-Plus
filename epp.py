@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-E++ (E-Plus-Plus) 1.4rc1 Direct Python Runtime & Engine
+E++ (E-Plus-Plus) 1.4 Direct Python Runtime & Engine
 Uses the native Python lexer to run E++ and Python code directly, including
 project files saved by the Studio.
 """
@@ -29,7 +29,7 @@ from lexer import (
 )
 
 # ==========================================================
-# Release 1.4rc1 - the error catalogue (the same 100 codes as js/errors.js)
+# Release 1.4 - the error catalogue (the same 100 codes as js/errors.js)
 # ==========================================================
 #   E001-E075  general errors
 #   W001-W005  warnings (the program still runs)
@@ -159,7 +159,7 @@ class Interpreter:
         return ""
 
     def diagnostic(self, code: str, name: str, reason: str, help_msg: str, line: int, col: int = 1):
-        # 1.4rc1: the catalogue name wins, so a code can never be printed with a
+        # 1.4: the catalogue name wins, so a code can never be printed with a
         # heading the other engines would not use.
         return EppDiagnosticError(code=code, name=error_name(code, name), filename=self.filename,
                                   line=line, col=col, source_line=self.get_source_line(line),
@@ -346,7 +346,7 @@ class Interpreter:
                 check_value(part)
             elif first.type in (TokenType.KW_LET, TokenType.KW_SET, TokenType.KW_DEFINE):
                 if len(line) < 2 or line[1].type != TokenType.VARIABLE:
-                    # 1.4rc1: double quotes around a name is E036 ("variables are
+                    # 1.4: double quotes around a name is E036 ("variables are
                     # not quoted"); a bare word is E030 ("invalid variable name").
                     if len(line) >= 2 and line[1].type == TokenType.STRING:
                         raise self.diagnostic("E036", "Variables Are Not Quoted",
@@ -475,7 +475,7 @@ class Interpreter:
                     raise self.diagnostic("E015", "Invalid Library Declaration", "Unexpected text after the library name.",
                                           'Use: add the "Math" library', line_num, declaration[j].col)
                 normalized = self.norm(lib_name)
-                # 1.4rc1: the Z code names the library (Z001 Colors, Z002 Draw,
+                # 1.4: the Z code names the library (Z001 Colors, Z002 Draw,
                 # Z003 Game, Z004 ImprovedWait). E++.zip adds the colors aliases
                 # to this list, because the Studio really ships Colors.
                 if normalized in ("draw", "drawing", "sprites", "game", "improvedwait"):
@@ -1306,7 +1306,7 @@ class Interpreter:
 # ==========================================
 
 def _usage():
-    print("E++ [1.4rc1] Python Direct Engine")
+    print("E++ [1.4] Python Direct Engine")
     print("Usage:")
     print("  python3 epp.py <file.enpp|file.enppl>             Run a program")
     print("  python3 epp.py -e '<code string>'                 Run inline code")

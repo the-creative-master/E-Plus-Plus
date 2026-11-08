@@ -723,7 +723,7 @@ await betaPhone(V_B1);
 
 // 1.4rc1 — compact expandable sidebar and the corrected general note error.
 const rcSidebar = frame(
-  topbar('1.4rc1') +
+  topbar('1.4') +
   rect(0, 54, 68, H - 54, T.rail) +
   text(34, 82, 'E++', { size: 14, weight: 800, fill: T.accent, anchor: 'middle' }) +
   [['Files', 126], ['Libraries', 188], ['Reference', 250]].map(([label, y], i) =>
@@ -748,7 +748,7 @@ const rcSidebar = frame(
 await shot('news-sidebar-1.4rc1.jpg', rcSidebar);
 
 const rcError = frame(
-  topbar('1.4rc1') + rail('1.4rc1', 'files') + sidebarActive('1.4rc1') +
+  topbar('1.4') + rail('1.4', 'files') + sidebarActive('1.4') +
   editorWrite(['note [Your first E++ program in pure .enpp', 'say "Hello, World!"'], 'CODE EDITOR', 1, 1, 528) +
   consolePanel((x, y) => text(x + 16, y + 24, '[E++ Error E064: Unexpected End Of Program]', { font: MONO, size: 13, weight: 700, fill: T.amber }) +
     text(x + 16, y + 52, 'hello.enpp:1:1', { font: MONO, size: 11, fill: T.text }) +

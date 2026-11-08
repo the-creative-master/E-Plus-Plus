@@ -1,4 +1,4 @@
-/* E++ 1.4rc1 Studio appearance and launcher layout. */
+/* E++ 1.4 Studio appearance and launcher layout. */
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
@@ -29,15 +29,15 @@
   // Keep one full Studio evaluator for the lifetime of Terminal mode so variables,
   // declared libraries, sprites, actors and running state persist across submissions.
   let terminalEvaluator = null;
-  const terminalCommands = {
-    help: 'E++ Terminal runs the full Studio E++ evaluator. Enter any E++ statement or program here; press Enter to continue an open block, use Shift+Enter for a manual newline, and Ctrl+Enter to run immediately. All Studio libraries, including Draw and Game, are supported. Utilities: commands, dir, clear, ver, help, exit. Escape returns to Settings.',
-    commands: 'Full E++ source is accepted (not a shell-only whitelist): say/tell, define/let/set, increase/decrease, ask, if/otherwise/end if, repeat/end repeat, while/end while, loopback, note, add library, Python blocks, Draw sprites and pen/movement commands, Game actors and controls, Keyboard, waits, files, images, math, random, strings, time, colors, console, and system statements. Add the needed library with add library "Name". Use Shift+Enter to enter multiline blocks. See Quick Reference for exact statement forms.',
-    dir: ' E++ workspace\n\n<DIR>  assets\n<DIR>  css\n<DIR>  examples\n<DIR>  include\n<DIR>  js\n<DIR>  src\n<DIR>  tests\n<DIR>  tools\n        E++.zip\n        LANGUAGE.md\n        README.md\n        WIKI.md\n        hello.enpp',
-    ver: 'E++ Studio [Version 1.4rc1]'
-  };
-  function terminalWrite(text) {
+  const terminalPages = { wiki: 'wiki.html', news: 'news.html' };
+  function terminalWrite(text, colorClass) {
     const output = $('terminalModeOutput');
-    output.textContent += String(text) + '\n';
+    const line = document.createElement('span');
+    const colors = { 'color-red': '#ff6b6b', 'color-green': '#00ff41', 'color-blue': '#68a7ff',
+      'color-yellow': '#ffe66d', 'color-cyan': '#4de8ff', 'color-magenta': '#ff74e8' };
+    if (Object.prototype.hasOwnProperty.call(colors, colorClass)) line.style.color = colors[colorClass];
+    line.textContent = String(text) + '\n';
+    output.appendChild(line);
     output.scrollTop = output.scrollHeight;
   }
   function terminalHasOpenBlocks(source) {
@@ -53,13 +53,14 @@
     for (const raw of lines) {
       const line = raw.trim();
       if (!line || /^note\b/i.test(line)) continue;
-      if (/^end\s+(repeat|while|if)\b/i.test(line)) {
-        const close = line.match(/^end\s+(repeat|while|if)\b/i)[1].toLowerCase();
+      if (/^end\s+(repeat|while|if|forever)\b/i.test(line)) {
+        const close = line.match(/^end\s+(repeat|while|if|forever)\b/i)[1].toLowerCase();
         if (stack[stack.length - 1] === close) stack.pop();
         continue;
       }
       if (/^repeat\b/i.test(line) && /\btimes\s*:?[\s]*$/i.test(line)) stack.push('repeat');
       else if (/^while\b/i.test(line) && /\bdo\s*:?[\s]*$/i.test(line)) stack.push('while');
+      else if (/^forever\s*:?$/i.test(line)) stack.push('forever');
       else if (/^if\b/i.test(line) && /\bthen\s*:?[\s]*$/i.test(line)) stack.push('if');
     }
     return stack.length > 0;
@@ -70,7 +71,9 @@
     input.style.height = Math.min(input.scrollHeight, window.innerHeight * 0.35) + 'px';
   }
   function resetTerminal() {
-    $('terminalModeOutput').textContent = 'C:\\E++> dir\n' + terminalCommands.dir + '\n\n';
+    $('terminalModeOutput').textContent = 'E++ Terminal [Version ' + (window.EPP && EPP.VERSION || '1.4') + ']\n' +
+      'Enter E++ statements or programs at the prompt. All Studio libraries are available.\n' +
+      'Type wiki or news to open the E++ reference pages. Press Escape to return to Settings.\n\n';
   }
   function applyOptions() {
     document.documentElement.style.setProperty('--editor-font-size', options.fontSize + 'px');
@@ -140,17 +143,14 @@
       return;
     }
     if (!command) return;
-    if (normalized === 'clear' || normalized === 'cls') {
-      $('terminalModeOutput').textContent = '';
-      return;
-    }
     terminalWrite('C:\\E++> ' + command);
-    if (normalized === 'exit') {
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
-      return;
+    if (normalized === 'powershell') {
+      terminalWrite('E++ PowerShell edition coming soon.'); terminalWrite(''); return;
     }
-    if (Object.prototype.hasOwnProperty.call(terminalCommands, normalized)) {
-      terminalWrite(terminalCommands[normalized]); terminalWrite(''); return;
+    if (Object.prototype.hasOwnProperty.call(terminalPages, normalized)) {
+      terminalWrite('Opening the E++ ' + normalized + '...');
+      window.location.href = terminalPages[normalized];
+      return;
     }
 
     // Use the same unrestricted evaluator as Studio. Keep its state between
@@ -159,7 +159,7 @@
     if (!terminalEvaluator) terminalEvaluator = new EppEvaluator();
     const evaluator = terminalEvaluator;
     try {
-      await evaluator.run(command, text => terminalWrite(text), prompt => new Promise(resolve => {
+      await evaluator.run(command, (text, colorClass) => terminalWrite(text, colorClass), prompt => new Promise(resolve => {
         terminalWrite('? ' + prompt);
         $('terminalModePrompt').textContent = '?';
         terminalPendingAsk = resolve;

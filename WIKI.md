@@ -1,4 +1,4 @@
-# E++ 1.4rc1 Wiki
+# E++ 1.4 Wiki
 
 An approachable guide to E++, from your first line to games, animated drawings and shared projects. For exact syntax and diagnostic codes, see [LANGUAGE.md](LANGUAGE.md).
 
@@ -90,7 +90,14 @@ while 'count' is less than 4 do
 end while
 ```
 
-Place `otherwise` on the next line, not after the first `say`. Blocks can also use `if ... then:`, `else:` and `end if`. Close every `repeat`, `while`, and block `if` with the corresponding `end`. Syntax is checked even in a branch that does not run.
+Place `otherwise` on the next line, not after the first `say`. Blocks can also use `if ... then:`, `else:` and `end if`. Close every `repeat`, `while`, `forever`, and block `if` with the corresponding `end`. Syntax is checked even in a branch that does not run.
+
+A `forever` block repeats until stopped. The built-in `the version of E++` expression returns the current runtime version:
+
+```text
+let 'Eversion' be the version of E++
+say "E++ ", 'Eversion'
+```
 
 ## Tutorial: add a library
 
@@ -170,7 +177,7 @@ Build the native engine with `make`, run tests with `make test` and `npm test`, 
 
 ## Errors and troubleshooting
 
-Every message has a permanent code in 1.4rc1. The split is exact:
+Every message has a permanent code in 1.4. The split is exact:
 
 | Family | Count | What it means |
 | --- | --- | --- |

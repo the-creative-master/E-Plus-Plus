@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>E++ Studio | 1.4rc1</title>
-<link rel="stylesheet" href="css/ide.css?v=1.4rc1-phone">
+<title>E++ Studio | 1.4</title>
+<link rel="stylesheet" href="css/ide.css?v=1.4-phone">
 <style>
   /* Color classes for Terminal */
   .color-red { color: #f87171 !important; }
@@ -343,7 +343,7 @@
     color: #7dd3fc;
   }
 </style>
-<link rel="stylesheet" href="css/studio.css?v=1.4rc1-epp-repl-2">
+<link rel="stylesheet" href="css/studio.css?v=1.4-epp-repl-2">
 <script>
   try { if (JSON.parse(localStorage.getItem('epp_studio_appearance_1_4a2') || '{}').animations === false) document.documentElement.classList.add('studio-motion-off'); } catch (_) {}
   // Wide-but-narrow desktops (900-1100px) keep the desktop shell and are
@@ -370,7 +370,7 @@
   <div class="brand">
     <div class="logo" aria-hidden="true">E<span>++</span></div>
     <div>
-      <h1>E++ <span>Studio</span> <span class="build-badge">1.4rc1</span></h1>
+      <h1>E++ <span>Studio</span> <span class="build-badge">1.4</span></h1>
       <p>YOUR SPACE TO CREATE</p>
     </div>
   </div>
@@ -455,7 +455,7 @@
   <label class="settings-row" for="editorFontSize"><span><strong>Editor text size</strong><small>Adjust code and line number size.</small></span><select id="editorFontSize"><option value="12">Small</option><option value="14">Default</option><option value="16">Large</option><option value="18">Extra large</option></select></label>
   <label class="settings-row" for="showLineNumbers"><span><strong>Line numbers</strong><small>Show the line number gutter in the editor.</small></span><input id="showLineNumbers" type="checkbox" checked></label>
   <label class="settings-row" for="studioAnimations"><span><strong>Studio animations</strong><small>Gentle motion for menus, panels and controls. Reduced-motion system preferences are always respected.</small></span><input id="studioAnimations" type="checkbox" checked></label>
-  <label class="settings-row" for="terminalMode"><span><strong>Terminal mode</strong><small>Use a monochrome black-and-white, monospace look across Studio.</small></span><input id="terminalMode" type="checkbox"></label>
+  <label class="settings-row" for="terminalMode"><span><strong>Terminal mode</strong><small>Use a black terminal with monospace text and E++ color output.</small></span><input id="terminalMode" type="checkbox"></label>
   <label class="settings-row" for="settingsWrap"><span><strong>Wrap long lines</strong><small>Keep long lines inside the editor.</small></span><input id="settingsWrap" type="checkbox"></label>
   <button id="resetAppearance" class="btn btn-small reset-appearance" type="button">Reset appearance</button>
   <div class="settings-section-title">FILES</div>
@@ -515,7 +515,7 @@
   </div>
   <div class="dash-group dash-group-end">
     <span id="zipRuntimeBadge" class="badge-zip-locked">C++ lexer loading…</span>
-    <span class="dash-badge-pill badge-version" id="buildVersion">v1.4rc1 · Release Candidate</span>
+    <span class="dash-badge-pill badge-version" id="buildVersion">v1.4 · Release</span>
   </div>
   <span id="mobileSaveStatus" class="mobile-save-status" role="status">Saved locally</span>
   <div class="dash-rules">
@@ -597,7 +597,7 @@
     </div>
     <!-- Available Libraries -->
     <section class="libraries-panel sidebar-panel" id="librariesPanel" hidden>
-      <h2>Libraries <span class="head-sub">(1.4rc1)</span></h2>
+      <h2>Libraries <span class="head-sub">(1.4)</span></h2>
       <p class="panel-note">Both word orders work:<br><code>add library "Math"</code> or <code>add the "Math" library</code></p>
       
       <div class="library-card" data-library="Python">
@@ -850,7 +850,7 @@ set the image of the actor 'hero' to "hero2.png"</pre>
 
 <div class="bottom-bar"><span>✦ E++ STUDIO</span><span>Updated Daily</span></div>
 <footer class="footer">
-  <span><strong>E++ Studio [1.4rc1]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
+  <span><strong>E++ Studio [1.4]</strong> · <code>.enpp</code> for pure programs, <code>.enppl</code> for library-powered code.</span>
   <span>Shortcuts: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run · <kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span>
 </footer>
 
@@ -1052,12 +1052,12 @@ set the image of the actor 'hero' to "hero2.png"</pre>
 <script src="js/eshare.js"></script>
 <script src="js/game-library.js"></script>
 <script src="js/draw-library.js"></script>
-<script src="js/icons.js?v=1.4rc1-phone"></script>
-<script src="js/studio-mobile.js?v=1.4rc1-phone"></script>
+<script src="js/icons.js?v=1.4-phone"></script>
+<script src="js/studio-mobile.js?v=1.4-phone"></script>
 <script src="js/studio-editor.js"></script>
 <script src="js/diagnostics.js"></script>
-<script src="js/native-lexer-wasm.js?v=1.4rc1-no-f007"></script>
-<script src="js/native-lexer.js?v=1.4rc1-no-f007"></script>
+<script src="js/native-lexer-wasm.js?v=1.4-no-f007"></script>
+<script src="js/native-lexer.js?v=1.4-no-f007"></script>
 <script>
 // ==========================================
 // E++ Pure & Fast In-Browser Engine + Python
@@ -1087,8 +1087,8 @@ say "1 + 1"`
   },
   {
     name: 'welcome_1_3_5.enpp',
-    content: `note [Welcome to E++ 1.4rc1. Run this file, then open Learn or Wiki.]
-say "Hello from E++ 1.4rc1!"
+    content: `note [Welcome to E++ 1.4. Run this file, then open Learn or Wiki.]
+say "Hello from E++ 1.4!"
 let 'ideas' be 3
 say "Ideas to try:", 'ideas'
 repeat 3 times
@@ -1098,7 +1098,8 @@ note [Try the Gallery to publish a copy of a project.]`
   },
   {
     name: 'release_showcase.enppl',
-    content: `note [E++ 1.4rc1 Grand Showcase (.enppl)]
+    content: `note [E++ Grand Showcase (.enppl)]
+let 'Eversion' be the version of E++
 add the "Colors" library
 add the "Time" library
 add the "Math" library
@@ -1109,7 +1110,7 @@ add the "System" library
 add the "Python" library
 
 say cyan "========================================================="
-say cyan "         Welcome to E++ 1.4rc1!           "
+say cyan "         Welcome to E++ ", 'Eversion', "           "
 say cyan "========================================================="
 
 note [System & Time Diagnostics]
@@ -1127,19 +1128,21 @@ say "Trimmed:", the trim of 'Announcement'
 say "Uppercase:", the uppercase of the trim of 'Announcement'
 
 note [File Persistence in Virtual IDE]
-write "E++ 1.4rc1 verified on: " to file "showcase_audit.log"
+write "E++ " to file "showcase_audit.log"
+append 'Eversion' to file "showcase_audit.log"
+append " verified on: " to file "showcase_audit.log"
 append the current date to file "showcase_audit.log"
 read the file "showcase_audit.log" and save the output as 'Audit'
 say "Audit log content:", 'Audit'
 
 note [Python Engine Bridge]
-let 'EppVersion' be "1.4rc1"
+let 'EppVersion' be 'Eversion'
 run the python code:
 print(f"[Python Subsystem] Connected with E++ v{EppVersion}")
 import math
 print(f"[Python Subsystem] Computed 10! = {math.factorial(10)}")
 
-say green "✓ E++ 1.4rc1 showcase complete!"`
+say green "✓ E++ ", 'Eversion', " showcase complete!"`
   },
   {
     name: 'python_demo.enppl',
@@ -1163,7 +1166,7 @@ run the python code "print('E++ says:', greeting)"`
     content: `note [Strings Library in E++ (.enppl)]
 add the "Strings" library
 
-let 'Message' be "Hello, E++ 1.4rc1!"
+let 'Message' be "Hello, E++ 1.4!"
 say "Original message:", 'Message'
 say "Length of message:", the length of 'Message'
 say "Uppercase:", the uppercase of 'Message'
@@ -1201,7 +1204,7 @@ say "System Platform:", the platform
 say "Operating System:", the os
 
 note [Writing and reading in the IDE filesystem:]
-write "E++ 1.4rc1 is ready!" to file "notes.txt"
+write "E++ 1.4 is ready!" to file "notes.txt"
 read the file "notes.txt" and save the output as 'ReadBack'
 say "Read back from file:", 'ReadBack'`
   },
@@ -1280,7 +1283,7 @@ say "You made a drawing!"`
   {
     name: 'game_showcase.enppl',
     hideInDistribution: true,
-    content: `note [E++ 1.4rc1 — the Game library: the pygame zero of E++.]
+    content: `note [E++ 1.4 — the Game library: the pygame zero of E++.]
 note [This file comes with two pictures already linked: hero and gem.]
 note [Press the Image button to add your own, or to change these.]
 add the "Game" library
@@ -1326,7 +1329,7 @@ say "Final score: ", 'score'`
   },
   {
     name: 'keyboard_playground.enppl',
-    content: `note [E++ 1.4rc1 — the Keyboard library: any key, by name.]
+    content: `note [E++ 1.4 — the Keyboard library: any key, by name.]
 add the "Keyboard" library
 add the "ImprovedWaitLite" library
 
@@ -3336,7 +3339,7 @@ function updateDrawSpeedControl(host) {
 // Find a matching end without mistaking an inner block for the outer one.
 function matchingBlockEnd(lines, start, kind) {
   let depth = 0;
-  const open = kind === 'repeat' ? /^repeat\b/i : kind === 'while' ? /^while\b/i : /^play\s+the\s+game\s*:?$/i;
+  const open = kind === 'repeat' ? /^repeat\b/i : kind === 'while' ? /^while\b/i : kind === 'forever' ? /^forever\s*:?$/i : /^play\s+the\s+game\s*:?$/i;
   const close = kind === 'game' ? /^end\s+the\s+game\s*$/i : new RegExp('^end\\s+' + kind + '\\s*$', 'i');
   for (let j = start + 1; j < lines.length; j++) {
     const text = lines[j].trim();
@@ -3614,6 +3617,24 @@ class EppEvaluator {
         }
         const pySource = pyBlock.join('\n');
         executeInBrowserPython(pySource, this.vars, printFn, lineNum);
+        continue;
+      }
+
+      // ---------------- E++ control flow: forever ----------------
+      if (command === 'forever' && /^forever\s*:?$/i.test(line)) {
+        const j = matchingBlockEnd(lines, i, 'forever');
+        if (j < 0) throw this.diagnostic('E018', 'Unclosed Forever Loop', 'This forever loop never ends.', 'Close it with: end forever', lineNum);
+        const bodySource = lines.slice(i + 1, j).join('\n');
+        const bodyOffset = lineOffset + i + 1;
+        i = j;
+        let rounds = 0;
+        while (!this.cancelled) {
+          if (rounds >= 100000) throw this.diagnostic('E068', 'Endless Loop',
+            'This forever loop reached the 100000-iteration safety limit.', 'Stop the program with Escape, or use a repeat or while loop that can finish.', lineNum);
+          await this.run(bodySource, printFn, askFn, bodyOffset, true);
+          rounds += 1;
+          if (rounds % 100 === 0) await nextFrame();
+        }
         continue;
       }
 
@@ -3897,7 +3918,7 @@ class EppEvaluator {
             };
           }
           if (!EPP.Libraries.isAvailable(name)) {
-            // 1.4rc1: every build-only library has its own Z code.
+            // 1.4: every build-only library has its own Z code.
             throw {
               code: EPP.Libraries.errorCode ? EPP.Libraries.errorCode(name) : 'Z002',
               name: 'Library Not In This Build',
@@ -4415,7 +4436,10 @@ class EppEvaluator {
     // 7. CONSOLE: CLEAR
     if (/^clear\s+(?:the\s+)?(?:console|screen)$/i.test(line)) {
       this.requireLib('Console', 'clear console', lineNum);
-      document.getElementById('consoleOutput').innerHTML = '';
+      const terminalOutput = document.documentElement.classList.contains('terminal-mode')
+        ? document.getElementById('terminalModeOutput') : null;
+      if (terminalOutput) terminalOutput.textContent = '';
+      else document.getElementById('consoleOutput').innerHTML = '';
       return;
     }
 
@@ -4457,7 +4481,7 @@ class EppEvaluator {
       this.requireLib('System', 'run system command', lineNum);
       const cmd = sysMatch[1];
       const outVar = sysMatch[2];
-      const res = `E++ 1.4rc1 runtime (cmd: ${cmd})`;
+      const res = `E++ 1.4 runtime (cmd: ${cmd})`;
       if (outVar) this.vars[this.norm(outVar)] = res;
       else printFn(res);
       return;
@@ -4657,6 +4681,7 @@ class EppEvaluator {
 
   async evalExpr(expr, lineNum) {
     expr = expr.trim();
+    if (/^the\s+version\s+of\s+e\+\+$/i.test(expr)) return EPP.VERSION || '1.4';
     if (!expr) throw this.diagnostic('E003', 'Missing Value', 'An expression needs a value.', 'Use a number, "text", or a single-quoted variable.', lineNum);
 
     const literal = this.tokensFor(expr, lineNum);
@@ -4805,7 +4830,7 @@ class EppEvaluator {
     // System library functions
     if (expr.toLowerCase() === 'the platform' || expr.toLowerCase() === 'the system platform') {
       this.requireLib('System', 'the platform', lineNum);
-      return navigator.platform || 'Web System (E++ 1.4rc1)';
+      return navigator.platform || 'Web System (E++ 1.4)';
     }
     if (expr.toLowerCase() === 'the os' || expr.toLowerCase() === 'the operating system') {
       this.requireLib('System', 'the os', lineNum);
@@ -6389,7 +6414,7 @@ loadFile(currentFileName);
 ensureNativeLexer().catch(() => {});
 ensureVaultReady();
 </script>
-<script src="js/studio-customize.js?v=1.4rc1-epp-repl-2"></script>
-<script src="js/studio-hub.js?v=1.4rc1-hub"></script>
+<script src="js/studio-customize.js?v=1.4-epp-repl-4"></script>
+<script src="js/studio-hub.js?v=1.4-hub"></script>
 </body>
 </html>

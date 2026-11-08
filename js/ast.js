@@ -8,6 +8,8 @@
   'use strict';
 
   var EPP = global.EPP || (global.EPP = {});
+  // Keep the language's self-reported version in one runtime-visible place.
+  EPP.VERSION = EPP.VERSION || '1.4';
 
   var Type = {
     PROGRAM: 'Program',
@@ -29,6 +31,7 @@
     CHECK_EXISTS: 'CheckExists',
     REPEAT: 'Repeat',
     WHILE: 'While',
+    FOREVER: 'Forever',
     STOP: 'Stop',
     NOTE: 'Note',
     LITERAL: 'Literal',
@@ -119,6 +122,7 @@
     CheckExists: function (name, token) { return at({ type: Type.CHECK_EXISTS, name: name }, token); },
     Repeat: function (count, body, token) { return at({ type: Type.REPEAT, count: count, body: body || [] }, token); },
     While: function (condition, body, token) { return at({ type: Type.WHILE, condition: condition, body: body || [] }, token); },
+    Forever: function (body, token) { return at({ type: Type.FOREVER, body: body || [] }, token); },
     Stop: function (token) { return at({ type: Type.STOP }, token); },
     Note: function (text, token) { return at({ type: Type.NOTE, text: text || '' }, token); },
 
