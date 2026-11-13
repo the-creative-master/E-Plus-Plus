@@ -54,7 +54,9 @@
       while ((match = words.exec(masked))) {
         // Release 1.5a1: the words a condition is made of are not unquoted
         // text, so "repeat until 'n' is 3" passes the pre-flight.
-        if (/^(?:plus|minus|times|multiplied|divided|by|mod|modulo|and|pi|e|true|false|is|not|equal|to|than|greater|less|lesser|exactly|different|from|or|contains|equals|touching|until|of|in|range|the|a|number|positive|negative|key|pressed)$/i.test(match[0])) continue;
+        // Release 1.5a1: "wait at most", "is at least" and "is no more than"
+        // are ordinary E++ sentences, so their words are never unquoted text.
+        if (/^(?:plus|minus|times|multiplied|divided|by|mod|modulo|and|pi|e|true|false|is|not|equal|to|than|greater|less|lesser|exactly|different|from|or|contains|equals|touching|until|of|in|range|the|a|number|positive|negative|key|pressed|at|least|most|no|more|wait|sleep|second|seconds|millisecond|milliseconds|tell|display)$/i.test(match[0])) continue;
         fail('E001', 'Unquoted Text', "Unquoted text '" + match[0] + "' is not a value.",
           'Put text in double quotes, or use single quotes for a variable.', n, column + match.index);
       }

@@ -4483,6 +4483,22 @@ class EppEvaluator {
     // Release 1.5a1 — pausing a program is part of the language. A plain
     // "wait 2 seconds" needs no library at all, exactly like "wait until".
     // The Time library keeps the clock: the current date, time and year.
+
+    // wait at most N seconds — a pause with a ceiling is still just a pause.
+    // This has to be read before the general form, because "at most 0.5" is
+    // not a number this program can work out.
+    const boundedWait = line.match(/^(?:wait|sleep)\s+at\s+most\s+(.+?)\s+(milliseconds|millisecond|seconds|second)$/i);
+    if (boundedWait) {
+      const amount = Number(await this.evalExpr(boundedWait[1].trim(), lineNum));
+      if (!Number.isFinite(amount) || amount < 0) {
+        throw this.diagnostic('E011', 'Value Is Not A Number', 'A wait needs a number of seconds that is 0 or more.',
+          'For example: wait at most 5 seconds', lineNum);
+      }
+      const capped = boundedWait[2].toLowerCase().startsWith('m') ? amount : amount * 1000;
+      if (capped > 0) await this.sleepMs(capped, null, lineNum);
+      return;
+    }
+
     const waitMatch = line.match(/^(?:wait|sleep)\s+(.+?)\s+(milliseconds|millisecond|seconds|second)$/i);
     if (waitMatch) {
       const val = Number(await this.evalExpr(waitMatch[1].trim(), lineNum));
@@ -4994,8 +5010,12 @@ class EppEvaluator {
       return finalMath;
     }
 
-    const bare = expr.match(/\b[A-Za-z_][\w-]*\b/);
-    if (bare && !/^(?:plus|minus|times|divided|by|mod|modulo)$/i.test(bare[0])) {
+    // Release 1.5a1 — the words that make up an E++ sentence (a unit of time,
+    // a comparison, "at most") are not unquoted text. They have already been
+    // read by the statement that called this expression.
+    const EPP_WORDS = /^(?:plus|minus|times|divided|by|mod|modulo|and|pi|e|true|false|is|not|equal|equals|exactly|different|from|greater|less|lesser|than|more|no|at|least|most|or|contains|touching|until|of|in|range|the|a|number|positive|negative|key|pressed|second|seconds|millisecond|milliseconds|wait|sleep)$/i;
+    const bare = (expr.match(/\b[A-Za-z_][\w-]*\b/g) || []).filter(word => !EPP_WORDS.test(word));
+    if (bare.length) {
       throw this.diagnostic('E001', 'Unquoted Text', `Unquoted text '${bare[0]}' is not a value.`,
         'Put text in double quotes, or use single quotes for a variable.', lineNum, bare[0]);
     }
