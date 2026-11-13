@@ -2,14 +2,37 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>E++ News | 1.4</title>
+  <title>E++ News | 1.5a1</title>
   <link rel="stylesheet" href="css/news.css?v=1.4">
 </head>
 <body>
-  <header class="news-top"><a href="index.html" class="news-back">← <span>Back to Studio</span></a><span class="news-brand">E<span>++</span> <b>STUDIO / NEWS</b></span><span class="news-version">1.4 · RELEASE</span></header>
+  <header class="news-top"><a href="index.html" class="news-back">← <span>Back to Studio</span></a><span class="news-brand">E<span>++</span> <b>STUDIO / NEWS</b></span><span class="news-version">1.5a1 · RELEASE</span></header>
   <main class="news-main">
-    <section class="news-current" aria-label="E++ 1.4 release">
-      <div class="news-kicker"><span></span> RELEASE 1.4</div>
+    <section class="news-current" aria-label="E++ 1.5a1 release">
+      <div class="news-kicker"><span></span> RELEASE 1.5a1</div>
+      <h1>E++ learned<br><em>to wait.</em></h1>
+      <p class="news-intro">E++ 1.5a1 adds the statement the language has been missing: <code>wait until</code>. It waits for something to become true, it belongs to the language itself, and it can be given a deadline. The Files library can now delete a file, loops can repeat until a condition is met, and comparisons read the way people actually say them.</p>
+      <div class="release-meta"><span>✦ &nbsp; RELEASE 1.5a1</span><span>FEATURE RELEASE</span></div>
+      <div class="news-grid">
+        <article><span class="article-number">01 / WAIT UNTIL</span><h2>Hold on until it is true.</h2><p><code>wait until 'score' is greater than 9</code> pauses the program and carries on the moment the condition holds. No library, no setup — and <code>wait at most 5 seconds until ...</code> gives up quietly instead of waiting forever.</p></article>
+        <article><span class="article-number">02 / TIDYING UP</span><h2>Delete the file.</h2><p>The Files library finally closes the circle: <code>write</code>, <code>append</code>, <code>read</code> and now <code>delete the file "notes.txt"</code>. Deleting a file that is not there is E076, so a typo is caught straight away instead of silently doing nothing.</p></article>
+        <article><span class="article-number">03 / REPEAT UNTIL</span><h2>Go round until it is done.</h2><p><code>repeat until</code> runs its body first and then tests the condition, so the loop always happens at least once — exactly how you would describe it out loud.</p></article>
+        <article><span class="article-number">04 / PLAINER ENGLISH</span><h2>Say it the way you say it.</h2><p><code>is at least</code>, <code>is at most</code>, <code>is different from</code>, <code>is no more than</code> and <code>is more than</code> all work now, and yes/no answers print as <code>True</code> and <code>False</code>.</p></article>
+      </div>
+      <div class="news-bottom"><div><span class="article-number">WAITING, IN FOUR LINES</span><h2>The whole feature.</h2><p>The condition reads exactly like an <code>if</code>, so there is nothing new to learn:</p></div><div class="news-figure-block"><pre class="news-code">let 'ready' be 0
+say "Getting things ready..."
+let 'ready' be 1
+wait until 'ready' is 1
+say "Ready!"</pre></div></div>
+      <div class="news-bottom"><div><span class="article-number">AND TIDYING UP</span><h2>Write it. Read it. Delete it.</h2><p>The Files library can now finish the job it starts:</p></div><div class="news-figure-block"><pre class="news-code">add the "Files" library
+write "Done." to file "notes.txt"
+read the file "notes.txt" and save the output as 'Notes'
+say 'Notes'
+delete the file "notes.txt"</pre></div></div>
+    </section>
+
+    <section class="news-archive" aria-label="E++ 1.4 previous release">
+      <div class="news-kicker"><span></span> PREVIOUS RELEASE · E++ 1.4</div>
       <h1>All E++.<br><em>Now in your terminal.</em></h1>
       <p class="news-intro">E++ 1.4 closes the release-candidate cycle with an E++-only Terminal, support for the Studio libraries, new forever loops, and a built-in version value for programs that introduce the release they run on.</p>
       <div class="release-meta"><span>✦ &nbsp; RELEASE 1.4</span><span>STABLE RELEASE</span></div>

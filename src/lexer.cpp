@@ -75,6 +75,17 @@ const std::unordered_map<std::string, TokenType> Lexer::keywords = {
     {"greater", TokenType::KW_GREATER},
     {"less", TokenType::KW_LESS},
     {"than", TokenType::KW_THAN},
+    // Release 1.5a1 — comparisons read the way people say them out loud:
+    // "at least", "at most", "different from", "exactly", "no more than".
+    {"exactly", TokenType::KW_EXACTLY},
+    {"different", TokenType::KW_DIFFERENT},
+    {"at", TokenType::KW_AT},
+    {"least", TokenType::KW_LEAST},
+    {"most", TokenType::KW_MOST},
+    {"or", TokenType::KW_OR},
+    {"no", TokenType::KW_NO},
+    {"more", TokenType::KW_MORE},
+    {"from", TokenType::KW_FROM},
     {"true", TokenType::KW_TRUE},
     {"false", TokenType::KW_FALSE},
 
@@ -134,6 +145,10 @@ const std::unordered_map<std::string, TokenType> Lexer::keywords = {
     {"millisecond", TokenType::KW_MILLISECOND},
     {"milliseconds", TokenType::KW_MILLISECONDS},
 
+    // Release 1.5a1: files can be deleted, and a wait can end on a condition.
+    {"delete", TokenType::KW_DELETE},
+    {"remove", TokenType::KW_REMOVE},
+    {"until", TokenType::KW_UNTIL},
     {"file", TokenType::KW_FILE},
     {"files", TokenType::KW_FILES},
     {"read", TokenType::KW_READ},
@@ -726,6 +741,19 @@ std::string Lexer::token_type_name(TokenType t) {
         case TokenType::KW_METHOD: return "method";
         case TokenType::KW_OF: return "of";
         case TokenType::TOKEN_PYTHON_BLOCK: return "PYTHON_BLOCK";
+        // Release 1.5a1
+        case TokenType::KW_DELETE: return "delete";
+        case TokenType::KW_REMOVE: return "remove";
+        case TokenType::KW_UNTIL: return "until";
+        case TokenType::KW_EXACTLY: return "exactly";
+        case TokenType::KW_DIFFERENT: return "different";
+        case TokenType::KW_AT: return "at";
+        case TokenType::KW_LEAST: return "least";
+        case TokenType::KW_MOST: return "most";
+        case TokenType::KW_OR: return "or";
+        case TokenType::KW_NO: return "no";
+        case TokenType::KW_MORE: return "more";
+        case TokenType::KW_FROM: return "from";
         default: return "KEYWORD";
     }
 }

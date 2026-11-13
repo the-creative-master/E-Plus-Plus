@@ -11,7 +11,7 @@
 <a class="skip" href="#wiki-content">Skip to guide</a>
 <header class="wiki-header"><a href="index.html" class="back">← Back to Studio</a><span>THE E++ GUIDE <strong>1.4</strong></span></header>
 <main id="wiki-content" class="wiki-content">
-<h1 id="e-14-wiki">E++ 1.4 Wiki</h1>
+<h1 id="e-15a1-wiki">E++ 1.5a1 Wiki</h1>
 <p>An approachable guide to E++, from your first line to games, animated drawings and shared projects. For exact syntax and diagnostic codes, see <a href="LANGUAGE.md">LANGUAGE.md</a>.</p>
 <h2 id="contents">Contents</h2>
 <ul><li><a href="#what-is-e">What is E++?</a></li>
@@ -75,9 +75,42 @@ while &#x27;count&#x27; is less than 4 do
   let &#x27;count&#x27; be &#x27;count&#x27; plus 1
 end while</code></pre>
 <p>Place <code>otherwise</code> on the next line, not after the first <code>say</code>. Blocks can also use <code>if ... then:</code>, <code>else:</code> and <code>end if</code>. Close every <code>repeat</code>, <code>while</code>, <code>forever</code>, and block <code>if</code> with the corresponding <code>end</code>. Syntax is checked even in a branch that does not run.</p>
+<p><code>repeat until</code> is the loop that runs first and checks afterwards, so the body always happens at least once:</p>
+<pre><code>let &#x27;count&#x27; be 1
+repeat until &#x27;count&#x27; is 4
+  say &#x27;count&#x27;
+  let &#x27;count&#x27; be &#x27;count&#x27; plus 1
+end repeat</code></pre>
 <p>A <code>forever</code> block repeats until stopped. The built-in <code>the version of E++</code> expression returns the current runtime version:</p>
 <pre><code>let &#x27;Eversion&#x27; be the version of E++
 say &quot;E++ &quot;, &#x27;Eversion&#x27;</code></pre>
+<h2 id="tutorial-wait-until-something-happens">Tutorial: wait until something happens</h2>
+<p><code>wait until</code> is new in 1.5a1 and needs no library. The program pauses and carries on the moment the condition becomes true, then continues on the next line:</p>
+<pre><code>let &#x27;ready&#x27; be 0
+say &quot;Getting things ready...&quot;
+let &#x27;ready&#x27; be 1
+wait until &#x27;ready&#x27; is 1
+say &quot;Ready!&quot;</code></pre>
+<p>A condition that never becomes true would wait forever, so give the wait a deadline when the value comes from outside the program. <code>wait at most</code> gives up quietly after that much time and the program simply continues:</p>
+<pre><code>wait at most 5 seconds until the &quot;Up arrow&quot; key is pressed
+say &quot;Either the key was pressed, or five seconds passed.&quot;</code></pre>
+<p>The condition is written exactly like an <code>if</code> condition, including the new plain-English comparisons: <code>is at least</code>, <code>is at most</code>, <code>is different from</code>, <code>is no more than</code> and <code>is more than</code>.</p>
+<h2 id="tutorial-delete-a-file">Tutorial: delete a file</h2>
+<p>The Files library writes, appends, reads — and now deletes:</p>
+<pre><code>add the &quot;Files&quot; library
+write &quot;Notes from today.&quot; to file &quot;notes.txt&quot;
+read the file &quot;notes.txt&quot; and save the output as &#x27;Notes&#x27;
+say &#x27;Notes&#x27;
+delete the file &quot;notes.txt&quot;</code></pre>
+<p><code>delete the file</code> and <code>remove the file</code> mean the same thing. Deleting a file that is not there reports <code>E076</code> rather than quietly doing nothing, so a typo in the name is easy to spot.</p>
+<h2 id="tutorial-pause-a-program">Tutorial: pause a program</h2>
+<p><code>wait</code> pauses, and it needs no library. The unit is <code>seconds</code>, <code>second</code>, <code>milliseconds</code> or <code>millisecond</code>:</p>
+<pre><code>say &quot;Starting...&quot;
+wait 2 seconds
+wait 250 milliseconds
+sleep 0.5 seconds
+say &quot;Done.&quot;</code></pre>
+<p><code>add the &quot;Time&quot; library</code> is only for the clock — <code>the current date</code>, <code>the current time</code>, <code>the current year</code> and <code>the current timestamp</code>.</p>
 <h2 id="tutorial-add-a-library">Tutorial: add a library</h2>
 <p>A library unlocks extra words. Use a <code>.enppl</code> project and add it before using its features:</p>
 <pre><code>add library &quot;Math&quot;
@@ -124,8 +157,8 @@ put the actor &#x27;hero&#x27; at 0 and 0
 <p>In the full Studio: Math, Random, Strings, Colors, Console, Time, Files, System, Python, Keyboard, Draw, Game and ImprovedWait are available. In <code>E++.zip</code>: Colors, Draw, Game and ImprovedWait are unavailable, while ImprovedWaitLite is available. The archived native and Python runners also reject Colors. The full repository’s native and Python runners retain Colors. Availability does not imply identical OS, filesystem, Python or graphical behavior across engines.</p>
 <p>Build the native engine with <code>make</code>, run tests with <code>make test</code> and <code>npm test</code>, and rebuild the archives with <code>make zip</code>. Browser regression tests require Playwright and a local Chromium executable; see the repository test scripts.</p>
 <h2 id="errors-and-troubleshooting">Errors and troubleshooting</h2>
-<p>Every message has a permanent code in 1.4. The split is exact:</p>
-<p>| Family | Count | What it means | | --- | --- | --- | | <code>E001</code>-<code>E075</code> | 75 | General errors. The program stops at the mistake. | | <code>W001</code>-<code>W005</code> | 5 | Warnings. The program keeps running. | | <code>Z001</code>-<code>Z005</code> | 5 | Only possible inside <code>E++.zip</code>, the standalone build. | | <code>F001</code>-<code>F015</code> | 15 | Fatal lexer errors: the source cannot be read. |</p>
+<p>Every message has a permanent code in 1.5a1. The split is exact:</p>
+<p>| Family | Count | What it means | | --- | --- | --- | | <code>E001</code>-<code>E077</code> | 77 | General errors. The program stops at the mistake. | | <code>W001</code>-<code>W006</code> | 6 | Warnings. The program keeps running. | | <code>Z001</code>-<code>Z005</code> | 5 | Only possible inside <code>E++.zip</code>, the standalone build. | | <code>F001</code>-<code>F015</code> | 15 | Fatal lexer errors: the source cannot be read. |</p>
 <p>The full catalogue, code by code with its fix, is in <code>LANGUAGE.md</code> §14. The short version, by area:</p>
 <ul><li><strong><code>E001</code>-<code>E014</code> values and quotes:</strong> text needs double quotes, variables need</li></ul>
 <p>single quotes. <code>E005</code> is an unfinished <code>&quot;</code>, <code>E007</code> an empty <code>&#x27;name&#x27;</code>.</p>
@@ -138,8 +171,10 @@ put the actor &#x27;hero&#x27; at 0 and 0
 <ul><li><strong><code>E052</code>-<code>E055</code> files, <code>E056</code>-<code>E059</code> saved projects:</strong> a damaged archive is</li></ul>
 <p><code>E057</code>; a key that does not open the project is <code>E059</code>.</p>
 <ul><li><strong><code>E066</code>-<code>E070</code> running:</strong> <code>E066</code> division by zero, <code>E068</code> an endless loop.</li>
-<li><strong><code>E071</code>-<code>E075</code> pictures, sprites and Game:</strong> an unknown actor is <code>E073</code>.</li></ul>
-<p>Warnings never stop the program. <code>W001</code> is an equation inside double quotes (<code>say &quot;1 plus 1&quot;</code> prints <code>1 plus 1</code>), <code>W002</code> a variable name that looks like text, <code>W003</code> a library added but never used, <code>W004</code> a statement continued on the next line, <code>W005</code> a number written as text. Studio lists them before you run, and the engines report them live.</p>
+<li><strong><code>E071</code>-<code>E075</code> pictures, sprites and Game:</strong> an unknown actor is <code>E073</code>.</li>
+<li><strong><code>E076</code>-<code>E077</code> deleting files:</strong> <code>E076</code> is a file that is not there,</li></ul>
+<p><code>E077</code> is a delete that failed for another reason.</p>
+<p>Warnings never stop the program. <code>W001</code> is an equation inside double quotes (<code>say &quot;1 plus 1&quot;</code> prints <code>1 plus 1</code>), <code>W002</code> a variable name that looks like text, <code>W003</code> a library added but never used, <code>W004</code> a statement continued on the next line, <code>W005</code> a number written as text, and <code>W006</code> a <code>wait until</code> sitting inside a loop, where nothing the loop does can run while it waits. Studio lists them before you run, and the engines report them live.</p>
 <p><code>Z001</code> Colors, <code>Z002</code> Draw, <code>Z003</code> Game and <code>Z004</code> ImprovedWait only exist in the full Studio, so <code>E++.zip</code> names them precisely instead of saying &quot;not in this build&quot;. <code>Z005</code> covers a build without the JavaScript runtime.</p>
 <p>F codes are reserved for lexer failures; parser mistakes use E codes. An unterminated Python block is a general end-of-program error (<code>E064</code>). If the compiled C++ lexer cannot boot, Studio reports a critical lexer failure (<code>F015</code>) and refuses to guess or silently fall back.</p>
 <h2 id="keyboard-and-accessibility">Keyboard and accessibility</h2>

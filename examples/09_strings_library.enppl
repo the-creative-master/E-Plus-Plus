@@ -1,0 +1,14 @@
+note [E++ 1.5a1: the Strings library works with words and sentences]
+add the "Strings" library
+
+let 'Message' be "Hello, E++ 1.5a1!"
+say "Original:", 'Message'
+say "Length:", the length of 'Message'
+say "Uppercase:", the uppercase of 'Message'
+say "Lowercase:", the lowercase of 'Message'
+say "Reversed:", the reverse of 'Message'
+say "First letter:", the first letter of 'Message'
+say "Last letter:", the last letter of 'Message'
+
+let 'Padded' be "   Spaced out text   "
+say "Trimmed: [", the trim of 'Padded', "]"

@@ -1,4 +1,4 @@
-# E++ 1.4
+# E++ 1.5a1
 
 E++ is a small, English-like programming language with a browser Studio, a C++ command-line engine and a Python runner. Write text in double quotes, variables in single quotes, and maths as numbers and words.
 
@@ -8,9 +8,17 @@ say "Hello, ", 'name'
 say 2 plus 3 times 4
 ```
 
-## What’s new in 1.4
+## What’s new in 1.5a1
 
-E++ 1.4 brings the language and Studio together with an E++-only terminal that supports the Studio libraries, `forever` loops, and `the version of E++` for version-aware programs. It also includes the clearer error catalogue and flexible Studio layout.
+E++ 1.5a1 is the release where E++ learns to **wait for things** and to **tidy up after itself**.
+
+* **`wait until`** — the program holds until a condition becomes true. It is part of the language, so no library is needed: `wait until 'score' is greater than 9`. Add a deadline with `wait at most 5 seconds until ...` and the program carries on if nothing happens.
+* **Plain pauses are core too** — `wait 2 seconds`, `sleep 0.5 seconds` and `wait 250 milliseconds` no longer ask for the Time library. Time keeps the clock.
+* **`delete the file`** — the Files library can remove a file it wrote: `delete the file "notes.txt"`. Deleting a file that is not there is `E076`, so a typo is caught immediately.
+* **`repeat until`** — a loop that keeps going until its condition is true, then stops.
+* **More English** — `is at least`, `is at most`, `is different from`, `is no more than`, `is more than`, and booleans that print as `True` and `False`.
+
+Two new errors (`E076`, `E077`) and one new warning (`W006`) join the catalogue: 103 codes in total.
 
 ## Start the Studio
 
@@ -57,6 +65,30 @@ while 'count' is less than 4 do
   say 'count'
   let 'count' be 'count' plus 1
 end while
+
+repeat until 'count' is 7
+  say 'count'
+  let 'count' be 'count' plus 1
+end repeat
+```
+
+### 4. Waiting and tidying up
+
+Waiting is core E++ — no `add` line, ever:
+
+```text
+say "One moment..."
+wait 2 seconds
+wait 250 milliseconds
+sleep 0.5 seconds
+
+let 'ready' be 1
+wait until 'ready' is 1
+say "Ready!"
+
+add the "Files" library
+write "Done." to file "notes.txt"
+delete the file "notes.txt"
 ```
 
 Try `repeat 3 times` … `end repeat`, or an `if ... then` followed by `otherwise` on the next line. Notes use `note [text]`.
@@ -101,6 +133,32 @@ make test                      # C++ and Python regression suite
 npm test                       # JavaScript, diagnostics, lexer and gallery tests
 make zip                       # rebuild E++.zip and epp_language.zip
 ```
+
+### E++ on Windows
+
+`epp.exe` is the same engine, cross-compiled into one static 64-bit console
+program. Nothing else has to be installed on Windows — open PowerShell where
+the file is and run it:
+
+```powershell
+.\epp.exe -e "say \"Hello from Windows\""
+.\epp.exe examples\01_hello.enpp
+.\epp.exe -e "let 'n' be 1`nwait at most 2 seconds until 'n' is 2`nsay \"Waited\""
+```
+
+Build it from any operating system with Zig (no Windows machine needed):
+
+```bash
+pip install ziglang
+ZIG=$(python3 -c "import ziglang,os;print(os.path.join(os.path.dirname(ziglang.__file__),'zig'))") \
+  make windows                # writes epp.exe
+```
+
+`make windows` runs `tools/build-windows.mjs`, which calls
+`zig c++ --target=x86_64-windows-gnu ... -static`. The result is a plain
+console program, so it works in PowerShell, Command Prompt, Windows Terminal
+and the VS Code integrated terminal alike. It is a build output, so it is not
+tracked in Git; build it whenever you want a fresh copy.
 
 The full repository’s C++ and Python runners can use Colors, but have no Draw or Game canvas. The copies and native binary inside `E++.zip` reject Colors, Draw and Game with a helpful error, including after rebuilding from the ZIP’s source. In an extracted ZIP, `make`, `make test` and `npm start` work; rebuilding release archives and the `npm test` scripts require the full source checkout. For detailed build differences, see [LANGUAGE.md](LANGUAGE.md#13-which-libraries-are-in-ezip).
 

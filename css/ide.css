@@ -300,6 +300,8 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .console-line.prompt { color: #fde68a; }
 .console-line.answer { color: var(--muted); }
 .console-line.answer::before { content: "› "; color: var(--accent); }
+/* Release 1.5a1: a warning reads like a warning — the program still runs. */
+.console-line.warning { color: var(--warning); }
 .console-line.error {
   color: #fecaca; background: rgba(248, 113, 113, .1); border: 1px solid rgba(248,113,113,.35);
   border-radius: 8px; padding: 8px 10px; margin: 6px 0;

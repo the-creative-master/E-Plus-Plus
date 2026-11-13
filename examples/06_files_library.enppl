@@ -1,0 +1,17 @@
+note [E++ 1.5a1: the Files library — write, read, then delete]
+add the "Files" library
+
+note [1. Writing to a file (it is created if it is not there yet):]
+write "E++ 1.5a1 project notes." to file "notes.txt"
+
+note [2. Appending keeps what is already in the file:]
+append " Written on the day this example was opened." to file "notes.txt"
+
+note [3. Reading the file back into a variable:]
+read the file "notes.txt" and save the output as 'Notes'
+say "Contents read back:"
+say 'Notes'
+
+note [4. New in 1.5a1 — deleting a file when it is no longer needed:]
+delete the file "notes.txt"
+say "notes.txt has been deleted."

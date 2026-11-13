@@ -7,8 +7,66 @@
 #include <thread>
 #include <fstream>
 #include <sstream>
+#include <filesystem>
+#include <cstdio>
+
+// M_PI is not part of the C++ standard, and the Windows toolchain used to build
+// epp.exe does not define it. Release 1.5a1 keeps one spelling everywhere.
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace epp {
+
+namespace {
+// The environment variable lets a runtime cap how long one "wait until" may
+// poll. The C++ engine has no Stop button, so a condition that never becomes
+// true would otherwise hang the terminal forever.
+double wait_ceiling_seconds() {
+    const char* raw = std::getenv("EPP_WAIT_CEILING");
+    if (!raw) return 60.0;
+    try {
+        double value = std::stod(raw);
+        return value > 0 ? value : 60.0;
+    } catch (...) {
+        return 60.0;
+    }
+}
+
+// A pipe that works on both POSIX and Windows. Release 1.5a1: the Windows build
+// of E++ has to run system commands and Python too, and _popen/_pclose are the
+// Windows spelling of popen/pclose.
+#if defined(_WIN32)
+#define EPP_POPEN _popen
+#define EPP_PCLOSE _pclose
+#else
+#define EPP_POPEN popen
+#define EPP_PCLOSE pclose
+#endif
+
+// Where a program's temporary Python scratch file lives. On Windows %TEMP%
+// exists; on POSIX systems /tmp almost always does, with /var/tmp as a fallback.
+std::string python_scratch_path() {
+#if defined(_WIN32)
+    const char* temp = std::getenv("TEMP");
+    if (!temp) temp = std::getenv("TMP");
+    if (!temp) temp = ".";
+    return std::string(temp) + "\\epp_python_exec.py";
+#else
+    return "/tmp/epp_python_exec.py";
+#endif
+}
+
+// The Python command on this machine. Windows installs its interpreter as
+// "python"; POSIX systems call it "python3" (and often also "python").
+std::string python_command() {
+#if defined(_WIN32)
+    return "python";
+#else
+    return "python3";
+#endif
+}
+} // namespace
 
 Interpreter::Interpreter(std::ostream& out_stream, std::istream& in_stream)
     : out(out_stream), in(in_stream) {}
@@ -568,6 +626,21 @@ void Interpreter::visitRepeatStmt(RepeatStmt* stmt) {
     }
 }
 
+void Interpreter::visitRepeatUntilStmt(RepeatUntilStmt* stmt) {
+    // Release 1.5a1: run the body, then test — the loop always runs once.
+    long long guard = 0;
+    while (!stmt->condition->accept(this).is_truthy()) {
+        if (++guard > 100000) {
+            throw RuntimeError(
+                "This repeat until ran 100000 times and the condition is still false.",
+                stmt->line, stmt->col, "E068");
+        }
+        for (const auto& s : stmt->body) {
+            s->accept(this);
+        }
+    }
+}
+
 void Interpreter::visitWhileStmt(WhileStmt* stmt) {
     while (stmt->condition->accept(this).is_truthy()) {
         for (const auto& s : stmt->body) {
@@ -681,7 +754,7 @@ void Interpreter::visitPythonStmt(PythonStmt* stmt) {
     script += code + "\n";
 
     // Write to temp file and run
-    std::string tmp_path = "/tmp/epp_python_exec.py";
+    std::string tmp_path = python_scratch_path();
     FILE* tmp_file = fopen(tmp_path.c_str(), "w");
     if (!tmp_file) {
         throw RuntimeError("Failed to create temporary script for Python execution", stmt->line, stmt->col);
@@ -689,10 +762,11 @@ void Interpreter::visitPythonStmt(PythonStmt* stmt) {
     fwrite(script.c_str(), 1, script.size(), tmp_file);
     fclose(tmp_file);
 
-    std::string cmd = "python3 " + tmp_path + " 2>&1";
-    FILE* pipe = popen(cmd.c_str(), "r");
+    std::string cmd = python_command() + " \"" + tmp_path + "\" 2>&1";
+    FILE* pipe = EPP_POPEN(cmd.c_str(), "r");
     if (!pipe) {
-        throw RuntimeError("Failed to launch python3 subprocess", stmt->line, stmt->col);
+        throw RuntimeError("Failed to launch the Python interpreter (" + python_command() +
+                           "). Install Python and make sure it is on PATH.", stmt->line, stmt->col);
     }
 
     char buffer[256];
@@ -701,7 +775,7 @@ void Interpreter::visitPythonStmt(PythonStmt* stmt) {
         out << buffer;
         total_output += buffer;
     }
-    pclose(pipe);
+    EPP_PCLOSE(pipe);
 
     // Save to output variable if specified
     if (!stmt->output_var.empty()) {
@@ -714,8 +788,45 @@ void Interpreter::visitPythonStmt(PythonStmt* stmt) {
 }
 
 void Interpreter::visitWaitStmt(WaitStmt* stmt) {
-    require_library("Time", "Wait / Sleep", stmt->line, stmt->col);
+    // Release 1.5a1: waiting is core E++. "wait until" needs no library, and
+    // neither does a plain "wait 2 seconds" — pausing a program is part of the
+    // language, not something a library switches on. Named waits, waits that
+    // chain an action and actor waits still belong to the wait libraries.
+
+    if (stmt->is_until) {
+        if (!stmt->condition) {
+            throw RuntimeError("\"wait until\" needs a condition to wait for.", stmt->line, stmt->col, "E027");
+        }
+        double limit = -1.0;
+        if (stmt->duration) {
+            limit = stmt->duration->accept(this).as_number();
+            if (stmt->is_milliseconds) limit /= 1000.0;
+            if (limit < 0) {
+                throw RuntimeError("A wait cannot be for a negative amount of time.", stmt->line, stmt->col, "E011");
+            }
+        }
+        const bool has_limit = limit >= 0.0;
+        const double ceiling = has_limit ? limit : wait_ceiling_seconds();
+        const auto started = std::chrono::steady_clock::now();
+        while (true) {
+            Value result = stmt->condition->accept(this);
+            if (result.is_truthy()) return;
+            double waited = std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();
+            if (waited >= ceiling) {
+                if (has_limit) return;  // "at most" always ends quietly.
+                throw RuntimeError(
+                    "This \"wait until\" waited " + std::to_string(static_cast<int>(ceiling)) +
+                    " seconds and the condition is still false.",
+                    stmt->line, stmt->col, "E067");
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(25));
+        }
+    }
+
     double dur = stmt->duration->accept(this).as_number();
+    if (dur < 0) {
+        throw RuntimeError("A wait cannot be for a negative amount of time.", stmt->line, stmt->col, "E011");
+    }
     if (stmt->is_milliseconds) {
         std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(dur)));
     } else {
@@ -749,6 +860,23 @@ void Interpreter::visitFileStmt(FileStmt* stmt) {
             throw RuntimeError("File Error: Could not open file '" + path + "' for appending", stmt->line, stmt->col);
         }
         file << content;
+    } else if (stmt->op == FileOp::DELETE) {
+        // Release 1.5a1: deleting a file says what happened, and a missing file
+        // is explained rather than silently ignored.
+        std::error_code ec;
+        bool existed = std::filesystem::exists(path, ec);
+        if (!existed) {
+            throw RuntimeError(
+                "File Error: There is no file called '" + path + "' to delete.",
+                stmt->line, stmt->col, "E076");
+        }
+        bool removed = std::filesystem::remove(path, ec);
+        if (!removed || ec) {
+            throw RuntimeError(
+                "File Error: '" + path + "' could not be deleted." +
+                (ec ? " " + ec.message() : ""),
+                stmt->line, stmt->col, "E077");
+        }
     }
 }
 
@@ -758,7 +886,7 @@ void Interpreter::visitSystemStmt(SystemStmt* stmt) {
 
     if (!stmt->target_var.empty()) {
         std::string full_cmd = cmd + " 2>&1";
-        FILE* pipe = popen(full_cmd.c_str(), "r");
+        FILE* pipe = EPP_POPEN(full_cmd.c_str(), "r");
         if (!pipe) {
             throw RuntimeError("System Error: Failed to run command '" + cmd + "'", stmt->line, stmt->col);
         }
@@ -767,7 +895,7 @@ void Interpreter::visitSystemStmt(SystemStmt* stmt) {
         while (fgets(buf, sizeof(buf), pipe) != nullptr) {
             total_out += buf;
         }
-        pclose(pipe);
+        EPP_PCLOSE(pipe);
         while (!total_out.empty() && (total_out.back() == '\n' || total_out.back() == '\r')) {
             total_out.pop_back();
         }

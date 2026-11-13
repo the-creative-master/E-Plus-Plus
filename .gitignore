@@ -1,5 +1,7 @@
 # Build artifacts
 epp
+epp.exe
+epp.pdb
 *.o
 *.d
 src/*.o

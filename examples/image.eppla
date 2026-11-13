@@ -1,5 +1,0 @@
-note [The Studio Game library can put a picture on its game surface.]
-add library "Game"
-create the actor 'red_pixel' with the image "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
-put the actor 'red_pixel' at 0 and 0
-say "The image is on the game surface."

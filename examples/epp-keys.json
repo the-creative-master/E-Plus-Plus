@@ -2,11 +2,11 @@
   "keys": [
     {
       "id": "example-project-key",
-      "project": "examples/17_saved_project.enpp",
+      "project": "examples/10_saved_project.enpp",
       "key": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
-      "label": "E++ 1.2 example project",
+      "label": "E++ 1.5a1 saved project example",
       "fingerprint": "78c27f",
-      "createdAt": "2026-10-24T00:00:00.000Z"
+      "createdAt": "2026-11-13T00:00:00.000Z"
     }
   ]
 }

@@ -238,6 +238,19 @@ public:
     void accept(ASTVisitor* visitor) override;
 };
 
+// repeat until <condition> ... end repeat   (Release 1.5a1)
+//
+// The body runs first and the condition is tested after every round, so the
+// loop always runs at least once — that is what "repeat until" says out loud.
+class RepeatUntilStmt : public Stmt {
+public:
+    std::shared_ptr<Expr> condition;
+    std::vector<std::shared_ptr<Stmt>> body;
+    RepeatUntilStmt(std::shared_ptr<Expr> cond, const std::vector<std::shared_ptr<Stmt>>& b, int l, int c)
+        : condition(cond), body(b) { line = l; col = c; }
+    void accept(ASTVisitor* visitor) override;
+};
+
 // while <condition> do: ... end while
 class WhileStmt : public Stmt {
 public:
@@ -277,23 +290,34 @@ public:
 };
 
 // wait 2 seconds / sleep 500 milliseconds
+//
+// Release 1.5a1 — "wait until" is now core E++: a wait can hold the program
+// until an English condition becomes true. `limit` is the optional deadline
+// ("wait at most 10 seconds until ..."); when there is none, the runtime keeps
+// a generous safety limit instead of hanging forever.
 class WaitStmt : public Stmt {
 public:
-    std::shared_ptr<Expr> duration;
+    std::shared_ptr<Expr> duration;      // a plain wait, or "wait at most N"
+    std::shared_ptr<Expr> condition;     // non-null for wait until
     bool is_milliseconds = false;
-    WaitStmt(std::shared_ptr<Expr> dur, bool ms, int l, int c)
-        : duration(dur), is_milliseconds(ms) { line = l; col = c; }
+    bool is_until = false;
+    WaitStmt(std::shared_ptr<Expr> dur, bool ms, int l, int c,
+             std::shared_ptr<Expr> cond = nullptr, bool until = false)
+        : duration(dur), condition(cond), is_milliseconds(ms), is_until(until) { line = l; col = c; }
     void accept(ASTVisitor* visitor) override;
 };
 
 // read file "test.txt" and save the output as 'Content'
 // write "Hello" to file "test.txt"
 // append "Hello" to file "test.txt"
+// delete the file "test.txt"   (Release 1.5a1)
 enum class FileOp {
     READ,
     WRITE,
     APPEND,
-    CHECK_EXISTS
+    CHECK_EXISTS,
+    // Release 1.5a1 — the other half of file handling: removing one.
+    DELETE
 };
 
 class FileStmt : public Stmt {
@@ -344,6 +368,7 @@ public:
     virtual void visitAddLibraryStmt(AddLibraryStmt* stmt) = 0;
     virtual void visitIfStmt(IfStmt* stmt) = 0;
     virtual void visitRepeatStmt(RepeatStmt* stmt) = 0;
+    virtual void visitRepeatUntilStmt(RepeatUntilStmt* stmt) = 0;
     virtual void visitWhileStmt(WhileStmt* stmt) = 0;
     virtual void visitExprStmt(ExprStmt* stmt) = 0;
     virtual void visitNoteStmt(NoteStmt* stmt) = 0;
@@ -370,6 +395,7 @@ inline void AskStmt::accept(ASTVisitor* visitor) { visitor->visitAskStmt(this); 
 inline void AddLibraryStmt::accept(ASTVisitor* visitor) { visitor->visitAddLibraryStmt(this); }
 inline void IfStmt::accept(ASTVisitor* visitor) { visitor->visitIfStmt(this); }
 inline void RepeatStmt::accept(ASTVisitor* visitor) { visitor->visitRepeatStmt(this); }
+inline void RepeatUntilStmt::accept(ASTVisitor* visitor) { visitor->visitRepeatUntilStmt(this); }
 inline void WhileStmt::accept(ASTVisitor* visitor) { visitor->visitWhileStmt(this); }
 inline void ExprStmt::accept(ASTVisitor* visitor) { visitor->visitExprStmt(this); }
 inline void NoteStmt::accept(ASTVisitor* visitor) { visitor->visitNoteStmt(this); }

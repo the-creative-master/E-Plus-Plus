@@ -1,0 +1,58 @@
+note [E++ 1.5a1: everything the full Studio can do, in one program]
+add the "Time" library
+add the "Math" library
+add the "Strings" library
+add the "Files" library
+add the "Keyboard" library
+add the "Draw" library
+add the "Game" library
+
+let 'Eversion' be the version of E++
+say "========================================================="
+say "         Welcome to E++ ", 'Eversion'
+say "========================================================="
+
+note [Maths and strings read like sentences:]
+say "The square root of 144 is", the square root of 144
+let 'Announcement' be "   e++ is readable like english!   "
+say "Trimmed:", the trim of 'Announcement'
+say "Uppercase:", the uppercase of the trim of 'Announcement'
+
+note [Files: write, read back, then delete (new in 1.5a1):]
+write "E++ " to file "showcase_audit.log"
+append 'Eversion' to file "showcase_audit.log"
+read the file "showcase_audit.log" and save the output as 'Audit'
+say "Audit log content:", 'Audit'
+delete the file "showcase_audit.log"
+say "Audit log deleted."
+
+note [wait until is core E++ now — no library, no drama:]
+let 'Ready' be 1
+wait until 'Ready' is 1
+say "The wait finished as soon as its condition was true."
+
+note [repeat until counts down without a counter bookkeeping trick:]
+let 'Countdown' be 3
+repeat until 'Countdown' is 0
+  say "T-minus ", 'Countdown'
+  let 'Countdown' be 'Countdown' minus 1
+end repeat
+
+note [Draw animates a cursor in the console:]
+define 'pencil' as drawing sprite
+set the speed of 'pencil' to 400
+'pencil' move right "80"
+'pencil' move down "80"
+'pencil' move left "80"
+'pencil' move up "80"
+
+note [Game draws on its own surface, with a picture linked to a name:]
+set the game window to 480 by 360
+set the game background to "night"
+create the actor 'hero'
+put the actor 'hero' at 0 and 0
+set the size of the actor 'hero' to 2
+
+say "Press the Up arrow while this program runs!"
+wait at most 2 seconds until the "Up arrow" key is pressed
+say "The showcase is finished — every Studio feature above ran."

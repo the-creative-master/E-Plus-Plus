@@ -452,32 +452,30 @@
           title: 'Let time pass',
           goal: 'Wait, then print exactly: Done',
           body: [
-            { p: '`wait` pauses the program. Seconds can be fractional.' },
-            { code: 'add the "{wait}" library\nwait 0.5 seconds\nsay "Done"' }
+            { p: '`wait` pauses the program, and it needs no library at all. Seconds can be fractional.' },
+            { code: 'wait 0.5 seconds\nsay "Done"' }
           ],
           starter: 'note [Wait half a second, then print Done]\n',
-          solution: 'add the "{wait}" library\nwait 0.2 seconds\nsay "Done"\n',
-          hints: ['`wait 0.2 seconds` is the pause.'],
-          check: { output: ['Done'] },
-          needs: ['{wait}']
+          solution: 'wait 0.2 seconds\nsay "Done"\n',
+          hints: ['`wait 0.2 seconds` is the pause, with no `add` line needed.'],
+          check: { output: ['Done'] }
         },
         {
           id: 'wait-until',
           title: 'Wait for a condition',
           goal: 'Print exactly: Ready',
           body: [
-            { p: '{wait} can wait until something becomes true — and `at most` keeps it from waiting forever.' },
-            { code: 'add the "{wait}" library\nlet \'Ready\' be 1\nwait at most 2 seconds until \'Ready\' is equal to 1\nsay "Ready"' },
+            { p: '`wait until` holds the program until something becomes true — and `at most` keeps it from waiting forever. It is part of E++, so no library is needed.' },
+            { code: 'let \'Ready\' be 1\nwait at most 2 seconds until \'Ready\' is equal to 1\nsay "Ready"' },
             { p: 'This is how a program waits for a click, a key, or another part of the game to finish.' }
           ],
-          starter: 'add the "{wait}" library\nlet \'Ready\' be 1\nnote [Wait at most 2 seconds until Ready is equal to 1, then print Ready]\n',
-          solution: 'add the "{wait}" library\nlet \'Ready\' be 1\nwait at most 0.2 seconds until \'Ready\' is equal to 1\nsay "Ready"\n',
+          starter: 'let \'Ready\' be 1\nnote [Wait at most 2 seconds until Ready is equal to 1, then print Ready]\n',
+          solution: 'let \'Ready\' be 1\nwait at most 0.2 seconds until \'Ready\' is equal to 1\nsay "Ready"\n',
           hints: [
             'The phrase is `wait at most 0.2 seconds until \'Ready\' is equal to 1`.',
             'Then print Ready on the next line.'
           ],
-          check: { output: ['Ready'] },
-          needs: ['{wait}']
+          check: { output: ['Ready'] }
         }
       ]
     },

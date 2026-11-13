@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>E++ Studio | 1.4</title>
+<title>E++ Studio | 1.5a1</title>
 <link rel="stylesheet" href="css/ide.css?v=1.4-phone">
 <style>
   /* Color classes for Terminal */
@@ -370,7 +370,7 @@
   <div class="brand">
     <div class="logo" aria-hidden="true">E<span>++</span></div>
     <div>
-      <h1>E++ <span>Studio</span> <span class="build-badge">1.4</span></h1>
+      <h1>E++ <span>Studio</span> <span class="build-badge">1.5a1</span></h1>
       <p>YOUR SPACE TO CREATE</p>
     </div>
   </div>
@@ -637,7 +637,7 @@
           <h3>Time <span>add library "Time"</span></h3>
           <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Time')">+ Insert</button>
         </div>
-        <p>Current time, date, calendar year, unix timestamps, and wait/sleep delays.</p>
+        <p>Current time, date, calendar year and unix timestamps. Pauses such as <code>wait 2 seconds</code> are part of E++ itself — no library needed.</p>
       </div>
 
       <div class="library-card" data-library="Files">
@@ -1074,31 +1074,71 @@ if (window.EPP_DISTRIBUTION && window.EPP && window.EPP.Libraries) {
 const DEFAULT_FILES = [
   {
     name: 'hello.enpp',
-    content: `note [Your first E++ program in pure .enpp]
+    content: `note [E++ 1.5a1 — your first program. Text lives in double quotes.]
 say "Hello, World!"
 say "Looks like English, feels like english, and is english"
 
-note [No quotes for math, evaluated naturally:]
+note [No quotes for maths, so E++ works it out:]
 say 1 plus 1
 say 2 times 3
 
-note [Quotes are strictly string text:]
+note [Quotes keep text exactly as written:]
 say "1 + 1"`
   },
   {
-    name: 'welcome_1_3_5.enpp',
-    content: `note [Welcome to E++ 1.4. Run this file, then open Learn or Wiki.]
-say "Hello from E++ 1.4!"
+    name: 'welcome.enpp',
+    content: `note [Welcome to E++ 1.5a1. Run this file, then open Learn or Wiki.]
+say "Hello from E++ 1.5a1!"
 let 'ideas' be 3
 say "Ideas to try:", 'ideas'
 repeat 3 times
   say "Create, learn, and share."
 end repeat
+
+note [New in 1.5a1: a loop that stops when something becomes true.]
+let 'Count' be 1
+repeat until 'Count' is 4
+  say "Round ", 'Count'
+  let 'Count' be 'Count' plus 1
+end repeat
 note [Try the Gallery to publish a copy of a project.]`
   },
   {
+    name: 'wait_until.enpp',
+    content: `note [New in 1.5a1: waiting is core E++, so this file adds no library at all.]
+say "Getting things ready..."
+let 'Ready' be 0
+
+note [wait until holds the program until the condition is true.]
+let 'Ready' be 1
+wait until 'Ready' is 1
+say "Ready!"
+
+note [Give a wait a deadline so a mistake cannot hang the program.]
+wait at most 1 second until 'Ready' is 2
+say "One second passed, so the deadline ended the wait quietly."
+
+note [A plain pause needs no library either — seconds or milliseconds.]
+wait 250 milliseconds
+wait 0.1 seconds
+say "Finished."`
+  },
+  {
+    name: 'files_and_deleting.enppl',
+    content: `note [The Files library — write, read, then delete (new in 1.5a1).]
+add the "Files" library
+
+write "E++ 1.5a1 is ready!" to file "notes.txt"
+read the file "notes.txt" and save the output as 'ReadBack'
+say "Read back from file:", 'ReadBack'
+
+note [Delete the file when it is no longer needed.]
+delete the file "notes.txt"
+say "notes.txt has been deleted."`
+  },
+  {
     name: 'release_showcase.enppl',
-    content: `note [E++ Grand Showcase (.enppl)]
+    content: `note [E++ 1.5a1 showcase — every library at once.]
 let 'Eversion' be the version of E++
 add the "Colors" library
 add the "Time" library
@@ -1113,40 +1153,41 @@ say cyan "========================================================="
 say cyan "         Welcome to E++ ", 'Eversion', "           "
 say cyan "========================================================="
 
-note [System & Time Diagnostics]
 say blue "System Platform:", the platform
 say blue "Current Date & Time:", the current date, "at", the current time
 
-note [Natural Math & Random Computations]
 say "Square root of 144 is", the square root of 144
 say "Rolling a 20-sided dice gives:", roll a dice with 20 sides
-say "Flipping a coin gives:", flip a coin
 
-note [Strings Processing]
 let 'Announcement' be "   e++ is readable like english!   "
 say "Trimmed:", the trim of 'Announcement'
 say "Uppercase:", the uppercase of the trim of 'Announcement'
 
-note [File Persistence in Virtual IDE]
+note [Files: write, read, then delete — the new 1.5a1 statement.]
 write "E++ " to file "showcase_audit.log"
 append 'Eversion' to file "showcase_audit.log"
-append " verified on: " to file "showcase_audit.log"
-append the current date to file "showcase_audit.log"
 read the file "showcase_audit.log" and save the output as 'Audit'
 say "Audit log content:", 'Audit'
+delete the file "showcase_audit.log"
+say "Audit log deleted."
 
-note [Python Engine Bridge]
+note [wait until is core E++ now.]
+let 'Ready' be 1
+wait until 'Ready' is 1
+say "The wait finished as soon as its condition was true."
+
+note [Python bridge]
 let 'EppVersion' be 'Eversion'
 run the python code:
 print(f"[Python Subsystem] Connected with E++ v{EppVersion}")
 import math
 print(f"[Python Subsystem] Computed 10! = {math.factorial(10)}")
 
-say green "✓ E++ ", 'Eversion', " showcase complete!"`
+say green "E++ ", 'Eversion', " showcase complete!"`
   },
   {
     name: 'python_demo.enppl',
-    content: `note [The Python Library in E++ (.enppl file)]
+    content: `note [The Python library in E++ (.enppl file)]
 add the "Python" library
 
 note [1. Single-line Python code:]
@@ -1160,104 +1201,6 @@ for I in range 3:
 note [3. Interacting: E++ variables into Python:]
 let 'Greeting' be "Welcome to E++ and Python!"
 run the python code "print('E++ says:', greeting)"`
-  },
-  {
-    name: 'strings_demo.enppl',
-    content: `note [Strings Library in E++ (.enppl)]
-add the "Strings" library
-
-let 'Message' be "Hello, E++ 1.4!"
-say "Original message:", 'Message'
-say "Length of message:", the length of 'Message'
-say "Uppercase:", the uppercase of 'Message'
-say "Lowercase:", the lowercase of 'Message'
-say "Reversed message:", the reverse of 'Message'
-say "First letter:", the first letter of 'Message'
-say "Last letter:", the last letter of 'Message'
-
-let 'Padded' be "   Spaced out text   "
-say "Trimmed:", the trim of 'Padded'`
-  },
-  {
-    name: 'time_and_colors.enppl',
-    content: `note [Time & Colors Demonstration in E++ (.enppl)]
-add the "Time" library
-add the "Colors" library
-
-say cyan "Current time is: ", the current time
-say cyan "Current date is: ", the current date
-say cyan "Current year is: ", the current year
-say cyan "Unix timestamp: ", the current timestamp
-
-say yellow "Pausing execution for 500 milliseconds..."
-wait 500 milliseconds
-
-say green "✓ Done! Terminal colors and timers work smoothly."`
-  },
-  {
-    name: 'files_and_system.enppl',
-    content: `note [Files & System Demonstration in E++ (.enppl)]
-add the "Files" library
-add the "System" library
-
-say "System Platform:", the platform
-say "Operating System:", the os
-
-note [Writing and reading in the IDE filesystem:]
-write "E++ 1.4 is ready!" to file "notes.txt"
-read the file "notes.txt" and save the output as 'ReadBack'
-say "Read back from file:", 'ReadBack'`
-  },
-  {
-    name: 'math_demo.enppl',
-    content: `note [The Math Library (.enppl file)]
-add the "Math" library
-
-say "Square root of 2 is: ", the square root of 2
-say "Square root of 16 is: ", the square root of 16
-say "60 percent of 100 is: ", how much 60 percent is of 100
-say "Absolute value of 0 - 42 is: ", the absolute value of 0 minus 42
-say "Maximum of 15 and 99 is: ", the maximum of 15 and 99
-say "Value of pi is: ", the value of pi`
-  },
-  {
-    name: 'random_demo.enppl',
-    content: `note [The Random Library (.enppl file)]
-add the "Random" library
-
-say "Dice roll (6-sided):", roll a dice
-say "Dice roll (20-sided):", roll a dice with 20 sides
-say "Coin flip:", flip a coin
-
-define 'Random number' as a random number between 1 and 100
-say "Here is a random number between 1 and 100! It is ", 'Random number'`
-  },
-  {
-    name: 'variables.enpp',
-    content: `note [Variables in E++ are always wrapped in single quotes!]
-
-let 'Grade' be 29
-let 'Student' be "Sam"
-let 'Comment' be "What a Disgrace!"
-
-say 'Student', "got a grade of ", 'grade', ". Comments on this grade are: ", 'Comment'`
-  },
-  {
-    name: 'concatenation.enpp',
-    content: `note [Concatenation and Separation Methods in E++]
-
-say "Hello ", and concat it with "World!"
-say 1 + 2 and concat it with 2 + 3
-say 1 + 2 and concat it with 2 + 3 with the seperation method of "-"
-say "Hello " and concat it with "World! " and concat it with "Welcome to E++!" with the seperation method of "sigma"
-say "Hello ", "World! ", "Welcome to E++!"`
-  },
-  {
-    name: 'interactive.enpp',
-    content: `note [Asking Questions in E++]
-
-ask "What is your name?" and save the output as 'Name'
-say "Hello ", 'name', ", Welcome to E++!"`
   },
   {
     name: 'draw_playground.enppl',
@@ -1357,7 +1300,7 @@ say "Done — the Left arrow finished the program."`
 ];
 
 // File Storage (.enpp & .enppl)
-const DEFAULTS_VERSION = '1.4a2';
+const DEFAULTS_VERSION = '1.5a1';
 const WIKI_RETURN_FILE_KEY = 'epp_wiki_return_file';
 let files = {};
 let currentFileName = 'hello.enpp';
@@ -3379,6 +3322,8 @@ class EppEvaluator {
     this.tokensByLine = new Map();
     this.tokenCache = new Map();
     this.timers = Object.create(null);
+    // Release 1.5a1: a wait inside a loop can never be ended by that loop.
+    this.loopDepth = 0;
     this.game = { width: 800, height: 600, background: 'night', running: false, frames: 0 };
     this.cancelled = false;
     this.keys = ensureKeyTracker();
@@ -3628,17 +3573,51 @@ class EppEvaluator {
         const bodyOffset = lineOffset + i + 1;
         i = j;
         let rounds = 0;
-        while (!this.cancelled) {
-          if (rounds >= 100000) throw this.diagnostic('E068', 'Endless Loop',
-            'This forever loop reached the 100000-iteration safety limit.', 'Stop the program with Escape, or use a repeat or while loop that can finish.', lineNum);
-          await this.run(bodySource, printFn, askFn, bodyOffset, true);
-          rounds += 1;
-          if (rounds % 100 === 0) await nextFrame();
+        this.loopDepth += 1;
+        try {
+          while (!this.cancelled) {
+            if (rounds >= 100000) throw this.diagnostic('E068', 'Endless Loop',
+              'This forever loop reached the 100000-iteration safety limit.', 'Stop the program with Escape, or use a repeat or while loop that can finish.', lineNum);
+            await this.run(bodySource, printFn, askFn, bodyOffset, true);
+            rounds += 1;
+            if (rounds % 100 === 0) await nextFrame();
+          }
+        } finally {
+          this.loopDepth -= 1;
         }
         continue;
       }
 
       // ---------------- Release 1.2 — repeat and while ----------------
+      // repeat until <condition> / end repeat   (Release 1.5a1)
+      if (command === 'repeat' && /^repeat\s+until\s+/i.test(line)) {
+        const untilCondition = line.replace(/^repeat\s+until\s+/i, '').replace(/\s*:\s*$/, '').trim();
+        if (!untilCondition) {
+          throw this.diagnostic('E027', 'Invalid Condition', 'This repeat until has no condition to wait for.',
+            'Write it like this: repeat until \'count\' is 10', lineNum);
+        }
+        const j = matchingBlockEnd(lines, i, 'repeat');
+        if (j < 0) throw this.diagnostic('E018', 'Unclosed Repeat', 'This repeat never ends.', 'Close the loop with: end repeat', lineNum);
+        const bodySource = lines.slice(i + 1, j).join('\n');
+        const bodyOffset = lineOffset + i + 1;
+        i = j;
+        let rounds = 0;
+        this.loopDepth += 1;
+        try {
+          while (!this.cancelled && !(await this.evalCondition(untilCondition, lineNum, line))) {
+            if (rounds >= 100000) throw this.diagnostic('E068', 'Endless Loop',
+              'This repeat until ran 100000 times and the condition is still false.',
+              'Change a value in the loop so the condition becomes true.', lineNum);
+            await this.run(bodySource, printFn, askFn, bodyOffset, true);
+            rounds += 1;
+            if (rounds % 100 === 0) await nextFrame();
+          }
+        } finally {
+          this.loopDepth -= 1;
+        }
+        continue;
+      }
+
       // repeat 3 times / end repeat
       const repeatMatch = line.match(/^repeat\s+(.+?)\s+times?\s*:?$/i);
       if (command === 'repeat' && repeatMatch) {
@@ -3661,9 +3640,14 @@ class EppEvaluator {
         const bodySource = lines.slice(i + 1, j).join('\n');
         const bodyOffset = lineOffset + i + 1;
         i = j;
-        for (let round = 0; round < times && !this.cancelled; round++) {
-          await this.run(bodySource, printFn, askFn, bodyOffset, true);
-          if (round % 100 === 99) await nextFrame();
+        this.loopDepth += 1;
+        try {
+          for (let round = 0; round < times && !this.cancelled; round++) {
+            await this.run(bodySource, printFn, askFn, bodyOffset, true);
+            if (round % 100 === 99) await nextFrame();
+          }
+        } finally {
+          this.loopDepth -= 1;
         }
         continue;
       }
@@ -3690,12 +3674,17 @@ class EppEvaluator {
         const bodyOffset = lineOffset + i + 1;
         i = j;
         let rounds = 0;
-        while (!this.cancelled && await this.evalCondition(condition, lineNum, line)) {
-          if (rounds >= 100000) throw this.diagnostic('E068', 'Endless Loop',
-            'This while exceeded 100000 iterations.', 'Change a value in the loop so the condition becomes false.', lineNum);
-          await this.run(bodySource, printFn, askFn, bodyOffset, true);
-          rounds += 1;
-          if (rounds % 100 === 0) await nextFrame();
+        this.loopDepth += 1;
+        try {
+          while (!this.cancelled && await this.evalCondition(condition, lineNum, line)) {
+            if (rounds >= 100000) throw this.diagnostic('E068', 'Endless Loop',
+              'This while exceeded 100000 iterations.', 'Change a value in the loop so the condition becomes false.', lineNum);
+            await this.run(bodySource, printFn, askFn, bodyOffset, true);
+            rounds += 1;
+            if (rounds % 100 === 0) await nextFrame();
+          }
+        } finally {
+          this.loopDepth -= 1;
         }
         continue;
       }
@@ -3837,11 +3826,59 @@ class EppEvaluator {
       return this.evalTypeCheck(condStr, lineNum);
     }
 
-    const neqMatch = condStr.match(/^(.+?)\s+is\s+not\s+(?:equal\s+to\s+)?(.+)$/i);
-    if (neqMatch) {
-      const left = await this.evalExpr(neqMatch[1].trim(), lineNum);
-      const right = await this.evalExpr(neqMatch[2].trim(), lineNum);
-      return String(left).toLowerCase() !== String(right).toLowerCase();
+    // Release 1.5a1 — every comparison reads the way it is spoken. The
+    // longest phrases are tested first so "is no more than" is never mistaken
+    // for "is not ..." and "is exactly equal to" never for "equal to".
+    const comparePair = async (leftText, rightText) => {
+      const left = await this.evalExpr(leftText.trim(), lineNum);
+      const right = await this.evalExpr(rightText.trim(), lineNum);
+      const leftNum = Number(left), rightNum = Number(right);
+      const numeric = String(left).trim() !== '' && String(right).trim() !== ''
+        && !isNaN(leftNum) && !isNaN(rightNum);
+      return { left, right, numeric, a: leftNum, b: rightNum };
+    };
+    let m;
+
+    m = condStr.match(/^(.+?)\s+is\s+not\s+(?:equal\s+to\s+)?(.+)$/i);
+    if (m) {
+      const p = await comparePair(m[1], m[2]);
+      return p.numeric ? p.a !== p.b : String(p.left).toLowerCase() !== String(p.right).toLowerCase();
+    }
+
+    m = condStr.match(/^(.+?)\s+is\s+different\s+from\s+(.+)$/i);
+    if (m) {
+      const p = await comparePair(m[1], m[2]);
+      return p.numeric ? p.a !== p.b : String(p.left).toLowerCase() !== String(p.right).toLowerCase();
+    }
+
+    m = condStr.match(/^(.+?)\s+is\s+exactly\s+(?:equal\s+to\s+)?(.+)$/i);
+    if (m) {
+      const p = await comparePair(m[1], m[2]);
+      return p.numeric ? p.a === p.b : String(p.left).toLowerCase() === String(p.right).toLowerCase();
+    }
+
+    m = condStr.match(/^(.+?)\s+is\s+at\s+least\s+(.+)$/i);
+    if (m) {
+      const p = await comparePair(m[1], m[2]);
+      return p.a >= p.b;
+    }
+
+    m = condStr.match(/^(.+?)\s+is\s+at\s+most\s+(.+)$/i);
+    if (m) {
+      const p = await comparePair(m[1], m[2]);
+      return p.a <= p.b;
+    }
+
+    m = condStr.match(/^(.+?)\s+is\s+no\s+more\s+than\s+(.+)$/i);
+    if (m) {
+      const p = await comparePair(m[1], m[2]);
+      return p.a <= p.b;
+    }
+
+    m = condStr.match(/^(.+?)\s+is\s+no\s+less\s+than\s+(.+)$/i);
+    if (m) {
+      const p = await comparePair(m[1], m[2]);
+      return p.a >= p.b;
     }
 
     const gteMatch = condStr.match(/^(.+?)\s+is\s+greater\s+than\s+or\s+equal\s+to\s+(.+)$/i);
@@ -3858,7 +3895,7 @@ class EppEvaluator {
       return left <= right;
     }
 
-    const gtMatch = condStr.match(/^(.+?)\s+is\s+greater\s+than\s+(.+)$/i);
+    const gtMatch = condStr.match(/^(.+?)\s+is\s+(?:greater|more)\s+than\s+(.+)$/i);
     if (gtMatch) {
       const left = Number(await this.evalExpr(gtMatch[1].trim(), lineNum));
       const right = Number(await this.evalExpr(gtMatch[2].trim(), lineNum));
@@ -3886,6 +3923,20 @@ class EppEvaluator {
 
     const val = await this.evalExpr(condStr, lineNum);
     return Boolean(val);
+  }
+
+  /**
+   * Release 1.5a1 — W006: collect a warning the same way every engine does.
+   * The warning is printed in the Output panel and the program keeps going.
+   */
+  warn(code, reason, lineNum) {
+    const names = {
+      W001: 'Text Looks Like An Equation', W002: 'Variable Name Looks Like Text',
+      W003: 'Library Added But Unused', W004: 'Continued On The Next Line',
+      W005: 'Number Written As Text', W006: 'Wait Can Never End Here'
+    };
+    const name = names[code] || 'E++ Warning';
+    appendConsoleLine(`[E++ Warning ${code}: ${name}] ${reason}`, 'warning');
   }
 
   async execStatement(line, lineNum, printFn, askFn) {
@@ -4372,7 +4423,14 @@ class EppEvaluator {
     // wait until <condition>  /  wait at most N seconds until <condition>
     mWait = line.match(/^wait\s+(?:at\s+most\s+(.+?)\s+seconds?\s+)?until\s+(.+)$/i);
     if (mWait) {
-      this.requireAnyLib(['ImprovedWaitLite', 'ImprovedWait'], mWait[1] ? 'wait at most' : 'wait until', lineNum);
+      // Release 1.5a1: waiting for a condition is core E++, so no library is
+      // needed. A wait inside a loop cannot be ended by that loop, because the
+      // loop is paused while the wait runs — say so plainly instead of waiting
+      // a minute and failing with E067.
+      if (!this.libs.has('improvedwait') && !this.libs.has('improvedwaitlite') && this.loopDepth > 0) {
+        this.warn('W006', 'This "wait until" sits inside a loop, and nothing the loop does can run while it waits.',
+          lineNum);
+      }
       const limit = mWait[1] ? Number(await this.evalExpr(mWait[1], lineNum)) * 1000 : null;
       const deadline = limit === null ? null : Date.now() + limit;
       const startedAt = Date.now();
@@ -4380,11 +4438,12 @@ class EppEvaluator {
         if (await this.evalCondition(mWait[2], lineNum, line)) return;
         if (deadline !== null && Date.now() >= deadline) return;
         if (deadline === null && Date.now() - startedAt > 60000) {
+          // Release 1.5a1: the catalogue code for "ran too long" is E067.
           throw {
-            code: 'E015', name: 'Endless Wait', filename: currentFileName, line: lineNum, col: 1,
+            code: 'E067', name: 'The Program Ran Too Long', filename: currentFileName, line: lineNum, col: 1,
             sourceLine: line,
             reason: 'This "wait until" has been waiting for a minute and the condition is still false.',
-            help: 'Give it a deadline: wait at most 10 seconds until ...'
+            help: 'Give it a deadline: wait at most 10 seconds until ...', hint: 'Give it a deadline: wait at most 10 seconds until ...'
           };
         }
         await nextFrame();
@@ -4420,12 +4479,28 @@ class EppEvaluator {
       return;
     }
 
-    // 6. TIME: WAIT / SLEEP
+    // 6. CORE: WAIT / SLEEP
+    // Release 1.5a1 — pausing a program is part of the language. A plain
+    // "wait 2 seconds" needs no library at all, exactly like "wait until".
+    // The Time library keeps the clock: the current date, time and year.
+
+    // wait at most N seconds — a pause with a ceiling is still just a pause.
+    // This has to be read before the general form, because "at most 0.5" is
+    // not a number this program can work out.
+    const boundedWait = line.match(/^(?:wait|sleep)\s+at\s+most\s+(.+?)\s+(milliseconds|millisecond|seconds|second)$/i);
+    if (boundedWait) {
+      const amount = Number(await this.evalExpr(boundedWait[1].trim(), lineNum));
+      if (!Number.isFinite(amount) || amount < 0) {
+        throw this.diagnostic('E011', 'Value Is Not A Number', 'A wait needs a number of seconds that is 0 or more.',
+          'For example: wait at most 5 seconds', lineNum);
+      }
+      const capped = boundedWait[2].toLowerCase().startsWith('m') ? amount : amount * 1000;
+      if (capped > 0) await this.sleepMs(capped, null, lineNum);
+      return;
+    }
+
     const waitMatch = line.match(/^(?:wait|sleep)\s+(.+?)\s+(milliseconds|millisecond|seconds|second)$/i);
     if (waitMatch) {
-      if (!this.libs.has('time')) {
-        this.requireAnyLib(['Time', 'ImprovedWaitLite', 'ImprovedWait'], 'wait statement', lineNum);
-      }
       const val = Number(await this.evalExpr(waitMatch[1].trim(), lineNum));
       const isMs = waitMatch[2].toLowerCase().startsWith('m');
       const ms = isMs ? val : val * 1000;
@@ -4472,6 +4547,28 @@ class EppEvaluator {
       files[fname] = (files[fname] || '') + content;
       saveStorage();
       renderFileList();
+      return;
+    }
+
+    // Release 1.5a1 — delete the file "notes.txt" / remove the file "notes.txt".
+    // The workspace file goes; a message in the Output says it happened.
+    const deleteMatch = line.match(/^(?:delete|remove)\s+(?:the\s+)?file\s+(.+)$/i);
+    if (deleteMatch) {
+      this.requireLib('Files', 'delete file', lineNum);
+      const fname = String(await this.evalExpr(deleteMatch[1].trim(), lineNum)).trim();
+      if (!fname) {
+        throw this.diagnostic('E052', 'File Needs A Name', 'A delete needs a file name.',
+          'For example: delete the file "notes.txt"', lineNum);
+      }
+      if (files[fname] === undefined) {
+        throw this.diagnostic('E076', 'Cannot Delete A Missing File',
+          `There is no file called "${fname}" to delete.`,
+          'Check the name in the Files panel; deleting only works on a file that exists.', lineNum);
+      }
+      delete files[fname];
+      saveStorage();
+      renderFileList();
+      appendConsoleLine(`Deleted the workspace file "${fname}".`, 'system');
       return;
     }
 
@@ -4913,8 +5010,12 @@ class EppEvaluator {
       return finalMath;
     }
 
-    const bare = expr.match(/\b[A-Za-z_][\w-]*\b/);
-    if (bare && !/^(?:plus|minus|times|divided|by|mod|modulo)$/i.test(bare[0])) {
+    // Release 1.5a1 — the words that make up an E++ sentence (a unit of time,
+    // a comparison, "at most") are not unquoted text. They have already been
+    // read by the statement that called this expression.
+    const EPP_WORDS = /^(?:plus|minus|times|divided|by|mod|modulo|and|pi|e|true|false|is|not|equal|equals|exactly|different|from|greater|less|lesser|than|more|no|at|least|most|or|contains|touching|until|of|in|range|the|a|number|positive|negative|key|pressed|second|seconds|millisecond|milliseconds|wait|sleep)$/i;
+    const bare = (expr.match(/\b[A-Za-z_][\w-]*\b/g) || []).filter(word => !EPP_WORDS.test(word));
+    if (bare.length) {
       throw this.diagnostic('E001', 'Unquoted Text', `Unquoted text '${bare[0]}' is not a value.`,
         'Put text in double quotes, or use single quotes for a variable.', lineNum, bare[0]);
     }

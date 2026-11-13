@@ -1,5 +1,4 @@
-note [06_math_library.epp: The Math Library with advanced functions]
-
+note [E++ 1.5a1: the Math library]
 add the "Math" library
 
 say the square root of 2
@@ -9,4 +8,4 @@ say the absolute value of 0 minus 42
 say the minimum of 15 and 99
 say the maximum of 15 and 99
 say the value of pi
-say the number between 1 and 5
+say a random number between 1 and 5

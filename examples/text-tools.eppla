@@ -1,6 +1,0 @@
-note [The Strings library works with words and sentences.]
-add library "Strings"
-
-say the uppercase of "hello e++"
-say the lowercase of "LOUD NOISES"
-say the length of "How long am I?"

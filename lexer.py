@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-E++ (E-Plus-Plus) 1.4 Lexer and Subsystem
+E++ (E-Plus-Plus) 1.5a1 Lexer and Subsystem
 Written in Python for direct execution and runtime integration.
 """
 
@@ -371,6 +371,16 @@ class TokenType(Enum):
     KW_GREATER = auto()
     KW_LESS = auto()
     KW_THAN = auto()
+    # Release 1.5a1 — the words a comparison is spoken with.
+    KW_EXACTLY = auto()
+    KW_DIFFERENT = auto()
+    KW_AT = auto()
+    KW_LEAST = auto()
+    KW_MOST = auto()
+    KW_OR = auto()
+    KW_NO = auto()
+    KW_MORE = auto()
+    KW_FROM = auto()
     KW_REPEAT = auto()
     KW_TIMES = auto()
     KW_WHILE = auto()
@@ -386,6 +396,10 @@ class TokenType(Enum):
     KW_OF = auto()
     KW_NOTE = auto()
     KW_ITS = auto()
+
+    # Release 1.5a1 — file deletion (Files library)
+    KW_DELETE = auto()
+    KW_REMOVE = auto()
 
     # Math Words & Symbols
     MATH_PLUS = auto()
@@ -439,6 +453,17 @@ KEYWORDS = {
     "greater": TokenType.KW_GREATER,
     "less": TokenType.KW_LESS,
     "than": TokenType.KW_THAN,
+    # Release 1.5a1 — comparisons read the way people say them out loud:
+    # "at least", "at most", "different from", "exactly", "no more than".
+    "exactly": TokenType.KW_EXACTLY,
+    "different": TokenType.KW_DIFFERENT,
+    "at": TokenType.KW_AT,
+    "least": TokenType.KW_LEAST,
+    "most": TokenType.KW_MOST,
+    "or": TokenType.KW_OR,
+    "no": TokenType.KW_NO,
+    "more": TokenType.KW_MORE,
+    "from": TokenType.KW_FROM,
     "repeat": TokenType.KW_REPEAT,
     "times": TokenType.KW_TIMES,
     "while": TokenType.KW_WHILE,
@@ -454,6 +479,9 @@ KEYWORDS = {
     "method": TokenType.KW_METHOD,
     "of": TokenType.KW_OF,
     "note": TokenType.KW_NOTE,
+    # Release 1.5a1: delete the file "old.txt" / remove the file "old.txt".
+    "delete": TokenType.KW_DELETE,
+    "remove": TokenType.KW_REMOVE,
     "it's": TokenType.KW_ITS,
     "its": TokenType.KW_ITS,
 
@@ -931,4 +959,4 @@ if __name__ == "__main__":
         for t in tokens:
             print(t)
     else:
-        print("E++ 1.4 Lexer module loaded.")
+        print("E++ 1.5a1 Lexer module loaded.")

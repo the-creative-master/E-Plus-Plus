@@ -9,7 +9,7 @@
 
   var EPP = global.EPP || (global.EPP = {});
   // Keep the language's self-reported version in one runtime-visible place.
-  EPP.VERSION = EPP.VERSION || '1.4';
+  EPP.VERSION = EPP.VERSION || '1.5a1';
 
   var Type = {
     PROGRAM: 'Program',
@@ -17,6 +17,7 @@
     SET: 'Set',
     SAY: 'Say',
     ASK: 'Ask',
+    MILLISECONDS: 'Milliseconds',
     WAIT: 'Wait',
     LIBRARY: 'Library',
     IF: 'If',
@@ -70,7 +71,11 @@
     WAIT_NAMED: 'WaitNamed',
     CANCEL_WAIT: 'CancelWait',
     WAIT_UNTIL: 'WaitUntil',
-    WAIT_FOR_ACTOR: 'WaitForActor'
+    WAIT_FOR_ACTOR: 'WaitForActor',
+
+    // Release 1.5a1 — file deletion, and "until" joins the loop vocabulary.
+    DELETE_FILE: 'DeleteFile',
+    REPEAT_UNTIL: 'RepeatUntil'
   };
 
   function at(node, token) {
@@ -89,6 +94,12 @@
     Say: function (value, token, parts) { return at({ type: Type.SAY, value: value, parts: parts || null }, token); },
     Ask: function (prompt, name, token) { return at({ type: Type.ASK, prompt: prompt, name: name }, token); },
     Wait: function (duration, token) { return at({ type: Type.WAIT, duration: duration }, token); },
+    /**
+     * Release 1.5a1 — a duration written in milliseconds. The interpreter
+     * divides by 1000 at run time, so "milliseconds" never borrows the Math
+     * library or any other grammar.
+     */
+    Milliseconds: function (duration, token) { return at({ type: Type.MILLISECONDS, duration: duration }, token); },
     Library: function (name, token) { return at({ type: Type.LIBRARY, name: name }, token); },
     If: function (condition, thenBranch, elseBranch, token, branches) {
       var node = {
@@ -191,6 +202,12 @@
     },
     CancelWait: function (timerName, token) {
       return at({ type: Type.CANCEL_WAIT, timerName: timerName }, token);
+    },
+    DeleteFile: function (path, token) { return at({ type: Type.DELETE_FILE, path: path }, token); },
+    // Release 1.5a1: "repeat until <condition>" — the loop people already say
+    // out loud, written down.
+    RepeatUntil: function (condition, body, token) {
+      return at({ type: Type.REPEAT_UNTIL, condition: condition, body: body || [] }, token);
     },
     WaitUntil: function (condition, limit, limitIsTime, token) {
       return at({ type: Type.WAIT_UNTIL, condition: condition, limit: limit || null, limitIsTime: !!limitIsTime }, token);
