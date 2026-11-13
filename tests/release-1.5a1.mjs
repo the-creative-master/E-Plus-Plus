@@ -100,6 +100,50 @@ console.log('1.5a1: wait until');
 }
 
 // ------------------------------------------------------------------
+// 1b. A plain pause needs no library either.
+// ------------------------------------------------------------------
+console.log('\n1.5a1: a plain pause is core E++');
+{
+  const paused = await run('wait 0.01 seconds\nsay "ok"');
+  assert.deepEqual(paused.output, ['ok']);
+  ok('wait 2 seconds needs no library');
+
+  const millis = await run('wait 10 milliseconds\nsay "ok"');
+  assert.deepEqual(millis.output, ['ok']);
+  ok('wait 250 milliseconds works, and the unit really is milliseconds');
+
+  const slept = await run('sleep 0.01 seconds\nsay "ok"');
+  assert.deepEqual(slept.output, ['ok']);
+  ok('sleep is the same statement as wait');
+
+  // A quarter of a second must reach the host as 0.25 seconds, not 250.
+  let asked = null;
+  await EPP.run('wait 250 milliseconds', { delay: async (seconds) => { asked = seconds; } });
+  assert.equal(asked, 0.25, '250 milliseconds is 0.25 seconds, got ' + asked);
+  await EPP.run('wait 2 seconds', { delay: async (seconds) => { asked = seconds; } });
+  assert.equal(asked, 2);
+  ok('milliseconds are converted: 250 milliseconds asks the host for 0.25 seconds');
+
+  // Time keeps the clock: pauses are core, the clock is not.
+  // The arrays come from the vm realm, so compare them as text.
+  assert.equal(EPP.Libraries.ownersOf('the current time').join(','), 'Time',
+    'the current time belongs to Time alone');
+  assert.equal(EPP.Libraries.ownersOf('wait statement').join(','), '',
+    'no library owns a plain pause any more');
+  const time = EPP.Libraries.get('Time');
+  assert.ok(!/wait statement/.test(JSON.stringify(time.unlocks)),
+    'Time no longer claims the wait statement');
+  assert.ok(/current time/.test(JSON.stringify(time.unlocks)),
+    'Time still claims the current time');
+  ok('Time keeps the clock and no longer owns the plain pause');
+
+  // The longer wait features still belong to a library.
+  await rejects("wait 0.01 seconds as 't'", 'E042');
+  await rejects("wait for the actor 'hero' to finish", 'E042');
+  ok('named waits and actor waits still ask for their library');
+}
+
+// ------------------------------------------------------------------
 // 2. delete the file — E076, E077 and the host hook.
 // ------------------------------------------------------------------
 console.log('\n1.5a1: delete the file');

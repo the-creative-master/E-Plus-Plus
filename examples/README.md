@@ -12,7 +12,7 @@ in the native engine (`./epp file.enpp`) and the Python engine
 | `04_control_flow.enpp` | `if` / `otherwise`, `repeat N times`, `repeat until` and `while`. |
 | `05_math_library.enppl` | The Math library: roots, percentages, pi and random numbers. |
 | `06_files_library.enppl` | The Files library: `write`, `append`, `read` and **`delete the file`** (new in 1.5a1). |
-| `07_wait_until.enppl` | **`wait until`** and `wait at most` (new core statements in 1.5a1). |
+| `07_wait_until.enppl` | **`wait until`** and `wait at most` (new core statements in 1.5a1), plus a plain `wait` — none of which needs a library. |
 | `08_python_library.enppl` | The Python library: one line, a block, and E++ variables in Python. |
 | `09_strings_library.enppl` | The Strings library: length, case, reverse, letters and trim. |
 | `10_saved_project.enpp` | A sealed project file, opened with `epp-keys.json`. |

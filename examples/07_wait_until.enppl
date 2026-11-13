@@ -1,6 +1,6 @@
 note [E++ 1.5a1: wait until — the new core statement.]
-note [No library is needed: waiting for a condition is part of E++ itself.]
-add the "Time" library
+note [No library is needed: waiting is part of E++ itself.]
+note [That goes for a plain wait too, so this file adds nothing at all.]
 
 let 'Ready' be 0
 say "Getting things ready..."
@@ -15,6 +15,7 @@ let 'Never' be 0
 wait at most 1 second until 'Never' is 1
 say "One second passed, so the deadline ended the wait quietly."
 
-note [wait 2 seconds is still the plain old pause:]
+note [And a plain pause needs no library either — seconds or milliseconds:]
 wait 250 milliseconds
+wait 0.1 seconds
 say "And a plain wait still works."

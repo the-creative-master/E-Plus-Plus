@@ -637,7 +637,7 @@
           <h3>Time <span>add library "Time"</span></h3>
           <button type="button" class="btn btn-small btn-accent lib-insert-btn" onclick="insertLibrary('Time')">+ Insert</button>
         </div>
-        <p>Current time, date, calendar year, unix timestamps, and wait/sleep delays.</p>
+        <p>Current time, date, calendar year and unix timestamps. Pauses such as <code>wait 2 seconds</code> are part of E++ itself — no library needed.</p>
       </div>
 
       <div class="library-card" data-library="Files">
@@ -1105,7 +1105,7 @@ note [Try the Gallery to publish a copy of a project.]`
   },
   {
     name: 'wait_until.enpp',
-    content: `note [New in 1.5a1: wait until — no library needed.]
+    content: `note [New in 1.5a1: waiting is core E++, so this file adds no library at all.]
 say "Getting things ready..."
 let 'Ready' be 0
 
@@ -1118,8 +1118,9 @@ note [Give a wait a deadline so a mistake cannot hang the program.]
 wait at most 1 second until 'Ready' is 2
 say "One second passed, so the deadline ended the wait quietly."
 
-note [A plain pause still works the same way.]
+note [A plain pause needs no library either — seconds or milliseconds.]
 wait 250 milliseconds
+wait 0.1 seconds
 say "Finished."`
   },
   {
@@ -4478,12 +4479,12 @@ class EppEvaluator {
       return;
     }
 
-    // 6. TIME: WAIT / SLEEP
+    // 6. CORE: WAIT / SLEEP
+    // Release 1.5a1 — pausing a program is part of the language. A plain
+    // "wait 2 seconds" needs no library at all, exactly like "wait until".
+    // The Time library keeps the clock: the current date, time and year.
     const waitMatch = line.match(/^(?:wait|sleep)\s+(.+?)\s+(milliseconds|millisecond|seconds|second)$/i);
     if (waitMatch) {
-      if (!this.libs.has('time')) {
-        this.requireAnyLib(['Time', 'ImprovedWaitLite', 'ImprovedWait'], 'wait statement', lineNum);
-      }
       const val = Number(await this.evalExpr(waitMatch[1].trim(), lineNum));
       const isMs = waitMatch[2].toLowerCase().startsWith('m');
       const ms = isMs ? val : val * 1000;

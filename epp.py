@@ -1025,7 +1025,7 @@ class Interpreter:
                                               "Give it a deadline: wait at most 10 seconds until ...",
                                               line_num, col_num)
                     time.sleep(0.025)
-            self.require_lib("Time", "Wait statement", line_num, col_num)
+            # Release 1.5a1: a plain pause is core E++, like "wait until".
             val = float(tokens[1].number_value if tokens[1].type == TokenType.NUMBER else 1)
             is_ms = "millisecond" in " ".join(tok_words)
             secs = val / 1000.0 if is_ms else val

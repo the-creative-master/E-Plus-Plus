@@ -152,6 +152,22 @@ delete the file "notes.txt"
 that is not there reports `E076` rather than quietly doing nothing, so a typo
 in the name is easy to spot.
 
+## Tutorial: pause a program
+
+`wait` pauses, and it needs no library. The unit is `seconds`, `second`,
+`milliseconds` or `millisecond`:
+
+```text
+say "Starting..."
+wait 2 seconds
+wait 250 milliseconds
+sleep 0.5 seconds
+say "Done."
+```
+
+`add the "Time" library` is only for the clock — `the current date`,
+`the current time`, `the current year` and `the current timestamp`.
+
 ## Tutorial: add a library
 
 A library unlocks extra words. Use a `.enppl` project and add it before using its features:

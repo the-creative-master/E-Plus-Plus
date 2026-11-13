@@ -13,6 +13,7 @@ say 2 plus 3 times 4
 E++ 1.5a1 is the release where E++ learns to **wait for things** and to **tidy up after itself**.
 
 * **`wait until`** — the program holds until a condition becomes true. It is part of the language, so no library is needed: `wait until 'score' is greater than 9`. Add a deadline with `wait at most 5 seconds until ...` and the program carries on if nothing happens.
+* **Plain pauses are core too** — `wait 2 seconds`, `sleep 0.5 seconds` and `wait 250 milliseconds` no longer ask for the Time library. Time keeps the clock.
 * **`delete the file`** — the Files library can remove a file it wrote: `delete the file "notes.txt"`. Deleting a file that is not there is `E076`, so a typo is caught immediately.
 * **`repeat until`** — a loop that keeps going until its condition is true, then stops.
 * **More English** — `is at least`, `is at most`, `is different from`, `is no more than`, `is more than`, and booleans that print as `True` and `False`.
@@ -73,7 +74,14 @@ end repeat
 
 ### 4. Waiting and tidying up
 
+Waiting is core E++ — no `add` line, ever:
+
 ```text
+say "One moment..."
+wait 2 seconds
+wait 250 milliseconds
+sleep 0.5 seconds
+
 let 'ready' be 1
 wait until 'ready' is 1
 say "Ready!"

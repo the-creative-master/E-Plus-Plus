@@ -788,11 +788,10 @@ void Interpreter::visitPythonStmt(PythonStmt* stmt) {
 }
 
 void Interpreter::visitWaitStmt(WaitStmt* stmt) {
-    // Release 1.5a1: "wait until" is core E++, so it needs no library at all.
-    // A plain wait still belongs to Time (or its own wait libraries).
-    if (!stmt->is_until) {
-        require_library("Time", "Wait / Sleep", stmt->line, stmt->col);
-    }
+    // Release 1.5a1: waiting is core E++. "wait until" needs no library, and
+    // neither does a plain "wait 2 seconds" — pausing a program is part of the
+    // language, not something a library switches on. Named waits, waits that
+    // chain an action and actor waits still belong to the wait libraries.
 
     if (stmt->is_until) {
         if (!stmt->condition) {

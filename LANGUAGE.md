@@ -10,6 +10,9 @@ release.
 
 * **`wait until`** — E++ can now wait for something to become true. It is part
   of the language itself, not a library (§11).
+* **Plain pauses need no library either** — `wait 2 seconds`, `sleep 0.5
+  seconds` and `wait 250 milliseconds` are core E++ now. The `Time` library
+  keeps the clock.
 * **`delete the file`** — the Files library can finally remove a file (§11 isn't
   only about waiting any more; see *The Files library*).
 * **`repeat until`** — a loop that keeps going until its condition is true (§5).
@@ -500,7 +503,29 @@ If nothing changes the condition before the deadline, the program carries on
 with the next line — no error, no print. Every engine also caps a single wait
 at 60 seconds (`E067`), so a program can never hang forever by mistake.
 
-### ImprovedWaitLite — every non-game wait
+There is no library to add for any of it. `wait until` and a plain
+`wait 2 seconds` are both core E++, as §11 explains.
+
+### A plain pause needs nothing
+
+`wait` and `sleep` are core E++. Pausing a program is part of the language,
+so no `add` line is needed for any of these:
+
+```text
+wait 2 seconds
+wait 250 milliseconds
+sleep 0.5 seconds
+wait at most 5 seconds
+wait until 'score' is greater than 9
+```
+
+The `Time` library keeps the *clock* — `the current date`, `the current time`,
+`the current year` and `the current timestamp`. It no longer has anything to do
+with pausing.
+
+### ImprovedWaitLite — the extras
+
+Everything below needs a wait library, because it does more than pause:
 
 ```text
 add the "ImprovedWaitLite" library
@@ -512,14 +537,10 @@ cancel the wait 'intro'
 note [a statement that runs after the pause]
 wait 1 second and then say "Ready!"
 
-note [wait for a condition, with or without a deadline]
+note [the actor-free condition waits, which work with or without it]
 wait until 'score' is greater than 9
 wait at most 5 seconds until 'ready' is 1
 ```
-
-A plain `wait 2 seconds` needs the `Time` library (as in 1.1) or either
-ImprovedWait library. `wait until` and `wait at most` do **not** need any
-library in 1.5a1 — the lines above work on their own too.
 
 Waits cooperate with the game loop: while a program waits, the canvas keeps
 drawing frames.
@@ -729,7 +750,7 @@ with the critical lexer failure `F015`; there is no silent alternate lexer.
 | `W003` | Library Added But Unused | Remove the library line, or use one of its features. |
 | `W004` | Continued On The Next Line | One statement per line keeps the structure clear. |
 | `W005` | Number Written As Text | Write the number without double quotes, for example: wait 2 seconds |
-| `W006` | Wait Can Never End Here | A `wait until` inside a loop cannot see anything change. Add the `ImprovedWait` library, or move the wait out of the loop. |
+| `W006` | Wait Can Never End Here | A `wait until` inside a loop cannot see anything change. Move the wait out of the loop, or give it a deadline: `wait at most 10 seconds until ...` |
 
 ### E++.zip only (5)
 

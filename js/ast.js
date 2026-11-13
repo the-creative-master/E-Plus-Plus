@@ -17,6 +17,7 @@
     SET: 'Set',
     SAY: 'Say',
     ASK: 'Ask',
+    MILLISECONDS: 'Milliseconds',
     WAIT: 'Wait',
     LIBRARY: 'Library',
     IF: 'If',
@@ -93,6 +94,12 @@
     Say: function (value, token, parts) { return at({ type: Type.SAY, value: value, parts: parts || null }, token); },
     Ask: function (prompt, name, token) { return at({ type: Type.ASK, prompt: prompt, name: name }, token); },
     Wait: function (duration, token) { return at({ type: Type.WAIT, duration: duration }, token); },
+    /**
+     * Release 1.5a1 — a duration written in milliseconds. The interpreter
+     * divides by 1000 at run time, so "milliseconds" never borrows the Math
+     * library or any other grammar.
+     */
+    Milliseconds: function (duration, token) { return at({ type: Type.MILLISECONDS, duration: duration }, token); },
     Library: function (name, token) { return at({ type: Type.LIBRARY, name: name }, token); },
     If: function (condition, thenBranch, elseBranch, token, branches) {
       var node = {

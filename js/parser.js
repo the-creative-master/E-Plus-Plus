@@ -346,7 +346,8 @@
           t.line, t.column,
           'To run Python, first add the Python library with: add library \"Python\" — then put the Python inside python code, like this: python code \"print(1)\". If you just want E++ to show something, use the word say.', 'E048');
       case 'ask': return this.parseAsk();
-      case 'wait': return this.parseWait();
+      case 'wait':
+      case 'sleep': return this.parseWait();
       case 'create': return this.parseCreateActor();
       // link the image "hero.png" to the actor 'hero'
       case 'link': return this.parseActorImage();
@@ -821,7 +822,11 @@
     }
 
     var duration = this.parseExpression();
-    this.matchWord('seconds'); this.matchWord('second');
+    // Release 1.5a1 (matching the other engines): milliseconds are a real
+    // unit, so `wait 250 milliseconds` pauses for a quarter of a second.
+    var durationMs = this.matchWord('milliseconds') || this.matchWord('millisecond');
+    if (!durationMs) { this.matchWord('seconds'); this.matchWord('second'); }
+    if (durationMs) duration = EPP.AST.Milliseconds(duration, kw);
 
     // wait 2 seconds as 'intro'  [ImprovedWaitLite]
     if (this.isWord('as') && this.peek(1) && this.peek(1).type === 'VARIABLE') {

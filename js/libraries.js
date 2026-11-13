@@ -74,13 +74,12 @@
     Time: {
       name: 'Time',
       aliases: ['time', 'clock'],
-      description: 'Dates, times and plain pauses: the current date, the current time, wait 2 seconds.',
+      description: 'The clock: the current date, the current time, the current year and the timestamp. Pauses such as wait 2 seconds are part of E++ itself and need no library.',
       unlocks: [
         { feature: 'the current date', kind: 'function' },
         { feature: 'the current time', kind: 'function' },
         { feature: 'the current year', kind: 'function' },
-        { feature: 'the current timestamp', kind: 'function' },
-        { feature: 'wait statement', kind: 'statement' }
+        { feature: 'the current timestamp', kind: 'function' }
       ],
       example: 'add the "Time" library\nsay the current date'
     },

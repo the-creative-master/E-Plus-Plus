@@ -103,6 +103,14 @@ read the file &quot;notes.txt&quot; and save the output as &#x27;Notes&#x27;
 say &#x27;Notes&#x27;
 delete the file &quot;notes.txt&quot;</code></pre>
 <p><code>delete the file</code> and <code>remove the file</code> mean the same thing. Deleting a file that is not there reports <code>E076</code> rather than quietly doing nothing, so a typo in the name is easy to spot.</p>
+<h2 id="tutorial-pause-a-program">Tutorial: pause a program</h2>
+<p><code>wait</code> pauses, and it needs no library. The unit is <code>seconds</code>, <code>second</code>, <code>milliseconds</code> or <code>millisecond</code>:</p>
+<pre><code>say &quot;Starting...&quot;
+wait 2 seconds
+wait 250 milliseconds
+sleep 0.5 seconds
+say &quot;Done.&quot;</code></pre>
+<p><code>add the &quot;Time&quot; library</code> is only for the clock — <code>the current date</code>, <code>the current time</code>, <code>the current year</code> and <code>the current timestamp</code>.</p>
 <h2 id="tutorial-add-a-library">Tutorial: add a library</h2>
 <p>A library unlocks extra words. Use a <code>.enppl</code> project and add it before using its features:</p>
 <pre><code>add library &quot;Math&quot;

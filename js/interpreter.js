@@ -725,7 +725,7 @@
         return;
       }
       case AST.WAIT: {
-        var seconds = this.toNumber(await this.evaluate(node.duration), node, 'wait');
+        var seconds = this.toNumber(await this.waitSeconds(node.duration), node, 'wait');
         if (seconds < 0) throw new RuntimeError('Cannot wait for a negative amount of time (' + seconds + ' seconds).', node.line, node.column, 'Use a number of seconds that is 0 or more.', 'E011');
         await this.delay(seconds);
         if (this.cancelled) throw new RuntimeError('Execution was stopped.', node.line, node.column, null, 'E070');
@@ -1006,6 +1006,18 @@
       default:
         throw new RuntimeError('The interpreter does not know how to run a "' + node.type + '" statement.', node.line, node.column, null, 'E015');
     }
+  };
+
+  /**
+   * Release 1.5a1 — the number of seconds a wait asks for. A duration written
+   * in milliseconds is wrapped in a Milliseconds node, so "250 milliseconds"
+   * is a quarter of a second without borrowing any maths grammar.
+   */
+  Interpreter.prototype.waitSeconds = async function (duration) {
+    if (duration && duration.type === EPP.AST.Type.MILLISECONDS) {
+      return this.toNumber(await this.evaluate(duration.duration), duration, 'wait') / 1000;
+    }
+    return this.evaluate(duration);
   };
 
   Interpreter.prototype.guardLoop = function (node) {

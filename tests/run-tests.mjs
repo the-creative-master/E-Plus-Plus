@@ -1398,7 +1398,11 @@ console.log('\nRelease 1.2.1: the two builds');
   assert.ok(!/ImprovedWaitLite/.test(text(studioDeck)), 'the Studio deck never mentions ImprovedWaitLite');
   assert.ok(!/"ImprovedWait"/.test(text(zipDeck)), 'the zip deck never asks for ImprovedWait');
   assert.ok(!/"Game"/.test(text(zipDeck)), 'the zip deck never asks for Game');
-  assert.ok(/ImprovedWaitLite/.test(text(zipDeck)), 'the zip deck waits with ImprovedWaitLite');
+  // 1.5a1: a plain pause and `wait until` are core E++, so no waiting card
+  // asks a build for a wait library. The cards must still teach the syntax.
+  assert.ok(!/needs\[^\]]*\{wait\}/.test(text(zipDeck)) && !/needs\[^\]]*\{wait\}/.test(text(studioDeck)),
+    'no tutorial card asks for a wait library any more');
+  assert.ok(/wait until/.test(text(zipDeck)), 'the zip deck still teaches wait until');
   assert.ok(T.totalSteps(studioDeck) > T.totalSteps(zipDeck), 'the zip loses the game cards');
   const dropped = studioDeck.filter((course) => !zipDeck.some((z) => z.id === course.id))
     .map((course) => course.id);
