@@ -78,7 +78,9 @@ public:
             case ValueType::NIL:
                 return "nil";
             case ValueType::BOOLEAN:
-                return bool_val ? "true" : "false";
+                // Release 1.5a1: a true/false answer reads like English, not
+                // like a debug dump: "True" / "False".
+                return bool_val ? "True" : "False";
             case ValueType::STRING:
                 return string_val;
             case ValueType::NUMBER: {

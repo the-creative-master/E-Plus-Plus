@@ -1,0 +1,20 @@
+note [E++ 1.5a1: wait until — the new core statement.]
+note [No library is needed: waiting for a condition is part of E++ itself.]
+add the "Time" library
+
+let 'Ready' be 0
+say "Getting things ready..."
+
+note [wait until holds the program until the condition is true.]
+let 'Ready' be 1
+wait until 'Ready' is 1
+say "Ready! The wait finished as soon as the condition was true."
+
+note [Give a wait a deadline so a mistake cannot hang the program:]
+let 'Never' be 0
+wait at most 1 second until 'Never' is 1
+say "One second passed, so the deadline ended the wait quietly."
+
+note [wait 2 seconds is still the plain old pause:]
+wait 250 milliseconds
+say "And a plain wait still works."

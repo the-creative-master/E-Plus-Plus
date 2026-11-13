@@ -19,7 +19,7 @@ try {
     for (const expected of ['index.html', 'js/native-lexer-wasm.js', 'wiki.html', 'server.js', 'package.json']) {
       await fs.access(path.join(dir, expected));
     }
-    for (const missing of ['js/draw-library.js', 'js/game-library.js', 'examples/15_colors_and_console.enppl', 'examples/18_animated_draw.enppl']) {
+    for (const missing of ['js/draw-library.js', 'js/game-library.js', 'examples/11_studio_showcase.enppl']) {
       await assert.rejects(fs.access(path.join(dir, missing)), label + ' does not ship ' + missing);
     }
     const html = await fs.readFile(path.join(dir, 'index.html'), 'utf8');

@@ -115,6 +115,16 @@ enum class TokenType {
     KW_GREATER,
     KW_LESS,
     KW_THAN,
+    // Release 1.5a1 — the words a comparison is spoken with.
+    KW_EXACTLY,
+    KW_DIFFERENT,
+    KW_AT,
+    KW_LEAST,
+    KW_MOST,
+    KW_OR,
+    KW_NO,
+    KW_MORE,
+    KW_FROM,
     KW_TRUE,
     KW_FALSE,
 
@@ -177,6 +187,12 @@ enum class TokenType {
     KW_MILLISECONDS,
 
     // File, System, Colors, Console library words
+    // Release 1.5a1: delete file / remove the file (the Files library), and
+    // until, which makes waiting for a condition core E++ instead of a
+    // library-only grammar.
+    KW_DELETE,
+    KW_REMOVE,
+    KW_UNTIL,
     KW_FILE,
     KW_FILES,
     KW_READ,

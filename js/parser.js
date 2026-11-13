@@ -355,6 +355,9 @@
       case 'pause': return this.parseActorControl('pause');
       case 'resume': return this.parseActorControl('resume');
       case 'cancel': return this.parseCancelWait();
+      // Release 1.5a1 — the other half of file handling: removing a file.
+      case 'delete': return this.parseDeleteFile();
+      case 'remove': return this.parseDeleteFile();
       case 'library': return this.parseLibrary();
       case 'if': return this.parseIf();
       // The same list twice: one for each spelling. Both are E022.
@@ -784,13 +787,14 @@
     }
 
     // wait until <condition>  /  wait at most N seconds until <condition>
+    // Release 1.5a1: waiting for a condition is core E++, so no library is
+    // needed. The ImprovedWait libraries still bring actor waits, pause,
+    // resume and stop.
     if (this.isWord('until')) {
-      this.requireLibrary('wait until', kw);
       this.advance(); // until
       return EPP.AST.WaitUntil(this.parseCondition(), null, false, kw);
     }
     if (this.isWord('at') && this.isWord('most', this.peek(1))) {
-      this.requireLibrary('wait at most', kw);
       this.advance(); // at
       this.advance(); // most
       var limit = this.parseExpression();
@@ -1360,6 +1364,23 @@
 
   Parser.prototype.parseRepeat = function () {
     var kw = this.advance(); // repeat
+
+    // Release 1.5a1 — repeat until <condition>. The loop keeps going while the
+    // condition is false, which is how people already describe it out loud.
+    if (this.isWord('until')) {
+      this.advance(); // until
+      var untilStart = this.current();
+      if (!untilStart || untilStart.type === 'NEWLINE' || untilStart.type === 'EOF') {
+        throw new ParseError('"repeat until" needs a condition to wait for.',
+          untilStart ? untilStart.line : kw.line, untilStart ? untilStart.column : kw.column,
+          "Write it like this: repeat until 'count' is 10", 'E027');
+      }
+      var untilCondition = this.parseCondition();
+      var untilPart = this.parseBranch(kw);
+      if (untilPart.block) this.expectEnd('repeat', kw);
+      return EPP.AST.RepeatUntil(untilCondition, untilPart.body, kw);
+    }
+
     // In "repeat 3 times", the word "times" ends the count — it is not the
     // multiplication operator. Suppress `times` as an operator while the
     // count is being read (use parentheses for a count containing `times`).
@@ -1367,10 +1388,35 @@
     var count;
     try { count = this.parseExpression(); }
     finally { this.timesSuppressed -= 1; }
-    var marker = this.expectWord('times', 'in a repeat statement, for example: repeat 3 times.');
+    var marker = this.expectWord('times', 'in a repeat statement, for example: repeat 3 times, or repeat until a condition is true.');
     var part = this.parseBranch(marker);
     if (part.block) this.expectEnd('repeat', kw);
     return EPP.AST.Repeat(count, part.body, kw);
+  };
+
+  /**
+   * Release 1.5a1 — delete the file "notes.txt" / remove the file "notes.txt"
+   * The name may be text in double quotes or a single-quoted variable.
+   */
+  Parser.prototype.parseDeleteFile = function () {
+    var kw = this.advance(); // delete / remove
+    this.matchWord('the');
+    if (!this.matchWord('file')) {
+      var t = this.current();
+      throw new ParseError('"' + kw.value + '" needs the word "file" after it, but found ' + this.describe(t) + '.',
+        kw.line, kw.column, 'Write it like this: delete the file "notes.txt"', 'E015');
+    }
+    var valueToken = this.current();
+    if (valueToken.type !== 'STRING' && valueToken.type !== 'VARIABLE' && valueToken.type !== 'WORD') {
+      throw new ParseError('A file to delete needs a name, but found ' + this.describe(valueToken) + '.',
+        valueToken.line, valueToken.column,
+        'Write it like this: delete the file "notes.txt"', 'E052');
+    }
+    this.advance();
+    var path = valueToken.type === 'STRING' ? EPP.AST.Literal(valueToken.value, valueToken)
+      : valueToken.type === 'VARIABLE' ? EPP.AST.Variable(valueToken.value, valueToken)
+        : EPP.AST.Literal(valueToken.value, valueToken);
+    return EPP.AST.DeleteFile(path, kw);
   };
 
   Parser.prototype.parseForever = function () {
@@ -1467,6 +1513,17 @@
     this.advance(); // is
     var negated = this.matchWord('not');
 
+    // Release 1.5a1: "is 1" and "is \"ready\"" mean "is equal to", exactly as
+    // the C++ and Python engines already read them. Comparing with a plain
+    // value used to be E026, which made wait until 'n' is 3 impossible to
+    // write in the Studio.
+    var afterIs = this.current();
+    if (afterIs && (afterIs.type === 'NUMBER' || afterIs.type === 'STRING' ||
+                    afterIs.type === 'VARIABLE' || afterIs.type === 'LPAREN')) {
+      var plainRight = this.parseExpression();
+      return EPP.AST.Condition(negated ? 'notEqual' : 'equal', left, plainRight, t);
+    }
+
     // Release 1.2 — Game: if 'hero' is touching 'gem' then ...  [Game]
     if (this.isWord('touching') || this.isWord('touches')) {
       if (negated) {
@@ -1528,13 +1585,44 @@
     }
 
     if (this.matchWord('exactly')) {
-      this.expectWord('equal', 'in "is exactly equal to".');
-      this.expectWord('to', 'in "is exactly equal to".');
+      // Release 1.5a1 — "is exactly 5" reads the same as "is exactly equal to 5".
+      if (this.matchWord('equal')) this.matchWord('to');
       var exreq = this.parseExpression();
       return EPP.AST.Condition(negated ? 'notExactEqual' : 'exactEqual', left, exreq, t);
     }
+    // Release 1.5a1 — "is at least 5" / "is at most 5" (the plain-English pair).
+    if (this.matchWord('at')) {
+      var bound = this.current();
+      var least = this.matchWord('least');
+      if (!least && !this.matchWord('most')) {
+        throw new ParseError('After "is at" I expected "least" or "most", but found ' + this.describe(bound) + '.',
+          bound.line, bound.column, 'For example: if \'score\' is at least 10 then say "Passed".', 'E026');
+      }
+      var rb = this.parseExpression();
+      return EPP.AST.Condition(least ? 'greaterOrEqual' : 'lessOrEqual', left, rb, t);
+    }
+    // Release 1.5a1 — "is no more than 5" / "is no less than 5".
+    if (this.matchWord('no')) {
+      var word = this.current();
+      var more = this.matchWord('more');
+      if (!more && !this.matchWord('less')) {
+        throw new ParseError('After "is no" I expected "more than" or "less than", but found ' + this.describe(word) + '.',
+          word.line, word.column, 'For example: if \'age\' is no more than 12 then say "Child ticket".', 'E026');
+      }
+      this.matchWord('than');
+      var rn = this.parseExpression();
+      return EPP.AST.Condition(more ? 'lessOrEqual' : 'greaterOrEqual', left, rn, t);
+    }
+    // Release 1.5a1 — "is more than 5" is the same as "is greater than 5".
+    if (this.matchWord('more')) {
+      this.matchWord('than');
+      var rm = this.parseExpression();
+      return EPP.AST.Condition('greater', left, rm, t);
+    }
+    // Release 1.5a1 — "is not 5" is the short form of "is not equal to 5", and
+    // "is 5" is the short form of "is equal to 5". Both read as English.
     if (this.matchWord('equal')) {
-      this.expectWord('to', 'in "is equal to".');
+      this.matchWord('to');
       var req = this.parseExpression();
       return EPP.AST.Condition(negated ? 'notEqual' : 'equal', left, req, t);
     }

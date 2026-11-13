@@ -1,0 +1,26 @@
+note [E++ 1.5a1: decisions, counted loops and loops that wait for an answer]
+let 'Score' be 95
+
+if 'Score' is greater than 50 then:
+    say "Passed with flying colours!"
+else:
+    say "Needs improvement."
+end if
+
+repeat 3 times:
+    say "E++ makes programming read like a book!"
+end repeat
+
+note [repeat until keeps going while a condition is still false:]
+let 'Count' be 1
+repeat until 'Count' is 4
+    say "Round ", 'Count'
+    let 'Count' be 'Count' plus 1
+end repeat
+
+note [while checks the condition before every round:]
+let 'N' be 1
+while 'N' is less than 4 do
+    say 'N'
+    let 'N' be 'N' plus 1
+end while

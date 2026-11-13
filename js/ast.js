@@ -9,7 +9,7 @@
 
   var EPP = global.EPP || (global.EPP = {});
   // Keep the language's self-reported version in one runtime-visible place.
-  EPP.VERSION = EPP.VERSION || '1.4';
+  EPP.VERSION = EPP.VERSION || '1.5a1';
 
   var Type = {
     PROGRAM: 'Program',
@@ -70,7 +70,11 @@
     WAIT_NAMED: 'WaitNamed',
     CANCEL_WAIT: 'CancelWait',
     WAIT_UNTIL: 'WaitUntil',
-    WAIT_FOR_ACTOR: 'WaitForActor'
+    WAIT_FOR_ACTOR: 'WaitForActor',
+
+    // Release 1.5a1 — file deletion, and "until" joins the loop vocabulary.
+    DELETE_FILE: 'DeleteFile',
+    REPEAT_UNTIL: 'RepeatUntil'
   };
 
   function at(node, token) {
@@ -191,6 +195,12 @@
     },
     CancelWait: function (timerName, token) {
       return at({ type: Type.CANCEL_WAIT, timerName: timerName }, token);
+    },
+    DeleteFile: function (path, token) { return at({ type: Type.DELETE_FILE, path: path }, token); },
+    // Release 1.5a1: "repeat until <condition>" — the loop people already say
+    // out loud, written down.
+    RepeatUntil: function (condition, body, token) {
+      return at({ type: Type.REPEAT_UNTIL, condition: condition, body: body || [] }, token);
     },
     WaitUntil: function (condition, limit, limitIsTime, token) {
       return at({ type: Type.WAIT_UNTIL, condition: condition, limit: limit || null, limitIsTime: !!limitIsTime }, token);

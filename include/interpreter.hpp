@@ -57,6 +57,7 @@ public:
     void visitAddLibraryStmt(AddLibraryStmt* stmt) override;
     void visitIfStmt(IfStmt* stmt) override;
     void visitRepeatStmt(RepeatStmt* stmt) override;
+    void visitRepeatUntilStmt(RepeatUntilStmt* stmt) override;
     void visitWhileStmt(WhileStmt* stmt) override;
     void visitExprStmt(ExprStmt* stmt) override;
     void visitNoteStmt(NoteStmt* stmt) override;

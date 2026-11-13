@@ -1,0 +1,16 @@
+note [E++ 1.5a1: the Python library runs real Python from E++]
+add the "Python" library
+
+note [1. One line of Python:]
+run the python code "print('Hello from Python!')"
+
+note [2. A whole Python block:]
+run the python code:
+for I in range 3:
+   print("Counting in Python:", I)
+
+note [3. E++ variables are visible inside Python:]
+let 'Greeting' be "Welcome to E++ and Python"
+run the python code "print(greeting.upper())"
+
+say "And now E++ is talking again."

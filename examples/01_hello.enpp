@@ -1,9 +1,10 @@
-note [01_hello.epp: The classic Hello World in E++]
+note [E++ 1.5a1: the first program. Text lives in double quotes.]
+say "Hello, World!"
+say "E++ looks like English, reads like English, and behaves like code."
 
-say "Hello"
-
-note [In E++, anything in quotes is a string:]
-say "1 + 1"
-
-note [Without quotes, math is evaluated naturally:]
+note [Without quotes, E++ works the maths out:]
 say 1 plus 1
+say 2 times 3
+
+note [With quotes it stays text, exactly as written:]
+say "1 + 1"

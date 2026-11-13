@@ -361,7 +361,7 @@ function verifyArchive() {
     'js/a11y.js',
     'js/pictures.js'
   ];
-  const mustNotHave = ['js/game-library.js', 'js/draw-library.js', 'examples/drawing.eppla', 'examples/image.eppla'];
+  const mustNotHave = ['js/game-library.js', 'js/draw-library.js', 'examples/11_studio_showcase.enppl'];
 
   for (const entry of mustHave) {
     if (!listing.includes(entry)) throw new Error('E++.zip is missing ' + entry);

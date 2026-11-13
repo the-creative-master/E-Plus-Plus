@@ -1,0 +1,11 @@
+note [E++ 1.5a1: variables use single quotes. Text uses double quotes.]
+let 'Grade' be 29
+let 'Student' be "Sam"
+say 'Student', " got a grade of ", 'grade'
+
+ask "What is your name?" and save the output as 'Name'
+say "Hello ", 'name', ", welcome to E++!"
+
+note [A variable can be changed by giving it a new value:]
+let 'Grade' be 'Grade' plus 1
+say "One more mark: ", 'Grade'

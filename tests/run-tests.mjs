@@ -85,7 +85,7 @@ console.log('Parser / AST');
   assert.equal(ast.body[0].type, 'Define');
   assert.equal(ast.body[0].value.type, 'Binary');
   ok('builds AST nodes for Define + maths');
-  assert.equal(EPP.VERSION, '1.4');
+  assert.equal(EPP.VERSION, '1.5a1');
   const versionAst = EPP.Parser.parse("let 'Eversion' be the version of E++");
   assert.equal(versionAst.body[0].type, 'Define');
   assert.equal(versionAst.body[0].value.type, 'Literal');
@@ -1541,9 +1541,9 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
   assert.ok(/api\.fetchIdeas\(/.test(page), 'the panel reads the public list, not a local one');
 
   // The version the page announces matches this release everywhere it shows.
-  assert.ok(page.includes('<title>E++ Studio | 1.4</title>'), 'the tab title is 1.4');
-  assert.ok(page.includes('class="build-badge">1.4<'), 'the header badge is 1.4');
-  assert.ok(page.includes("const DEFAULTS_VERSION = '1.4a2'"), 'new examples are added without overwriting existing files');
+  assert.ok(page.includes('<title>E++ Studio | 1.5a1</title>'), 'the tab title is 1.5a1');
+  assert.ok(page.includes('class="build-badge">1.5a1<'), 'the header badge is 1.5a1');
+  assert.ok(page.includes("const DEFAULTS_VERSION = '1.5a1'"), 'new examples are added without overwriting existing files');
   assert.ok(page.includes("epp_idea_draft_1_2_1"), 'existing idea drafts remain available');
   assert.match(page, /for="terminalMode"[\s\S]*?Terminal mode[\s\S]*?id="terminalMode"/,
     'Settings exposes the persistent Terminal mode toggle');
@@ -1581,11 +1581,12 @@ console.log('\nRelease 1.2.1: typing keeps its keys');
   assert.match(page, /studio-customize\.js\?v=1\.4-epp-repl-4/,
     'the evaluator-backed terminal script bypasses previously cached shell-only code');
   const releaseNews = readFileSync(join(root, 'news.html'), 'utf8');
+  const release15 = releaseNews.indexOf('RELEASE 1.5a1</span>');
   const release14 = releaseNews.indexOf('RELEASE 1.4</span>');
   const releaseRc1 = releaseNews.indexOf('RELEASE 1.4rc1</span>');
   const releaseB1 = releaseNews.indexOf('RELEASE 1.4b1</span>');
-  assert.ok(release14 >= 0 && release14 < releaseRc1 && releaseRc1 < releaseB1,
-    'the 1.4 release is newest while the 1.4rc1 News entry remains archived beneath it');
+  assert.ok(release15 >= 0 && release15 < release14 && release14 < releaseRc1 && releaseRc1 < releaseB1,
+    'the 1.5a1 release is newest, and every earlier News entry stays archived beneath it');
   for (const screenshot of ['news-terminal-1.4.jpg', 'news-showcase-1.4.jpg']) {
     assert.ok(releaseNews.includes('assets/' + screenshot), 'the 1.4 News section includes ' + screenshot);
     assert.ok(readFileSync(join(root, 'assets', screenshot)).length > 1000, screenshot + ' is present');

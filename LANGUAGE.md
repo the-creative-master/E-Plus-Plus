@@ -1,10 +1,22 @@
-# The E++ Language Reference (1.4)
+# The E++ Language Reference (1.5a1)
 
 > **"Looks like English, feels like english, and is english"**
 
-This is the reference for **E++ 1.4**. It covers the language itself, the
+This is the reference for **E++ 1.5a1**. It covers the language itself, the
 project files you download and import, and the libraries that ship with this
 release.
+
+**What is new in 1.5a1**
+
+* **`wait until`** — E++ can now wait for something to become true. It is part
+  of the language itself, not a library (§11).
+* **`delete the file`** — the Files library can finally remove a file (§11 isn't
+  only about waiting any more; see *The Files library*).
+* **`repeat until`** — a loop that keeps going until its condition is true (§5).
+* **More English everywhere** — comparisons your reader already knows
+  (`is at least`, `is at most`, `is different from`, `is no more than`), and
+  booleans that print as `True` and `False`. The wording you already know
+  still works.
 
 ---
 
@@ -67,6 +79,16 @@ Unrecognized statements are errors (`E015`), not implicit output. Syntax
 checks also inspect inactive branches. Libraries still have their own grammar:
 for example `add library Math` is a library declaration, not a text value.
 
+### Migrating to 1.5a1
+
+Nothing you wrote for 1.4 has to change. Two things read differently:
+
+* Booleans print as `True` and `False` (they used to print `true` and `false`),
+  so a `say` of a condition matches the capital letter students see in school.
+* `wait until` no longer asks for a wait library. A program that still says
+  `add the "ImprovedWaitLite" library` keeps working; the line is simply not
+  needed for the wait itself.
+
 ---
 
 ## 3. Notes & Comments
@@ -103,9 +125,25 @@ else:
 end if
 ```
 
-Conditions understand the words people actually use: `is`, `is not`,
-`is equal to`, `is greater than`, `is less than`, `is greater than or equal
-to`, `is less than or equal to`, plus the library conditions in §9 and §10.
+### Saying a comparison out loud
+
+Conditions understand the words people actually use. Every line below does the
+same thing in every engine (new in 1.5a1, earlier releases had a smaller set):
+
+| You write | It means |
+| --- | --- |
+| `'a' is 5` · `'a' equals 5` | exactly 5 |
+| `'a' is equal to 5` · `'a' is exactly 5` · `'a' is exactly equal to 5` | exactly 5 |
+| `'a' is not 5` · `'a' is not equal to 5` · `'a' is different from 5` | anything but 5 |
+| `'a' is greater than 5` · `'a' is more than 5` | above 5 |
+| `'a' is less than 5` | below 5 |
+| `'a' is at least 5` · `'a' is no less than 5` | 5 or more |
+| `'a' is at most 5` · `'a' is no more than 5` | 5 or less |
+| `'a' is greater than or equal to 5` | 5 or more |
+| `'a' is less than or equal to 5` | 5 or less |
+
+`is not a number` works inside `if` as well as in `check if`, and the library
+conditions in §9 and §10 read the same way.
 
 ---
 
@@ -123,6 +161,21 @@ repeat 2 times
     say "Again"
 end repeat
 ```
+
+**Repeat until something is true** (new in 1.5a1). The block runs first, then
+the condition is tested. That means the body always runs at least once — which
+is exactly what "keep asking until they say yes" means in English.
+
+```text
+let 'Count' be 1
+repeat until 'Count' is 4
+    say "Round ", 'Count'
+    let 'Count' be 'Count' plus 1
+end repeat
+```
+
+`repeat until` closes with `end repeat`, the same as a counted repeat. A loop
+that is still not finished after 100000 rounds stops with `E068`.
 
 **Repeat while something is true.** `do` (or a colon) opens the block and
 `end while` closes it. The condition is checked before every round, so a
@@ -377,7 +430,75 @@ seconds pass, so a forgotten program cannot hang forever).
 
 ---
 
-## 11. Wait libraries
+## 10A. Files and folders (`add the "Files" library`)
+
+The Files library writes, appends, reads and — new in 1.5a1 — **deletes**
+files.
+
+```text
+add the "Files" library
+
+write "E++ 1.5a1 project notes." to file "notes.txt"
+append " One more line." to file "notes.txt"
+
+read the file "notes.txt" and save the output as 'Notes'
+say 'Notes'
+
+note [done with it — remove it]
+delete the file "notes.txt"
+```
+
+**`delete the file "<name>"`** and **`remove the file "<name>"`** mean the
+same thing. Both take text in double quotes (or a variable holding the name):
+`delete the file 'Name'` works too. Deleting a file that has already gone is
+`E076` — "Cannot Delete A Missing File" — not a silent success, so a typo in
+the file name is caught straight away. Anything else that goes wrong while
+deleting reports `E077`.
+
+In the Studio the delete is logged in the Output panel ("Deleted the workspace
+file ..."), because a browser cannot print to a disk the same way the
+command-line engines do. In `epp` and `epp.py` the file really leaves the disk
+and the statement prints nothing.
+
+--
+
+## 11. Waiting
+
+### `wait until` — the new core statement (1.5a1)
+
+`wait until` holds the program until a condition becomes true. It is **part of
+the language**: no library, no `add` line.
+
+```text
+let 'Ready' be 0
+say "Getting things ready..."
+let 'Ready' be 1
+
+note [this line returns the moment the condition is true]
+wait until 'Ready' is 1
+say "Ready!"
+```
+
+The condition is written exactly like an `if` condition: `is`, `is not`,
+`is greater than`, `is at least`, `either ... or`, and so on (§4). E++ checks
+it every 25 milliseconds, so the wait finishes almost immediately after the
+value changes. A `wait until` that sits inside a loop, with no ImprovedWait
+library added, prints the warning `W006`: nothing in the loop can change the
+condition, so the wait could never end.
+
+**Always allow a deadline when the value comes from outside the program.** The
+`wait at most` form gives up quietly after the time you choose, instead of
+waiting forever:
+
+```text
+wait at most 5 seconds until 'ready' is 1
+wait at most 2 seconds until the "Up arrow" key is pressed
+wait at most 750 milliseconds until 'score' is greater than 9
+```
+
+If nothing changes the condition before the deadline, the program carries on
+with the next line — no error, no print. Every engine also caps a single wait
+at 60 seconds (`E067`), so a program can never hang forever by mistake.
 
 ### ImprovedWaitLite — every non-game wait
 
@@ -397,7 +518,8 @@ wait at most 5 seconds until 'ready' is 1
 ```
 
 A plain `wait 2 seconds` needs the `Time` library (as in 1.1) or either
-ImprovedWait library.
+ImprovedWait library. `wait until` and `wait at most` do **not** need any
+library in 1.5a1 — the lines above work on their own too.
 
 Waits cooperate with the game loop: while a program waits, the canvas keeps
 drawing frames.
@@ -485,12 +607,13 @@ panel instead.
 
 ## 14. Diagnostics
 
-Every message E++ prints has a code. 1.4 defines exactly one hundred of them:
+Every message E++ prints has a code. 1.5a1 defines exactly one hundred and
+three of them:
 
 | Family | Count | Meaning |
 | --- | --- | --- |
-| `E001`-`E075` | 75 | General errors. The program stops. |
-| `W001`-`W005` | 5 | Warnings. The program keeps running. |
+| `E001`-`E077` | 77 | General errors. The program stops. |
+| `W001`-`W006` | 6 | Warnings. The program keeps running. |
 | `Z001`-`Z005` | 5 | Only ever raised by `E++.zip`, the standalone distribution. |
 | `F001`-`F015` | 15 | Fatal lexer errors. Raised while reading the source; the parser never raises them. |
 
@@ -515,7 +638,7 @@ compiled to WebAssembly. Its browser evaluator is JavaScript, not the native
 C++ parser and interpreter. If the compiled lexer cannot load, execution stops
 with the critical lexer failure `F015`; there is no silent alternate lexer.
 
-### General errors (75)
+### General errors (77)
 
 | Code | Name | What to do |
 | --- | --- | --- |
@@ -594,8 +717,10 @@ with the critical lexer failure `F015`; there is no silent alternate lexer.
 | `E073` | Unknown Actor | Create the actor first: create the actor 'hero' with the image "hero.png" |
 | `E074` | Unknown Image | Define the image first: define 'cat' as image "<picture>" |
 | `E075` | Sprite Not Defined | Define the sprite first: define 'pencil' as drawing sprite |
+| `E076` | Cannot Delete A Missing File | Check the file name, or use `read the file` first to see what is there. |
+| `E077` | Cannot Delete The File | Check the file name and that the folder allows the change. In the Studio, deleting a workspace file needs the file to exist. |
 
-### Warnings (5)
+### Warnings (6)
 
 | Code | Name | What to do |
 | --- | --- | --- |
@@ -604,6 +729,7 @@ with the critical lexer failure `F015`; there is no silent alternate lexer.
 | `W003` | Library Added But Unused | Remove the library line, or use one of its features. |
 | `W004` | Continued On The Next Line | One statement per line keeps the structure clear. |
 | `W005` | Number Written As Text | Write the number without double quotes, for example: wait 2 seconds |
+| `W006` | Wait Can Never End Here | A `wait until` inside a loop cannot see anything change. Add the `ImprovedWait` library, or move the wait out of the loop. |
 
 ### E++.zip only (5)
 

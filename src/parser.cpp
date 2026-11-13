@@ -37,6 +37,13 @@ bool Parser::check(TokenType type) const {
     return peek().type == type;
 }
 
+bool Parser::check_word(const std::string& word) const {
+    if (is_at_end()) return false;
+    const Token& tok = peek();
+    if (tok.type != TokenType::TOKEN_IDENTIFIER) return false;
+    return Lexer::to_lower(tok.lexeme) == word;
+}
+
 bool Parser::match(TokenType type) {
     if (check(type)) {
         advance();
@@ -140,7 +147,8 @@ std::shared_ptr<Stmt> Parser::parse_statement() {
     if (tok.type == TokenType::KW_WAIT || tok.type == TokenType::KW_SLEEP) {
         return parse_wait_statement();
     }
-    if (tok.type == TokenType::KW_READ || tok.type == TokenType::KW_WRITE || tok.type == TokenType::KW_APPEND) {
+    if (tok.type == TokenType::KW_READ || tok.type == TokenType::KW_WRITE || tok.type == TokenType::KW_APPEND ||
+        tok.type == TokenType::KW_DELETE || tok.type == TokenType::KW_REMOVE) {
         return parse_file_statement();
     }
     if (tok.type == TokenType::KW_CLEAR) {
@@ -499,10 +507,52 @@ std::shared_ptr<Stmt> Parser::parse_python_statement() {
 }
 
 // wait 2 seconds / sleep 500 milliseconds
+// wait until <condition>                    (Release 1.5a1 — core E++)
+// wait at most 10 seconds until <condition> (Release 1.5a1 — core E++)
 std::shared_ptr<Stmt> Parser::parse_wait_statement() {
     Token wait_tok = advance(); // 'wait' or 'sleep'
     int line = wait_tok.line;
     int col = wait_tok.col;
+
+    // wait until 'ready' is 1 — the condition reads like an if.
+    if (match(TokenType::KW_UNTIL)) {
+        if (is_at_end() || peek().type == TokenType::TOKEN_NEWLINE) {
+            throw ParseError("\"wait until\" needs a condition to wait for.",
+                             previous().line, previous().col, "E027");
+        }
+        auto condition = parse_expression();
+        match(TokenType::TOKEN_NEWLINE);
+        return std::make_shared<WaitStmt>(nullptr, false, line, col, condition, true);
+    }
+
+    // wait at most <duration> [seconds] until <condition>
+    // Release 1.5a1 promoted "at" and "most" to keywords for the comparisons
+    // ("is at most 5"), so the wait accepts either spelling here.
+    if ((peek().type == TokenType::KW_AT || check_word("at")) &&
+        (peek_at(1).type == TokenType::KW_MOST ||
+         (peek_at(1).type == TokenType::TOKEN_IDENTIFIER && Lexer::to_lower(peek_at(1).lexeme) == "most"))) {
+        advance(); // at
+        advance(); // most
+        auto limit = parse_expression();
+        bool limit_ms = false;
+        if (match(TokenType::KW_MILLISECONDS) || match(TokenType::KW_MILLISECOND)) {
+            limit_ms = true;
+        } else if (match(TokenType::KW_SECONDS) || match(TokenType::KW_SECOND)) {
+            limit_ms = false;
+        }
+        if (match(TokenType::KW_UNTIL)) {
+            if (is_at_end() || peek().type == TokenType::TOKEN_NEWLINE) {
+                throw ParseError("\"wait at most ... until\" needs a condition to wait for.",
+                                 previous().line, previous().col, "E027");
+            }
+            auto condition = parse_expression();
+            match(TokenType::TOKEN_NEWLINE);
+            return std::make_shared<WaitStmt>(limit, limit_ms, line, col, condition, true);
+        }
+        // "wait at most 5 seconds" on its own is simply an upper-bounded wait.
+        match(TokenType::TOKEN_NEWLINE);
+        return std::make_shared<WaitStmt>(limit, limit_ms, line, col);
+    }
 
     auto dur_expr = parse_expression();
     bool is_ms = false;
@@ -511,6 +561,13 @@ std::shared_ptr<Stmt> Parser::parse_wait_statement() {
         is_ms = true;
     } else if (match(TokenType::KW_SECONDS) || match(TokenType::KW_SECOND)) {
         is_ms = false;
+    }
+
+    // "wait 2 seconds until 'ready' is 1" reads naturally too.
+    if (match(TokenType::KW_UNTIL)) {
+        auto condition = parse_expression();
+        match(TokenType::TOKEN_NEWLINE);
+        return std::make_shared<WaitStmt>(dur_expr, is_ms, line, col, condition, true);
     }
 
     match(TokenType::TOKEN_NEWLINE);
@@ -524,6 +581,16 @@ std::shared_ptr<Stmt> Parser::parse_file_statement() {
     Token op_tok = advance(); // 'read', 'write', 'append'
     int line = op_tok.line;
     int col = op_tok.col;
+
+    // delete the file "old.txt"  /  remove the file "old.txt"   (Release 1.5a1)
+    if (op_tok.type == TokenType::KW_DELETE || op_tok.type == TokenType::KW_REMOVE) {
+        match(TokenType::KW_THE);
+        consume(TokenType::KW_FILE, "Expected 'file' after '" + op_tok.lexeme +
+                "', for example: delete the file \"old.txt\"");
+        auto path_expr = parse_expression();
+        match(TokenType::TOKEN_NEWLINE);
+        return std::make_shared<FileStmt>(FileOp::DELETE, path_expr, nullptr, "", line, col);
+    }
 
     if (op_tok.type == TokenType::KW_READ) {
         match(TokenType::KW_THE);
@@ -691,10 +758,30 @@ std::shared_ptr<Stmt> Parser::parse_if_statement() {
 }
 
 // repeat <count> times: ... end repeat
+// repeat until <condition> ... end repeat      (Release 1.5a1)
 std::shared_ptr<Stmt> Parser::parse_repeat_statement() {
     Token rep_tok = advance(); // Consume 'repeat'
     int line = rep_tok.line;
     int col = rep_tok.col;
+
+    // repeat until <condition> — the loop that waits for its own answer.
+    if (match(TokenType::KW_UNTIL)) {
+        auto condition = parse_expression();
+        match(TokenType::TOKEN_COLON);
+        match(TokenType::TOKEN_NEWLINE);
+
+        std::vector<std::shared_ptr<Stmt>> body;
+        while (!is_at_end() && peek().type != TokenType::KW_END) {
+            skip_newlines();
+            if (peek().type == TokenType::KW_END) break;
+            auto s = parse_statement();
+            if (s) body.push_back(s);
+        }
+        consume(TokenType::KW_END, "Expected 'end repeat' to close repeat until block");
+        consume(TokenType::KW_REPEAT, "Expected 'end repeat' to close repeat until block");
+        match(TokenType::TOKEN_NEWLINE);
+        return std::make_shared<RepeatUntilStmt>(condition, body, line, col);
+    }
 
     auto count = parse_power();
     consume(TokenType::KW_TIMES, "Expected 'times' after repeat count");
@@ -762,18 +849,80 @@ std::shared_ptr<Expr> Parser::parse_comparison() {
             auto right = parse_term();
             expr = std::make_shared<BinaryExpr>(BinaryOp::EQ, expr, right, l, c);
         } else if (match(TokenType::KW_IS)) {
+            // Release 1.5a1 — comparisons now read the way people speak:
+            //   is 5            is equal to 5        is exactly 5
+            //   is not 5        is different from 5  is not equal to 5
+            //   is greater than 5                    is more than 5
+            //   is less than 5                       is smaller than 5
+            //   is at least 5                        is at most 5
+            //   is no more than 5                    is no less than 5
+            //   is greater than or equal to 5        is less than or equal to 5
             if (match(TokenType::KW_NOT)) {
-                if (match(TokenType::KW_EQUAL)) match(TokenType::KW_TO);
+                match(TokenType::KW_EQUAL);
+                match(TokenType::KW_TO);
                 auto right = parse_term();
                 expr = std::make_shared<BinaryExpr>(BinaryOp::NEQ, expr, right, l, c);
+            } else if (match(TokenType::KW_DIFFERENT)) {
+                match(TokenType::KW_FROM);
+                auto right = parse_term();
+                expr = std::make_shared<BinaryExpr>(BinaryOp::NEQ, expr, right, l, c);
+            } else if (match(TokenType::KW_EXACTLY)) {
+                match(TokenType::KW_EQUAL);
+                match(TokenType::KW_TO);
+                auto right = parse_term();
+                expr = std::make_shared<BinaryExpr>(BinaryOp::EQ, expr, right, l, c);
+            } else if (match(TokenType::KW_AT)) {
+                // is at least N / is at most N
+                if (match(TokenType::KW_LEAST)) {
+                    auto right = parse_term();
+                    expr = std::make_shared<BinaryExpr>(BinaryOp::GTE, expr, right, l, c);
+                } else if (match(TokenType::KW_MOST)) {
+                    auto right = parse_term();
+                    expr = std::make_shared<BinaryExpr>(BinaryOp::LTE, expr, right, l, c);
+                } else {
+                    throw ParseError("Expected 'least' or 'most' after 'is at'.", l, c, "E026");
+                }
+            } else if (match(TokenType::KW_NO)) {
+                // is no more than N / is no less than N
+                if (match(TokenType::KW_MORE)) {
+                    match(TokenType::KW_THAN);
+                    auto right = parse_term();
+                    expr = std::make_shared<BinaryExpr>(BinaryOp::LTE, expr, right, l, c);
+                } else if (match(TokenType::KW_LESS)) {
+                    match(TokenType::KW_THAN);
+                    auto right = parse_term();
+                    expr = std::make_shared<BinaryExpr>(BinaryOp::GTE, expr, right, l, c);
+                } else {
+                    throw ParseError("Expected 'more than' or 'less than' after 'is no'.", l, c, "E026");
+                }
             } else if (match(TokenType::KW_GREATER)) {
+                match(TokenType::KW_THAN);
+                // is greater than or equal to N
+                if (match(TokenType::KW_OR)) {
+                    match(TokenType::KW_EQUAL);
+                    match(TokenType::KW_TO);
+                    auto right = parse_term();
+                    expr = std::make_shared<BinaryExpr>(BinaryOp::GTE, expr, right, l, c);
+                } else {
+                    auto right = parse_term();
+                    expr = std::make_shared<BinaryExpr>(BinaryOp::GT, expr, right, l, c);
+                }
+            } else if (match(TokenType::KW_MORE)) {
                 match(TokenType::KW_THAN);
                 auto right = parse_term();
                 expr = std::make_shared<BinaryExpr>(BinaryOp::GT, expr, right, l, c);
             } else if (match(TokenType::KW_LESS)) {
                 match(TokenType::KW_THAN);
-                auto right = parse_term();
-                expr = std::make_shared<BinaryExpr>(BinaryOp::LT, expr, right, l, c);
+                // is less than or equal to N
+                if (match(TokenType::KW_OR)) {
+                    match(TokenType::KW_EQUAL);
+                    match(TokenType::KW_TO);
+                    auto right = parse_term();
+                    expr = std::make_shared<BinaryExpr>(BinaryOp::LTE, expr, right, l, c);
+                } else {
+                    auto right = parse_term();
+                    expr = std::make_shared<BinaryExpr>(BinaryOp::LT, expr, right, l, c);
+                }
             } else if (match(TokenType::KW_EQUAL)) {
                 match(TokenType::KW_TO);
                 auto right = parse_term();

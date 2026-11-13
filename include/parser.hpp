@@ -53,6 +53,9 @@ private:
     Token previous() const;
     Token advance();
     bool check(TokenType type) const;
+    // "at", "most" and similar connective words are ordinary identifiers to
+    // the lexer; the parser compares their spelling instead of reserving them.
+    bool check_word(const std::string& word) const;
     bool match(TokenType type);
     bool match_any(const std::vector<TokenType>& types);
     Token consume(TokenType type, const std::string& error_message);

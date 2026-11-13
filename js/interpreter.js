@@ -146,7 +146,8 @@
   function stringify(value) {
     if (value instanceof Fraction) return value.toString();
     if (typeof value === 'number') return formatNumber(value);
-    if (typeof value === 'boolean') return value ? 'true' : 'false';
+    // Release 1.5a1: booleans read as words in every engine.
+    if (typeof value === 'boolean') return value ? 'True' : 'False';
     if (value === null || value === undefined) return '';
     return String(value);
   }
@@ -302,10 +303,18 @@
     this.maxFrames = options.maxFrames || 100000;
     this.maxSteps = options.maxSteps || 100000;
     this.maxLoopIterations = options.maxLoopIterations || 10000;
+    // Release 1.5a1 — a `wait until` with no deadline is capped so a program
+    // can never hang forever. EPP_WAIT_CEILING mirrors the native engine's
+    // environment variable; hosts and tests can lower it.
+    this.waitCeilingMs = options.waitCeilingMs || 60000;
     this.cancelled = false;
     // Release 1.4: W001-W005 are collected while the program runs and
     // reported once it finishes; a warning never stops anything.
     this.onWarning = typeof options.onWarning === 'function' ? options.onWarning : null;
+    // Release 1.5a1 — Files: "delete the file ..." is the host's job. The
+    // Studio passes a function that removes the file from its workspace and
+    // returns null when it worked, or an English message when it did not.
+    this.deleteFile = typeof options.deleteFile === 'function' ? options.deleteFile : null;
     this.filename = options.filename || null;
     this.sourceLines = [];
     this.warnings = [];
@@ -644,6 +653,16 @@
         return;
       }
       case AST.WAIT_UNTIL: {
+        // Release 1.5a1: "wait until" is core E++, not an ImprovedWait feature.
+        // A program waiting on itself (inside repeat forever, say) would wait
+        // for a minute and then stop with E067, which is a confusing first
+        // experience. Say what is actually happening instead.
+        if (!this.loadedLibraries.has('ImprovedWait') && !this.loadedLibraries.has('ImprovedWaitLite') &&
+            this.loopIterations > 0) {
+          this.warn('W006',
+            'This "wait until" sits inside a loop, and nothing the loop does can run while it waits.',
+            node.line, node.column);
+        }
         var untilLimit = node.limit === null ? null
           : this.toNumber(await this.evaluate(node.limit), node, 'wait at most');
         var deadline = untilLimit === null ? null : Date.now() + untilLimit * 1000;
@@ -651,8 +670,10 @@
         while (!timer.cancelled && !this.cancelled) {
           if (await this.evaluateCondition(node.condition)) return;
           if (deadline !== null && Date.now() >= deadline) return;
-          if (deadline === null && Date.now() - timer.startedAt > 60000) {
-            throw new RuntimeError('This "wait until" has been waiting for a minute and the condition is still false.',
+          if (deadline === null && Date.now() - timer.startedAt > this.waitCeilingMs) {
+            var ceiling = Math.max(1, Math.round(this.waitCeilingMs / 1000));
+            throw new RuntimeError('This "wait until" has been waiting for ' + ceiling +
+              (ceiling === 1 ? ' second' : ' seconds') + ' and the condition is still false.',
               node.line, node.column,
               'Give it a deadline: wait at most 10 seconds until ...', 'E067');
           }
@@ -708,6 +729,48 @@
         if (seconds < 0) throw new RuntimeError('Cannot wait for a negative amount of time (' + seconds + ' seconds).', node.line, node.column, 'Use a number of seconds that is 0 or more.', 'E011');
         await this.delay(seconds);
         if (this.cancelled) throw new RuntimeError('Execution was stopped.', node.line, node.column, null, 'E070');
+        return;
+      }
+      case AST.DELETE_FILE: {
+        // Release 1.5a1: the runtime decides what "the files" are. The Studio
+        // calls its own file store; a host without one gets E077, never a
+        // silent success.
+        this.requireRuntimeLibrary('Files', 'delete file', node);
+        var deletePath = stringify(await this.evaluate(node.path)).trim();
+        if (!deletePath) {
+          throw new RuntimeError('A delete needs the name of a file, for example: delete the file "notes.txt".',
+            node.line, node.column, 'Write the file name in double quotes.', 'E052');
+        }
+        if (typeof this.deleteFile !== 'function') {
+          throw new RuntimeError('This runtime cannot delete files, so "' + deletePath + '" was left alone.',
+            node.line, node.column,
+            'Run the program in the E++ Studio, where the Files library keeps a workspace.', 'E077');
+        }
+        var deleteError = null;
+        try {
+          deleteError = await this.deleteFile(deletePath);
+        } catch (error) {
+          deleteError = error && error.message ? error.message : String(error);
+        }
+        if (deleteError) {
+          var missing = /no file|not found|does not exist|no such/i.test(String(deleteError));
+          throw new RuntimeError(String(deleteError), node.line, node.column,
+            missing ? 'Deleting only works on a file that exists. Check the name, or list the files first.'
+              : 'Close anything that is using the file, then try again.',
+            missing ? 'E076' : 'E077');
+        }
+        return;
+      }
+      case AST.REPEAT_UNTIL: {
+        // Release 1.5a1 — repeat until <condition>: run the body, then test.
+        // The body always runs at least once, which is the whole difference
+        // between "repeat until" and "while".
+        while (true) {
+          this.guardLoop(node);
+          try { await this.executeBlock(node.body); }
+          catch (e) { if (e && e.isBreakSignal) break; throw e; }
+          if (await this.evaluateCondition(node.condition)) return;
+        }
         return;
       }
       case AST.LIBRARY: {

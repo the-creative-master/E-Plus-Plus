@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-E++ (E-Plus-Plus) 1.4 Direct Python Runtime & Engine
+E++ (E-Plus-Plus) 1.5a1 Direct Python Runtime & Engine
 Uses the native Python lexer to run E++ and Python code directly, including
 project files saved by the Studio.
 """
@@ -97,6 +97,26 @@ ERROR_HELP = {
     "W004": "One statement per line keeps the structure clear.",
     "W005": "Write the number without double quotes, for example: wait 2 seconds",
 }
+
+
+def _wait_ceiling_seconds() -> float:
+    """How long one "wait until" may poll when it has no deadline of its own.
+
+    The CLI has no Stop button, so a condition that never becomes true must not
+    hang the terminal forever. EPP_WAIT_CEILING overrides the 60-second default.
+    """
+    try:
+        value = float(os.environ.get("EPP_WAIT_CEILING", "60"))
+        return value if value > 0 else 60.0
+    except ValueError:
+        return 60.0
+
+
+def english_value(value: Any) -> str:
+    """A value the way E++ prints it everywhere: True and False read like words."""
+    if isinstance(value, bool):
+        return "True" if value else "False"
+    return str(value)
 
 
 def error_name(code: str, fallback: str = "E++ Error") -> str:
@@ -280,8 +300,9 @@ class Interpreter:
         allowed = {TokenType.KW_SAY, TokenType.KW_TELL, TokenType.KW_LET, TokenType.KW_SET,
                    TokenType.KW_DEFINE, TokenType.KW_ASK, TokenType.KW_ADD, TokenType.KW_IF,
                    TokenType.KW_OTHERWISE, TokenType.KW_ELSE, TokenType.KW_END, TokenType.KW_REPEAT,
-                   TokenType.KW_WHILE, TokenType.KW_CHECK, TokenType.KW_NOTE, TokenType.KW_RUN}
-        word_commands = {"write", "append", "read", "clear", "wait", "sleep"}
+                   TokenType.KW_WHILE, TokenType.KW_CHECK, TokenType.KW_NOTE, TokenType.KW_RUN,
+                   TokenType.KW_DELETE, TokenType.KW_REMOVE}
+        word_commands = {"write", "append", "read", "clear", "wait", "sleep", "delete", "remove"}
         colors = {"red", "green", "blue", "yellow", "cyan", "magenta"}
 
         def check_value(parts):
@@ -307,7 +328,13 @@ class Interpreter:
             for pattern in phrases:
                 masked = re.sub(pattern, lambda m: ' ' * len(m.group()), masked, flags=re.IGNORECASE)
             for t, pos in zip(parts, positions):
-                if t.type == TokenType.IDENTIFIER and masked[pos:pos + len(t.lexeme)].strip() and t.lexeme.lower() not in {"pi", "e", "true", "false"}:
+                if t.type == TokenType.IDENTIFIER and masked[pos:pos + len(t.lexeme)].strip() and t.lexeme.lower() not in {
+                        "pi", "e", "true", "false",
+                        # Release 1.5a1: a condition is words, not unquoted text.
+                        "is", "not", "equal", "to", "than", "greater", "less", "lesser",
+                        "exactly", "different", "from", "or", "contains", "equals",
+                        "touching", "until", "of", "in", "range", "a", "number",
+                        "positive", "negative", "mod", "modulo", "and", "multiplied", "divided", "by"}:
                     raise self.diagnostic("E001", "Unquoted Text", f"Unquoted text '{t.lexeme}' is not a value.",
                                           'Put text in double quotes, or use single quotes for a variable.', t.line, t.col)
 
@@ -372,9 +399,15 @@ class Interpreter:
                 check_value(line[1:split])
             elif first.type == TokenType.KW_REPEAT:
                 end = len(line) - (1 if line[-1].type == TokenType.COLON else 0)
-                if end < 3 or line[end - 1].lexeme.lower() not in ("time", "times"):
-                    raise self.diagnostic("E015", "Invalid Repeat", "A repeat needs a count followed by 'times'.",
-                                          "For example: repeat 3 times", first.line, first.col)
+                # Release 1.5a1 — repeat until <condition> has no count.
+                if end > 1 and line[1].type == TokenType.IDENTIFIER and line[1].lexeme.lower() == "until":
+                    if end < 3:
+                        raise self.diagnostic("E027", "Invalid Condition", "repeat until needs a condition.",
+                                              "For example: repeat until 'n' is 10", first.line, first.col)
+                elif end < 3 or line[end - 1].lexeme.lower() not in ("time", "times"):
+                    raise self.diagnostic("E015", "Invalid Repeat",
+                                          "A repeat needs a count followed by 'times', or a condition after 'until'.",
+                                          "For example: repeat 3 times, or repeat until 'n' is 10", first.line, first.col)
                 check_value(line[1:end - 1])
 
         stack = []
@@ -399,6 +432,17 @@ class Interpreter:
                     stack.append(("if", first))
                 previous_inline_if = not is_block
             elif first.type in (TokenType.KW_REPEAT, TokenType.KW_WHILE):
+                # repeat until <condition> opens the same block as repeat N times.
+                if first.type == TokenType.KW_REPEAT and len(line) > 1 and \
+                        line[1].type == TokenType.IDENTIFIER and line[1].lexeme.lower() == "until":
+                    if len(line) <= 2:
+                        raise self.diagnostic("E027", "Invalid Condition", "repeat until needs a condition.",
+                                              "For example: repeat until 'n' is 10", first.line, first.col)
+                elif first.type == TokenType.KW_REPEAT:
+                    if not any(t.lexeme.lower() in ("times", "time") for t in line[1:]):
+                        raise self.diagnostic("E015", "Invalid Repeat",
+                                              "A repeat needs a count followed by 'times', or a condition after 'until'.",
+                                              "For example: repeat 3 times, or repeat until 'n' is 10", first.line, first.col)
                 stack.append((first.lexeme.lower(), first))
                 previous_inline_if = False
             elif first.type in (TokenType.KW_OTHERWISE, TokenType.KW_ELSE):
@@ -501,10 +545,20 @@ class Interpreter:
                 while end_header < n and tokens[end_header].type not in (TokenType.NEWLINE, TokenType.EOF): end_header += 1
                 header = list(tokens[idx + 1:end_header])
                 if header and header[-1].type == TokenType.COLON: header.pop()
-                if kind == "repeat":
+                # Release 1.5a1 — repeat until <condition>: the header is a
+                # condition, not a count, and the body runs before the test.
+                repeat_until = (kind == "repeat" and header and header[0].type == TokenType.IDENTIFIER
+                                and header[0].lexeme.lower() == "until")
+                if repeat_until:
+                    header = header[1:]
+                    if not header:
+                        raise self.diagnostic("E027", "Invalid Condition", "repeat until needs a condition.",
+                                              "For example: repeat until 'n' is 10", line_num, col_num)
+                elif kind == "repeat":
                     if not header or header[-1].lexeme.lower() not in ("times", "time"):
-                        raise self.diagnostic("E015", "Invalid Repeat", "A repeat needs a count followed by 'times'.",
-                                              "For example: repeat 3 times", line_num, col_num)
+                        raise self.diagnostic("E015", "Invalid Repeat",
+                                              "A repeat needs a count followed by 'times', or a condition after 'until'.",
+                                              "For example: repeat 3 times, or repeat until 'n' is 10", line_num, col_num)
                     count_tokens = header[:-1]
                     if not count_tokens:
                         raise self.diagnostic("E003", "Missing Repeat Count", "The repeat count is missing.",
@@ -535,7 +589,17 @@ class Interpreter:
                 if idx < n and tokens[idx].type not in (TokenType.NEWLINE, TokenType.EOF):
                     raise self.diagnostic("E015", "Unexpected Text", f"Unexpected text after end {kind}.",
                                           "Put each statement on its own line.", tokens[idx].line, tokens[idx].col)
-                if kind == "repeat":
+                if repeat_until:
+                    rounds = 0
+                    while not self.eval_condition(header, line_num, col_num):
+                        if rounds >= 100000:
+                            raise self.diagnostic("E068", "Endless Loop",
+                                                  "This repeat until exceeded 100000 iterations.",
+                                                  "Change a value in the loop so the condition becomes true.",
+                                                  line_num, col_num)
+                        self.parse_and_execute(body)
+                        rounds += 1
+                elif kind == "repeat":
                     count = self.eval_expr(count_tokens, line_num, count_tokens[0].col)
                     if not isinstance(count, (int, float)) or not math.isfinite(count) or count < 0 or int(count) != count or count > 100000:
                         raise self.diagnostic("E032", "Invalid Repeat Count", "Repeat needs a whole number from 0 to 100000.",
@@ -841,7 +905,8 @@ class Interpreter:
                 result = str(value).strip() != ""
             except (ValueError, TypeError):
                 result = False
-            print(str(not result if rest[0] == "not" else result).lower())
+            # Release 1.5a1: booleans print as True / False in every engine.
+            print(english_value(not result if rest[0] == "not" else result))
             return
 
         # WRITE TO FILE
@@ -873,6 +938,34 @@ class Interpreter:
                     f.write(content)
             return
 
+        # DELETE FILE (Release 1.5a1)
+        if first.type in (TokenType.KW_DELETE, TokenType.KW_REMOVE):
+            self.require_lib("Files", "Deleting files", line_num, col_num)
+            fname = None
+            var_name = None
+            for t in tokens[1:]:
+                if t.type == TokenType.STRING: fname = t.string_value
+                elif t.type == TokenType.VARIABLE: var_name = t.string_value
+            if fname is None and var_name is not None:
+                fname = str(self.get_var(var_name, line_num, col_num))
+            if not fname:
+                raise self.diagnostic("E052", "File Needs A Name",
+                                      "A delete needs a file name in double quotes.",
+                                      'For example: delete the file "notes.txt"', line_num, col_num)
+            if not os.path.exists(fname):
+                raise self.diagnostic("E076", "Cannot Delete A Missing File",
+                                      f"There is no file called '{fname}' to delete.",
+                                      "Check the file name; deleting only works on a file that exists.",
+                                      line_num, col_num)
+            try:
+                os.remove(fname)
+            except OSError as err:
+                raise self.diagnostic("E077", "Cannot Delete The File",
+                                      f"'{fname}' could not be deleted: {err.strerror or err}.",
+                                      "Close anything that is using the file, then try again.",
+                                      line_num, col_num)
+            return
+
         # READ FILE
         if first.type == TokenType.IDENTIFIER and first.lexeme.lower() == "read":
             self.require_lib("Files", "Reading files", line_num, col_num)
@@ -896,8 +989,42 @@ class Interpreter:
             print("\033[2J\033[H", end="")
             return
 
-        # WAIT / SLEEP
+        # WAIT UNTIL <condition>  /  WAIT AT MOST N SECONDS UNTIL <condition>
+        # Release 1.5a1: waiting for a condition is core E++, so no library is
+        # required. "at most" is a deadline; without one, EPP_WAIT_CEILING
+        # (60 seconds by default) keeps a forgotten wait from hanging forever.
         if first.type == TokenType.IDENTIFIER and first.lexeme.lower() in ("wait", "sleep"):
+            until_idx = next((i for i, t in enumerate(tokens)
+                              if t.type == TokenType.IDENTIFIER and t.lexeme.lower() == "until"), -1)
+            if until_idx > 0:
+                limit = None
+                header = [t.lexeme.lower() for t in tokens[1:until_idx]]
+                if len(header) >= 2 and header[0] == "at" and header[1] == "most":
+                    limit_tokens = tokens[3:until_idx]
+                    stop = next((i for i, t in enumerate(limit_tokens)
+                                 if t.lexeme.lower() in ("second", "seconds", "millisecond", "milliseconds")), len(limit_tokens))
+                    limit = float(self.eval_expr(limit_tokens[:stop], line_num, col_num))
+                    if stop < len(limit_tokens) and limit_tokens[stop].lexeme.lower().startswith("milli"):
+                        limit /= 1000.0
+                condition = tokens[until_idx + 1:]
+                if not condition:
+                    raise self.diagnostic("E027", "Invalid Condition",
+                                          "\"wait until\" needs a condition to wait for.",
+                                          "For example: wait until 'ready' is 1", line_num, col_num)
+                ceiling = limit if limit is not None else _wait_ceiling_seconds()
+                started = time.monotonic()
+                while True:
+                    if self.eval_condition(condition, line_num, col_num):
+                        return
+                    if time.monotonic() - started >= ceiling:
+                        if limit is not None:
+                            return  # "at most" always ends quietly.
+                        raise self.diagnostic("E067", "The Program Ran Too Long",
+                                              "This \"wait until\" waited "
+                                              f"{int(ceiling)} seconds and the condition is still false.",
+                                              "Give it a deadline: wait at most 10 seconds until ...",
+                                              line_num, col_num)
+                    time.sleep(0.025)
             self.require_lib("Time", "Wait statement", line_num, col_num)
             val = float(tokens[1].number_value if tokens[1].type == TokenType.NUMBER else 1)
             is_ms = "millisecond" in " ".join(tok_words)
@@ -981,7 +1108,7 @@ class Interpreter:
         evaluated = []
         for p in parts:
             if p:
-                evaluated.append(str(self.eval_expr(p, line_num, p[0].col)))
+                evaluated.append(english_value(self.eval_expr(p, line_num, p[0].col)))
 
         if sep_str is not None:
             out_str = sep_str.join(evaluated)
@@ -1063,38 +1190,105 @@ class Interpreter:
             rem = tokens[eq_idx+1:]
             left_val = self.eval_expr(left_toks, line, col)
 
-            # is not equal to
+            # Release 1.5a1 — comparisons read the way people speak. These
+            # branches run in order, so the two-word forms are matched before
+            # the shorter forms they begin with.
+            def numbers(a, b):
+                try:
+                    return float(a), float(b)
+                except (ValueError, TypeError):
+                    return None
+
+            def equal_values(a, b):
+                pair = numbers(a, b)
+                if pair is not None:
+                    return pair[0] == pair[1]
+                return str(a).strip().lower() == str(b).strip().lower()
+
+            def ordered(a, b, test):
+                pair = numbers(a, b)
+                if pair is None:
+                    raise self.diagnostic("E011", "Value Is Not A Number",
+                                          "Only numbers can be compared with greater or less.",
+                                          'Use a number, or a variable that holds a number.', line, col)
+                return test(pair[0], pair[1])
+
+            # is different from / is not equal to / is not
+            if rem and rem[0].type == TokenType.KW_DIFFERENT:
+                rem = rem[1:]
+                if rem and rem[0].type == TokenType.KW_FROM: rem = rem[1:]
+                return not equal_values(left_val, self.eval_expr(rem, line, col))
             if rem and rem[0].type == TokenType.KW_NOT:
                 rem = rem[1:]
                 if rem and rem[0].type == TokenType.KW_EQUAL: rem = rem[1:]
                 if rem and rem[0].type == TokenType.KW_TO: rem = rem[1:]
-                right_val = self.eval_expr(rem, line, col)
-                return str(left_val).lower() != str(right_val).lower()
+                return not equal_values(left_val, self.eval_expr(rem, line, col))
 
-            # is greater than or equal to
-            if len(rem) >= 2 and rem[0].type == TokenType.KW_GREATER and rem[1].type == TokenType.KW_THAN:
-                rem = rem[2:]
-                right_val = self.eval_expr(rem, line, col)
-                return float(left_val) > float(right_val)
+            # is exactly / is exactly equal to
+            if rem and rem[0].type == TokenType.KW_EXACTLY:
+                rem = rem[1:]
+                if rem and rem[0].type == TokenType.KW_EQUAL: rem = rem[1:]
+                if rem and rem[0].type == TokenType.KW_TO: rem = rem[1:]
+                return equal_values(left_val, self.eval_expr(rem, line, col))
 
-            # is less than
-            if len(rem) >= 2 and rem[0].type == TokenType.KW_LESS and rem[1].type == TokenType.KW_THAN:
-                rem = rem[2:]
+            # is at least / is at most
+            if rem and rem[0].type == TokenType.KW_AT:
+                if len(rem) >= 2 and rem[1].type == TokenType.KW_LEAST:
+                    return ordered(left_val, self.eval_expr(rem[2:], line, col), lambda a, b: a >= b)
+                if len(rem) >= 2 and rem[1].type == TokenType.KW_MOST:
+                    return ordered(left_val, self.eval_expr(rem[2:], line, col), lambda a, b: a <= b)
+                raise self.diagnostic("E026", "Invalid Comparison",
+                                      "Write 'is at least' or 'is at most'.",
+                                      "For example: if 'score' is at least 10 then", line, col)
+
+            # is no more than / is no less than
+            if rem and rem[0].type == TokenType.KW_NO:
+                rem = rem[1:]
+                if rem and rem[0].type == TokenType.KW_MORE:
+                    rem = rem[1:]
+                    if rem and rem[0].type == TokenType.KW_THAN: rem = rem[1:]
+                    return ordered(left_val, self.eval_expr(rem, line, col), lambda a, b: a <= b)
+                if rem and rem[0].type == TokenType.KW_LESS:
+                    rem = rem[1:]
+                    if rem and rem[0].type == TokenType.KW_THAN: rem = rem[1:]
+                    return ordered(left_val, self.eval_expr(rem, line, col), lambda a, b: a >= b)
+                raise self.diagnostic("E026", "Invalid Comparison",
+                                      "Write 'is no more than' or 'is no less than'.",
+                                      "For example: if 'score' is no more than 10 then", line, col)
+
+            # is greater than [or equal to] / is more than
+            if rem and rem[0].type in (TokenType.KW_GREATER, TokenType.KW_MORE):
+                rem = rem[1:]
+                if rem and rem[0].type == TokenType.KW_THAN: rem = rem[1:]
+                or_equal = False
+                if rem and rem[0].type == TokenType.KW_OR:
+                    or_equal = True
+                    rem = rem[1:]
+                    if rem and rem[0].type == TokenType.KW_EQUAL: rem = rem[1:]
+                    if rem and rem[0].type == TokenType.KW_TO: rem = rem[1:]
                 right_val = self.eval_expr(rem, line, col)
-                return float(left_val) < float(right_val)
+                return ordered(left_val, right_val, (lambda a, b: a >= b) if or_equal else (lambda a, b: a > b))
+
+            # is less than [or equal to]
+            if rem and rem[0].type == TokenType.KW_LESS:
+                rem = rem[1:]
+                if rem and rem[0].type == TokenType.KW_THAN: rem = rem[1:]
+                or_equal = False
+                if rem and rem[0].type == TokenType.KW_OR:
+                    or_equal = True
+                    rem = rem[1:]
+                    if rem and rem[0].type == TokenType.KW_EQUAL: rem = rem[1:]
+                    if rem and rem[0].type == TokenType.KW_TO: rem = rem[1:]
+                right_val = self.eval_expr(rem, line, col)
+                return ordered(left_val, right_val, (lambda a, b: a <= b) if or_equal else (lambda a, b: a < b))
 
             # is equal to / is
             if rem and rem[0].type == TokenType.KW_EQUAL: rem = rem[1:]
             if rem and rem[0].type == TokenType.KW_TO: rem = rem[1:]
-            right_val = self.eval_expr(rem, line, col)
-
-            # Numerical or string equality
-            try:
-                l_num = float(left_val)
-                r_num = float(right_val)
-                return l_num == r_num
-            except (ValueError, TypeError):
-                return str(left_val).lower() == str(right_val).lower()
+            if not rem:
+                raise self.diagnostic("E027", "Invalid Condition", "This comparison has nothing to compare with.",
+                                      "For example: if 'score' is 10 then", line, col)
+            return equal_values(left_val, self.eval_expr(rem, line, col))
 
         # Standalone expression evaluated as truthy
         val = self.eval_expr(tokens, line, col)
@@ -1117,6 +1311,13 @@ class Interpreter:
         # Single number
         if len(tokens) == 1 and tokens[0].type == TokenType.NUMBER:
             return int(tokens[0].number_value) if tokens[0].number_value.is_integer() else tokens[0].number_value
+
+        # Release 1.5a1: true and false are values on their own, so a condition
+        # like "wait until 'ready' is true" works in the Python engine too.
+        # This is a small, English step towards 1.5's tidier language.
+        if len(tokens) == 1 and tokens[0].type == TokenType.IDENTIFIER \
+                and tokens[0].lexeme.lower() in ("true", "false"):
+            return tokens[0].lexeme.lower() == "true"
 
         # Library operations have exact prefixes and evaluate their arguments
         # through this same restricted expression evaluator. Never pass E++
@@ -1306,7 +1507,7 @@ class Interpreter:
 # ==========================================
 
 def _usage():
-    print("E++ [1.4] Python Direct Engine")
+    print("E++ [1.5a1] Python Direct Engine")
     print("Usage:")
     print("  python3 epp.py <file.enpp|file.enppl>             Run a program")
     print("  python3 epp.py -e '<code string>'                 Run inline code")
@@ -1317,6 +1518,11 @@ def _usage():
     print("  python3 epp.py --new-key                          Print a fresh key")
     print("  python3 epp.py --save <in> -o <out> [--key]       Save a project")
     print("  python3 epp.py --open <file> [--key]              Print a saved project")
+    print()
+    print("1.5a1 additions:")
+    print("  wait until <condition>                            Core E++: no library needed")
+    print("  add the \"Files\" library === then === delete the file \"notes.txt\"")
+    print("  EPP_WAIT_CEILING=<seconds>                        Cap how long one wait until polls")
 
 
 def _split_global_flags(args):

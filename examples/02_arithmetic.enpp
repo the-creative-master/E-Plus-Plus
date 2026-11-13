@@ -1,10 +1,10 @@
-note [02_arithmetic.epp: Built-in English arithmetic & type checks]
-
+note [E++ 1.5a1: arithmetic without quotes, and type checks]
 say 1 plus 1
 say 1 minus 1
 say 2 times 3
 say 6 divided by 2
+say 2 plus 3 times 4
 
-note [Checking if values are numbers or not:]
+note [check if ... is a number asks the question in English:]
 check if "Hello" is not a number
 check if "Woohoo!" is a number

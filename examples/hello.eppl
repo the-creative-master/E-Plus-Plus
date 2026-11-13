@@ -1,7 +1,0 @@
-note [Your first E++ program. Text belongs in double quotes.]
-define 'name' as "WeeklyHow"
-say "Hello ", 'name', "!"
-say "E++ looks like English, reads like English, and behaves like code."
-
-ask "What is your name?" and save the output as 'visitor'
-say "Nice to meet you, ", 'visitor', "."

@@ -27,15 +27,16 @@ let passed = 0;
 function ok(name) { passed += 1; console.log('  ✓ ' + name); }
 
 // ------------------------------------------------------------------
-// The catalogue itself: exactly 75 + 5 + 5 + 15 codes.
+// The catalogue itself: exactly 77 + 6 + 5 + 15 codes (1.5a1 adds E076,
+// E077 and W006).
 // ------------------------------------------------------------------
 console.log('1.4b1: the catalogue');
 {
   const families = errors.Errors.families();
   assert.deepEqual(families.map((f) => f.section), ['E', 'W', 'Z', 'F']);
-  assert.deepEqual(families.map((f) => f.count), [75, 5, 5, 15]);
-  assert.equal(errors.Errors.total, 100, 'one hundred codes in total');
-  ok('75 E codes, 5 W codes, 5 Z codes and 15 F codes (100 total)');
+  assert.deepEqual(families.map((f) => f.count), [77, 6, 5, 15]);
+  assert.equal(errors.Errors.total, 103, 'one hundred and three codes in total');
+  ok('77 E codes, 6 W codes, 5 Z codes and 15 F codes (103 total)');
 
   for (const family of errors.catalog()) {
     for (const entry of family.codes) {
@@ -60,12 +61,14 @@ console.log('1.4b1: the catalogue');
   ok('each family reports its own section');
 
   // An unknown code can never masquerade as a real one.
-  assert.equal(errors.Errors.exists('E076'), false);
+  assert.equal(errors.Errors.exists('E076'), true, '1.5a1 adds E076');
+  assert.equal(errors.Errors.exists('E077'), true, '1.5a1 adds E077');
+  assert.equal(errors.Errors.exists('E078'), false);
   assert.equal(errors.Errors.exists('E000'), false);
   assert.equal(errors.Errors.exists('Q001'), false);
   const stray = errors.error('E999', 'not a real code');
   assert.equal(stray.code, 'E015');
-  assert.match(stray.message, /E999, which is not a 1.4 code/);
+  assert.match(stray.message, /E999, which is not a 1\.4 code/);
   ok('a code outside the catalogue falls back to E015 and says so');
 }
 
@@ -373,7 +376,7 @@ console.log('\n1.4b1: no retired codes');
       assert.ok(reference.includes(entry.code), 'LANGUAGE.md documents ' + entry.code);
     }
   }
-  ok('LANGUAGE.md documents all 100 codes');
+  ok('LANGUAGE.md documents all 103 codes');
 }
 
 console.log('\nAll ' + passed + ' E++ 1.4b1 error checks passed.');

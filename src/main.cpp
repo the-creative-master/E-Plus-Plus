@@ -10,7 +10,7 @@
 
 void print_banner() {
     std::cout << "=========================================================\n";
-    std::cout << "   E++ Programming Language [1.4]                 \n";
+    std::cout << "   E++ Programming Language [1.5a1]               \n";
     std::cout << "   \"Looks like English, feels like english, and is english\"\n";
     std::cout << "=========================================================\n";
 }
@@ -18,7 +18,7 @@ void print_banner() {
 void print_help() {
     print_banner();
     std::cout << "\nUsage:\n";
-    std::cout << "  epp <script.epp>        Run an E++ script file\n";
+    std::cout << "  epp <script.enpp>       Run an E++ program\n";
     std::cout << "  epp -e \"<code>\"         Execute inline E++ code\n";
     std::cout << "  epp                     Start the interactive E++ REPL\n";
     std::cout << "  epp --help, -h          Show this help message\n";
@@ -34,8 +34,12 @@ void print_help() {
     std::cout << "  say 1 plus 1\n";
     std::cout << "  let 'Grade' be 29\n";
     std::cout << "  say 'Grade'\n";
+    std::cout << "  say \"Ready?\"\n";
+    std::cout << "  wait until 'ready' is true\n";
     std::cout << "  add the \"Math\" library\n";
     std::cout << "  say the square root of 2\n";
+    std::cout << "  add the \"Files\" library\n";
+    std::cout << "  delete the file \"notes.txt\"\n";
 }
 
 // Release 1.4: one reporter for every family.
@@ -157,6 +161,8 @@ static std::string error_name(const std::string& code) {
     if (code == "E073") return "Unknown Actor";
     if (code == "E074") return "Unknown Image";
     if (code == "E075") return "Sprite Not Defined";
+    if (code == "E076") return "Cannot Delete A Missing File";
+    if (code == "E077") return "Cannot Delete The File";
     if (code == "W001") return "Text Looks Like An Equation";
     if (code == "W002") return "Variable Name Looks Like Text";
     if (code == "W003") return "Library Added But Unused";
@@ -262,6 +268,8 @@ static std::string error_help(const std::string& code) {
     if (code == "E073") return "Create the actor first: create the actor 'hero' with the image \"hero.png\"";
     if (code == "E074") return "Define the image first: define 'cat' as image \"<picture>\"";
     if (code == "E075") return "Define the sprite first: define 'pencil' as drawing sprite";
+    if (code == "E076") return "The file to delete is not in the workspace. Check the name, or list the files first.";
+    if (code == "E077") return "Close anything that is using the file, check its permissions, then try again.";
     if (code == "W001") return "Remove the quotes if you wanted the maths: say 1 plus 1";
     if (code == "W002") return "Use double quotes for text and single quotes for variables.";
     if (code == "W003") return "Remove the library line, or use one of its features.";

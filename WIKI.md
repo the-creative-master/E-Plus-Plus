@@ -1,4 +1,4 @@
-# E++ 1.4 Wiki
+# E++ 1.5a1 Wiki
 
 An approachable guide to E++, from your first line to games, animated drawings and shared projects. For exact syntax and diagnostic codes, see [LANGUAGE.md](LANGUAGE.md).
 
@@ -92,12 +92,65 @@ end while
 
 Place `otherwise` on the next line, not after the first `say`. Blocks can also use `if ... then:`, `else:` and `end if`. Close every `repeat`, `while`, `forever`, and block `if` with the corresponding `end`. Syntax is checked even in a branch that does not run.
 
+`repeat until` is the loop that runs first and checks afterwards, so the body always happens at least once:
+
+```text
+let 'count' be 1
+repeat until 'count' is 4
+  say 'count'
+  let 'count' be 'count' plus 1
+end repeat
+```
+
 A `forever` block repeats until stopped. The built-in `the version of E++` expression returns the current runtime version:
 
 ```text
 let 'Eversion' be the version of E++
 say "E++ ", 'Eversion'
 ```
+
+## Tutorial: wait until something happens
+
+`wait until` is new in 1.5a1 and needs no library. The program pauses and
+carries on the moment the condition becomes true, then continues on the next
+line:
+
+```text
+let 'ready' be 0
+say "Getting things ready..."
+let 'ready' be 1
+wait until 'ready' is 1
+say "Ready!"
+```
+
+A condition that never becomes true would wait forever, so give the wait a
+deadline when the value comes from outside the program. `wait at most` gives up
+quietly after that much time and the program simply continues:
+
+```text
+wait at most 5 seconds until the "Up arrow" key is pressed
+say "Either the key was pressed, or five seconds passed."
+```
+
+The condition is written exactly like an `if` condition, including the new
+plain-English comparisons: `is at least`, `is at most`, `is different from`,
+`is no more than` and `is more than`.
+
+## Tutorial: delete a file
+
+The Files library writes, appends, reads — and now deletes:
+
+```text
+add the "Files" library
+write "Notes from today." to file "notes.txt"
+read the file "notes.txt" and save the output as 'Notes'
+say 'Notes'
+delete the file "notes.txt"
+```
+
+`delete the file` and `remove the file` mean the same thing. Deleting a file
+that is not there reports `E076` rather than quietly doing nothing, so a typo
+in the name is easy to spot.
 
 ## Tutorial: add a library
 
@@ -177,12 +230,12 @@ Build the native engine with `make`, run tests with `make test` and `npm test`, 
 
 ## Errors and troubleshooting
 
-Every message has a permanent code in 1.4. The split is exact:
+Every message has a permanent code in 1.5a1. The split is exact:
 
 | Family | Count | What it means |
 | --- | --- | --- |
-| `E001`-`E075` | 75 | General errors. The program stops at the mistake. |
-| `W001`-`W005` | 5 | Warnings. The program keeps running. |
+| `E001`-`E077` | 77 | General errors. The program stops at the mistake. |
+| `W001`-`W006` | 6 | Warnings. The program keeps running. |
 | `Z001`-`Z005` | 5 | Only possible inside `E++.zip`, the standalone build. |
 | `F001`-`F015` | 15 | Fatal lexer errors: the source cannot be read. |
 
@@ -204,12 +257,15 @@ short version, by area:
   `E057`; a key that does not open the project is `E059`.
 - **`E066`-`E070` running:** `E066` division by zero, `E068` an endless loop.
 - **`E071`-`E075` pictures, sprites and Game:** an unknown actor is `E073`.
+- **`E076`-`E077` deleting files:** `E076` is a file that is not there,
+  `E077` is a delete that failed for another reason.
 
 Warnings never stop the program. `W001` is an equation inside double quotes
 (`say "1 plus 1"` prints `1 plus 1`), `W002` a variable name that looks like
 text, `W003` a library added but never used, `W004` a statement continued on
-the next line, `W005` a number written as text. Studio lists them before you
-run, and the engines report them live.
+the next line, `W005` a number written as text, and `W006` a `wait until`
+sitting inside a loop, where nothing the loop does can run while it waits.
+Studio lists them before you run, and the engines report them live.
 
 `Z001` Colors, `Z002` Draw, `Z003` Game and `Z004` ImprovedWait only exist in
 the full Studio, so `E++.zip` names them precisely instead of saying "not in

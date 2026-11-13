@@ -5,7 +5,7 @@
  * Release 1.4: the codes here are the 1.4 catalogue codes (E001-E075,
  * F011), not the retired 1.3 numbers. validate(source, filename) still throws
  * the first problem it finds; validate(source, filename, { warnings: true })
- * also returns the W001-W005 hints for code that is odd but legal.
+ * also returns the W001-W006 hints for code that is odd but legal.
  */
 (function (global) {
   'use strict';
@@ -17,7 +17,7 @@
   function validate(source, filename) {
     var lines = String(source || '').split('\n');
     var stack = [], inPython = false, previousInlineIf = false;
-    var starters = /^(?:say|tell|let|set|define|ask|add|note|run|python|if|otherwise|else|end|repeat|while|forever|check|wait|sleep|cancel|clear|read|write|append|create|put|show|hide|pause|resume|stop|play|link|lift|lower)\b/i;
+    var starters = /^(?:say|tell|let|set|define|ask|add|note|run|python|if|otherwise|else|end|repeat|while|forever|check|wait|sleep|cancel|clear|read|write|append|delete|remove|create|put|show|hide|pause|resume|stop|play|link|lift|lower)\b/i;
     function fail(code, name, reason, help, n, col) {
       throw problem(code, name, reason, help, filename, n + 1, col || 1, lines[n]);
     }
@@ -52,7 +52,9 @@
       phrases.forEach(function (pattern) { masked = masked.replace(pattern, function (s) { return ' '.repeat(s.length); }); });
       var words = /[A-Za-z_][\w-]*/g, match;
       while ((match = words.exec(masked))) {
-        if (/^(?:plus|minus|times|multiplied|divided|by|mod|modulo|and|pi|e|true|false)$/i.test(match[0])) continue;
+        // Release 1.5a1: the words a condition is made of are not unquoted
+        // text, so "repeat until 'n' is 3" passes the pre-flight.
+        if (/^(?:plus|minus|times|multiplied|divided|by|mod|modulo|and|pi|e|true|false|is|not|equal|to|than|greater|less|lesser|exactly|different|from|or|contains|equals|touching|until|of|in|range|the|a|number|positive|negative|key|pressed)$/i.test(match[0])) continue;
         fail('E001', 'Unquoted Text', "Unquoted text '" + match[0] + "' is not a value.",
           'Put text in double quotes, or use single quotes for a variable.', n, column + match.index);
       }
@@ -98,10 +100,19 @@
         checkValue(ask[1], n, askPos + 1);
       }
       if (/^repeat\b/i.test(trimmed)) {
-        var repeat = trimmed.match(/^repeat\s+(.+?)\s+times?\s*:?$/i);
-        if (!repeat) fail('E023', 'Missing Repeat Count', "A repeat needs a count and 'times'.", 'For example: repeat 3 times', n, column);
-        var repeatPos = lines[n].indexOf(repeat[1], column - 1);
-        checkValue(repeat[1], n, repeatPos + 1);
+        // Release 1.5a1: "repeat until <condition>" is the second, equally
+        // English shape of a repeat, and it has no count.
+        var untilRepeat = trimmed.match(/^repeat\s+until\s+(.+?)\s*:?$/i);
+        if (untilRepeat) {
+          var untilPos = lines[n].indexOf(untilRepeat[1], column - 1);
+          checkValue(untilRepeat[1], n, untilPos < 0 ? column : untilPos + 1);
+        } else {
+          var repeat = trimmed.match(/^repeat\s+(.+?)\s+times?\s*:?$/i);
+          if (!repeat) fail('E023', 'Missing Repeat Count', "A repeat needs a count and 'times', or a condition after 'until'.",
+            'For example: repeat 3 times, or repeat until \'done\' is true', n, column);
+          var repeatPos = lines[n].indexOf(repeat[1], column - 1);
+          checkValue(repeat[1], n, repeatPos + 1);
+        }
       }
     }
     for (var n = 0; n < lines.length; n++) {
