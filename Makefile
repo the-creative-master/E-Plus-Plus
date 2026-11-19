@@ -28,7 +28,7 @@ zip: $(TARGET)
 wasm-lexer:
 	@node tools/build-lexer-wasm.mjs
 
-# 1.5a1 — the optional epp.exe for Windows. Zig cross-compiles a static
+# 1.5a2 — the optional epp.exe for Windows. Zig cross-compiles a static
 # 64-bit console binary, so no Windows machine is needed to build it.
 # Override with ZIG=/path/to/zig (or use the ziglang wheel on any platform).
 windows:
@@ -60,6 +60,7 @@ test: $(TARGET)
 	@./$(TARGET) examples/07_wait_until.enppl
 	@./$(TARGET) examples/08_python_library.enppl
 	@./$(TARGET) examples/09_strings_library.enppl
+	@./$(TARGET) examples/12_compound_conditions.enpp
 	@./$(TARGET) --keyring examples/epp-keys.json examples/10_saved_project.enpp
 	@echo "=== Running E++ Tests (Python Runner) ==="
 	@python3 epp.py examples/01_hello.enpp
@@ -71,6 +72,7 @@ test: $(TARGET)
 	@python3 epp.py examples/07_wait_until.enppl
 	@python3 epp.py examples/08_python_library.enppl
 	@python3 epp.py examples/09_strings_library.enppl
+	@python3 epp.py examples/12_compound_conditions.enpp
 	@python3 epp.py --keyring examples/epp-keys.json examples/10_saved_project.enpp
 	@python3 tests/cli-1.3.py
 	@tmp=$$(mktemp); trap 'rm -f "$$tmp"' EXIT; \

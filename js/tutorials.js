@@ -275,6 +275,25 @@
             'Close the block with `end if` on its own line.'
           ],
           check: { output: ['Big!', 'Really big!'] }
+        },
+        {
+          // Release 1.5a2 — the first card that joins two conditions.
+          id: 'and-or-not',
+          title: 'Two things at once',
+          goal: 'Print exactly: Play on!',
+          body: [
+            { p: 'A condition can join two others with **and**, **or** or **not**. No library is needed.' },
+            { code: 'let \'Score\' be 12\nlet \'Lives\' be 3\nif \'Score\' is at least 10 and \'Lives\' is greater than 0 then say "Play on!"' },
+            { p: '`and` needs both halves, `or` needs either one, and `not` turns a condition around. `and` binds tighter than `or`; brackets group a whole condition.' },
+            { tip: 'A stray `and`, `or` or `not` with nothing after it is E078 Dangling Condition.' }
+          ],
+          starter: 'let \'Score\' be 8\nlet \'Lives\' be 3\nnote [Join the two conditions with and]\\nif \'Score\' is at least 10 then say "Play on!"\n',
+          solution: 'let \'Score\' be 12\nlet \'Lives\' be 3\nif \'Score\' is at least 10 and \'Lives\' is greater than 0 then say "Play on!"\n',
+          hints: [
+            'Write two complete conditions, one after the other, joined by `and`.',
+            'if \'Score\' is at least 10 and \'Lives\' is greater than 0 then say "Play on!"'
+          ],
+          check: { output: ['Play on!'] }
         }
       ]
     },

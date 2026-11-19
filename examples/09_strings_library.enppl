@@ -1,7 +1,7 @@
-note [E++ 1.5a1: the Strings library works with words and sentences]
+note [E++ 1.5a2: the Strings library works with words and sentences]
 add the "Strings" library
 
-let 'Message' be "Hello, E++ 1.5a1!"
+let 'Message' be "Hello, E++ 1.5a2!"
 say "Original:", 'Message'
 say "Length:", the length of 'Message'
 say "Uppercase:", the uppercase of 'Message'

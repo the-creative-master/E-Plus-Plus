@@ -57,7 +57,13 @@ enum class BinaryOp {
     GT,
     LT,
     GTE,
-    LTE
+    LTE,
+
+    // Release 1.5a2 — conditions joined with and / or / not. LOGIC_NOT keeps
+    // its single condition in `left` and leaves `right` null.
+    LOGIC_AND,
+    LOGIC_OR,
+    LOGIC_NOT
 };
 
 class BinaryExpr : public Expr {

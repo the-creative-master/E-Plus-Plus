@@ -11,7 +11,7 @@
 <a class="skip" href="#wiki-content">Skip to guide</a>
 <header class="wiki-header"><a href="index.html" class="back">← Back to Studio</a><span>THE E++ GUIDE <strong>1.4</strong></span></header>
 <main id="wiki-content" class="wiki-content">
-<h1 id="e-15a1-wiki">E++ 1.5a1 Wiki</h1>
+<h1 id="e-15a2-wiki">E++ 1.5a2 Wiki</h1>
 <p>An approachable guide to E++, from your first line to games, animated drawings and shared projects. For exact syntax and diagnostic codes, see <a href="LANGUAGE.md">LANGUAGE.md</a>.</p>
 <h2 id="contents">Contents</h2>
 <ul><li><a href="#what-is-e">What is E++?</a></li>
@@ -19,6 +19,7 @@
 <li><a href="#tutorial-output-and-maths">Tutorial: output and maths</a></li>
 <li><a href="#tutorial-variables-and-questions">Tutorial: variables and questions</a></li>
 <li><a href="#tutorial-decisions-and-loops">Tutorial: decisions and loops</a></li>
+<li><a href="#tutorial-two-things-at-once">Tutorial: two things at once</a></li>
 <li><a href="#tutorial-add-a-library">Tutorial: add a library</a></li>
 <li><a href="#drawing-with-animated-sprites">Drawing with animated sprites</a></li>
 <li><a href="#games-and-pictures">Games and pictures</a></li>
@@ -84,6 +85,27 @@ end repeat</code></pre>
 <p>A <code>forever</code> block repeats until stopped. The built-in <code>the version of E++</code> expression returns the current runtime version:</p>
 <pre><code>let &#x27;Eversion&#x27; be the version of E++
 say &quot;E++ &quot;, &#x27;Eversion&#x27;</code></pre>
+<h2 id="tutorial-two-things-at-once">Tutorial: two things at once</h2>
+<p>New in 1.5a2: a condition can join two others with <code>and</code> or <code>or</code>, or turn one around with <code>not</code>. No library is needed, and every comparison you already know works on either side:</p>
+<pre><code>let &#x27;score&#x27; be 12
+let &#x27;lives&#x27; be 3
+let &#x27;day&#x27; be &quot;Saturday&quot;
+
+if &#x27;score&#x27; is at least 10 and &#x27;lives&#x27; is greater than 0 then say &quot;Play on!&quot;
+if &#x27;day&#x27; is &quot;Saturday&quot; or &#x27;day&#x27; is &quot;Sunday&quot; then say &quot;It is the weekend!&quot;
+
+let &#x27;ready&#x27; be 0
+if not &#x27;ready&#x27; then say &quot;Not ready yet&quot;
+if (&#x27;score&#x27; is 10 or &#x27;score&#x27; is 12) and &#x27;lives&#x27; is 3 then say &quot;Grouped&quot;</code></pre>
+<p><code>and</code> means both halves are true, <code>or</code> means either is true, and <code>not</code> reverses one condition. <code>and</code> binds tighter than <code>or</code>; brackets group a whole condition when you want a different order. Both joins stop as soon as the answer is known, so <code>if &#x27;ready&#x27; is false and &#x27;unused&#x27; is 1 then ...</code> never looks up <code>&#x27;unused&#x27;</code>.</p>
+<p>The same joins work in <code>while</code>, <code>repeat until</code> and <code>wait until</code>:</p>
+<pre><code>while &#x27;count&#x27; is less than 5 and &#x27;go&#x27; is true do
+  say &#x27;count&#x27;
+  let &#x27;count&#x27; be &#x27;count&#x27; plus 1
+end while
+
+wait until &#x27;ready&#x27; is true and &#x27;count&#x27; is at least 3</code></pre>
+<p>A connector with nothing after it (<code>if &#x27;score&#x27; is 10 and then say &quot;Play&quot;</code>) is <code>E078</code> <strong>Dangling Condition</strong>. Words that belong to another sentence still belong to it: <code>is greater than or equal to 5</code> and <code>a random number between 1 and 6</code> are unchanged.</p>
 <h2 id="tutorial-wait-until-something-happens">Tutorial: wait until something happens</h2>
 <p><code>wait until</code> is new in 1.5a1 and needs no library. The program pauses and carries on the moment the condition becomes true, then continues on the next line:</p>
 <pre><code>let &#x27;ready&#x27; be 0
@@ -154,11 +176,12 @@ put the actor &#x27;hero&#x27; at 0 and 0
 <h2 id="runtime-and-library-differences">Runtime and library differences</h2>
 <p>The Studio loads <code>src/lexer.cpp</code> compiled to WebAssembly and consumes its real tokens in a JavaScript evaluator. It is not running the C++ parser or interpreter in the browser. If the compiled lexer is unavailable, execution stops with <code>E601</code>; there is no silent alternate lexer.</p>
 <p>The native <code>./epp</code> uses the C++ lexer, parser and interpreter. <code>python3 epp.py</code> uses the Python engine. Their core syntax and diagnostics overlap with Studio, but they do not provide its Draw or Game canvas. Studio translates a subset of Python to JavaScript and is not a full Python interpreter. The command-line Python bridge can run Python on the machine; only run code you trust.</p>
+<p><code>lexer.py</code> is more than the Python runner&#x27;s lexer. It can also inspect a program without running it (<code>tokens</code>, <code>check</code>, <code>stats</code>, <code>keywords</code>, <code>highlight</code>) and handle sealed projects from the command line (<code>keygen</code>, <code>seal</code>, <code>open</code>, <code>fingerprint</code>, <code>is-vault</code>). The legacy form <code>python3 lexer.py program.enpp</code> still prints the token stream.</p>
 <p>In the full Studio: Math, Random, Strings, Colors, Console, Time, Files, System, Python, Keyboard, Draw, Game and ImprovedWait are available. In <code>E++.zip</code>: Colors, Draw, Game and ImprovedWait are unavailable, while ImprovedWaitLite is available. The archived native and Python runners also reject Colors. The full repository’s native and Python runners retain Colors. Availability does not imply identical OS, filesystem, Python or graphical behavior across engines.</p>
 <p>Build the native engine with <code>make</code>, run tests with <code>make test</code> and <code>npm test</code>, and rebuild the archives with <code>make zip</code>. Browser regression tests require Playwright and a local Chromium executable; see the repository test scripts.</p>
 <h2 id="errors-and-troubleshooting">Errors and troubleshooting</h2>
-<p>Every message has a permanent code in 1.5a1. The split is exact:</p>
-<p>| Family | Count | What it means | | --- | --- | --- | | <code>E001</code>-<code>E077</code> | 77 | General errors. The program stops at the mistake. | | <code>W001</code>-<code>W006</code> | 6 | Warnings. The program keeps running. | | <code>Z001</code>-<code>Z005</code> | 5 | Only possible inside <code>E++.zip</code>, the standalone build. | | <code>F001</code>-<code>F015</code> | 15 | Fatal lexer errors: the source cannot be read. |</p>
+<p>Every message has a permanent code in 1.5a2. The split is exact:</p>
+<p>| Family | Count | What it means | | --- | --- | --- | | <code>E001</code>-<code>E078</code> | 78 | General errors. The program stops at the mistake. | | <code>W001</code>-<code>W006</code> | 6 | Warnings. The program keeps running. | | <code>Z001</code>-<code>Z005</code> | 5 | Only possible inside <code>E++.zip</code>, the standalone build. | | <code>F001</code>-<code>F015</code> | 15 | Fatal lexer errors: the source cannot be read. |</p>
 <p>The full catalogue, code by code with its fix, is in <code>LANGUAGE.md</code> §14. The short version, by area:</p>
 <ul><li><strong><code>E001</code>-<code>E014</code> values and quotes:</strong> text needs double quotes, variables need</li></ul>
 <p>single quotes. <code>E005</code> is an unfinished <code>&quot;</code>, <code>E007</code> an empty <code>&#x27;name&#x27;</code>.</p>
@@ -174,6 +197,8 @@ put the actor &#x27;hero&#x27; at 0 and 0
 <li><strong><code>E071</code>-<code>E075</code> pictures, sprites and Game:</strong> an unknown actor is <code>E073</code>.</li>
 <li><strong><code>E076</code>-<code>E077</code> deleting files:</strong> <code>E076</code> is a file that is not there,</li></ul>
 <p><code>E077</code> is a delete that failed for another reason.</p>
+<ul><li><strong><code>E078</code> dangling conditions:</strong> an <code>and</code>, <code>or</code> or <code>not</code> with no condition</li></ul>
+<p>after it. Write the second condition, or remove the extra word.</p>
 <p>Warnings never stop the program. <code>W001</code> is an equation inside double quotes (<code>say &quot;1 plus 1&quot;</code> prints <code>1 plus 1</code>), <code>W002</code> a variable name that looks like text, <code>W003</code> a library added but never used, <code>W004</code> a statement continued on the next line, <code>W005</code> a number written as text, and <code>W006</code> a <code>wait until</code> sitting inside a loop, where nothing the loop does can run while it waits. Studio lists them before you run, and the engines report them live.</p>
 <p><code>Z001</code> Colors, <code>Z002</code> Draw, <code>Z003</code> Game and <code>Z004</code> ImprovedWait only exist in the full Studio, so <code>E++.zip</code> names them precisely instead of saying &quot;not in this build&quot;. <code>Z005</code> covers a build without the JavaScript runtime.</p>
 <p>F codes are reserved for lexer failures; parser mistakes use E codes. An unterminated Python block is a general end-of-program error (<code>E064</code>). If the compiled C++ lexer cannot boot, Studio reports a critical lexer failure (<code>F015</code>) and refuses to guess or silently fall back.</p>

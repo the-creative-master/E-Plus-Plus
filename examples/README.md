@@ -1,6 +1,6 @@
-# E++ 1.5a1 examples
+# E++ 1.5a2 examples
 
-Ten short programs, each one teaching a part of the language. Every file runs
+Twelve short programs, each one teaching a part of the language. Every file runs
 in the native engine (`./epp file.enpp`) and the Python engine
 (`python3 epp.py file.enpp`); the Studio runs all of them too.
 
@@ -17,6 +17,7 @@ in the native engine (`./epp file.enpp`) and the Python engine
 | `09_strings_library.enppl` | The Strings library: length, case, reverse, letters and trim. |
 | `10_saved_project.enpp` | A sealed project file, opened with `epp-keys.json`. |
 | `11_studio_showcase.enppl` | The full Studio: Draw, Game, Keyboard and every library at once. |
+| `12_compound_conditions.enpp` | **`and`, `or` and `not`** (new in 1.5a2) in `if`, `while`, `repeat until` and `wait until`, plus bracketed groups. |
 
 `10_saved_project.enpp` is not readable text — it is a sealed project, and
 `epp-keys.json` holds the key that opens it:

@@ -27,16 +27,16 @@ let passed = 0;
 function ok(name) { passed += 1; console.log('  ✓ ' + name); }
 
 // ------------------------------------------------------------------
-// The catalogue itself: exactly 77 + 6 + 5 + 15 codes (1.5a1 adds E076,
-// E077 and W006).
+// The catalogue itself: exactly 78 + 6 + 5 + 15 codes (1.5a1 adds E076,
+// E077 and W006; 1.5a2 adds E078).
 // ------------------------------------------------------------------
 console.log('1.4b1: the catalogue');
 {
   const families = errors.Errors.families();
   assert.deepEqual(families.map((f) => f.section), ['E', 'W', 'Z', 'F']);
-  assert.deepEqual(families.map((f) => f.count), [77, 6, 5, 15]);
-  assert.equal(errors.Errors.total, 103, 'one hundred and three codes in total');
-  ok('77 E codes, 6 W codes, 5 Z codes and 15 F codes (103 total)');
+  assert.deepEqual(families.map((f) => f.count), [78, 6, 5, 15]);
+  assert.equal(errors.Errors.total, 104, 'one hundred and four codes in total');
+  ok('78 E codes, 6 W codes, 5 Z codes and 15 F codes (104 total)');
 
   for (const family of errors.catalog()) {
     for (const entry of family.codes) {
@@ -63,7 +63,8 @@ console.log('1.4b1: the catalogue');
   // An unknown code can never masquerade as a real one.
   assert.equal(errors.Errors.exists('E076'), true, '1.5a1 adds E076');
   assert.equal(errors.Errors.exists('E077'), true, '1.5a1 adds E077');
-  assert.equal(errors.Errors.exists('E078'), false);
+  assert.equal(errors.Errors.exists('E078'), true, '1.5a2 adds E078');
+  assert.equal(errors.Errors.exists('E079'), false);
   assert.equal(errors.Errors.exists('E000'), false);
   assert.equal(errors.Errors.exists('Q001'), false);
   const stray = errors.error('E999', 'not a real code');
@@ -376,7 +377,7 @@ console.log('\n1.4b1: no retired codes');
       assert.ok(reference.includes(entry.code), 'LANGUAGE.md documents ' + entry.code);
     }
   }
-  ok('LANGUAGE.md documents all 103 codes');
+  ok('LANGUAGE.md documents all 104 codes');
 }
 
 console.log('\nAll ' + passed + ' E++ 1.4b1 error checks passed.');

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 1.5a1 — build epp.exe for Windows with Zig's cross compiler.
+// 1.5a2 — build epp.exe for Windows with Zig's cross compiler.
 //
 // E++ is plain C++17 with no platform-specific code, so one command produces
 // a static 64-bit console program that runs in Windows PowerShell, Command

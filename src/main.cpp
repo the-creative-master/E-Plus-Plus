@@ -10,7 +10,7 @@
 
 void print_banner() {
     std::cout << "=========================================================\n";
-    std::cout << "   E++ Programming Language [1.5a1]               \n";
+    std::cout << "   E++ Programming Language [1.5a2]               \n";
     std::cout << "   \"Looks like English, feels like english, and is english\"\n";
     std::cout << "=========================================================\n";
 }
@@ -40,6 +40,10 @@ void print_help() {
     std::cout << "  say the square root of 2\n";
     std::cout << "  add the \"Files\" library\n";
     std::cout << "  delete the file \"notes.txt\"\n";
+    std::cout << "\n1.5a2 conditions:\n";
+    std::cout << "  if 'score' is at least 10 and 'lives' is greater than 0 then say \"Play\"\n";
+    std::cout << "  if 'day' is \"Saturday\" or 'day' is \"Sunday\" then say \"Weekend\"\n";
+    std::cout << "  if not 'ready' then say \"Not yet\"\n";
 }
 
 // Release 1.4: one reporter for every family.
@@ -163,11 +167,13 @@ static std::string error_name(const std::string& code) {
     if (code == "E075") return "Sprite Not Defined";
     if (code == "E076") return "Cannot Delete A Missing File";
     if (code == "E077") return "Cannot Delete The File";
+    if (code == "E078") return "Dangling Condition";
     if (code == "W001") return "Text Looks Like An Equation";
     if (code == "W002") return "Variable Name Looks Like Text";
     if (code == "W003") return "Library Added But Unused";
     if (code == "W004") return "Continued On The Next Line";
     if (code == "W005") return "Number Written As Text";
+    if (code == "W006") return "Wait Can Never End Here";
     if (code == "Z001") return "Colors Live In The Studio";
     if (code == "Z002") return "Draw Is Not In E++.zip";
     if (code == "Z003") return "Game Is Not In E++.zip";
@@ -270,11 +276,13 @@ static std::string error_help(const std::string& code) {
     if (code == "E075") return "Define the sprite first: define 'pencil' as drawing sprite";
     if (code == "E076") return "The file to delete is not in the workspace. Check the name, or list the files first.";
     if (code == "E077") return "Close anything that is using the file, check its permissions, then try again.";
+    if (code == "E078") return "Write two complete conditions, for example: if 'score' is 10 and 'lives' is 3 then";
     if (code == "W001") return "Remove the quotes if you wanted the maths: say 1 plus 1";
     if (code == "W002") return "Use double quotes for text and single quotes for variables.";
     if (code == "W003") return "Remove the library line, or use one of its features.";
     if (code == "W004") return "One statement per line keeps the structure clear.";
     if (code == "W005") return "Write the number without double quotes, for example: wait 2 seconds";
+    if (code == "W006") return "Move the wait outside the loop, or give it a deadline: wait at most 10 seconds until ...";
     if (code == "Z001") return "Download the full E++ Studio to print in color. In E++.zip use a plain say statement.";
     if (code == "Z002") return "Download the full E++ Studio to draw with sprites.";
     if (code == "Z003") return "Download the full E++ Studio to create games and actors.";

@@ -1,15 +1,37 @@
 #!/usr/bin/env python3
 """
-E++ (E-Plus-Plus) 1.5a1 Lexer and Subsystem
+E++ (E-Plus-Plus) 1.5a2 Lexer and Subsystem
 Written in Python for direct execution and runtime integration.
+
+This module is the Python engine's front door: epp.py imports the lexer,
+the diagnostic error and the sealed-project helpers from here. It is also a
+standalone language tool. Run it with no arguments for the legacy banner, or
+use one of its commands:
+
+    python3 lexer.py tokens FILE [--json] [--no-eof]
+    python3 lexer.py check FILE [--json]
+    python3 lexer.py stats FILE [--json]
+    python3 lexer.py keywords [--json]
+    python3 lexer.py highlight FILE [--format ansi|html|plain] [--out FILE]
+    python3 lexer.py seal FILE --key HEX [--out FILE.epp]
+    python3 lexer.py open FILE [--key HEX] [--keyring PATH] [--out FILE.enpp]
+    python3 lexer.py keygen [--out epp-keys.json]
+    python3 lexer.py fingerprint --key HEX
+    python3 lexer.py is-vault FILE
+
+The old form still works: ``python3 lexer.py FILE.enpp`` prints the tokens.
 """
 
 import sys
 import time
 import struct
 import base64
+import json
+import html
 from enum import Enum, auto
 from typing import List, Optional, Tuple, Dict, Any
+
+EPP_LEXER_VERSION = "1.5a2"
 
 # ==========================================
 # Release 1.2 project files
@@ -949,14 +971,381 @@ class Lexer:
         return Token(TokenType.IDENTIFIER, word, start_line, start_col)
 
 
+# ==========================================
+# Standalone language-tool API and CLI
+# ==========================================
+#
+# epp.py only needs Lexer, Token, TokenType, EppDiagnosticError and the vault
+# helpers above. The functions below give the same module a second life as a
+# small tool for inspecting, checking, highlighting and sealing E++ source
+# without running it. They are importable too, so other Python tools can use
+# the lexer as a library instead of shelling out.
+
+def token_to_dict(token: Token) -> Dict[str, Any]:
+    """One token as plain data, ready for JSON or another tool."""
+    return {
+        "type": token.type.name,
+        "lexeme": token.lexeme,
+        "line": token.line,
+        "column": token.col,
+        "string_value": token.string_value,
+        "number_value": token.number_value,
+    }
+
+
+def tokenize_source(source: str, filename: str = "<source>",
+                    keys: Optional[List[bytes]] = None) -> List[Token]:
+    """Lexes source text and returns every token, including EOF."""
+    return Lexer(source, filename, keys).tokenize()
+
+
+def tokens_to_json(tokens: List[Token], include_eof: bool = True) -> str:
+    """The token stream as pretty JSON for editors and other engines."""
+    rows = [token_to_dict(t) for t in tokens
+            if include_eof or t.type != TokenType.EOF]
+    return json.dumps(rows, indent=2, ensure_ascii=False)
+
+
+def keyword_catalogue() -> List[Dict[str, str]]:
+    """Every word the lexer recognises, with the token type it becomes."""
+    return [{"word": word, "token_type": KEYWORDS[word].name}
+            for word in sorted(KEYWORDS)]
+
+
+def check_source(source: str, filename: str = "<source>",
+                 keys: Optional[List[bytes]] = None) -> Dict[str, Any]:
+    """Lexes source without running it; reports the first diagnostic, if any."""
+    try:
+        tokens = tokenize_source(source, filename, keys)
+    except EppDiagnosticError as err:
+        return {
+            "ok": False,
+            "filename": err.filename,
+            "code": err.code,
+            "name": err.name,
+            "line": err.line,
+            "column": err.col,
+            "source_line": err.source_line,
+            "reason": err.reason,
+            "help": err.help_msg,
+        }
+    return {
+        "ok": True,
+        "filename": filename,
+        "tokens": len(tokens),
+        "lines": source.count("\n") + 1,
+    }
+
+
+def source_stats(source: str, filename: str = "<source>",
+                 keys: Optional[List[bytes]] = None) -> Dict[str, Any]:
+    """Counts tokens, keywords, variables and strings in one program."""
+    lexer = Lexer(source, filename, keys)
+    tokens = lexer.tokenize()
+    by_type: Dict[str, int] = {}
+    keywords = 0
+    variables = set()
+    strings = 0
+    for token in tokens:
+        by_type[token.type.name] = by_type.get(token.type.name, 0) + 1
+        if token.type.name.startswith("KW_"):
+            keywords += 1
+        elif token.type == TokenType.VARIABLE:
+            variables.add(token.string_value)
+        elif token.type == TokenType.STRING:
+            strings += 1
+    return {
+        "filename": filename,
+        "lines": lexer.source.count("\n") + 1,
+        "tokens": len(tokens),
+        "keywords": keywords,
+        "variables": sorted(variables),
+        "strings": strings,
+        "by_type": dict(sorted(by_type.items())),
+    }
+
+
+def _highlight_colour(token: Token) -> str:
+    name = token.type.name
+    if name == "STRING":
+        return "32"
+    if name == "VARIABLE":
+        return "33"
+    if name == "NUMBER":
+        return "35"
+    if name.startswith("MATH_"):
+        return "34"
+    if name == "KW_NOTE":
+        return "2"
+    if name.startswith("KW_"):
+        return "1;36"
+    return "0"
+
+
+def highlight_source(source: str, filename: str = "<source>",
+                     mode: str = "ansi",
+                     keys: Optional[List[bytes]] = None) -> str:
+    """Renders source with token colours for a terminal or a web page.
+
+    ``mode`` is "ansi" (terminal escape codes), "html" (span elements with
+    ``tok-<TYPE>`` classes) or "plain" (the opened source, unchanged).
+    """
+    lexer = Lexer(source, filename, keys)
+    tokens = lexer.tokenize()
+    text = lexer.source
+    if mode == "plain":
+        return text
+
+    spans: Dict[int, List[Tuple[int, int, Token]]] = {}
+    for token in tokens:
+        if token.type in (TokenType.NEWLINE, TokenType.EOF, TokenType.PYTHON_BLOCK):
+            continue
+        display = token.lexeme
+        if token.type == TokenType.KW_NOTE:
+            display = "note [" + token.string_value + "]"
+        if not display:
+            continue
+        spans.setdefault(token.line, []).append(
+            (token.col, token.col + len(display), token))
+
+    rendered = []
+    for line_no, line in enumerate(text.split("\n"), start=1):
+        line_spans = sorted(spans.get(line_no, []))
+        pieces = []
+        cursor = 1
+        for start, end, token in line_spans:
+            if start > cursor:
+                chunk = line[cursor - 1:start - 1]
+                pieces.append(html.escape(chunk) if mode == "html" else chunk)
+            chunk = line[start - 1:end - 1]
+            if mode == "html":
+                pieces.append('<span class="tok-%s">%s</span>'
+                              % (token.type.name.lower(), html.escape(chunk)))
+            else:
+                pieces.append("\033[%sm%s\033[0m"
+                              % (_highlight_colour(token), chunk))
+            cursor = end
+        tail = line[cursor - 1:]
+        pieces.append(html.escape(tail) if mode == "html" else tail)
+        rendered.append("".join(pieces))
+    return "\n".join(rendered)
+
+
+def _read_text_file(path: str) -> str:
+    with open(path, "r", encoding="utf-8") as handle:
+        return handle.read()
+
+
+def _write_text_file(path: str, text: str) -> None:
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write(text)
+
+
+def _keys_from_options(options: Dict[str, Any]) -> List[bytes]:
+    keys: List[bytes] = []
+    if options.get("key"):
+        keys.append(key_from_hex(options["key"]))
+    if options.get("keyring"):
+        keys.extend(keyring_keys(options["keyring"]))
+    return keys
+
+
+def _parse_options(argv: List[str]) -> Tuple[str, List[str], Dict[str, Any]]:
+    """Splits argv into a command, positional files and --flag options."""
+    command = ""
+    positionals: List[str] = []
+    options: Dict[str, Any] = {"json": False, "no_eof": False}
+    value_flags = {"--key": "key", "--keyring": "keyring",
+                   "--out": "out", "--format": "format", "--name": "name"}
+    bool_flags = {"--json": "json", "--no-eof": "no_eof"}
+    commands = {"tokens", "check", "stats", "keywords", "highlight",
+                "seal", "open", "keygen", "fingerprint", "is-vault",
+                "help", "version"}
+    index = 0
+    while index < len(argv):
+        arg = argv[index]
+        if arg in commands and not command and not positionals:
+            command = arg
+        elif arg in bool_flags:
+            options[bool_flags[arg]] = True
+        elif arg in value_flags:
+            if index + 1 >= len(argv):
+                raise ValueError(arg + " needs a value.")
+            options[value_flags[arg]] = argv[index + 1]
+            index += 1
+        elif arg in ("--help", "-h"):
+            command = "help"
+        elif arg in ("--version", "-V"):
+            command = "version"
+        elif arg.startswith("-") and arg != "-":
+            raise ValueError("Unknown option: " + arg)
+        else:
+            positionals.append(arg)
+        index += 1
+    return command, positionals, options
+
+
+_USAGE = """E++ 1.5a2 lexer tool
+
+Usage:
+  python3 lexer.py FILE.enpp                 print the tokens (legacy form)
+  python3 lexer.py tokens FILE [--json] [--no-eof] [--key HEX] [--keyring PATH]
+  python3 lexer.py check FILE [--json] [--key HEX] [--keyring PATH]
+  python3 lexer.py stats FILE [--json] [--key HEX] [--keyring PATH]
+  python3 lexer.py keywords [--json]
+  python3 lexer.py highlight FILE [--format ansi|html|plain] [--out PATH]
+  python3 lexer.py seal FILE --key HEX [--out FILE.epp]
+  python3 lexer.py open FILE [--key HEX] [--keyring PATH] [--out FILE.enpp]
+  python3 lexer.py keygen [--out epp-keys.json] [--name NAME]
+  python3 lexer.py fingerprint --key HEX
+  python3 lexer.py is-vault FILE
+"""
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    """Runs the lexer tool; returns a process exit code."""
+    args = list(sys.argv[1:] if argv is None else argv)
+    if not args:
+        print("E++ 1.5a2 Lexer module loaded.")
+        return 0
+    try:
+        command, positionals, options = _parse_options(args)
+    except ValueError as err:
+        print(str(err), file=sys.stderr)
+        print(_USAGE, file=sys.stderr)
+        return 2
+
+    if command == "help":
+        print(_USAGE)
+        return 0
+    if command == "version":
+        print("E++ " + EPP_LEXER_VERSION + " lexer")
+        return 0
+    if command == "keywords":
+        catalogue = keyword_catalogue()
+        if options["json"]:
+            print(json.dumps(catalogue, indent=2, ensure_ascii=False))
+        else:
+            for entry in catalogue:
+                print("%-14s %s" % (entry["word"], entry["token_type"]))
+        return 0
+    if command == "keygen":
+        key = random_key()
+        keyhex = key.hex()
+        fingerprint = vault_fingerprint(key)
+        record = {
+            "keys": [{
+                "id": options.get("name") or "generated-key",
+                "project": "",
+                "key": base64.b64encode(key).decode("ascii"),
+                "label": "E++ " + EPP_LEXER_VERSION + " generated key",
+                "fingerprint": fingerprint,
+            }]
+        }
+        if options.get("out"):
+            _write_text_file(options["out"],
+                             json.dumps(record, indent=2) + "\n")
+            print("Keyring written to " + options["out"])
+        print("key (hex): " + keyhex)
+        print("fingerprint: " + fingerprint)
+        return 0
+    if command == "fingerprint":
+        if not options.get("key"):
+            print("fingerprint needs --key HEX.", file=sys.stderr)
+            return 2
+        print(vault_fingerprint(key_from_hex(options["key"])))
+        return 0
+    if command == "is-vault":
+        if not positionals:
+            print("is-vault needs a file.", file=sys.stderr)
+            return 2
+        sealed = is_vault(_read_text_file(positionals[0]))
+        print("sealed project" if sealed else "plain source")
+        return 0 if sealed else 1
+    if command == "seal":
+        if not positionals or not options.get("key"):
+            print("seal needs a file and --key HEX.", file=sys.stderr)
+            return 2
+        sealed = save_epp(_read_text_file(positionals[0]),
+                          key_from_hex(options["key"]))
+        out = options.get("out") or (positionals[0] + ".epp")
+        _write_text_file(out, sealed)
+        print("Sealed project written to " + out)
+        return 0
+    if command == "open":
+        if not positionals:
+            print("open needs a file.", file=sys.stderr)
+            return 2
+        opened = open_vault(_read_text_file(positionals[0]), positionals[0],
+                            options.get("key"), options.get("keyring"))
+        if options.get("out"):
+            _write_text_file(options["out"], opened)
+            print("Opened project written to " + options["out"])
+        else:
+            print(opened, end="" if opened.endswith("\n") else "\n")
+        return 0
+
+    # tokens / check / stats / highlight, plus the legacy bare-file form.
+    if not positionals:
+        print("E++ 1.5a2 Lexer module loaded.")
+        return 0
+    path = positionals[0]
+    try:
+        source = _read_text_file(path)
+        keys = _keys_from_options(options) or None
+        if command == "check":
+            result = check_source(source, path, keys)
+            if options["json"]:
+                print(json.dumps(result, indent=2, ensure_ascii=False))
+            elif result["ok"]:
+                print("%s: %d tokens, %d lines, no lexer errors."
+                      % (path, result["tokens"], result["lines"]))
+            else:
+                print("[E++ Error %s: %s] %s:%s:%s %s"
+                      % (result["code"], result["name"], result["filename"],
+                         result["line"], result["column"], result["reason"]),
+                      file=sys.stderr)
+                print("Help: " + result["help"], file=sys.stderr)
+            return 0 if result["ok"] else 1
+        if command == "stats":
+            result = source_stats(source, path, keys)
+            if options["json"]:
+                print(json.dumps(result, indent=2, ensure_ascii=False))
+            else:
+                print("%s: %d tokens, %d keywords, %d strings, variables: %s"
+                      % (path, result["tokens"], result["keywords"],
+                         result["strings"],
+                         ", ".join(result["variables"]) or "(none)"))
+            return 0
+        if command == "highlight":
+            mode = options.get("format") or "ansi"
+            if mode not in ("ansi", "html", "plain"):
+                print("highlight --format must be ansi, html or plain.",
+                      file=sys.stderr)
+                return 2
+            rendered = highlight_source(source, path, mode, keys)
+            if options.get("out"):
+                _write_text_file(options["out"], rendered)
+                print("Highlighted source written to " + options["out"])
+            else:
+                print(rendered)
+            return 0
+        tokens = tokenize_source(source, path, keys)
+        if options["json"]:
+            print(tokens_to_json(tokens, not options["no_eof"]))
+        else:
+            for token in tokens:
+                if options["no_eof"] and token.type == TokenType.EOF:
+                    continue
+                print(token)
+        return 0
+    except EppDiagnosticError as err:
+        print(err.format_message(), file=sys.stderr)
+        return 1
+    except (OSError, ValueError) as err:
+        print("lexer.py: " + str(err), file=sys.stderr)
+        return 1
+
+
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        fname = sys.argv[1]
-        with open(fname, "r", encoding="utf-8") as f:
-            src = f.read()
-        lexer = Lexer(src, fname)
-        tokens = lexer.tokenize()
-        for t in tokens:
-            print(t)
-    else:
-        print("E++ 1.5a1 Lexer module loaded.")
+    raise SystemExit(main())

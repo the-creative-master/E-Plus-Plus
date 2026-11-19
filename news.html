@@ -2,14 +2,46 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>E++ News | 1.5a1</title>
+  <title>E++ News | 1.5a2</title>
   <link rel="stylesheet" href="css/news.css?v=1.4">
 </head>
 <body>
-  <header class="news-top"><a href="index.html" class="news-back">← <span>Back to Studio</span></a><span class="news-brand">E<span>++</span> <b>STUDIO / NEWS</b></span><span class="news-version">1.5a1 · RELEASE</span></header>
+  <header class="news-top"><a href="index.html" class="news-back">← <span>Back to Studio</span></a><span class="news-brand">E<span>++</span> <b>STUDIO / NEWS</b></span><span class="news-version">1.5a2 · RELEASE</span></header>
   <main class="news-main">
-    <section class="news-current" aria-label="E++ 1.5a1 release">
-      <div class="news-kicker"><span></span> RELEASE 1.5a1</div>
+    <section class="news-current" aria-label="E++ 1.5a2 release">
+      <div class="news-kicker"><span></span> RELEASE 1.5a2</div>
+      <h1>Two things<br><em>at once.</em></h1>
+      <p class="news-intro">E++ 1.5a2 lets one condition say two things. Join any two conditions with <code>and</code> or <code>or</code>, turn one around with <code>not</code>, and group them with brackets. It is part of the language, so there is no library to add and nothing new to install — in the Studio, the JavaScript core, <code>epp.py</code> and the native engine alike.</p>
+      <div class="release-meta"><span>✦ &nbsp; RELEASE 1.5a2</span><span>FEATURE RELEASE</span></div>
+      <div class="news-grid">
+        <article><span class="article-number">01 / AND</span><h2>Both halves have to be true.</h2><p><code>if 'score' is at least 10 and 'lives' is greater than 0 then say "Play on!"</code>. Every comparison you already know works on both sides, and a false first half stops before the second one is even read.</p></article>
+        <article><span class="article-number">02 / OR</span><h2>Either one will do.</h2><p><code>if 'day' is "Saturday" or 'day' is "Sunday" then say "Weekend!"</code>. Without brackets <code>and</code> binds tighter than <code>or</code>, exactly the way the sentence reads out loud.</p></article>
+        <article><span class="article-number">03 / NOT &amp; BRACKETS</span><h2>Turn it around. Group it up.</h2><p><code>if not 'ready' then say "Not yet"</code> reverses one condition, and <code>if ('a' is 1 or 'b' is 2) and 'c' is 3 then ...</code> makes any order explicit.</p></article>
+        <article><span class="article-number">04 / EVERYWHERE</span><h2>One condition, every place.</h2><p><code>if</code>, <code>while</code>, <code>repeat until</code> and <code>wait until</code> all read joins. Existing phrases such as <code>is greater than or equal to 5</code> and <code>between 1 and 6</code> are untouched.</p></article>
+      </div>
+      <div class="news-bottom"><div><span class="article-number">THE WHOLE FEATURE</span><h2>Three words, four lines.</h2><p>The condition reads exactly like the English you would say, so there is nothing new to learn:</p></div><div class="news-figure-block"><pre class="news-code">let 'score' be 12
+let 'lives' be 3
+let 'day' be "Saturday"
+
+if 'score' is at least 10 and 'lives' is greater than 0 then say "Play on!"
+if 'day' is "Saturday" or 'day' is "Sunday" then say "Weekend!"
+
+let 'ready' be 0
+if not 'ready' then say "Not ready yet"
+if ('score' is 10 or 'score' is 12) and 'lives' is 3 then say "Grouped"</pre></div></div>
+      <div class="news-bottom"><div><span class="article-number">IN LOOPS AND WAITS</span><h2>Wait for two things.</h2><p>A loop or a wait can hold for a whole sentence, and a stray connector is caught as <code>E078</code> instead of a confusing value error. The catalogue is now 104 codes.</p></div><div class="news-figure-block"><pre class="news-code">while 'count' is less than 5 and 'go' is true do
+  let 'count' be 'count' plus 1
+end while
+
+repeat until 'count' is 10 or 'stop' is true
+  let 'count' be 'count' plus 1
+end repeat
+
+wait until 'ready' is true and 'count' is at least 3</pre></div></div>
+    </section>
+
+    <section class="news-archive" aria-label="E++ 1.5a1 previous release">
+      <div class="news-kicker"><span></span> PREVIOUS RELEASE · E++ 1.5a1</div>
       <h1>E++ learned<br><em>to wait.</em></h1>
       <p class="news-intro">E++ 1.5a1 adds the statement the language has been missing: <code>wait until</code>. It waits for something to become true, it belongs to the language itself, and it can be given a deadline. The Files library can now delete a file, loops can repeat until a condition is met, and comparisons read the way people actually say them.</p>
       <div class="release-meta"><span>✦ &nbsp; RELEASE 1.5a1</span><span>FEATURE RELEASE</span></div>

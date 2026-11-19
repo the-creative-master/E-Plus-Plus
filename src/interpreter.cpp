@@ -141,6 +141,18 @@ Value Interpreter::visitVariableExpr(VariableExpr* expr) {
 }
 
 Value Interpreter::visitBinaryExpr(BinaryExpr* expr) {
+    // Release 1.5a2 — and/or/not join whole conditions. The right side is
+    // only evaluated when it can still change the answer, so an undefined
+    // variable behind a false `and` never stops the program.
+    if (expr->op == BinaryOp::LOGIC_NOT) {
+        return Value::make_bool(!expr->left->accept(this).is_truthy());
+    }
+    if (expr->op == BinaryOp::LOGIC_AND || expr->op == BinaryOp::LOGIC_OR) {
+        bool first = expr->left->accept(this).is_truthy();
+        if (expr->op == BinaryOp::LOGIC_AND && !first) return Value::make_bool(false);
+        if (expr->op == BinaryOp::LOGIC_OR && first) return Value::make_bool(true);
+        return Value::make_bool(expr->right->accept(this).is_truthy());
+    }
     Value left = expr->left->accept(this);
     Value right = expr->right->accept(this);
 
@@ -226,6 +238,12 @@ Value Interpreter::visitBinaryExpr(BinaryExpr* expr) {
             }
             return Value::make_bool(left.to_string() <= right.to_string());
         }
+        // Release 1.5a2 — the three logic operators are handled (with
+        // short-circuiting) before `left` and `right` are evaluated above.
+        case BinaryOp::LOGIC_AND:
+        case BinaryOp::LOGIC_OR:
+        case BinaryOp::LOGIC_NOT:
+            return Value::make_nil();
     }
     return Value::make_nil();
 }
