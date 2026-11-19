@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>E++ Studio | 1.5a1</title>
+<title>E++ Studio | 1.5a2</title>
 <link rel="stylesheet" href="css/ide.css?v=1.4-phone">
 <style>
   /* Color classes for Terminal */
@@ -370,7 +370,7 @@
   <div class="brand">
     <div class="logo" aria-hidden="true">E<span>++</span></div>
     <div>
-      <h1>E++ <span>Studio</span> <span class="build-badge">1.5a1</span></h1>
+      <h1>E++ <span>Studio</span> <span class="build-badge">1.5a2</span></h1>
       <p>YOUR SPACE TO CREATE</p>
     </div>
   </div>
@@ -515,7 +515,7 @@
   </div>
   <div class="dash-group dash-group-end">
     <span id="zipRuntimeBadge" class="badge-zip-locked">C++ lexer loading…</span>
-    <span class="dash-badge-pill badge-version" id="buildVersion">v1.4 · Release</span>
+    <span class="dash-badge-pill badge-version" id="buildVersion">v1.5a2 · Release</span>
   </div>
   <span id="mobileSaveStatus" class="mobile-save-status" role="status">Saved locally</span>
   <div class="dash-rules">
@@ -1074,7 +1074,7 @@ if (window.EPP_DISTRIBUTION && window.EPP && window.EPP.Libraries) {
 const DEFAULT_FILES = [
   {
     name: 'hello.enpp',
-    content: `note [E++ 1.5a1 — your first program. Text lives in double quotes.]
+    content: `note [E++ 1.5a2 — your first program. Text lives in double quotes.]
 say "Hello, World!"
 say "Looks like English, feels like english, and is english"
 
@@ -1087,8 +1087,8 @@ say "1 + 1"`
   },
   {
     name: 'welcome.enpp',
-    content: `note [Welcome to E++ 1.5a1. Run this file, then open Learn or Wiki.]
-say "Hello from E++ 1.5a1!"
+    content: `note [Welcome to E++ 1.5a2. Run this file, then open Learn or Wiki.]
+say "Hello from E++ 1.5a2!"
 let 'ideas' be 3
 say "Ideas to try:", 'ideas'
 repeat 3 times
@@ -1124,11 +1124,43 @@ wait 0.1 seconds
 say "Finished."`
   },
   {
+    name: 'compound_conditions.enpp',
+    content: `note [New in 1.5a2: one condition can say and, or and not.]
+note [No library is needed — this is part of the language itself.]
+
+let 'Score' be 12
+let 'Lives' be 3
+let 'Day' be "Saturday"
+
+note [and — both halves have to be true:]
+if 'Score' is at least 10 and 'Lives' is greater than 0 then say "Play on!"
+
+note [or — either half is enough:]
+if 'Day' is "Saturday" or 'Day' is "Sunday" then say "It is the weekend!"
+
+note [not — turn one condition around:]
+let 'Ready' be 0
+if not 'Ready' then say "Not ready yet"
+if not 'Ready' and 'Lives' is 3 then say "Waiting, but still playing"
+
+note [Brackets group a whole condition when that reads better:]
+if ('Score' is 10 or 'Score' is 12) and 'Lives' is 3 then say "Grouped"
+
+note [and/or work in loops and waits too:]
+let 'Count' be 0
+while 'Count' is less than 3 and 'Lives' is greater than 0 do
+  say "Round ", 'Count'
+  let 'Count' be 'Count' plus 1
+end while
+wait until 'Count' is 3 and 'Ready' is 0
+say "Everything is true."`
+  },
+  {
     name: 'files_and_deleting.enppl',
     content: `note [The Files library — write, read, then delete (new in 1.5a1).]
 add the "Files" library
 
-write "E++ 1.5a1 is ready!" to file "notes.txt"
+write "E++ 1.5a2 is ready!" to file "notes.txt"
 read the file "notes.txt" and save the output as 'ReadBack'
 say "Read back from file:", 'ReadBack'
 
@@ -1138,7 +1170,7 @@ say "notes.txt has been deleted."`
   },
   {
     name: 'release_showcase.enppl',
-    content: `note [E++ 1.5a1 showcase — every library at once.]
+    content: `note [E++ 1.5a2 showcase — every library at once.]
 let 'Eversion' be the version of E++
 add the "Colors" library
 add the "Time" library
@@ -1300,7 +1332,7 @@ say "Done — the Left arrow finished the program."`
 ];
 
 // File Storage (.enpp & .enppl)
-const DEFAULTS_VERSION = '1.5a1';
+const DEFAULTS_VERSION = '1.5a2';
 const WIKI_RETURN_FILE_KEY = 'epp_wiki_return_file';
 let files = {};
 let currentFileName = 'hello.enpp';
@@ -3799,8 +3831,152 @@ class EppEvaluator {
     stats.innerText = finished ? 'stopped' : (fps ? fps + ' fps' : 'starting…');
   }
 
+  /**
+   * Release 1.5a2 — find the `and` / `or` words that join whole conditions.
+   * The scan respects quotes and brackets, and leaves the connectors that
+   * belong to a phrase alone: "greater than or equal to", "between 1 and 6",
+   * "the minimum of 3 and 9" and "and concat it with" are not joins.
+   */
+  splitCondition(condStr) {
+    const tokens = [];
+    let quote = null, depth = 0;
+    for (let i = 0; i < condStr.length;) {
+      const ch = condStr[i];
+      if (quote) {
+        if (ch === '\\' && quote === '"' && i + 1 < condStr.length) { i += 2; continue; }
+        if (ch === quote) quote = null;
+        i += 1; continue;
+      }
+      if (ch === '"' || ch === "'") { quote = ch; i += 1; continue; }
+      if (ch === '(') { depth += 1; i += 1; continue; }
+      if (ch === ')') { depth = Math.max(0, depth - 1); i += 1; continue; }
+      if (/[A-Za-z_]/.test(ch)) {
+        let end = i + 1;
+        while (end < condStr.length && /[A-Za-z0-9_-]/.test(condStr[end])) end += 1;
+        if (depth === 0) tokens.push({ word: condStr.slice(i, end).toLowerCase(), at: i });
+        i = end; continue;
+      }
+      i += 1;
+    }
+    const cuts = [];
+    let pairPending = false, pairWord = false;
+    for (let i = 0; i < tokens.length; i += 1) {
+      const word = tokens[i].word;
+      const next = tokens[i + 1] ? tokens[i + 1].word : '';
+      if (word === 'between') { pairPending = true; continue; }
+      if (word === 'minimum' || word === 'maximum' || word === 'hypotenuse') { pairWord = true; continue; }
+      if (word === 'of' && pairWord) { pairPending = true; pairWord = false; continue; }
+      if (word === 'or') {
+        if (next === 'equal' || next === 'equals') continue;  // "or equal to"
+        cuts.push({ at: tokens[i].at, length: word.length, op: 'or' });
+        continue;
+      }
+      if (word === 'and') {
+        if (pairPending) { pairPending = false; continue; }   // "between 1 and 6"
+        if (next === 'concat' || next === 'save' || next === 'then') continue;
+        cuts.push({ at: tokens[i].at, length: word.length, op: 'and' });
+      }
+    }
+    if (!cuts.length) return null;
+    const parts = [], ops = [];
+    let cursor = 0;
+    for (const cut of cuts) {
+      parts.push(condStr.slice(cursor, cut.at));
+      ops.push(cut.op);
+      cursor = cut.at + cut.length;
+    }
+    parts.push(condStr.slice(cursor));
+    return { parts, ops };
+  }
+
+  /** True when one pair of brackets wraps the whole of a condition. */
+  wrapsWholeCondition(text) {
+    let depth = 0, quote = null;
+    for (let i = 0; i < text.length; i += 1) {
+      const ch = text[i];
+      if (quote) {
+        if (ch === '\\' && quote === '"') { i += 1; continue; }
+        if (ch === quote) quote = null;
+        continue;
+      }
+      if (ch === '"' || ch === "'") { quote = ch; continue; }
+      if (ch === '(') depth += 1;
+      else if (ch === ')') {
+        depth -= 1;
+        if (depth < 0 || (depth === 0 && i !== text.length - 1)) return false;
+      }
+    }
+    return depth === 0;
+  }
+
+  /** `and` binds tighter than `or`; both stop as soon as the answer is known. */
+  async joinConditionValues(parts, ops, evaluate) {
+    const groups = [[parts[0]]];
+    for (let i = 1; i < parts.length; i += 1) {
+      if (ops[i - 1] === 'and') groups[groups.length - 1].push(parts[i]);
+      else groups.push([parts[i]]);
+    }
+    for (const group of groups) {
+      let all = true;
+      for (const part of group) {
+        if (!(await evaluate(part))) { all = false; break; }
+      }
+      if (all) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Release 1.5a2 — conditions can say "and", "or" and "not". In the Studio
+   * a standalone `check if` line joins too, so each part keeps its prefix.
+   */
   async evalCondition(condStr, lineNum, sourceLine) {
     condStr = condStr.trim();
+    const checkHead = condStr.match(/^check\s+if\s+/i);
+    const body = checkHead ? condStr.slice(checkHead[0].length) : condStr;
+    const split = this.splitCondition(body);
+    if (split) {
+      const parts = split.parts.map((part) => {
+        const trimmed = part.trim();
+        return checkHead && !/^check\s+if\s+/i.test(trimmed) ? checkHead[0] + trimmed : trimmed;
+      });
+      const bare = parts.map((part) => part.replace(/^check\s+if\s+/i, '').trim());
+      if (bare.some((part) => !part || /^(?:and|or|not)$/i.test(part))) {
+        throw this.diagnostic('E078', 'Dangling Condition',
+          'This condition ends with "and", "or" or "not", but there is no condition after it.',
+          'Write two complete conditions, for example: if \'score\' is 10 and \'lives\' is 3 then',
+          lineNum, sourceLine);
+      }
+      return this.joinConditionValues(parts, split.ops,
+        (part) => this.evalSimpleCondition(part, lineNum, sourceLine));
+    }
+    return this.evalSimpleCondition(condStr, lineNum, sourceLine);
+  }
+
+  async evalSimpleCondition(condStr, lineNum, sourceLine) {
+    condStr = condStr.trim();
+    if (/^(?:and|or|not)$/i.test(condStr) || /\b(?:and|or|not)\s*$/i.test(condStr)) {
+      throw this.diagnostic('E078', 'Dangling Condition',
+        'This condition ends with "and", "or" or "not", but there is no condition after it.',
+        'Write two complete conditions, for example: if \'score\' is 10 and \'lives\' is 3 then',
+        lineNum, sourceLine);
+    }
+
+    // Release 1.5a2 — "not" turns one condition around, and brackets group a
+    // whole condition so "or" can be read before "and" when that is clearer.
+    const notMatch = condStr.match(/^not\s+(.+)$/i);
+    if (notMatch) {
+      const inner = notMatch[1].trim();
+      if (!inner || /^(?:and|or|not)$/i.test(inner)) {
+        throw this.diagnostic('E078', 'Dangling Condition',
+          '"not" needs a condition after it.',
+          'Write it like this: if not \'ready\' then say \"Not yet\"', lineNum, sourceLine);
+      }
+      return !(await this.evalCondition(inner, lineNum, sourceLine));
+    }
+    if (condStr.startsWith('(') && condStr.endsWith(')') && this.wrapsWholeCondition(condStr)) {
+      return this.evalCondition(condStr.slice(1, -1), lineNum, sourceLine);
+    }
 
     // Release 1.2 — Keyboard: the "Up arrow" key is pressed
     // Quotes around the key name are optional: `the Up arrow key is pressed`
@@ -4386,9 +4562,10 @@ class EppEvaluator {
       return;
     }
 
-    // 5. CHECK STATEMENT (standalone)
+    // 5. CHECK STATEMENT (standalone). Release 1.5a2: two checks can be
+    // joined with and/or, exactly like an if condition.
     if (lower.startsWith('check if ')) {
-      const res = await this.evalTypeCheck(line, lineNum);
+      const res = await this.evalCondition(line, lineNum, line);
       printFn(String(res));
       return;
     }
@@ -4778,7 +4955,7 @@ class EppEvaluator {
 
   async evalExpr(expr, lineNum) {
     expr = expr.trim();
-    if (/^the\s+version\s+of\s+e\+\+$/i.test(expr)) return EPP.VERSION || '1.4';
+    if (/^the\s+version\s+of\s+e\+\+$/i.test(expr)) return EPP.VERSION || '1.5a2';
     if (!expr) throw this.diagnostic('E003', 'Missing Value', 'An expression needs a value.', 'Use a number, "text", or a single-quoted variable.', lineNum);
 
     const literal = this.tokensFor(expr, lineNum);

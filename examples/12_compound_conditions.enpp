@@ -1,0 +1,35 @@
+note [E++ 1.5a2: a condition can say and, or and not.]
+note [No library is needed — this is part of the language itself.]
+
+let 'Score' be 12
+let 'Lives' be 3
+let 'Day' be "Saturday"
+
+note [and — both halves have to be true:]
+if 'Score' is at least 10 and 'Lives' is greater than 0 then say "Play on!"
+if 'Score' is at least 10 and 'Lives' is 0 then say "No lives left"
+
+note [or — either half is enough:]
+if 'Day' is "Saturday" or 'Day' is "Sunday" then say "It is the weekend!"
+
+note [not — turn one condition around:]
+let 'Ready' be 0
+if not 'Ready' then say "Not ready yet"
+
+note [Brackets group a whole condition when that reads better:]
+if ('Score' is 10 or 'Score' is 12) and 'Lives' is 3 then say "Grouped"
+
+note [and/or work in loops and waits too:]
+let 'Count' be 0
+while 'Count' is less than 3 and 'Lives' is greater than 0 do
+  say "Round ", 'Count'
+  let 'Count' be 'Count' plus 1
+end while
+
+repeat until 'Count' is 5 or 'Lives' is 0
+  let 'Count' be 'Count' plus 1
+end repeat
+say "Count is ", 'Count'
+
+wait until 'Count' is 5 and 'Ready' is 0
+say "Everything is true."

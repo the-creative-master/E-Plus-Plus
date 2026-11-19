@@ -284,15 +284,15 @@ console.log('\n1.5a1: comparisons read like English');
 console.log('\n1.5a1: the release ships as one piece');
 {
   const errors = require('../js/errors.js');
-  assert.equal(EPP.VERSION, '1.5a1', 'the engine reports 1.5a1');
-  assert.equal(errors.Errors.total, 103);
+  assert.equal(EPP.VERSION, '1.5a2', 'the engine reports 1.5a2');
+  assert.equal(errors.Errors.total, 104);
   assert.equal(errors.Errors.name('E076'), 'Cannot Delete A Missing File');
   assert.equal(errors.Errors.name('E077'), 'Cannot Delete The File');
   assert.equal(errors.Errors.name('W006'), 'Wait Can Never End Here');
-  ok('the engine version and the three new codes match the release');
+  ok('the engine version and the three 1.5a1 codes still match');
 
   const reference = readFileSync(join(root, 'LANGUAGE.md'), 'utf8');
-  assert.match(reference, /\(1\.5a1\)/, 'the reference is titled 1.5a1');
+  assert.match(reference, /\(1\.5a2\)/, 'the reference is titled for the current release');
   assert.ok(reference.includes('wait until'), 'the reference documents wait until');
   assert.ok(reference.includes('delete the file'), 'the reference documents delete the file');
   assert.ok(reference.includes('repeat until'), 'the reference documents repeat until');
@@ -303,13 +303,14 @@ console.log('\n1.5a1: the release ships as one piece');
     '01_hello.enpp', '02_arithmetic.enpp', '03_variables_and_questions.enpp',
     '04_control_flow.enpp', '05_math_library.enppl', '06_files_library.enppl',
     '07_wait_until.enppl', '08_python_library.enppl', '09_strings_library.enppl',
-    '10_saved_project.enpp', '11_studio_showcase.enppl'
+    '10_saved_project.enpp', '11_studio_showcase.enppl',
+    '12_compound_conditions.enpp'
   ];
   for (const name of examples) {
     const text = readFileSync(join(root, 'examples', name), 'utf8');
     assert.ok(text.length > 0, name + ' is not empty');
   }
-  ok('the eleven curated examples all exist');
+  ok('the twelve curated examples all exist');
 }
 
 console.log('\nAll ' + passed + ' E++ 1.5a1 checks passed.');

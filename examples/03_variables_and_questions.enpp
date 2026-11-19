@@ -1,4 +1,4 @@
-note [E++ 1.5a1: variables use single quotes. Text uses double quotes.]
+note [E++ 1.5a2: variables use single quotes. Text uses double quotes.]
 let 'Grade' be 29
 let 'Student' be "Sam"
 say 'Student', " got a grade of ", 'grade'

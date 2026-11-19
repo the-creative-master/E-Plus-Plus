@@ -1,4 +1,4 @@
-note [E++ 1.5a1: decisions, counted loops and loops that wait for an answer]
+note [E++ 1.5a2: decisions, counted loops and loops that wait for an answer]
 let 'Score' be 95
 
 if 'Score' is greater than 50 then:

@@ -1,4 +1,4 @@
-note [E++ 1.5a1: arithmetic without quotes, and type checks]
+note [E++ 1.5a2: arithmetic without quotes, and type checks]
 say 1 plus 1
 say 1 minus 1
 say 2 times 3

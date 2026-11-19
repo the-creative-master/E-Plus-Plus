@@ -1,4 +1,4 @@
-note [E++ 1.5a1: wait until — the new core statement.]
+note [E++ 1.5a2: wait until — the core statement from 1.5a1.]
 note [No library is needed: waiting is part of E++ itself.]
 note [That goes for a plain wait too, so this file adds nothing at all.]
 

@@ -520,7 +520,7 @@ std::shared_ptr<Stmt> Parser::parse_wait_statement() {
             throw ParseError("\"wait until\" needs a condition to wait for.",
                              previous().line, previous().col, "E027");
         }
-        auto condition = parse_expression();
+        auto condition = parse_condition();
         match(TokenType::TOKEN_NEWLINE);
         return std::make_shared<WaitStmt>(nullptr, false, line, col, condition, true);
     }
@@ -545,7 +545,7 @@ std::shared_ptr<Stmt> Parser::parse_wait_statement() {
                 throw ParseError("\"wait at most ... until\" needs a condition to wait for.",
                                  previous().line, previous().col, "E027");
             }
-            auto condition = parse_expression();
+            auto condition = parse_condition();
             match(TokenType::TOKEN_NEWLINE);
             return std::make_shared<WaitStmt>(limit, limit_ms, line, col, condition, true);
         }
@@ -565,7 +565,7 @@ std::shared_ptr<Stmt> Parser::parse_wait_statement() {
 
     // "wait 2 seconds until 'ready' is 1" reads naturally too.
     if (match(TokenType::KW_UNTIL)) {
-        auto condition = parse_expression();
+        auto condition = parse_condition();
         match(TokenType::TOKEN_NEWLINE);
         return std::make_shared<WaitStmt>(dur_expr, is_ms, line, col, condition, true);
     }
@@ -679,7 +679,7 @@ std::shared_ptr<Stmt> Parser::parse_if_statement() {
     int line = if_tok.line;
     int col = if_tok.col;
 
-    auto cond = parse_expression();
+    auto cond = parse_condition();
     consume(TokenType::KW_THEN, "Expected 'then' after if condition");
 
     std::vector<std::shared_ptr<Stmt>> then_branch;
@@ -766,7 +766,7 @@ std::shared_ptr<Stmt> Parser::parse_repeat_statement() {
 
     // repeat until <condition> — the loop that waits for its own answer.
     if (match(TokenType::KW_UNTIL)) {
-        auto condition = parse_expression();
+        auto condition = parse_condition();
         match(TokenType::TOKEN_COLON);
         match(TokenType::TOKEN_NEWLINE);
 
@@ -809,7 +809,7 @@ std::shared_ptr<Stmt> Parser::parse_while_statement() {
     int line = w_tok.line;
     int col = w_tok.col;
 
-    auto cond = parse_expression();
+    auto cond = parse_condition();
     match(TokenType::KW_DO);
     match(TokenType::TOKEN_COLON);
     match(TokenType::TOKEN_NEWLINE);
@@ -827,6 +827,97 @@ std::shared_ptr<Stmt> Parser::parse_while_statement() {
     match(TokenType::TOKEN_NEWLINE);
 
     return std::make_shared<WhileStmt>(cond, body, line, col);
+}
+
+// Release 1.5a2 — conditions can say "and", "or" and "not".
+// `not` belongs to one condition, `and` binds tighter than `or`, and every
+// side is an ordinary comparison expression, so all the 1.5a1 wordings keep
+// working. A connector with nothing after it is E078.
+std::shared_ptr<Expr> Parser::parse_condition() {
+    return parse_condition_or();
+}
+
+std::shared_ptr<Expr> Parser::parse_condition_or() {
+    auto expr = parse_condition_and();
+    while (true) {
+        Token join = peek();
+        if (!match(TokenType::KW_OR)) break;
+        require_condition_after(join, "or");
+        auto right = parse_condition_and();
+        expr = std::make_shared<BinaryExpr>(BinaryOp::LOGIC_OR, expr, right, join.line, join.col);
+    }
+    return expr;
+}
+
+std::shared_ptr<Expr> Parser::parse_condition_and() {
+    auto expr = parse_condition_not();
+    while (true) {
+        Token join = peek();
+        if (!match(TokenType::KW_AND)) break;
+        require_condition_after(join, "and");
+        auto right = parse_condition_not();
+        expr = std::make_shared<BinaryExpr>(BinaryOp::LOGIC_AND, expr, right, join.line, join.col);
+    }
+    return expr;
+}
+
+void Parser::require_condition_after(const Token& join, const std::string& word) {
+    Token next = peek();
+    bool dangling = is_at_end() || next.type == TokenType::TOKEN_EOF ||
+        next.type == TokenType::TOKEN_NEWLINE || next.type == TokenType::TOKEN_COLON ||
+        next.type == TokenType::TOKEN_RPAREN || next.type == TokenType::KW_THEN ||
+        next.type == TokenType::KW_DO || next.type == TokenType::KW_END ||
+        next.type == TokenType::KW_AND || next.type == TokenType::KW_OR ||
+        next.type == TokenType::KW_TIMES || next.type == TokenType::KW_UNTIL;
+    if (dangling) {
+        throw ParseError("This condition ends with \"" + word + "\", but there is no condition after it.",
+                         join.line, join.col, "E078", "Dangling Condition");
+    }
+}
+
+// Brackets around a whole condition let a reader choose the order. A pair
+// that only groups arithmetic, such as "(1 plus 2) is 3", is left to the
+// expression parser.
+bool Parser::grouped_condition_ahead() const {
+    if (!check(TokenType::TOKEN_LPAREN)) return false;
+    int depth = 0;
+    bool saw_condition = false;
+    for (size_t i = current; i < tokens.size(); ++i) {
+        TokenType type = tokens[i].type;
+        if (type == TokenType::TOKEN_LPAREN) { ++depth; continue; }
+        if (type == TokenType::TOKEN_RPAREN) {
+            --depth;
+            if (depth <= 0) return saw_condition;
+            continue;
+        }
+        if (depth >= 1 && (
+            type == TokenType::KW_IS || type == TokenType::KW_EQUALS ||
+            type == TokenType::KW_EQUAL || type == TokenType::KW_GREATER ||
+            type == TokenType::KW_LESS || type == TokenType::KW_MORE ||
+            type == TokenType::KW_AT || type == TokenType::KW_NO ||
+            type == TokenType::KW_EXACTLY || type == TokenType::KW_DIFFERENT ||
+            type == TokenType::KW_NUMBER || type == TokenType::KW_NOT ||
+            type == TokenType::KW_AND || type == TokenType::KW_OR)) {
+            saw_condition = true;
+        }
+    }
+    return false;
+}
+
+std::shared_ptr<Expr> Parser::parse_condition_not() {
+    Token tok = peek();
+    if (grouped_condition_ahead()) {
+        advance(); // (
+        auto inner = parse_condition();
+        consume(TokenType::TOKEN_RPAREN, "Add the closing ) where the condition ends.");
+        return inner;
+    }
+    if (match(TokenType::KW_NOT)) {
+        require_condition_after(tok, "not");
+        auto inner = parse_condition_not();
+        return std::make_shared<BinaryExpr>(BinaryOp::LOGIC_NOT, inner, nullptr, tok.line, tok.col);
+    }
+    return parse_expression();
 }
 
 // Expression parsing

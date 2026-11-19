@@ -1449,8 +1449,96 @@
   };
 
   // ---------- conditions ----------
+  /**
+   * Release 1.5a2 — an E++ condition can be a whole sentence:
+   *
+   *   if 'score' is at least 10 and 'lives' is greater than 0 then ...
+   *   if 'day' is "Saturday" or 'day' is "Sunday" then ...
+   *   if not 'ready' then ...
+   *
+   * `not` belongs to one condition, `and` binds tighter than `or`, and each
+   * side is an ordinary condition, so every comparison and library condition
+   * below keeps working unchanged. A connector with nothing after it is E078.
+   */
   Parser.prototype.parseCondition = function () {
+    return this.parseOrCondition();
+  };
+
+  Parser.prototype.parseOrCondition = function () {
+    var node = this.parseAndCondition();
+    for (;;) {
+      if (!this.isWord('or')) break;
+      var orToken = this.advance();
+      this.requireConditionAfter(orToken, 'or');
+      node = EPP.AST.Logic('or', node, this.parseAndCondition(), orToken);
+    }
+    return node;
+  };
+
+  Parser.prototype.parseAndCondition = function () {
+    var node = this.parseSimpleCondition();
+    for (;;) {
+      if (!this.isWord('and')) break;
+      var andToken = this.advance();
+      this.requireConditionAfter(andToken, 'and');
+      node = EPP.AST.Logic('and', node, this.parseSimpleCondition(), andToken);
+    }
+    return node;
+  };
+
+  /** True when one pair of brackets wraps a whole condition, not just maths. */
+  Parser.prototype.groupedConditionAhead = function () {
+    var here = this.current();
+    if (!here || here.type !== 'LPAREN') return false;
+    var depth = 0, sawCondition = false;
+    for (var i = this.pos; i < this.tokens.length; i += 1) {
+      var token = this.tokens[i];
+      if (token.type === 'LPAREN') { depth += 1; continue; }
+      if (token.type === 'RPAREN') { depth -= 1; if (depth <= 0) return sawCondition; continue; }
+      if (token.type === 'NEWLINE' || token.type === 'EOF') return false;
+      if (depth >= 1 && token.type === 'WORD' &&
+          /^(?:is|equals|equal|greater|less|lesser|exactly|different|at|no|more|not|and|or|number|contains|touching|a)$/i.test(token.value)) {
+        sawCondition = true;
+      }
+    }
+    return false;
+  };
+
+  /** "and" or "or" must be followed by another condition, not `then` or a line end. */
+  Parser.prototype.requireConditionAfter = function (token, word) {
+    var next = this.current();
+    var bad = !next || this.isSeparator(next) || next.type === 'EOF' || next.type === 'COLON' ||
+      this.isWord('then') || this.isWord('do') || this.isWord('and') || this.isWord('or') ||
+      this.isWord('times') || this.isWord('end');
+    if (bad) {
+      throw EPP.Errors.error('E078',
+        'This condition ends with "' + word + '", but there is no condition after it.',
+        token.line, token.column,
+        'Write two complete conditions, for example: if \'score\' is at least 10 ' + word + ' \'lives\' is greater than 0 then');
+    }
+  };
+
+  Parser.prototype.parseSimpleCondition = function () {
     var t0 = this.current();
+
+    // Release 1.5a2 — "not" in front of a condition turns it around. The
+    // standalone "not a number" keeps its own E027 explanation below: it only
+    // makes sense after an if about the same value.
+    if (this.isWord('not') &&
+        !(this.isWord('a', this.peek(1)) && this.isWord('number', this.peek(2)))) {
+      var notToken = this.advance();
+      this.requireConditionAfter(notToken, 'not');
+      return EPP.AST.Logic('not', this.parseSimpleCondition(), null, notToken);
+    }
+    // Brackets around a whole condition let a reader choose the order of
+    // and/or. A pair that only groups maths, such as "(1 plus 2) is 3", is
+    // left to the expression parser.
+    if (this.groupedConditionAhead()) {
+      this.advance(); // (
+      var grouped = this.parseCondition();
+      this.expect('RPAREN', 'a closing ")" where the condition ends');
+      return grouped;
+    }
 
     // Release 1.2 — Keyboard: the "Up arrow" key is pressed  [Keyboard]
     // The name can be written with quotes (`the "Up arrow" key is pressed`)
@@ -1771,14 +1859,14 @@
         var versionName = this.peek(3);
         if (versionName && versionName.type === 'WORD' && versionName.value.toLowerCase() === 'e++') {
           this.advance(); this.advance(); this.advance(); this.advance();
-          return EPP.AST.Literal(EPP.VERSION || '1.4', t);
+          return EPP.AST.Literal(EPP.VERSION || '1.5a2', t);
         }
         // Accept token streams from the native lexer, which represents the
         // two plus signs as punctuation instead of one E++ word.
         if (versionName && versionName.type === 'WORD' && versionName.value.toLowerCase() === 'e' &&
             this.peek(4) && this.peek(4).value === '+' && this.peek(5) && this.peek(5).value === '+') {
           for (var vi = 0; vi < 6; vi += 1) this.advance();
-          return EPP.AST.Literal(EPP.VERSION || '1.4', t);
+          return EPP.AST.Literal(EPP.VERSION || '1.5a2', t);
         }
       }
 

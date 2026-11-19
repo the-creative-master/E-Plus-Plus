@@ -9,7 +9,7 @@
 
   var EPP = global.EPP || (global.EPP = {});
   // Keep the language's self-reported version in one runtime-visible place.
-  EPP.VERSION = EPP.VERSION || '1.5a1';
+  EPP.VERSION = EPP.VERSION || '1.5a2';
 
   var Type = {
     PROGRAM: 'Program',
@@ -75,7 +75,11 @@
 
     // Release 1.5a1 — file deletion, and "until" joins the loop vocabulary.
     DELETE_FILE: 'DeleteFile',
-    REPEAT_UNTIL: 'RepeatUntil'
+    REPEAT_UNTIL: 'RepeatUntil',
+
+    // Release 1.5a2 — a condition can join two others with "and" / "or",
+    // or turn one around with "not".
+    LOGIC: 'Logic'
   };
 
   function at(node, token) {
@@ -151,6 +155,16 @@
     MathFunction: function (fn, args, token) { return at({ type: Type.MATH_FUNCTION, fn: fn, args: args || [] }, token); },
     MathConstant: function (name, token) { return at({ type: Type.MATH_CONSTANT, name: name }, token); },
     RandomNumber: function (low, high, token) { return at({ type: Type.RANDOM_NUMBER, low: low, high: high }, token); },
+    /**
+     * Release 1.5a2 — `and`, `or` and `not` in a condition. `left` is always
+     * a condition node; `right` is a condition for and/or and null for not.
+     * Keeping the join in the AST (instead of folding it into a Condition)
+     * means short-circuiting and error positions stay exactly where they were
+     * written in the source.
+     */
+    Logic: function (operator, left, right, token) {
+      return at({ type: Type.LOGIC, operator: operator, left: left, right: right || null }, token);
+    },
     Condition: function (operator, left, right, token) {
       return at({ type: Type.CONDITION, operator: operator, left: left, right: right || null }, token);
     },

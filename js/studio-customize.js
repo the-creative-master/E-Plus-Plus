@@ -71,7 +71,7 @@
     input.style.height = Math.min(input.scrollHeight, window.innerHeight * 0.35) + 'px';
   }
   function resetTerminal() {
-    $('terminalModeOutput').textContent = 'E++ Terminal [Version ' + (window.EPP && EPP.VERSION || '1.4') + ']\n' +
+    $('terminalModeOutput').textContent = 'E++ Terminal [Version ' + (window.EPP && EPP.VERSION || '1.5a2') + ']\n' +
       'Enter E++ statements or programs at the prompt. All Studio libraries are available.\n' +
       'Type wiki or news to open the E++ reference pages. Press Escape to return to Settings.\n\n';
   }

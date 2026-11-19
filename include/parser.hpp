@@ -80,6 +80,14 @@ private:
     std::shared_ptr<Stmt> parse_clear_statement();
 
     // Expression parsers
+    // Release 1.5a2 — a condition is a chain of and/or/not around the
+    // ordinary comparison expressions. Only condition sites call these.
+    std::shared_ptr<Expr> parse_condition();
+    std::shared_ptr<Expr> parse_condition_or();
+    std::shared_ptr<Expr> parse_condition_and();
+    std::shared_ptr<Expr> parse_condition_not();
+    bool grouped_condition_ahead() const;
+    void require_condition_after(const Token& join, const std::string& word);
     std::shared_ptr<Expr> parse_expression();
     std::shared_ptr<Expr> parse_comparison();
     std::shared_ptr<Expr> parse_term();

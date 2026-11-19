@@ -1,4 +1,4 @@
-# E++ 1.5a1 Wiki
+# E++ 1.5a2 Wiki
 
 An approachable guide to E++, from your first line to games, animated drawings and shared projects. For exact syntax and diagnostic codes, see [LANGUAGE.md](LANGUAGE.md).
 
@@ -9,6 +9,7 @@ An approachable guide to E++, from your first line to games, animated drawings a
 - [Tutorial: output and maths](#tutorial-output-and-maths)
 - [Tutorial: variables and questions](#tutorial-variables-and-questions)
 - [Tutorial: decisions and loops](#tutorial-decisions-and-loops)
+- [Tutorial: two things at once](#tutorial-two-things-at-once)
 - [Tutorial: add a library](#tutorial-add-a-library)
 - [Drawing with animated sprites](#drawing-with-animated-sprites)
 - [Games and pictures](#games-and-pictures)
@@ -108,6 +109,38 @@ A `forever` block repeats until stopped. The built-in `the version of E++` expre
 let 'Eversion' be the version of E++
 say "E++ ", 'Eversion'
 ```
+
+## Tutorial: two things at once
+
+New in 1.5a2: a condition can join two others with `and` or `or`, or turn one around with `not`. No library is needed, and every comparison you already know works on either side:
+
+```text
+let 'score' be 12
+let 'lives' be 3
+let 'day' be "Saturday"
+
+if 'score' is at least 10 and 'lives' is greater than 0 then say "Play on!"
+if 'day' is "Saturday" or 'day' is "Sunday" then say "It is the weekend!"
+
+let 'ready' be 0
+if not 'ready' then say "Not ready yet"
+if ('score' is 10 or 'score' is 12) and 'lives' is 3 then say "Grouped"
+```
+
+`and` means both halves are true, `or` means either is true, and `not` reverses one condition. `and` binds tighter than `or`; brackets group a whole condition when you want a different order. Both joins stop as soon as the answer is known, so `if 'ready' is false and 'unused' is 1 then ...` never looks up `'unused'`.
+
+The same joins work in `while`, `repeat until` and `wait until`:
+
+```text
+while 'count' is less than 5 and 'go' is true do
+  say 'count'
+  let 'count' be 'count' plus 1
+end while
+
+wait until 'ready' is true and 'count' is at least 3
+```
+
+A connector with nothing after it (`if 'score' is 10 and then say "Play"`) is `E078` **Dangling Condition**. Words that belong to another sentence still belong to it: `is greater than or equal to 5` and `a random number between 1 and 6` are unchanged.
 
 ## Tutorial: wait until something happens
 
@@ -240,17 +273,19 @@ The Studio loads `src/lexer.cpp` compiled to WebAssembly and consumes its real t
 
 The native `./epp` uses the C++ lexer, parser and interpreter. `python3 epp.py` uses the Python engine. Their core syntax and diagnostics overlap with Studio, but they do not provide its Draw or Game canvas. Studio translates a subset of Python to JavaScript and is not a full Python interpreter. The command-line Python bridge can run Python on the machine; only run code you trust.
 
+`lexer.py` is more than the Python runner's lexer. It can also inspect a program without running it (`tokens`, `check`, `stats`, `keywords`, `highlight`) and handle sealed projects from the command line (`keygen`, `seal`, `open`, `fingerprint`, `is-vault`). The legacy form `python3 lexer.py program.enpp` still prints the token stream.
+
 In the full Studio: Math, Random, Strings, Colors, Console, Time, Files, System, Python, Keyboard, Draw, Game and ImprovedWait are available. In `E++.zip`: Colors, Draw, Game and ImprovedWait are unavailable, while ImprovedWaitLite is available. The archived native and Python runners also reject Colors. The full repository’s native and Python runners retain Colors. Availability does not imply identical OS, filesystem, Python or graphical behavior across engines.
 
 Build the native engine with `make`, run tests with `make test` and `npm test`, and rebuild the archives with `make zip`. Browser regression tests require Playwright and a local Chromium executable; see the repository test scripts.
 
 ## Errors and troubleshooting
 
-Every message has a permanent code in 1.5a1. The split is exact:
+Every message has a permanent code in 1.5a2. The split is exact:
 
 | Family | Count | What it means |
 | --- | --- | --- |
-| `E001`-`E077` | 77 | General errors. The program stops at the mistake. |
+| `E001`-`E078` | 78 | General errors. The program stops at the mistake. |
 | `W001`-`W006` | 6 | Warnings. The program keeps running. |
 | `Z001`-`Z005` | 5 | Only possible inside `E++.zip`, the standalone build. |
 | `F001`-`F015` | 15 | Fatal lexer errors: the source cannot be read. |
@@ -275,6 +310,8 @@ short version, by area:
 - **`E071`-`E075` pictures, sprites and Game:** an unknown actor is `E073`.
 - **`E076`-`E077` deleting files:** `E076` is a file that is not there,
   `E077` is a delete that failed for another reason.
+- **`E078` dangling conditions:** an `and`, `or` or `not` with no condition
+  after it. Write the second condition, or remove the extra word.
 
 Warnings never stop the program. `W001` is an equation inside double quotes
 (`say "1 plus 1"` prints `1 plus 1`), `W002` a variable name that looks like

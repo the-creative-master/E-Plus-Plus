@@ -1,4 +1,4 @@
-# E++ 1.5a1
+# E++ 1.5a2
 
 E++ is a small, English-like programming language with a browser Studio, a C++ command-line engine and a Python runner. Write text in double quotes, variables in single quotes, and maths as numbers and words.
 
@@ -8,17 +8,19 @@ say "Hello, ", 'name'
 say 2 plus 3 times 4
 ```
 
-## What’s new in 1.5a1
+## What’s new in 1.5a2
 
-E++ 1.5a1 is the release where E++ learns to **wait for things** and to **tidy up after itself**.
+E++ 1.5a2 is the release where a condition learns to say **two things at once**.
 
-* **`wait until`** — the program holds until a condition becomes true. It is part of the language, so no library is needed: `wait until 'score' is greater than 9`. Add a deadline with `wait at most 5 seconds until ...` and the program carries on if nothing happens.
-* **Plain pauses are core too** — `wait 2 seconds`, `sleep 0.5 seconds` and `wait 250 milliseconds` no longer ask for the Time library. Time keeps the clock.
-* **`delete the file`** — the Files library can remove a file it wrote: `delete the file "notes.txt"`. Deleting a file that is not there is `E076`, so a typo is caught immediately.
-* **`repeat until`** — a loop that keeps going until its condition is true, then stops.
-* **More English** — `is at least`, `is at most`, `is different from`, `is no more than`, `is more than`, and booleans that print as `True` and `False`.
+* **`and`** — `if 'score' is at least 10 and 'lives' is greater than 0 then say "Play on!"`. Both halves have to be true.
+* **`or`** — `if 'day' is "Saturday" or 'day' is "Sunday" then say "Weekend!"`. Either half is enough.
+* **`not`** — `if not 'ready' then say "Not yet"` turns one condition around.
+* **Brackets group a whole condition** — `if ('score' is 10 or 'score' is 12) and 'lives' is 3 then ...` when that reads better. Without brackets, `and` binds tighter than `or`.
+* **Every branch and loop condition reads them** — `if`, `while`, `repeat until`, `wait until` and `wait at most ... until` all join in, in the Studio, the JavaScript core, `epp.py` and the native `epp` engine. No library is needed; `and`, `or` and `not` are words the lexers already know.
+* **Short-circuiting** — a false `and` and a true `or` stop before reading the other half, so a variable you have not defined there cannot trip the program.
+* **One new error** — `E078` "Dangling Condition" catches `if 'score' is 10 and then say "Play"` with a plain-English fix. The catalogue is now 104 codes: 78 E, 6 W, 5 Z and 15 F.
 
-Two new errors (`E076`, `E077`) and one new warning (`W006`) join the catalogue: 103 codes in total.
+Everything from 1.5a1 is still here: `wait until`, `wait at most`, `delete the file`, `repeat until`, comparisons that read the way people speak, and booleans that print as `True` and `False`.
 
 ## Start the Studio
 
@@ -93,7 +95,26 @@ delete the file "notes.txt"
 
 Try `repeat 3 times` … `end repeat`, or an `if ... then` followed by `otherwise` on the next line. Notes use `note [text]`.
 
-### 4. Draw an animated square (full Studio)
+### 5. Two things at once (new in 1.5a2)
+
+A condition can join two others with `and`, `or` or `not`. Every comparison you already know works on either side:
+
+```text
+let 'score' be 12
+let 'lives' be 3
+let 'day' be "Saturday"
+
+if 'score' is at least 10 and 'lives' is greater than 0 then say "Play on!"
+if 'day' is "Saturday" or 'day' is "Sunday" then say "It is the weekend!"
+
+let 'ready' be 0
+if not 'ready' then say "Not ready yet"
+if ('score' is 10 or 'score' is 12) and 'lives' is 3 then say "Grouped"
+```
+
+Loops and waits read them too: `while 'n' is less than 5 and 'go' is true do`, `repeat until 'n' is 10 or 'stop' is true`, and `wait until 'ready' is true and 'count' is at least 3`. A connector with no condition after it is `E078`.
+
+### 6. Draw an animated square (full Studio)
 
 ```text
 add library "Draw"
@@ -107,7 +128,7 @@ set the speed of 'pencil' to 200
 
 The default speed is 240 pixels/second. Change it per sprite with `set the speed of 'pencil' to 60`, `600`, or `instant`. The console’s speed menu can change the selected cursor while it moves; arrows move it manually. **Stop** interrupts an animation. Draw is not in `E++.zip`.
 
-### 5. Make a Game actor (full Studio)
+### 7. Make a Game actor (full Studio)
 
 1. Add `add library "Game"` to a `.enppl` project. The **Image** button appears.
 2. Choose a local PNG, JPG, GIF, WEBP or SVG, name it `hero`, and link it. The panel inserts the actor code.
@@ -129,6 +150,10 @@ In the full source checkout, use:
 make                           # build the native C++ engine
 ./epp -e 'say 2 plus 3'
 python3 epp.py -e 'say "Hello"'
+python3 lexer.py check program.enpp   # inspect tokens without running
+python3 lexer.py tokens program.enpp --json
+python3 lexer.py keywords --json
+python3 lexer.py seal program.enpp --key HEX --out program.epp
 make test                      # C++ and Python regression suite
 npm test                       # JavaScript, diagnostics, lexer and gallery tests
 make zip                       # rebuild E++.zip and epp_language.zip

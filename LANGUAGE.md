@@ -1,25 +1,31 @@
-# The E++ Language Reference (1.5a1)
+# The E++ Language Reference (1.5a2)
 
 > **"Looks like English, feels like english, and is english"**
 
-This is the reference for **E++ 1.5a1**. It covers the language itself, the
+This is the reference for **E++ 1.5a2**. It covers the language itself, the
 project files you download and import, and the libraries that ship with this
 release.
 
-**What is new in 1.5a1**
+**What is new in 1.5a2**
 
-* **`wait until`** — E++ can now wait for something to become true. It is part
-  of the language itself, not a library (§11).
-* **Plain pauses need no library either** — `wait 2 seconds`, `sleep 0.5
-  seconds` and `wait 250 milliseconds` are core E++ now. The `Time` library
-  keeps the clock.
-* **`delete the file`** — the Files library can finally remove a file (§11 isn't
-  only about waiting any more; see *The Files library*).
-* **`repeat until`** — a loop that keeps going until its condition is true (§5).
-* **More English everywhere** — comparisons your reader already knows
-  (`is at least`, `is at most`, `is different from`, `is no more than`), and
-  booleans that print as `True` and `False`. The wording you already know
-  still works.
+* **Conditions can say `and`, `or` and `not`** — `if 'score' is at least 10
+  and 'lives' is greater than 0 then ...`, `if 'day' is "Saturday" or 'day' is
+  "Sunday" then ...`, `if not 'ready' then ...` (§4). No library is needed.
+* **Brackets group a whole condition** — `if ('a' is 1 or 'b' is 2) and 'c' is
+  3 then ...`. Without brackets, `and` binds tighter than `or`.
+* **Every branch and loop condition reads them** — `if`, `while`,
+  `repeat until`, `wait until` and `wait at most ... until`, in the Studio,
+  the JavaScript core, `epp.py` and the native `epp` engine (§5, §11).
+* **Short-circuiting** — the right half is not evaluated when the left half has
+  already decided the answer.
+* **`E078` Dangling Condition** — a connector with no condition after it is
+  explained instead of producing a confusing value error. The catalogue is
+  now 104 codes (§14).
+
+**From 1.5a1, still core E++:** `wait until` and `wait at most`, plain pauses,
+`delete the file`, `repeat until`, the plainer comparisons (`is at least`,
+`is at most`, `is different from`, `is no more than`) and booleans that print
+as `True` and `False`.
 
 ---
 
@@ -52,6 +58,15 @@ release.
   ./epp --save plain.enpp -o saved.enpp
   ```
 
+- `lexer.py` can inspect and seal projects without running them:
+
+  ```bash
+  python3 lexer.py check project.enpp
+  python3 lexer.py tokens project.enpp --json
+  python3 lexer.py seal project.enpp --key HEX --out project.epp
+  python3 lexer.py open project.epp --key HEX --out project.enpp
+  ```
+
 The repository's own example is `examples/17_saved_project.enpp`, opened with
 `examples/epp-keys.json`; the Studio picks that example keyring up on boot, so
 the demo opens in the browser as well.
@@ -81,6 +96,14 @@ now report `E001`; write `say "hello"` and `let 'Student' be "Sam"`.
 Unrecognized statements are errors (`E015`), not implicit output. Syntax
 checks also inspect inactive branches. Libraries still have their own grammar:
 for example `add library Math` is a library declaration, not a text value.
+
+### Migrating to 1.5a2
+
+Nothing you wrote for 1.5a1 has to change. `and`, `or` and `not` were already
+words inside E++ sentences (`ask "Name?" and save ...`, `is greater than or
+equal to`), so joining conditions never changes what an older program means.
+An `and` that joins two conditions is only read where a condition is expected:
+an `ask ... and save the output as ...` line is still one question.
 
 ### Migrating to 1.5a1
 
@@ -147,6 +170,46 @@ same thing in every engine (new in 1.5a1, earlier releases had a smaller set):
 
 `is not a number` works inside `if` as well as in `check if`, and the library
 conditions in §9 and §10 read the same way.
+
+### Saying two things at once (new in 1.5a2)
+
+A condition can join two other conditions with `and` or `or`, or turn one
+around with `not`. Each side is any condition above — a comparison, a library
+condition such as `is touching`, a bare truthy value, or another join:
+
+```text
+if 'score' is at least 10 and 'lives' is greater than 0 then say "Play on!"
+if 'day' is "Saturday" or 'day' is "Sunday" then say "Weekend!"
+if not 'ready' then say "Not ready yet"
+if not 'ready' and 'lives' is 3 then say "Still waiting"
+```
+
+| You write | It means |
+| --- | --- |
+| `<a> and <b>` | both conditions are true |
+| `<a> or <b>` | at least one condition is true |
+| `not <a>` | the condition is false |
+| `( <a> or <b> ) and <c>` | brackets choose the order |
+
+`and` binds tighter than `or`, so `a or b and c` means `a or (b and c)`;
+brackets make any other order explicit. Both joins **short-circuit**: a false
+`and` and a true `or` stop before evaluating the other half. That means
+`if 'ready' is false and 'unused' is 1 then ...` does not complain about a
+variable you never defined.
+
+The same joins work in every place E++ reads a branch or loop condition:
+`if`, `while ... do`, `repeat until`, `wait until` and `wait at most ... until`
+(§5, §11). They are core E++ — no `add` line — and the connector words that
+belong to a comparison or another phrase are left alone: `is greater than or
+equal to 5` and `a random number between 1 and 6` do not split into two
+conditions.
+
+A join with nothing after it is `E078` **Dangling Condition**, with the line
+and column of the stray `and`, `or` or `not`:
+
+```text
+if 'score' is 10 and then say "Play"   -> E078
+```
 
 ---
 
@@ -441,7 +504,7 @@ files.
 ```text
 add the "Files" library
 
-write "E++ 1.5a1 project notes." to file "notes.txt"
+write "E++ 1.5a2 project notes." to file "notes.txt"
 append " One more line." to file "notes.txt"
 
 read the file "notes.txt" and save the output as 'Notes'
@@ -500,7 +563,8 @@ wait at most 750 milliseconds until 'score' is greater than 9
 ```
 
 If nothing changes the condition before the deadline, the program carries on
-with the next line — no error, no print. Every engine also caps a single wait
+with the next line — no error, no print. A wait can hold for two things at
+once: `wait until 'ready' is true and 'count' is at least 3` (§4). Every engine also caps a single wait
 at 60 seconds (`E067`), so a program can never hang forever by mistake.
 
 There is no library to add for any of it. `wait until` and a plain
@@ -628,12 +692,12 @@ panel instead.
 
 ## 14. Diagnostics
 
-Every message E++ prints has a code. 1.5a1 defines exactly one hundred and
-three of them:
+Every message E++ prints has a code. 1.5a2 defines exactly one hundred and
+four of them:
 
 | Family | Count | Meaning |
 | --- | --- | --- |
-| `E001`-`E077` | 77 | General errors. The program stops. |
+| `E001`-`E078` | 78 | General errors. The program stops. |
 | `W001`-`W006` | 6 | Warnings. The program keeps running. |
 | `Z001`-`Z005` | 5 | Only ever raised by `E++.zip`, the standalone distribution. |
 | `F001`-`F015` | 15 | Fatal lexer errors. Raised while reading the source; the parser never raises them. |
@@ -659,7 +723,7 @@ compiled to WebAssembly. Its browser evaluator is JavaScript, not the native
 C++ parser and interpreter. If the compiled lexer cannot load, execution stops
 with the critical lexer failure `F015`; there is no silent alternate lexer.
 
-### General errors (77)
+### General errors (78)
 
 | Code | Name | What to do |
 | --- | --- | --- |
@@ -740,6 +804,7 @@ with the critical lexer failure `F015`; there is no silent alternate lexer.
 | `E075` | Sprite Not Defined | Define the sprite first: define 'pencil' as drawing sprite |
 | `E076` | Cannot Delete A Missing File | Check the file name, or use `read the file` first to see what is there. |
 | `E077` | Cannot Delete The File | Check the file name and that the folder allows the change. In the Studio, deleting a workspace file needs the file to exist. |
+| `E078` | Dangling Condition | Write a whole condition after `and`, `or` or `not`, for example: `if 'score' is 10 and 'lives' is 3 then`. |
 
 ### Warnings (6)
 

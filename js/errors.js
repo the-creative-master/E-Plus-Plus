@@ -1,9 +1,9 @@
 /*
  * E++ Release 1.4 - the error system.
  *
- * EVERY failure E++ reports is one of one hundred catalogued codes:
+ * EVERY failure E++ reports is one of one hundred and four catalogued codes:
  *
- *   E001-E077   general errors      (syntax, values, variables, libraries,
+ *   E001-E078   general errors      (syntax, values, variables, libraries,
  *                                    files, projects and the other code they own)
  *   W001-W006   warnings            the program still runs; each warning says
  *                                   exactly what E++ did and how to silence it
@@ -33,7 +33,7 @@
   // `extra` only appears on a few codes and carries a fixed field the code
   // needs (a warning's behaviour, the engine a build error names, ...).
   var CATALOG = {
-    // ======================= GENERAL ERRORS: E001-E077 =======================
+    // ======================= GENERAL ERRORS: E001-E078 =======================
     // --- Values, text and quotes (E001-E014) ---
     E001: ['Unquoted Text', 'Put text in double quotes, or use single quotes for a variable.'],
     E002: ['Bare Variable Name', 'Write the variable name inside single quotes, for example: let \'score\' be 0'],
@@ -131,6 +131,9 @@
     E076: ['Cannot Delete A Missing File', 'Deleting only works on a file that exists. Check the name, or list the files first.'],
     E077: ['Cannot Delete The File', 'Close anything that is using the file, check its permissions, then try again.'],
 
+    // --- Compound conditions (Release 1.5a2) ---
+    E078: ['Dangling Condition', 'Write a full condition on both sides of and or or, or after not. For example: if \'score\' is 10 and \'lives\' is 3 then'],
+
     // =========================== WARNINGS: W001-W006 ===========================
     W001: ['Text Looks Like An Equation', 'Remove the quotes if you wanted the maths: say 1 plus 1', { warning: 'keep' }],
     W002: ['Variable Name Looks Like Text', 'Use double quotes for text and single quotes for variables.', { warning: 'keep' }],
@@ -168,7 +171,7 @@
 
   // The four families, in code order.
   var FAMILIES = [
-    { key: 'general', section: 'E', codes: range('E', 1, 77),
+    { key: 'general', section: 'E', codes: range('E', 1, 78),
       title: 'General errors',
       description: 'Problems with the program itself. E++ stops and shows the line.' },
     { key: 'warning', section: 'W', codes: range('W', 1, 6),

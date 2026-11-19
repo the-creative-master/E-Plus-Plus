@@ -1038,6 +1038,17 @@
 
   Interpreter.prototype.evaluateCondition = async function (node) {
     if (!node) return false;
+    // Release 1.5a2 — and / or / not join whole conditions. Short-circuit:
+    // the right side is only evaluated when it can still change the answer,
+    // so `if 'ready' is false and 'missing' is 1 then` never looks up a
+    // variable that the program has not defined.
+    if (node.type === EPP.AST.Type.LOGIC) {
+      if (node.operator === 'not') return !(await this.evaluateCondition(node.left));
+      var first = await this.evaluateCondition(node.left);
+      if (node.operator === 'and') return first ? await this.evaluateCondition(node.right) : false;
+      if (node.operator === 'or') return first ? true : await this.evaluateCondition(node.right);
+      return false;
+    }
     // Release 1.2 — Keyboard: the "Up arrow" key is pressed
     if (node.type === 'KeyPressed') {
       var pressed = this.keyIsDown(node.key);

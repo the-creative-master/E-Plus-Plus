@@ -310,7 +310,42 @@
 '    }\n' +
 '    throw new EPP.ParseError("I do not understand the statement starting with " + JSON.stringify(t.value) + ".", t.line, t.column, "Statements start with Define, say, ask, if, Increase, Decrease, repeat, wait.");\n' +
 '  };\n' +
-'  Parser.prototype.parseCond = function() {\n' +
+'  Parser.prototype.parseCond = function() { return this.parseCondOr(); };\n' +
+'  Parser.prototype.danglingCond = function(tok, word) {\n' +
+'    var err = new EPP.ParseError("This condition ends with " + word + ", but there is no condition after it.", tok.line, tok.column, "Write two complete conditions, for example: if 1 is 1 and 2 is 2 then", "E078");\n' +
+'    err.code = "E078"; err.name = "Dangling Condition"; err.category = "Dangling Condition";\n' +
+'    return err;\n' +
+'  };\n' +
+'  Parser.prototype.parseCondOr = function() {\n' +
+'    var node = this.parseCondAnd();\n' +
+'    while (this.isW("or")) {\n' +
+'      var tok = this.adv();\n' +
+'      if (this.isW("then") || this.isW("or") || this.isW("and") || this.cur().type === "EOF")\n' +
+'        throw this.danglingCond(tok, "or");\n' +
+'      node = { op: "or", left: node, right: this.parseCondAnd() };\n' +
+'    }\n' +
+'    return node;\n' +
+'  };\n' +
+'  Parser.prototype.parseCondAnd = function() {\n' +
+'    var node = this.parseCondNot();\n' +
+'    while (this.isW("and")) {\n' +
+'      var tok = this.adv();\n' +
+'      if (this.isW("then") || this.isW("or") || this.isW("and") || this.cur().type === "EOF")\n' +
+'        throw this.danglingCond(tok, "and");\n' +
+'      node = { op: "and", left: node, right: this.parseCondNot() };\n' +
+'    }\n' +
+'    return node;\n' +
+'  };\n' +
+'  Parser.prototype.parseCondNot = function() {\n' +
+'    if (this.isW("not")) {\n' +
+'      var tok = this.adv();\n' +
+'      if (this.isW("then") || this.isW("or") || this.isW("and") || this.cur().type === "EOF") throw this.danglingCond(tok, "not");\n' +
+'      return { op: "not", left: this.parseCondNot() };\n' +
+'    }\n' +
+'    if (this.cur().type === "LPAREN") { this.adv(); var inner = this.parseCond(); if (this.cur().type === "RPAREN") this.adv(); return inner; }\n' +
+'    return this.parseCondSimple();\n' +
+'  };\n' +
+'  Parser.prototype.parseCondSimple = function() {\n' +
 '    var left = this.parseExpr();\n' +
 '    if (this.matchW("is")) {\n' +
 '      var not = this.matchW("not");\n' +
@@ -392,6 +427,22 @@
 '    }\n' +
 '    return null;\n' +
 '  };\n' +
+'  Interpreter.prototype.evalCond = async function(cond) {\n' +
+'    if (cond.op === "not") return !(await this.evalCond(cond.left));\n' +
+'    if (cond.op === "and" || cond.op === "or") {\n' +
+'      var first = await this.evalCond(cond.left);\n' +
+'      if (cond.op === "and" && !first) return false;\n' +
+'      if (cond.op === "or" && first) return true;\n' +
+'      return await this.evalCond(cond.right);\n' +
+'    }\n' +
+'    var cl = await this.eval(cond.left);\n' +
+'    var cr = cond.right ? await this.eval(cond.right) : null;\n' +
+'    if (cond.op === "equal") return String(cl) === String(cr);\n' +
+'    if (cond.op === "notEqual") return String(cl) !== String(cr);\n' +
+'    if (cond.op === "greater") return Number(cl) > Number(cr);\n' +
+'    if (cond.op === "less") return Number(cl) < Number(cr);\n' +
+'    return Boolean(cl);\n' +
+'  };\n' +
 '  Interpreter.prototype.exec = async function(stmt) {\n' +
 '    if (this.cancelled) return;\n' +
 '    if (stmt.type === "Define" || stmt.type === "Set") {\n' +
@@ -430,14 +481,7 @@
 '      return;\n' +
 '    }\n' +
 '    if (stmt.type === "If") {\n' +
-'      var cl = await this.eval(stmt.condition.left);\n' +
-'      var cr = stmt.condition.right ? await this.eval(stmt.condition.right) : null;\n' +
-'      var pass = false;\n' +
-'      if (stmt.condition.op === "equal") pass = (String(cl) === String(cr));\n' +
-'      else if (stmt.condition.op === "notEqual") pass = (String(cl) !== String(cr));\n' +
-'      else if (stmt.condition.op === "greater") pass = (Number(cl) > Number(cr));\n' +
-'      else if (stmt.condition.op === "less") pass = (Number(cl) < Number(cr));\n' +
-'      else pass = Boolean(cl);\n' +
+'      var pass = await this.evalCond(stmt.condition);\n' +
 '      var branch = pass ? stmt.thenBranch : stmt.elseBranch;\n' +
 '      for (var bi = 0; bi < branch.length; bi++) await this.exec(branch[bi]);\n' +
 '      return;\n' +

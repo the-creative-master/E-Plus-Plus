@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-E++ (E-Plus-Plus) 1.5a1 Direct Python Runtime & Engine
+E++ (E-Plus-Plus) 1.5a2 Direct Python Runtime & Engine
 Uses the native Python lexer to run E++ and Python code directly, including
 project files saved by the Studio.
 """
@@ -72,9 +72,11 @@ ERROR_CATALOGUE = {
     "E069": "Stop Used Outside A Repeat", "E070": "Execution Stopped",
     "E071": "Picture Is Empty", "E072": "Value Is Not A Picture",
     "E073": "Unknown Actor", "E074": "Unknown Image", "E075": "Sprite Not Defined",
+    "E076": "Cannot Delete A Missing File", "E077": "Cannot Delete The File",
+    "E078": "Dangling Condition",
     "W001": "Text Looks Like An Equation", "W002": "Variable Name Looks Like Text",
     "W003": "Library Added But Unused", "W004": "Continued On The Next Line",
-    "W005": "Number Written As Text",
+    "W005": "Number Written As Text", "W006": "Wait Can Never End Here",
     "Z001": "Colors Live In The Studio", "Z002": "Draw Is Not In E++.zip",
     "Z003": "Game Is Not In E++.zip", "Z004": "ImprovedWait Is Not In E++.zip",
     "Z005": "JavaScript Runtime Is Not In E++.zip",
@@ -96,6 +98,7 @@ ERROR_HELP = {
     "W003": "Remove the library line, or use one of its features.",
     "W004": "One statement per line keeps the structure clear.",
     "W005": "Write the number without double quotes, for example: wait 2 seconds",
+    "W006": "Change the condition outside the loop, or give the wait a deadline: wait at most 5 seconds until ...",
 }
 
 
@@ -1174,9 +1177,121 @@ class Interpreter:
             res.append(cur)
         return res
 
+    # ------------------------------------------------------------------
+    # Release 1.5a2 — conditions can say "and", "or" and "not".
+    # ------------------------------------------------------------------
     def eval_condition(self, tokens: List[Token], line: int, col: int) -> bool:
+        """Join whole conditions with and/or. `and` binds tighter than `or`,
+        and both stop as soon as the answer is known."""
+        split = self.condition_parts(tokens, line, col)
+        if split is None:
+            return self.eval_simple_condition(tokens, line, col)
+        segments, ops = split
+        groups = [[segments[0]]]
+        for i in range(1, len(segments)):
+            if ops[i - 1] == "and":
+                groups[-1].append(segments[i])
+            else:
+                groups.append([segments[i]])
+        for group in groups:
+            every = True
+            for segment in group:
+                if not self.eval_condition(segment, line, col):
+                    every = False
+                    break
+            if every:
+                return True
+        return False
+
+    def dangling_condition(self, line: int, col: int):
+        return self.diagnostic("E078", "Dangling Condition",
+                               'This condition ends with "and", "or" or "not", but there is no condition after it.',
+                               'Write two complete conditions, for example: '
+                               "if 'score' is 10 and 'lives' is 3 then", line, col)
+
+    def condition_parts(self, tokens: List[Token], line: int, col: int):
+        """Split a condition at its joining words. The `or` in "greater than
+        or equal to" and the `and` in "between 1 and 6", "the minimum of 3
+        and 9" or "and concat it with" belong to their own phrase, not to a
+        join. Connectors inside brackets are left for the grouped condition.
+        """
+        cuts = []
+        depth = 0
+        pair_pending = False
+        pair_word = False
+        for i, tok in enumerate(tokens):
+            if tok.type == TokenType.LPAREN:
+                depth += 1
+                continue
+            if tok.type == TokenType.RPAREN:
+                depth = max(0, depth - 1)
+                continue
+            if depth:
+                continue
+            word = tok.lexeme.lower()
+            if tok.type == TokenType.IDENTIFIER:
+                if word == "between":
+                    pair_pending = True
+                    continue
+                if word in ("minimum", "maximum", "hypotenuse"):
+                    pair_word = True
+                    continue
+            if tok.type == TokenType.KW_OF and pair_word:
+                pair_pending = True
+                pair_word = False
+                continue
+            nxt = tokens[i + 1].lexeme.lower() if i + 1 < len(tokens) else ""
+            if tok.type == TokenType.KW_OR and nxt not in ("equal", "equals"):
+                cuts.append((i, "or"))
+            elif tok.type == TokenType.KW_AND:
+                if pair_pending:
+                    pair_pending = False       # "between 1 and 6"
+                    continue
+                if nxt in ("concat", "save", "then"):
+                    continue                   # "and concat", "and save", "and then"
+                cuts.append((i, "and"))
+        if not cuts:
+            return None
+        segments, ops, start = [], [], 0
+        for index, op in cuts:
+            segments.append(tokens[start:index])
+            ops.append(op)
+            start = index + 1
+        segments.append(tokens[start:])
+        if any(not part for part in segments):
+            raise self.dangling_condition(line, col)
+        return segments, ops
+
+    @staticmethod
+    def wraps_whole_condition(tokens: List[Token]) -> bool:
+        """True when one pair of brackets wraps the whole condition."""
+        if len(tokens) < 2 or tokens[0].type != TokenType.LPAREN \
+                or tokens[-1].type != TokenType.RPAREN:
+            return False
+        depth = 0
+        for i, tok in enumerate(tokens):
+            if tok.type == TokenType.LPAREN:
+                depth += 1
+            elif tok.type == TokenType.RPAREN:
+                depth -= 1
+                if depth < 0 or (depth == 0 and i != len(tokens) - 1):
+                    return False
+        return depth == 0
+
+    def eval_simple_condition(self, tokens: List[Token], line: int, col: int) -> bool:
         if not tokens:
             return False
+
+        # Release 1.5a2 — "not" turns one condition around; brackets group a
+        # whole condition so a reader can choose the order of and/or.
+        if tokens[0].type == TokenType.KW_NOT:
+            if len(tokens) == 1:
+                raise self.dangling_condition(line, col)
+            return not self.eval_condition(tokens[1:], line, col)
+        if self.wraps_whole_condition(tokens):
+            return self.eval_condition(tokens[1:-1], line, col)
+        if tokens[-1].type in (TokenType.KW_AND, TokenType.KW_OR, TokenType.KW_NOT):
+            raise self.dangling_condition(line, col)
 
         # Find comparison operator: "is equal to", "is greater than", etc.
         eq_idx = -1
@@ -1507,7 +1622,7 @@ class Interpreter:
 # ==========================================
 
 def _usage():
-    print("E++ [1.5a1] Python Direct Engine")
+    print("E++ [1.5a2] Python Direct Engine")
     print("Usage:")
     print("  python3 epp.py <file.enpp|file.enppl>             Run a program")
     print("  python3 epp.py -e '<code string>'                 Run inline code")
@@ -1519,10 +1634,12 @@ def _usage():
     print("  python3 epp.py --save <in> -o <out> [--key]       Save a project")
     print("  python3 epp.py --open <file> [--key]              Print a saved project")
     print()
-    print("1.5a1 additions:")
-    print("  wait until <condition>                            Core E++: no library needed")
-    print("  add the \"Files\" library === then === delete the file \"notes.txt\"")
+    print("1.5a2 additions:")
+    print("  if <condition> and <condition> then ...            Two conditions in one sentence")
+    print("  if <condition> or <condition> then ...             Either one is enough")
+    print("  if not <condition> then ...                        Turn a condition around")
     print("  EPP_WAIT_CEILING=<seconds>                        Cap how long one wait until polls")
+    print("From 1.5a1: wait until, delete the file and repeat until are still core E++.")
 
 
 def _split_global_flags(args):
